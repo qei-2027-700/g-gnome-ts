@@ -16,7 +16,7 @@ export const RADIO_VOICE_CLIPS:Record<string,{url:string;voice:string;pitch:numb
 "[\"en\",\"kylie\",\"Understood. Moving to the selected target.\"]":{url:new URL("../../../assets/audio/radio/kylie-en-a127e899fe79.wav",import.meta.url).href,voice:"Kokoro/am_puck",pitch:0.94,rate:1.04},
 "[\"en\",\"kylie\",\"Those towers have been powered up.\"]":{url:new URL("../../../assets/audio/radio/kylie-en-21855eb7cbd6.wav",import.meta.url).href,voice:"Kokoro/am_puck",pitch:0.94,rate:1.04},
 "[\"ja\",\"thane\",\"載せてちょうだい！\"]":{url:new URL("../../../assets/audio/radio/thane-ja-c02ce8fb92d0.wav",import.meta.url).href,voice:"Kokoro/jf_alpha",pitch:1.2,rate:1},
-"[\"ja\",\"thane\",\"了解。目標への攻撃を開始する。\"]":{url:new URL("../../../assets/audio/radio/thane-ja-20edff1b362a.wav",import.meta.url).href,voice:"Kokoro/jf_alpha",pitch:1.2,rate:1},
+"[\"ja\",\"thane\",\"目標攻撃中！\"]":{url:new URL("../../../assets/audio/radio/thane-ja-20edff1b362a.wav",import.meta.url).href,voice:"Kokoro/jf_alpha",pitch:1.2,rate:1},
 "[\"ja\",\"thane\",\"了解。君についていこう。\"]":{url:new URL("../../../assets/audio/radio/thane-ja-af29b96479b1.wav",import.meta.url).href,voice:"Kokoro/jf_alpha",pitch:1.2,rate:1},
 "[\"ja\",\"thane\",\"了解。この位置で待機する。\"]":{url:new URL("../../../assets/audio/radio/thane-ja-8184eec172e0.wav",import.meta.url).href,voice:"Kokoro/jf_alpha",pitch:1.2,rate:1},
 "[\"ja\",\"thane\",\"了解。\"]":{url:new URL("../../../assets/audio/radio/thane-ja-0157e6aed55c.wav",import.meta.url).href,voice:"Kokoro/jf_alpha",pitch:1.2,rate:1},

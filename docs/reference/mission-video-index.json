@@ -1,0 +1,223 @@
+{
+  "checked_on": "2026-10-29",
+  "scope": "Original G-Nome campaign; video metadata and uploader descriptions reviewed, gameplay frames not reviewed in this survey.",
+  "missions": 22,
+  "videos": [
+    {
+      "mission": "1-1",
+      "title_in_video": "Renegade Mercs",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 1-1 \"Renegade Mercs\"",
+      "url": "https://www.youtube.com/watch?v=ouTQ_oUpzWA",
+      "channel": "j-box",
+      "duration_seconds": 479,
+      "upload_date": "20120419"
+    },
+    {
+      "mission": "1-2",
+      "title_in_video": "Drawbridge",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 1-2 \"Drawbridge\"",
+      "url": "https://www.youtube.com/watch?v=wg9YCQxUqSE",
+      "channel": "j-box",
+      "duration_seconds": 259,
+      "upload_date": "20120420"
+    },
+    {
+      "mission": "1-3",
+      "title_in_video": "Convoy",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 1-3 \"Convoy\"",
+      "url": "https://www.youtube.com/watch?v=y0q9DCsQBw8",
+      "channel": "j-box",
+      "duration_seconds": 338,
+      "upload_date": "20120420"
+    },
+    {
+      "mission": "1-4",
+      "title_in_video": "LATLON",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 1-4 \"LATLON\"",
+      "url": "https://www.youtube.com/watch?v=0OiVKh6pmJM",
+      "channel": "j-box",
+      "duration_seconds": 564,
+      "upload_date": "20120423"
+    },
+    {
+      "mission": "1-5",
+      "title_in_video": "Rescue!",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 1-5 \"Rescue!\"",
+      "url": "https://www.youtube.com/watch?v=eYHjjhCqb1c",
+      "channel": "j-box",
+      "duration_seconds": 696,
+      "upload_date": "20120426"
+    },
+    {
+      "mission": "2-1",
+      "title_in_video": "Dropship Rendezvous",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-1 \"Dropship Rendezvous\"",
+      "url": "https://www.youtube.com/watch?v=vNgoatLZvms",
+      "channel": "j-box",
+      "duration_seconds": 678,
+      "upload_date": "20120501"
+    },
+    {
+      "mission": "2-2",
+      "title_in_video": "River Race",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-2 \"River Race\" 1/2",
+      "url": "https://www.youtube.com/watch?v=GJZ4i0cU9c0",
+      "channel": "j-box",
+      "duration_seconds": 672,
+      "upload_date": "20120504"
+    },
+    {
+      "mission": "2-2",
+      "title_in_video": "River Race",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-2 \"River Race\" 2/2",
+      "url": "https://www.youtube.com/watch?v=GmWoM0gYZz8",
+      "channel": "j-box",
+      "duration_seconds": 713,
+      "upload_date": "20120504"
+    },
+    {
+      "mission": "2-3",
+      "title_in_video": "Canyon Maze",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-3 \"Canyon Maze\"",
+      "url": "https://www.youtube.com/watch?v=CCP3cgzaxgw",
+      "channel": "j-box",
+      "duration_seconds": 720,
+      "upload_date": "20120515"
+    },
+    {
+      "mission": "2-4",
+      "title_in_video": "Egger",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-4 \"Egger\"",
+      "url": "https://www.youtube.com/watch?v=jJkqkfm4Zuo",
+      "channel": "j-box",
+      "duration_seconds": 515,
+      "upload_date": "20120524"
+    },
+    {
+      "mission": "2-5",
+      "title_in_video": "The Citadel Approach",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-5 \"The Citadel Approach\"",
+      "url": "https://www.youtube.com/watch?v=sjOlerNQx2Y",
+      "channel": "j-box",
+      "duration_seconds": 625,
+      "upload_date": "20120529"
+    },
+    {
+      "mission": "2-6",
+      "title_in_video": "Battle in the Clouds",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 2-6 \"Battle in the Clouds\"",
+      "url": "https://www.youtube.com/watch?v=DH8Jxj-_sUs",
+      "channel": "j-box",
+      "duration_seconds": 255,
+      "upload_date": "20120614"
+    },
+    {
+      "mission": "3-1",
+      "title_in_video": "Scorp Crossing",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 3-1 \"Scorp Crossing\"",
+      "url": "https://www.youtube.com/watch?v=YpUF8RLP7EA",
+      "channel": "j-box",
+      "duration_seconds": 654,
+      "upload_date": "20120614"
+    },
+    {
+      "mission": "3-2",
+      "title_in_video": "CommArray at Ur-Kinsk",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 3-2 \"CommArray at Ur-Kinsk\"",
+      "url": "https://www.youtube.com/watch?v=EOdqH0-weos",
+      "channel": "j-box",
+      "duration_seconds": 822,
+      "upload_date": "20120622"
+    },
+    {
+      "mission": "3-3",
+      "title_in_video": "Raid on Ur-Ulit",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 3-3 \"Raid on Ur-Ulit\"",
+      "url": "https://www.youtube.com/watch?v=m0IIJf0hlMw",
+      "channel": "j-box",
+      "duration_seconds": 554,
+      "upload_date": "20120703"
+    },
+    {
+      "mission": "3-4",
+      "title_in_video": "Ur-Alr",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 3-4 \"Ur-Alr\"",
+      "url": "https://www.youtube.com/watch?v=SBcPVtIrUFs",
+      "channel": "j-box",
+      "duration_seconds": 643,
+      "upload_date": "20120712"
+    },
+    {
+      "mission": "3-5",
+      "title_in_video": "Ion-Strike",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 3-5 \"Ion-Strike\"",
+      "url": "https://www.youtube.com/watch?v=10mSGF0ZZ5c",
+      "channel": "j-box",
+      "duration_seconds": 854,
+      "upload_date": "20120717"
+    },
+    {
+      "mission": "4-1",
+      "title_in_video": "Captured!",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-1 \"Captured!\"",
+      "url": "https://www.youtube.com/watch?v=pVLsZtKq0po",
+      "channel": "j-box",
+      "duration_seconds": 901,
+      "upload_date": "20120728"
+    },
+    {
+      "mission": "4-2",
+      "title_in_video": "Scorp Defense",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-2 \"Scorp Defense\"",
+      "url": "https://www.youtube.com/watch?v=dKik04jCwCg",
+      "channel": "j-box",
+      "duration_seconds": 444,
+      "upload_date": "20120805"
+    },
+    {
+      "mission": "4-3",
+      "title_in_video": "War Zone",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-3 \"War Zone\" 1/2",
+      "url": "https://www.youtube.com/watch?v=dlIy0zh8vVk",
+      "channel": "j-box",
+      "duration_seconds": 739,
+      "upload_date": "20120818"
+    },
+    {
+      "mission": "4-3",
+      "title_in_video": "War Zone",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-3 \"War Zone\" 2/2",
+      "url": "https://www.youtube.com/watch?v=0k85E049niI",
+      "channel": "j-box",
+      "duration_seconds": 823,
+      "upload_date": "20120818"
+    },
+    {
+      "mission": "4-4",
+      "title_in_video": "General Delivery",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-4 \"General Delivery\"",
+      "url": "https://www.youtube.com/watch?v=8sXUAZLF9Tw",
+      "channel": "j-box",
+      "duration_seconds": 702,
+      "upload_date": "20120908"
+    },
+    {
+      "mission": "4-5",
+      "title_in_video": "Sheridan's Lair",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-5 \"Sheridan's Lair\"",
+      "url": "https://www.youtube.com/watch?v=_XcvTyyTxyw",
+      "channel": "j-box",
+      "duration_seconds": 828,
+      "upload_date": "20120919"
+    },
+    {
+      "mission": "4-6",
+      "title_in_video": "Mano-a-Mano",
+      "video_title": "G-NOME [Win95 PC] Walkthrough: Mission 4-6 \"Mano-a-Mano\"",
+      "url": "https://www.youtube.com/watch?v=4jdJl-1hZ78",
+      "channel": "j-box",
+      "duration_seconds": 391,
+      "upload_date": "20121124"
+    }
+  ]
+}

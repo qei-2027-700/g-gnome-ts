@@ -1,0 +1,47 @@
+.merc-reference{display:none}
+.merc-cockpit{background:#000}
+.merc-cockpit #cockpit,.merc-cockpit #flightHud{inset:auto;left:calc((100% - var(--merc-width))/2);top:calc((100% - 38px - var(--merc-height))/2);width:var(--merc-width);height:var(--merc-height);color:#57ff22;font-family:monospace}
+.merc-cockpit .merc-reference{display:block;position:absolute;inset:0;width:100%;height:100%}
+.merc-cockpit #cockpit>.canopy,.merc-cockpit #cockpit>.pillar,.merc-cockpit #cockpit>.dashboard,.merc-cockpit #cockpit>.dash-rim,.merc-cockpit .cockpit-shell{display:none}
+.merc-cockpit #world{left:calc((100% - var(--merc-width))/2);top:calc((100% - 38px - var(--merc-height))/2);width:var(--merc-width);height:var(--merc-height)}
+.merc-cockpit .weapon-panel{left:9%;top:8%;width:29%;height:9%;padding:0;border:0;background:none;box-shadow:none;font-size:clamp(9px,1.45vw,21px);line-height:1.9;overflow:visible;z-index:3}
+.merc-cockpit .weapon-panel>div{display:flex;align-items:center;gap:6%;height:50%;white-space:nowrap}
+.merc-cockpit .weapon-panel>div[hidden]{display:none}
+.merc-cockpit .weapon-panel>div:nth-child(3){position:absolute;left:190%;top:0;width:100%;height:50%}
+.merc-cockpit .weapon-panel i{font-size:.8em;padding:0 .15em;margin:0}.merc-cockpit .weapon-panel b{font-weight:400}
+.merc-cockpit #ammo,.merc-cockpit #ammo2,.merc-cockpit #ammo3{margin-left:auto;font-size:.9em;color:#69ff30}
+.merc-cockpit .iff-display{left:46%;top:12.5%;right:auto;width:6%;height:3.5%;padding:0;background:#000;border:0;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
+.merc-cockpit .iff-display strong{margin:0;font:clamp(10px,1.4vw,21px) monospace}
+.merc-cockpit .weapon-panel .charge-meter{display:block;float:none;width:28%;height:.7em;margin:0 0 0 auto;border:1px solid #52df30;background:#132315;flex-shrink:0}
+.merc-cockpit .weapon-panel .charge-meter[hidden]{display:none}
+.merc-cockpit #laserChargeFill{display:block;width:100%;height:100%;background:#55ff27;transform-origin:left}
+.merc-cockpit .charge-meter.charging #laserChargeFill{background:#e5dc72}
+.merc-cockpit .instrument{border:0;background:#000;box-shadow:none;border-radius:0;z-index:2;overflow:hidden}
+.merc-cockpit .target-instrument{left:10.5%;bottom:0;width:21%;height:31%}
+.merc-cockpit .self-instrument{right:8.5%;bottom:0;width:23%;height:31%}
+.merc-cockpit .holo-grid{inset:41% 2% 0;transform:perspective(200px) rotateX(25deg);background:repeating-linear-gradient(0deg,transparent 0 15px,#42703080 16px 17px),repeating-linear-gradient(90deg,transparent 0 18px,#42703080 19px 20px)}
+.merc-cockpit #targetHologram,.merc-cockpit #selfHologram{left:19%;top:22%;width:64%;height:71%;color:#39ff24}
+.merc-cockpit .instrument .micro{top:2%;left:2%;font-size:clamp(6px,.65vw,10px)}
+.merc-cockpit #targetData{bottom:1%;font-size:clamp(6px,.6vw,9px)}
+.merc-cockpit .vertical-meter{height:44%;width:5%;bottom:2%;right:2%;background:#061400}
+.merc-cockpit .radar-instrument{left:34%;bottom:0;width:34%;height:31%;clip-path:polygon(18% 0,82% 0,100% 40%,100% 100%,0 100%,0 40%)}
+.merc-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.merc-cockpit .radar-instrument .micro{top:auto;bottom:1%;z-index:3}
+.merc-cockpit .throttle-meter{left:66.5%;top:33%;width:1.3%;height:23%;border-color:#e2e629}
+.merc-cockpit .compass{top:58%;font-size:clamp(8px,.85vw,13px)}
+.merc-cockpit #pingLight{display:none}
+.merc-cockpit .topbar{background:transparent;border:0;top:auto;bottom:0;height:38px;width:auto;right:auto;padding:4px 12px;z-index:15}
+.merc-cockpit .topbar .brand,.merc-cockpit .topbar .mission-id{display:none}
+.merc-cockpit .topbar button{font-size:9px;padding:5px 9px}
+.merc-cockpit footer{height:38px;min-height:38px;font-size:8px;justify-content:flex-end}
+.merc-cockpit footer #controls{display:none}
+.merc-cockpit footer button{font-size:9px;padding:5px 8px}
+.merc-cockpit .telemetry{left:3%;bottom:38px;z-index:4;font-size:10px;background:#0009}
+.merc-cockpit .objectives{display:none}
+.merc-cockpit .telemetry{top:auto;bottom:42px;left:3%;padding:3px 6px;background:#000b}
+.merc-cockpit .telemetry .stat{display:none}
+.merc-cockpit .telemetry small{font-size:7px}.merc-cockpit .telemetry b{font-size:12px}
+.merc-cockpit .compass .ticks{font-size:clamp(12px,1.8vw,26px);letter-spacing:0}
+.merc-cockpit .weapon-panel>div:after{content:'●';color:#51ff25;font-size:.8em}
+.merc-cockpit .weapon-panel>div[data-state=firing]:after{color:#ff3a1c}
+.merc-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}

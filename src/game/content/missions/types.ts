@@ -1,0 +1,37 @@
+import type {VehicleKind,VehicleSpec,Faction} from '../vehicles.ts';
+import type {WeaponOverrides,MissileWeapon} from '../weapons.ts';
+import type {Difficulty} from '../../settings.ts';
+export type Localized={ja:string;en:string};
+export type Waypoint={id:number;x:number;z:number;radius:number};
+export type Spawn={id:string;kind:VehicleKind;x:number;z:number;pilot:boolean;powerSourceId?:string;yaw?:number;personId?:string;iff?:string;overrides?:Partial<VehicleSpec>};
+export type Objective={id:string;label:Localized;optional?:boolean}&({type:'reach';waypointId:number}|{type:'eliminate';unitIds:readonly string[]}|{type:'lure';unitId:string}|{type:'defend';untilBridgeId?:string;targetIds:readonly string[];attackerIds:readonly string[];requiredKills?:number}|{type:'raise-bridge';bridgeId:string}|{type:'board-unit';unitId:string}|{type:'board-player';personId:string}|{type:'board-faction';personIds:readonly string[];faction:Faction});
+export type Cliff={id:string;x:number;z:number;width:number;depth:number;height:number};
+export type Terrain={river?:{bridgeId:string;x:number;z:number;width:number;length:number;bridgeZ:number;bridgeWidth:number};skyPalette?:'amber';cliffs?:readonly Cliff[];peaks?:readonly {x:number;z:number;width:number;depth:number;height:number}[];weather?:'clear'|'overcast';ridgeStyle?:'mesa'|'rocky';biome?:'desert'|'grassland'|'snow';halfWidth:number;minZ:number;maxZ:number;ridgeHeight:number;ridgeVariation:number;seed:number};
+export type Minefield={id:string;x:number;z:number;width:number;depth:number;triggerRadius:number;warningRange?:number;warningVehicle?:VehicleKind;mines:readonly {id:string;x:number;z:number}[]};
+export type Base={faction?:Faction;name:string;x:number;z:number;width:number;depth:number;buildings:readonly {bridgeId?:string;id?:string;yaw?:number;iff?:string;name?:string;color?:string;kind?:'citadel'|'power-plant'|'comm-array'|'bridge-control'|'command'|'mine-control'|'shield-generator'|'sweep-turret';pilot?:boolean;health?:number;boardable?:boolean;x:number;z:number;width:number;depth:number;height:number}[]};
+export type Companion={personId:string;unitId?:string;facilityId?:string;name:Localized;key:'F2'|'F3'|'F4'};
+export type BriefingImage={src:string;width:number;height:number;viewBox:string;label:Localized};
+export type BriefingPresentation={
+ title?:string;mapPreview?:BriefingImage;vehiclePreview?:BriefingImage;
+ entries:readonly {label:Localized;detail:Localized}[];
+};
+export type MissionDefinition={
+ bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string}};
+ briefingPresentation?:BriefingPresentation;
+ id:string;title:string;subtitle:Localized;briefing:Localized;startHint:Localized;success:Localized;radio:Localized;
+ player:{x:number;z:number};playerFaction:'union'|'merc'|'darken'|'scorp';initialIff:string;factionCodes:Partial<Record<string,string>>;
+ units:readonly Spawn[];assignedUnitId:string;waypoints:readonly Waypoint[];objectives:readonly Objective[];
+ base?:Base;minefields?:readonly Minefield[];
+ terrain:Terrain;rocks:readonly {x:number;z:number;r:number}[];
+ radioTriggers?:readonly ({id:string;speakerId:string;vehicleKind:VehicleKind;line:Localized}&({event:'board';range?:never}|{event?:'near-base';range:number}))[];
+ infantrySorties?:readonly {id:string;facilityId:string;vehicleKind:VehicleKind;range:number;count:number;delay:number;interval:number}[];
+ garrison?:readonly string[];companions?:readonly Companion[];radioRange?:number;autoFollowOnBoard?:readonly VehicleKind[];
+ footSecondaryWeapon?:'GASHR'|'EGGER';
+ startMountedUnitId?:string;initialView?:'first-person'|'external-rear'|'external-diagonal';rearCamera?:{range:number;height:number;lookAhead:number;targetHeight:number};completionEnabled?:boolean;
+ pickups?:readonly {personId:string;facilityId:string;attackerIds:readonly string[];requiredKills:number}[];
+ personnel?:readonly {personId:string;x:number;z:number;facilityId?:string;boardingTargetId?:string}[];
+ assaults?:readonly {unitId:string;targetId:string;startAt:number}[];
+ lures?:readonly {unitId:string;weapon:MissileWeapon;hits:number;onFootResponse?:'ram-player'}[];
+ tuning:Record<Difficulty,{interval:number}>;
+ vehicleOverrides?:Partial<Record<VehicleKind,Partial<VehicleSpec>>>;weaponOverrides?:WeaponOverrides;
+};

@@ -1,0 +1,54 @@
+/* Native reference metalwork; every readout and target remains live. */
+.union-tactical-shell{display:none}
+.tactical-cockpit #cockpit,.tactical-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--tactical-width);height:var(--tactical-height);transform:translate(-50%,-50%);container-type:size}
+.tactical-cockpit #world{left:calc((100% - var(--tactical-width))/2);top:calc((100% - 38px - var(--tactical-height))/2);width:var(--tactical-width);height:var(--tactical-height)}
+.tactical-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden;color:#52ff20;font-family:"Courier New",monospace}
+.tactical-cockpit .union-tactical-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.tactical-cockpit .cockpit-shell,.tactical-cockpit .merc-reference,.tactical-cockpit .asv-cockpit-shell,.tactical-cockpit .scorp-cockpit-shell,.tactical-cockpit .cockpit-grain,.tactical-cockpit .cockpit-reference-metal,.tactical-cockpit .cockpit-well-underlay,.tactical-cockpit .overhead-display,.tactical-cockpit #cockpit>.canopy,.tactical-cockpit #cockpit>.pillar,.tactical-cockpit #cockpit>.dashboard,.tactical-cockpit #cockpit>.dash-rim{display:none}
+.tactical-cockpit .weapon-panel{position:absolute;left:2.6%;top:3.5%;width:28.9%;height:10.3%;min-height:0;padding:0;border:0;background:none;box-shadow:none;color:#58ff21;font:1.5cqw/1.3 "Courier New",monospace;letter-spacing:.035em;z-index:3}
+.tactical-cockpit .weapon-panel>div{position:relative;display:flex;align-items:center;gap:3.5%;width:100%;height:50%;white-space:nowrap}
+.tactical-cockpit .weapon-panel>div[hidden]{display:none}
+.tactical-cockpit .weapon-panel>div:nth-child(3){position:absolute;left:235.3%;top:0;width:95.5%}
+.tactical-cockpit .weapon-panel>div:nth-child(4){position:absolute;left:235.3%;top:50%;width:95.5%}
+.tactical-cockpit .weapon-panel i{order:0;font-size:1.2cqw;line-height:1;padding:.1cqw .2cqw;margin:0;border:1px solid #54ff20;color:#54ff20}
+.tactical-cockpit .weapon-panel b{order:1;min-width:31%;font-weight:400}
+.tactical-cockpit .weapon-panel #ammo,.tactical-cockpit .weapon-panel #ammo2,.tactical-cockpit .weapon-panel #ammo3,.tactical-cockpit .weapon-panel #ammo4{order:3;margin-left:auto;float:none;font-size:1.25cqw;min-width:9%;color:#65ff27}
+.tactical-cockpit .weapon-panel .asv-weapon-symbol{display:none}
+.tactical-cockpit .weapon-panel .charge-meter{order:2;display:block;position:relative;float:none;flex:1;height:1.15cqw;min-width:24%;padding:0;margin:0;border:2px solid #3bee18;border-radius:1cqw;background:#001800}
+.tactical-cockpit #laserChargeFill{display:block;height:100%;background:linear-gradient(90deg,#ff3811 0 15%,#d6ee20 16% 25%,#70ff21 26%);transform-origin:left}
+.tactical-cockpit .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 17%,#002800 18% 20%)}
+.tactical-cockpit .weapon-panel>div:nth-child(n+3):after{content:'';order:2;width:30%;height:1.2cqw;flex-shrink:0;clip-path:polygon(0 22%,70% 22%,70% 0,100% 50%,70% 100%,70% 78%,0 78%);background:linear-gradient(90deg,#ec3821 0 13%,#c4ec25 14% 40%,#4bff18 41%);box-shadow:inset 0 0 0 2px #2bfa20}
+.tactical-cockpit #ammo2:before{content:'';display:inline-block;width:7cqw;height:1.7cqw;margin-right:1.3cqw;vertical-align:middle;background:repeat-x left center/14.285% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 30'%3E%3Cpath d='M2 28V8L7 1 12 8V28Z M5 25V9L7 6 9 9V25Z' stroke='%234cff20' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+.tactical-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
+.tactical-cockpit .iff-display{left:44.8%;top:2.7%;right:auto;width:10%;height:4.6%;padding:0;transform:none;display:flex;align-items:center;justify-content:center;font-size:0;border:0;border-radius:0;background:#000;box-shadow:none;z-index:3}
+.tactical-cockpit .iff-display strong{margin:0;color:#52fc22;font:1.6cqw "Courier New",monospace}
+.tactical-cockpit .instrument{position:absolute;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;z-index:2}
+.tactical-cockpit .instrument .micro,.tactical-cockpit .holo-grid,.tactical-cockpit #pingLight{display:none}
+.tactical-cockpit .target-instrument{left:0;bottom:10.5%;width:27%;height:22%}
+.tactical-cockpit .self-instrument{right:0;bottom:10.5%;width:27%;height:22%}
+.tactical-cockpit #targetHologram,.tactical-cockpit #selfHologram{left:24%;top:0;width:53%;height:89%;filter:drop-shadow(0 0 2px #31bc24)}
+.tactical-cockpit #targetData{left:20%;right:18%;bottom:-10%;font-size:.62cqw;line-height:1.3;white-space:pre-line}
+.tactical-cockpit #clearTarget{top:5%;right:6%;font-size:1cqw;color:#a3ff67;background:#071509}
+.tactical-cockpit .vertical-meter,.tactical-cockpit #targetShieldMeter{position:absolute;right:8%;left:auto;bottom:3%;height:71%;width:5%;border:1px solid #2b9a88;background:#00100c;display:flex;align-items:flex-end;transform:none}
+.tactical-cockpit #targetShieldMeter{left:9%;right:auto}
+.tactical-cockpit .vertical-meter:before,.tactical-cockpit #targetShieldMeter:before{content:'S';position:absolute;top:-23%;left:0;color:#2be1d6;font-size:1.2cqw}
+.tactical-cockpit .vertical-meter>div,.tactical-cockpit #targetShieldFill{width:100%;background:#4bff16;box-shadow:0 0 .3cqw #37c52b}
+.tactical-cockpit .asv-energy-meter{display:block;position:absolute;left:8%;bottom:35%;width:5%;height:38%;border:1px solid #14d3c6;background:#071809}
+.tactical-cockpit .asv-energy-meter:before{content:'E';position:absolute;left:0;top:-25%;font-size:1.1cqw;color:#27d7c5}
+.tactical-cockpit #asvEnergyFill{position:absolute;bottom:0;left:0;width:100%;background:#64ff26}
+.tactical-cockpit .radar-instrument{left:30.5%;bottom:4.5%;width:38%;height:26%;overflow:hidden;background:#000;clip-path:polygon(20% 0,80% 0,94% 25%,100% 65%,94% 100%,6% 100%,0 65%,6% 25%)}
+.tactical-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.tactical-cockpit .asv-aim-ladder{display:block;position:absolute;left:37.2%;top:33%;width:3.2%;height:21%;z-index:3}
+.tactical-cockpit .throttle-meter{left:59.8%;top:33%;width:1.15%;height:21%;border:2px solid #e6e329;background:#030500}
+.tactical-cockpit .throttle-meter>span{display:none}
+.tactical-cockpit #throttleFill{background:#f4eb22}
+.tactical-cockpit .compass{left:50%;top:55.7%;width:20%;color:#48ff25;font:1cqw monospace}
+.tactical-cockpit .compass .ticks{display:block;width:100%;overflow:hidden;white-space:nowrap;font-size:1.65cqw;letter-spacing:0}
+.tactical-cockpit .reticle{width:3.6cqw;height:3.6cqw;border:0;background:none}
+.tactical-cockpit #lockDistance{font-size:1.2cqw;color:#ff3930}
+.tactical-cockpit .telemetry,.tactical-cockpit .objectives,.tactical-cockpit #squadOrders,.tactical-cockpit #controls,.tactical-cockpit #viewLabel{display:none}
+.tactical-cockpit .topbar{position:static;height:0;padding:0;border:0;background:none}
+.tactical-cockpit .topbar .brand,.tactical-cockpit .topbar .mission-id{display:none}
+.tactical-cockpit .topbar nav{position:fixed;left:8px;bottom:7px;display:flex;gap:5px;z-index:30}
+.tactical-cockpit .topbar nav button{padding:4px 7px;font-size:9px;background:#10170d;border-color:#394731}
+.tactical-cockpit #notice{top:22%}

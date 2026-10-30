@@ -1,0 +1,75 @@
+/* Union ASV: image-backed metal, with transparent glazing and live instruments. */
+.asv-cockpit-shell,.asv-aim-ladder,.asv-energy-meter{display:none}
+.asv-cockpit #cockpit{inset:0 0 38px;color:#45ff24;font-family:"Courier New",monospace}
+.asv-cockpit .asv-cockpit-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.asv-cockpit #cockpit>.canopy,.asv-cockpit #cockpit>.pillar,.asv-cockpit #cockpit>.dashboard,.asv-cockpit #cockpit>.dash-rim{display:none}
+.asv-cockpit .weapon-panel{top:8.8%;left:8.6%;width:25.2%;height:9.6%;min-height:0;padding:0;background:transparent;border:0;box-shadow:none;font:clamp(9px,1.36vw,24px)/1.5 "Courier New",monospace;color:#47ff27;text-shadow:0 0 3px #46ff3c55;transform:skewX(2deg);z-index:3}
+.asv-cockpit .weapon-panel>div{display:flex;align-items:center;gap:6%;height:50%;position:relative;white-space:nowrap}
+.asv-cockpit .weapon-panel i{margin:0;padding:0 .16em;line-height:1.1;font-size:.9em;border-radius:1px;color:#42ff24}
+.asv-cockpit .weapon-panel b{font-weight:400;font-size:1em;max-width:33%;overflow:hidden}
+.asv-cockpit .weapon-panel #ammo,.asv-cockpit .weapon-panel #ammo2{float:none;margin-left:auto;font-size:.8em;color:#45ff24}
+.asv-cockpit .weapon-panel .charge-meter{display:block;position:absolute;right:0;top:20%;width:42%;height:55%;margin:0;z-index:3;background:#071109}
+.asv-cockpit .weapon-panel .charge-meter[hidden]{display:none}
+.asv-cockpit .weapon-panel>div:has(.charge-meter:not([hidden])) .asv-weapon-symbol{display:none}
+.asv-cockpit .iff-display{top:10.6%;left:47.3%;right:auto;width:5.6%;height:2.4%;padding:0;display:flex;align-items:center;justify-content:center;gap:0;background:#000;border:0;box-shadow:none;font-size:0;z-index:3}
+.asv-cockpit .iff-display strong{margin:0;font:clamp(10px,1.75vw,28px)/1 "Courier New",monospace;color:#47ff27;text-shadow:0 0 3px #40c825}
+.asv-cockpit #pingLight{top:25.4%;left:47.6%;width:5.2%;height:1.8%;right:auto;bottom:auto;border:0;border-radius:1px;background:#350b07;box-shadow:inset 0 0 5px #000;z-index:3}
+.asv-cockpit #pingLight.lit{background:radial-gradient(ellipse,#ff3718,#6e1007 75%);box-shadow:0 0 6px #f83b1b}
+.asv-cockpit #pingLight span{display:none}
+.asv-cockpit .instrument{border:0;border-radius:0;background:none;box-shadow:none;overflow:visible;z-index:3}
+.asv-cockpit .instrument:before,.asv-cockpit .holo-grid,.asv-cockpit .instrument .micro{display:none}
+.asv-cockpit .self-instrument{right:0;bottom:0;width:28%;height:35%}
+.asv-cockpit #selfHologram{left:37%;top:34%;width:41%;height:30%;transform:skewX(13deg);color:#39ff26;filter:drop-shadow(0 0 1px #46fc2c);z-index:2}
+.asv-cockpit #selfHologram svg{stroke-width:1.8}
+.asv-cockpit .vertical-meter{left:24%;right:auto;bottom:0;height:43%;width:6.2%;background:#001500;border:1px solid #24fb14;transform:skewX(15deg);box-shadow:none;overflow:visible}
+.asv-cockpit .vertical-meter:before{content:'S';position:absolute;left:0;top:-22%;font:clamp(8px,1vw,18px) monospace;color:#3cff21}
+.asv-cockpit .vertical-meter>div{background:#2bff0b;box-shadow:0 0 4px #39e51566}
+.asv-cockpit .asv-energy-meter{display:block;position:absolute;left:16%;top:14%;height:35%;width:6.2%;border:1px solid #21f913;transform:skewX(15deg);background:#001500}
+.asv-cockpit .asv-energy-meter:before{content:'E';position:absolute;top:-20%;left:0;font:clamp(8px,1vw,18px) monospace;color:#3cff21}
+.asv-cockpit #asvEnergyFill{position:absolute;bottom:0;width:100%;background:#2bff0b}
+.asv-cockpit .target-instrument{left:0;bottom:0;width:29%;height:35%}
+.asv-cockpit #targetHologram{left:13%;top:29%;width:45%;height:39%;transform:skewX(-15deg);color:#38ff21}
+.asv-cockpit #targetData{left:8%;right:30%;bottom:13%;font:clamp(6px,.65vw,12px)/1.4 monospace;color:#4bff31;transform:skewX(-15deg);text-align:center}
+.asv-cockpit #targetShieldMeter{left:auto;right:27%;top:8%;bottom:auto;width:2px;height:91%;background:#159e0b;transform:skewX(-16deg);border:0;overflow:visible}
+.asv-cockpit #targetShieldMeter:before{content:'S';position:absolute;top:0;left:7px;color:#43ff28;font:clamp(8px,1vw,18px) monospace}
+.asv-cockpit #targetShieldFill{position:absolute;bottom:0;left:-1px;width:5px;background:#39ff18;box-shadow:0 0 4px #2eff19}
+.asv-cockpit #clearTarget{left:40%;right:auto;top:9%;font-size:10px;padding:0 4px;background:#000;border:0;color:#45ff24}
+.asv-cockpit .radar-instrument{left:34.5%;bottom:1.2%;width:31%;height:18.3%;border-radius:50%;background:#000;overflow:hidden;box-shadow:none}
+.asv-cockpit .radar-instrument .micro{display:none}
+.asv-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.asv-cockpit #flightHud{inset:0 0 38px}
+.asv-cockpit .compass{top:59%;left:50%;width:19%;color:#50ff27;font-size:clamp(7px,.8vw,15px)}
+.asv-cockpit .compass .ticks{font-size:clamp(18px,2.5vw,45px);letter-spacing:0;line-height:.8;color:#4bff25}
+.asv-cockpit .reticle{width:7%;height:7%;border:0;border-radius:0;color:#38ff1c;--cursor:#38ff1c}
+.asv-cockpit .reticle:before{width:18%;height:1px}.asv-cockpit .reticle:after{height:25%;width:1px}
+.asv-cockpit .throttle-meter{left:60.3%;top:40%;width:1.5%;height:21%;border:1px solid #e8e700;background:#141900;color:#f5ff00;box-shadow:0 0 2px #e8f000}
+.asv-cockpit #throttleFill{background:#efff00;box-shadow:none}
+.asv-cockpit .throttle-meter span{display:none}
+.asv-cockpit .asv-aim-ladder{display:block;position:absolute;left:37.6%;top:40%;height:21%;width:3.5%;z-index:3;pointer-events:none}
+.asv-cockpit .telemetry{left:35.7%;top:62%;bottom:auto;width:8%;padding:0;transform:none;background:none;border:0;color:#55ff28;text-align:center;z-index:10}
+.asv-cockpit .telemetry small,.asv-cockpit .telemetry .stat{display:none}
+.asv-cockpit .telemetry b{font:clamp(7px,.65vw,12px) monospace;margin:0;display:inline}
+.asv-cockpit .telemetry em{font-size:.7em}
+.asv-cockpit .objectives{left:64%;right:auto;top:9.3%;width:28%;max-height:14%;padding:0;background:transparent;border:0;font-size:clamp(7px,.75vw,13px);color:#3ddf2a;opacity:.8;overflow:auto}
+.asv-cockpit #squadOrders{left:64%;right:auto;top:19%;padding:0;background:none;font:clamp(7px,.75vw,13px)/1.6 monospace;color:#49e135}
+.asv-cockpit #notice{top:20%;bottom:auto;font-size:10px}
+.asv-cockpit .topbar{top:auto;bottom:0;left:0;right:auto;width:auto;height:38px;padding:4px 8px;background:transparent;border:0;z-index:15}
+.asv-cockpit .topbar .brand,.asv-cockpit .topbar .mission-id{display:none}
+.asv-cockpit .topbar button{padding:5px 8px;font:9px monospace}
+.asv-cockpit footer{height:38px;min-height:38px;padding:4px 10px;justify-content:flex-end;background:#171410;border-color:#4c3e33}
+.asv-cockpit footer #controls{display:none}
+.asv-cockpit footer button{font:9px monospace;padding:5px 7px}
+.asv-cockpit footer #viewLabel{display:none}
+@media(max-width:750px){.asv-cockpit .weapon-panel{font-size:9px}.asv-cockpit .iff-display strong{font-size:10px}.asv-cockpit .objectives{font-size:7px}.asv-cockpit footer .right{gap:4px}.asv-cockpit .topbar button,.asv-cockpit footer button{font-size:8px;padding:4px}}
+
+.asv-cockpit .weapon-panel>div[hidden]{display:none}
+.asv-cockpit .target-instrument:after{content:'S';position:absolute;right:27%;top:8%;height:91%;width:2px;border-left:2px solid #2ef21a;transform:skewX(-16deg);text-indent:7px;color:#3fff24;font:clamp(8px,1vw,18px) monospace}
+.asv-cockpit .target-instrument:has(#targetShieldMeter:not([hidden])):after{display:none}
+.asv-cockpit .target-instrument:has(#targetHologram[hidden]) #targetData{display:none}
+.asv-cockpit .reticle i{display:block;position:absolute;clip-path:none;inset:0;border:0;background:var(--cursor);mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Cg fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M42 9Q24 12 13 27M13 53Q25 69 42 72M78 9Q96 12 107 27M107 53Q95 69 78 72'/%3E%3C/g%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
+.asv-cockpit .reticle b{display:none}
+
+.asv-weapon-symbol{display:none}
+.asv-cockpit .asv-weapon-symbol{display:block;position:absolute;left:47%;top:15%;width:43%;height:70%;margin:0;float:none;z-index:4;pointer-events:none}
+.asv-cockpit .asv-weapon-symbol svg{display:block;width:100%;height:100%}
+.asv-cockpit .objectives{z-index:10}

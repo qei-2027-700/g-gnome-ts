@@ -1,0 +1,11 @@
+import {validateMissions} from './validate.ts';
+import {MISSION} from './mission-1-1.ts';
+import {MISSION_2_4} from './mission-2-4.ts';
+import {MISSION_2_6} from './mission-2-6.ts';
+import {MISSION_3_3} from './mission-3-3.ts';
+import {MISSION_4_2} from './mission-4-2.ts';
+export const MISSIONS=[MISSION,MISSION_2_4,MISSION_2_6,MISSION_3_3,MISSION_4_2] as const;
+const errors=validateMissions(MISSIONS);
+if(errors.length)throw new Error(`Invalid mission catalog:\n${errors.join('\n')}`);
+export const DEFAULT_MISSION=MISSION;
+export {type MissionDefinition} from './types.ts';

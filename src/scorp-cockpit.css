@@ -1,0 +1,39 @@
+.scorp-cockpit-shell{display:none}
+.scorp-cockpit #cockpit,.scorp-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--scorp-width);height:var(--scorp-height);transform:translate(-50%,-50%);container-type:size}
+.scorp-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden}
+.scorp-cockpit .asv-cockpit-shell{display:none}
+.scorp-cockpit .scorp-cockpit-shell{display:block;position:absolute;inset:0;width:100%;height:100%}
+.scorp-cockpit .weapon-panel{inset:0;width:100%;height:100%;transform:none;font:1.65cqw/1.1 "Courier New",monospace}
+.scorp-cockpit .weapon-panel>div{position:absolute;left:.6%;top:3.4%;width:24%;height:4.4%;gap:3%}
+.scorp-cockpit .weapon-panel>div:nth-child(2){top:8.5%}
+.scorp-cockpit .weapon-panel>div:nth-child(3){left:74.5%;top:3.4%}
+.scorp-cockpit .weapon-panel>div:nth-child(4){left:74.5%;top:8.5%}
+.scorp-cockpit .weapon-panel b{font-size:1em;max-width:34%;width:34%}
+.scorp-cockpit .weapon-panel span[id^=ammo]{font-size:.8em;margin-left:auto;float:none;color:#45ff24}
+.scorp-cockpit .asv-weapon-symbol{left:40%;width:42%;top:8%;height:84%}
+.scorp-cockpit .weapon-panel>div[data-state=empty]{opacity:.45}
+.scorp-cockpit .weapon-panel>div[data-state=firing] .asv-weapon-symbol{filter:hue-rotate(300deg)}
+.scorp-cockpit .iff-display{left:50.2%;top:8.2%;width:6.3%;height:4%;background:#000}
+.scorp-cockpit .iff-display strong{font-size:1.8cqw}
+.scorp-cockpit #pingLight{left:49%;top:62.7%;width:4%;height:4.8%;opacity:.75}
+.scorp-cockpit .target-instrument{left:0;bottom:0;width:27%;height:35%}
+.scorp-cockpit #targetHologram{left:20%;top:28%;width:43%;height:37%;transform:skewX(-15deg)}
+.scorp-cockpit #targetData{left:9%;right:27%;bottom:9%;font: .8cqw/1.3 monospace}
+.scorp-cockpit .target-instrument:has(#targetHologram[hidden]) #targetData{display:block}
+.scorp-cockpit .self-instrument{right:0;bottom:0;width:27%;height:35%}
+.scorp-cockpit #selfHologram{left:36%;top:30%;height:34%;width:42%}
+.scorp-cockpit .vertical-meter{left:25%;bottom:0;height:43%;width:6%}
+.scorp-cockpit .asv-energy-meter{left:16%;top:10%;height:35%;width:6%}
+.scorp-cockpit .vertical-meter:before,.scorp-cockpit .asv-energy-meter:before,.scorp-cockpit #targetShieldMeter:before,.scorp-cockpit .target-instrument:after{font-size:1.4cqw}
+.scorp-cockpit .radar-instrument{left:32.7%;bottom:0;width:34.6%;height:29.5%;border-radius:35% 35% 15% 15%;background:#000}
+.scorp-cockpit .compass{top:55%;width:18%;font-size:1cqw}
+.scorp-cockpit .compass .ticks{font-size:2.3cqw}
+.scorp-cockpit .asv-aim-ladder{left:37.6%;top:35.5%;height:21%}
+.scorp-cockpit .throttle-meter{left:60.3%;top:35.5%;height:21%;width:1.5%}
+.scorp-cockpit .objectives,.scorp-cockpit #squadOrders{display:none}
+.scorp-cockpit .telemetry{display:none}
+.scorp-cockpit #notice{top:24%}
+
+.scorp-cockpit .weapon-panel>div:nth-child(-n+2) .asv-weapon-symbol svg{visibility:hidden}
+.scorp-cockpit .weapon-panel>div:nth-child(-n+2) .asv-weapon-symbol{top:17%;height:66%;background:repeat-x left center/14.28% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 30'%3E%3Cpath d='M2 28V8L7 1 12 8V28Z M5 25V9L7 6 9 9V25Z' stroke='%233cff20' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
+.scorp-cockpit .compass .ticks{display:block;width:100%;overflow:hidden;white-space:nowrap;font-size:1.6cqw}

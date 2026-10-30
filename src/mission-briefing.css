@@ -1,0 +1,28 @@
+/* Preserve the reference console proportions at any viewport size. */
+#station:is([data-panel="briefing"],[data-panel="exit"]) #overlay{position:absolute;inset:0;padding:0;background:#080908;backdrop-filter:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.mission-console{position:relative;flex:none;width:min(100vw,139.4584vh);aspect-ratio:1442/1034;container-type:inline-size;background:var(--console-reference) center/100% 100% no-repeat;color:#22f315;font-family:"Arial Narrow",Arial,sans-serif;overflow:hidden}
+.console-screen{position:absolute;left:19.1%;top:5.1%;width:63.2%;height:78.1%;background:#000}
+.console-title{position:absolute;left:20.8%;top:4.8%;width:59.8%;height:4.1%;margin:0;text-align:center;color:#20ff09;font-size:2.85cqw;line-height:1.05;font-weight:500;white-space:nowrap}
+.console-map,.console-preview{position:absolute;top:9.05%;height:42.25%;border:double .42cqw #1aff0b;background:#000;overflow:hidden}
+.console-map{left:20.8%;width:31.9%}.console-preview{left:52.8%;width:27.9%}
+.console-map svg,.console-preview>svg,.console-map canvas{display:block;width:100%;height:100%}
+.console-orders{position:absolute;top:52.8%;left:23.2%;width:57.4%;margin:0;padding:0;list-style:none}
+.console-orders li{margin:0;padding:0}.console-orders button{display:flex;align-items:baseline;gap:.7cqw;width:100%;padding:.14cqw 0;border:0;background:#000;color:#2aef17;font-size:1.92cqw;line-height:1.15;text-align:left;font-family:Arial,sans-serif;letter-spacing:-.025em}
+.console-orders button span{color:#d0d217;font-size:1.9cqw}.console-orders button:hover,.console-orders button[aria-pressed="true"]{color:#c4ff9c;background:#0e2108}.console-orders button:focus-visible{outline:2px solid #d2e634;outline-offset:1px}
+.console-hint{position:absolute;left:25%;top:79.5%;width:50%;margin:0;text-align:center;color:#d6da21;font-size:1.55cqw}
+.console-mission-select{position:absolute;left:25.3%;top:85.55%;width:50.2%;height:2.8%;display:flex;align-items:center;gap:1cqw;background:#000;color:#95b991;font-size:1cqw}
+.console-mission-select select{flex:1;min-width:0;height:100%;padding:0 .4cqw;border:0;background:#000;color:#5fff31;font-size:1.15cqw;cursor:pointer}
+.console-button{position:absolute;margin:0;padding:0;border:0;border-radius:0;background:#020302;color:#22ff08;font:bold 2.3cqw/1 "Arial Narrow",monospace;text-shadow:0 0 .2cqw #24750d;letter-spacing:-.07em;box-shadow:none}
+.console-button:hover,.console-button:focus-visible{background:#145532;color:#aeff8d;outline:2px solid #b7ff54}.console-button:disabled{cursor:default;color:#46843e;background:#050a04;opacity:1}
+.console-launch{left:88.15%;top:33.3%;width:10.9%;height:3.9%}.console-new,.console-load,.console-save,.console-credits{left:1.9%;width:11.4%;height:3.7%}
+.console-new{top:33.4%}.console-load{top:41.5%}.console-save{top:50.4%}.console-credits{top:59.2%}
+.console-tabs{position:absolute;left:21.2%;top:90.4%;width:59.7%;height:8.7%;display:flex;gap:1.2%}
+.console-tabs button{flex:1;min-width:0;padding:1.4cqw 0 0;border:0;background:linear-gradient(105deg,#8f928a,#cfccc1 48%,#777e78);color:#11140d;box-shadow:inset 0 0 0 .35cqw #727873,inset 0 0 0 .6cqw #adae9d;font:bold 1.6cqw monospace;letter-spacing:.06em;position:relative;transform:skew(-5deg)}
+.console-tabs button:before{content:'';position:absolute;top:15%;left:39%;width:28%;height:8%;background:#11150e;box-shadow:0 1px 2px #151910}.console-tabs button[aria-current]:before{background:#2aff05;box-shadow:0 0 .5cqw #42ff1e}.console-tabs button:hover:enabled{filter:brightness(1.15)}.console-tabs button:disabled{color:#4f534c;cursor:default}
+/* Cover the video overlay outside the original game artwork. */
+.mission-console:after{content:'';position:absolute;right:0;bottom:0;width:15.7%;height:9%;background:var(--console-reference) left bottom/637% 1111% no-repeat;transform:scaleX(-1);pointer-events:none}
+#briefingDetail{position:absolute;inset:0;padding:2.1cqw 1.5cqw;background:#000;color:#5fff36;font-size:1.55cqw;line-height:1.65;overflow:auto}
+#briefingDetail[hidden]{display:none}
+
+.exit-menu-background{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;filter:brightness(.4);pointer-events:none}
+#station[data-panel="exit"] #overlay>.modal{position:relative;z-index:1}

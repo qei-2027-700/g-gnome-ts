@@ -1,0 +1,47 @@
+.merc-assault-reference{display:none}
+.merc-assault-cockpit{background:#000}
+.merc-assault-cockpit #cockpit,.merc-assault-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--merc-assault-width);height:var(--merc-assault-height);transform:translate(-50%,-50%);container-type:size;color:#58ff29;font-family:monospace}
+.merc-assault-cockpit #world{left:calc((100% - var(--merc-assault-width))/2);top:calc((100% - 38px - var(--merc-assault-height))/2);width:var(--merc-assault-width);height:var(--merc-assault-height);transform:translateX(var(--assault-backdrop-sway,0%))}
+.merc-assault-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:visible}
+.merc-assault-cockpit .merc-assault-reference{display:block;position:absolute;inset:0;width:100%;height:100%}
+.merc-assault-cockpit #cockpit>.canopy,.merc-assault-cockpit #cockpit>.pillar,.merc-assault-cockpit #cockpit>.dashboard,.merc-assault-cockpit #cockpit>.dash-rim,.merc-assault-cockpit .cockpit-shell,.merc-assault-cockpit .cockpit-grain,.merc-assault-cockpit .overhead-display{display:none}
+.merc-assault-cockpit .weapon-panel{left:7.5%;top:8.5%;width:31%;height:8%;padding:0;border:0;background:none;box-shadow:none;font-size:1.35cqw;line-height:1;overflow:visible;z-index:3}
+.merc-assault-cockpit .weapon-panel>div{display:flex;align-items:center;gap:4%;height:50%;white-space:nowrap}
+.merc-assault-cockpit .weapon-panel>div[hidden]{display:none}
+.merc-assault-cockpit .weapon-panel>div:nth-child(n+3){position:absolute;left:188%;top:0;width:100%;height:50%}
+.merc-assault-cockpit .weapon-panel>div:nth-child(4){top:50%}
+.merc-assault-cockpit .weapon-panel i{order:0;font-size:1.4cqw;padding:.1cqw .2cqw;margin:0;border:1px solid #54ff20}
+.merc-assault-cockpit .weapon-panel b{order:1;min-width:27%;font-weight:400}
+.merc-assault-cockpit .weapon-panel #ammo,.merc-assault-cockpit .weapon-panel #ammo2,.merc-assault-cockpit .weapon-panel #ammo3,.merc-assault-cockpit .weapon-panel #ammo4{order:3;margin-left:auto;float:none;font-size:1.2cqw;color:#65ff27}
+.merc-assault-cockpit .weapon-panel .asv-weapon-symbol{display:none}
+.merc-assault-cockpit .weapon-panel .charge-meter{order:2;display:block;position:relative;float:none;flex:1;height:1.2cqw;min-width:24%;padding:0;margin:0;border:2px solid #3bee18;border-radius:1cqw;background:#001800}
+.merc-assault-cockpit #laserChargeFill{display:block;height:100%;background:#55ff27;transform-origin:left}
+.merc-assault-cockpit .weapon-panel>div:after{content:'●';order:2;color:#51ff25;font-size:.8em}
+.merc-assault-cockpit .weapon-panel>div[data-state=firing]:after{color:#ff3a1c}
+.merc-assault-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
+.merc-assault-cockpit .iff-display{left:50%;top:10.3%;right:auto;width:7.4%;height:2.7%;padding:0;background:#000;border:0;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
+.merc-assault-cockpit .iff-display strong{margin:0;font:1.5cqw monospace}
+.merc-assault-cockpit .instrument{border:0;background:transparent;box-shadow:none;border-radius:0;z-index:2;overflow:hidden}
+.merc-assault-cockpit .target-instrument{left:6.5%;bottom:2%;width:23%;height:22%}
+.merc-assault-cockpit .self-instrument{right:4.5%;bottom:2%;width:23%;height:22%}
+.merc-assault-cockpit .holo-grid{inset:25% 4% 0;transform:perspective(200px) rotateX(25deg);background:repeating-linear-gradient(0deg,transparent 0 15px,#42703080 16px 17px),repeating-linear-gradient(90deg,transparent 0 18px,#42703080 19px 20px)}
+.merc-assault-cockpit #targetHologram,.merc-assault-cockpit #selfHologram{left:15%;top:9%;width:70%;height:78%}
+.merc-assault-cockpit .instrument .micro{top:2%;left:9%;font-size:.6cqw}
+.merc-assault-cockpit #targetData{bottom:0;font-size:.65cqw;white-space:pre-line}
+.merc-assault-cockpit .vertical-meter{height:55%;width:4%;bottom:6%;right:3%;background:#061400}
+.merc-assault-cockpit .target-instrument .vertical-meter{right:auto;left:3%}
+.merc-assault-cockpit .asv-energy-meter{display:block;position:absolute;left:1%;top:5%;bottom:auto;width:3%;height:48%;background:#061400;border:1px solid #79d7d0}
+.merc-assault-cockpit #asvEnergyFill{position:absolute;bottom:0;width:100%;background:#f0ea22}
+.merc-assault-cockpit .radar-instrument{left:32%;bottom:0;width:36%;height:34%;clip-path:polygon(17% 0,83% 0,100% 100%,0 100%)}
+.merc-assault-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.merc-assault-cockpit .radar-instrument .micro{top:auto;bottom:2%;z-index:3}
+.merc-assault-cockpit .throttle-meter{left:60%;top:36%;width:1.4%;height:20%;border-color:#e2e629}
+.merc-assault-cockpit .compass{top:47%;left:38%;width:18%;font-size:.75cqw}
+.merc-assault-cockpit #pingLight,.merc-assault-cockpit .objectives{display:none}
+.merc-assault-cockpit .topbar{background:transparent;border:0;top:auto;bottom:0;height:38px;width:auto;right:auto;padding:4px 12px;z-index:15}
+.merc-assault-cockpit .topbar .brand,.merc-assault-cockpit .topbar .mission-id,.merc-assault-cockpit footer #controls{display:none}
+.merc-assault-cockpit .topbar button,.merc-assault-cockpit footer button{font-size:9px;padding:5px 8px}
+.merc-assault-cockpit footer{height:38px;min-height:38px;font-size:8px;justify-content:flex-end}
+.merc-assault-cockpit .telemetry{top:auto;bottom:42px;left:3%;padding:3px 6px;background:#000b;font-size:10px;z-index:4}
+.merc-assault-cockpit .telemetry .stat{display:none}
+.merc-assault-cockpit .telemetry small{font-size:7px}.merc-assault-cockpit .telemetry b{font-size:12px}

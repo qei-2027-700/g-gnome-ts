@@ -1,0 +1,9 @@
+#bridgeInterior[hidden]{display:none}
+#bridgeInterior{position:absolute;left:50%;top:calc((100% - 38px)/2);width:var(--bridge-width);height:var(--bridge-height);transform:translate(-50%,-50%);z-index:13;pointer-events:none;box-shadow:0 0 0 100vmax #000;color:#6dff47;font-family:monospace;container-type:size}
+.bridge-control-view #world{left:calc((100% - var(--bridge-width))/2);top:calc((100% - 38px - var(--bridge-height))/2);width:var(--bridge-width);height:var(--bridge-height)}
+.bridge-control-reference{position:absolute;inset:0;width:100%;height:100%}
+.bridge-state{position:absolute;left:12%;top:14%;width:16%;height:21%;font-size:1.2cqw;text-align:center}.bridge-state svg{width:100%;height:75%}
+.bridge-readout{position:absolute;right:5%;top:13%;width:15%;font-size:1.5cqw;text-align:center;white-space:pre-line;line-height:2}
+#bridgeSwitch{position:absolute;right:6%;top:57%;width:16%;font-size:1.5cqw;padding:1cqw .5cqw;color:#baff91;background:#132619ed;border:2px solid #63e94e;pointer-events:auto}
+.bridge-exit-hint{position:absolute;bottom:1%;left:38%;font-size:1.3cqw;background:#101710e8;padding:.5cqw}
+.bridge-control-view #facilityInterior,.bridge-control-view .topbar,.bridge-control-view #flightHud,.bridge-control-view #squadOrders{display:none}

@@ -1,0 +1,68 @@
+.meson-reference{display:none}
+.meson-cockpit{background:#000}
+.meson-cockpit #cockpit,.meson-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--meson-width);height:var(--meson-height);transform:translate(-50%,-50%);container-type:size;color:#50f82a;font-family:monospace}
+.meson-cockpit #world{left:calc((100% - var(--meson-width))/2);top:calc((100% - 38px - var(--meson-height))/2);width:var(--meson-width);height:var(--meson-height)}
+.meson-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:visible}
+.meson-cockpit .meson-reference{display:block;position:absolute;inset:0;width:100%;height:100%}
+.meson-cockpit #cockpit>.canopy,.meson-cockpit #cockpit>.pillar,.meson-cockpit #cockpit>.dashboard,.meson-cockpit #cockpit>.dash-rim,.meson-cockpit .cockpit-shell,.meson-cockpit .cockpit-grain,.meson-cockpit .overhead-display{display:none}
+.meson-cockpit .weapon-panel{left:7%;top:5.8%;width:22%;height:6%;min-height:0;padding:0;border:0;background:none;box-shadow:none;font-size:1.35cqw;line-height:1;overflow:visible;z-index:3}
+.meson-cockpit .weapon-panel>div{display:flex;align-items:center;gap:5%;height:60%;white-space:nowrap}
+.meson-cockpit .weapon-panel>div[hidden]{display:none}
+.meson-cockpit .weapon-panel i{font-size:1.1cqw;padding:.1cqw .2cqw;margin:0;border:1px solid #55e724}
+.meson-cockpit .weapon-panel b{font-weight:400}
+.meson-cockpit .weapon-panel #ammo{display:none}
+.meson-cockpit .weapon-panel .charge-meter{display:block;position:relative;float:none;flex:1;height:.8cqw;margin:0;border:1px solid #3bbb21;border-radius:1cqw;background:#071307}
+.meson-cockpit #laserChargeFill{display:block;height:100%;background:#50ed25;transform-origin:left}
+.meson-cockpit .weapon-panel .asv-weapon-symbol{display:none}
+.meson-cockpit .iff-display{left:45.5%;top:8.7%;right:auto;width:12%;height:4.8%;padding:0;border:0;background:none;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
+.meson-cockpit .iff-display strong{margin:0;font:1.5cqw monospace}
+.meson-cockpit .instrument{border:0;background:transparent;box-shadow:none;border-radius:0;z-index:2;overflow:hidden}
+.meson-cockpit .target-instrument{left:11.5%;bottom:11%;width:19%;height:17%}
+.meson-cockpit .self-instrument{right:11.5%;bottom:10.5%;width:18%;height:18%}
+.meson-cockpit .holo-grid{display:none}
+.meson-cockpit #targetHologram,.meson-cockpit #selfHologram{left:16%;top:0;width:68%;height:90%;filter:drop-shadow(0 0 2px #39e32466)}
+.meson-cockpit .instrument .micro{display:none}
+.meson-cockpit #targetData{top:auto;bottom:0;font-size:.55cqw;line-height:1.1;white-space:normal}
+.meson-cockpit .vertical-meter{height:73%;width:2%;bottom:7%;right:0;border:0;border-left:1px solid #239b92;background:#020c08}
+.meson-cockpit .vertical-meter>div{background:#df2922;box-shadow:0 0 3px #ee3c28}
+.meson-cockpit #targetShieldMeter{left:1%;bottom:8%;height:70%;width:2%;border:0;border-left:1px solid #239b92}
+.meson-cockpit #targetShieldFill{background:#e62b22}
+.meson-cockpit .asv-energy-meter{display:block;position:absolute;left:2%;top:0;width:4%;height:28%;background:#111800}
+.meson-cockpit #asvEnergyFill{position:absolute;bottom:0;width:100%;background:#e9e420}
+.meson-cockpit .radar-instrument{left:33%;bottom:4.5%;width:34%;height:23%;clip-path:polygon(14% 0,86% 0,100% 100%,0 100%)}
+.meson-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.meson-cockpit .asv-aim-ladder{display:block;position:absolute;left:38.5%;top:37%;width:3.7%;height:20%;opacity:.75}
+.meson-cockpit .compass{left:42%;top:57%;width:16%;height:3%;font-size:.6cqw;color:#53f13a}
+.meson-cockpit .compass #heading{display:none}
+.meson-cockpit .compass .ticks{font-size:2cqw;letter-spacing:0;line-height:.7}
+.meson-aim,.meson-heading-scale{display:none}
+.meson-cockpit .reticle,.meson-cockpit .reticle.on-target,.meson-cockpit .reticle.locked{--cursor:#50ff28;color:#50ff28}
+.meson-cockpit .reticle{left:50%;top:50%;width:7.5%;height:auto;aspect-ratio:1.5;border:0;border-radius:0;box-shadow:none}
+.meson-cockpit .reticle:before,.meson-cockpit .reticle:after,.meson-cockpit .reticle i,.meson-cockpit .reticle b{display:none}
+.meson-cockpit .meson-aim{display:block;width:100%;height:100%;filter:drop-shadow(0 0 1px #4cff3280)}
+.meson-cockpit #lockDistance{color:#50ff28;font-size:1.05cqw;top:106%}
+.meson-cockpit .asv-aim-ladder{left:37.5%;top:37.4%;width:3.5%;height:18.3%;opacity:.9;color:#50ff28;filter:drop-shadow(0 0 1px #4cff3270)}
+.meson-cockpit .asv-aim-ladder path[stroke]{stroke:#50ff28}
+.meson-cockpit .asv-aim-ladder path[fill]{fill:#50ff28}
+.meson-cockpit .compass{left:42%;top:55.3%;width:16%;height:3.5%;transform:none;color:#50ff28}
+.meson-cockpit .compass .ticks{display:none}
+.meson-cockpit .meson-heading-scale{display:block;width:100%;height:100%;filter:drop-shadow(0 0 1px #4cff3270)}
+.meson-cockpit #targetBracket{border-color:#ee5036}
+.meson-cockpit .throttle-meter,.meson-cockpit #pingLight,.meson-cockpit .objectives,.meson-cockpit .telemetry,.meson-cockpit #squadOrders{display:none}
+.meson-cockpit .topbar{background:transparent;border:0;top:auto;bottom:0;height:38px;width:auto;right:auto;padding:4px 12px;z-index:15}
+.meson-cockpit .topbar .brand,.meson-cockpit .topbar .mission-id,.meson-cockpit footer #controls{display:none}
+.meson-cockpit .topbar button,.meson-cockpit footer button{font-size:9px;padding:5px 8px}
+.meson-cockpit footer{height:38px;min-height:38px;font-size:8px;justify-content:flex-end}
+
+.meson-cockpit #cockpit .meson-reference>path{stroke:none}
+.meson-cockpit .instrument #targetData{left:12%;right:12%}
+.meson-cockpit .charge-meter:after{display:none}
+
+.meson-cockpit .weapon-panel .charge-meter{flex:none;width:36%;height:1.5cqw;border:0;border-radius:0;background:none}
+.meson-cockpit .weapon-panel .charge-meter:before{content:'';position:absolute;inset:0;background:#227b18;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 32'%3E%3Cpath d='M4 16C4 6 18 4 26 10H42C50 3 64 3 72 10H92C101 4 116 6 116 16S101 28 92 22H72C64 29 50 29 42 22H26C18 28 4 26 4 16Z' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
+.meson-cockpit #laserChargeFill{position:relative;z-index:1;background:#50ff28;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 32'%3E%3Cpath d='M4 16C4 6 18 4 26 10H42C50 3 64 3 72 10H92C101 4 116 6 116 16S101 28 92 22H72C64 29 50 29 42 22H26C18 28 4 26 4 16Z' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
+
+.meson-cockpit .reticle #lockDistance,.meson-cockpit .reticle.on-target #lockDistance,.meson-cockpit .reticle.locked #lockDistance{color:#50ff28}
+.scorp-meson-reference{display:none}
+.meson-cockpit #cockpit[data-vehicle="scorp-meson-tower"] .meson-reference{display:none}
+.meson-cockpit #cockpit[data-vehicle="scorp-meson-tower"] .scorp-meson-reference{display:block;position:absolute;inset:0;width:100%;height:100%}

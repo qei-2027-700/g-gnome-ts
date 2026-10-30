@@ -1,0 +1,79 @@
+/* Union Sentry: proportions and material layers follow the supplied game frame. */
+.cockpit-shell,.cockpit-grain,.overhead-display{display:none}
+.union-cockpit #cockpit{inset:0 0 38px;color:#67ff48;font-family:"Courier New",monospace}
+.union-cockpit .cockpit-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.union-cockpit #cockpit>.canopy,.union-cockpit #cockpit>.pillar,.union-cockpit #cockpit>.dashboard,.union-cockpit #cockpit>.dash-rim{display:none}
+.union-cockpit .cockpit-grain{display:block;position:absolute;inset:0;pointer-events:none;opacity:.13;mix-blend-mode:soft-light;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.72' numOctaves='3' seed='12' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23n)' opacity='.45' d='M0 0h160v160H0z'/%3E%3C/svg%3E");mask-image:linear-gradient(#000 0 12%,transparent 12% 59%,#000 64%);z-index:1}
+.union-cockpit .weapon-panel{top:2%;left:4%;width:26.2%;height:7.2%;min-height:42px;padding:.35% 1%;border:0;box-shadow:none;background:transparent;font-size:clamp(10px,1.45vw,22px);line-height:1.65;letter-spacing:.07em;text-shadow:0 0 4px #3cff4660;z-index:3}
+.union-cockpit .weapon-panel>div{height:50%;display:flex;align-items:center;gap:6%;white-space:nowrap}
+.union-cockpit .weapon-panel i{padding:0 .17em;margin:0;font-size:.8em;line-height:1.15;border-radius:1px;color:#45f943}
+.union-cockpit .weapon-panel b{width:33%;font-weight:400}
+.union-cockpit .weapon-panel #ammo,.union-cockpit .weapon-panel #ammo2{margin-left:auto;float:none;color:#8bff68;font-size:.78em}
+.union-cockpit .weapon-panel .charge-meter{float:none;margin:0 0 0 auto;width:34%;height:55%;border:0;background:radial-gradient(circle at 15% 50%,#652916 0 10%,transparent 12%),repeating-linear-gradient(90deg,transparent 0 25%,#399b27 26% 29%,transparent 30% 33%);outline:1px solid #3db929;border-radius:20px;overflow:hidden}
+.union-cockpit .weapon-panel #laserChargeFill{border-radius:20px;background:linear-gradient(90deg,#fa2c10 0 15%,#cce344 17% 24%,#7ee738 25%);height:100%;box-shadow:0 0 6px #59d83c}
+.union-cockpit .weapon-panel .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 22%,#081007 23% 26%,transparent 27% 33%)}
+.union-cockpit .iff-display{top:3.2%;left:50%;right:auto;width:10.2%;height:5.6%;padding:0;display:flex;align-items:center;justify-content:center;gap:0;font-size:0;background:#020803;border:clamp(4px,.65vw,10px) solid #666f61;border-radius:12px;box-shadow:0 -3px 1px #a5a594,0 5px 3px #111810,inset 0 0 10px #000;z-index:3}
+.union-cockpit .iff-display strong{margin:0;font:clamp(13px,1.6vw,25px) "Courier New",monospace;color:#7cfa59;text-shadow:0 0 5px #68f44066}
+.union-cockpit #pingLight{top:4.3%;left:40.5%;right:auto;bottom:auto;width:2.1%;height:3.1%;border-radius:50%;border:3px solid #252c21;background:radial-gradient(circle at 40% 35%,#894229,#3a2015 60%,#1e150e);box-shadow:0 0 0 5px #55594d,0 0 0 7px #242b22}
+.union-cockpit #pingLight.lit{background:radial-gradient(circle at 40% 35%,#ffe37c,#ff4a18 45%,#a21b08 80%);box-shadow:0 0 0 5px #55594d,0 0 14px #ff5010}
+.union-cockpit #pingLight span{display:none}
+.union-cockpit .overhead-display{display:flex;position:absolute;left:69.2%;top:3.6%;width:24%;height:4.7%;align-items:center;justify-content:space-between;gap:12px;color:#4e6d43;font:clamp(6px,.65vw,10px) monospace;letter-spacing:.15em;opacity:.55}
+.union-cockpit .overhead-display b{font-weight:400;font-size:.9em}
+.union-cockpit .instrument{background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;z-index:2}
+.union-cockpit .target-instrument{left:2.2%;bottom:8%;width:25%;height:24%}
+.union-cockpit .self-instrument{right:2.2%;bottom:8%;width:25%;height:24%}
+.union-cockpit .target-instrument:before,.union-cockpit .self-instrument:before{content:'';position:absolute;left:0;right:0;bottom:1%;height:43%;border-radius:50%;border:5px solid #242b22;background:#020c09;box-shadow:0 -4px 0 #a09d86,0 5px 0 #0c120e,0 7px 0 #757663,0 10px 3px #171d17}
+.union-cockpit .holo-grid{inset:auto 3% 5%;height:37%;transform:none;border-radius:50%;background:repeating-linear-gradient(0deg,transparent 0 12%,#118a9175 13% 14%,transparent 15% 20%),repeating-linear-gradient(72deg,transparent 0 11%,#118a918a 12% 13%,transparent 14% 18%),#03120f;box-shadow:inset 0 0 18px #000;overflow:hidden}
+.union-cockpit #selfHologram,.union-cockpit #targetHologram{left:21%;top:0;width:58%;height:87%;color:#29ff27;filter:drop-shadow(0 0 2px #15f41788);z-index:2}
+.union-cockpit #targetHologram svg,.union-cockpit #selfHologram svg{stroke-width:2.2;filter:drop-shadow(1px 1px 0 #0b5a08)}
+.union-cockpit .instrument .micro{top:auto;bottom:-6%;font-size:clamp(5px,.5vw,8px);color:#8a947e;letter-spacing:.1em}
+.union-cockpit #targetData{left:22%;right:20%;bottom:3%;font-size:clamp(6px,.65vw,10px);line-height:1.2;white-space:normal;color:#6fed77;text-shadow:0 0 3px #000}
+.union-cockpit #targetShieldMeter{left:7%;bottom:19%;width:5px;height:83%;border:0;border-left:2px solid #16c8d5;background:none;overflow:visible}
+.union-cockpit #targetShieldMeter:before{content:'';position:absolute;left:-5px;top:0;width:10px;height:3px;background:#16c8d5}
+.union-cockpit #targetShieldFill{position:absolute;bottom:0;left:-4px;width:9px;background:#ed3320;box-shadow:0 0 7px #d52d1699}
+.union-cockpit .vertical-meter{right:5%;bottom:16%;height:85%;width:5.5%;border:2px solid #117e24;background:#03160b;box-shadow:0 0 0 1px #203b28}
+.union-cockpit .vertical-meter>div{background:linear-gradient(90deg,#2f9d08,#5cff0d 45%,#42d600 70%,#99ff2c);box-shadow:0 0 8px #54ff3277}
+.union-cockpit #clearTarget{top:2%;right:9%;background:#0b140d;color:#75a581;font-size:11px}
+.union-cockpit .radar-instrument{left:29%;width:42%;height:24%;bottom:3.1%;border-radius:50%;background:#010805;overflow:hidden;box-shadow:inset 0 0 20px #000}
+.union-cockpit .radar-instrument .micro{bottom:7%;top:auto;color:#4c7455;font-size:clamp(5px,.55vw,9px);z-index:3}
+.union-cockpit #radar{left:0;top:-1%;width:100%;height:100%}
+.union-cockpit .topbar{top:auto;bottom:0;left:0;right:auto;width:auto;height:38px;padding:4px 12px;border:0;background:transparent;z-index:15}
+.union-cockpit .topbar .brand,.union-cockpit .topbar .mission-id{display:none}
+.union-cockpit .topbar nav{display:flex;gap:6px}
+.union-cockpit .topbar button{font:9px monospace;padding:5px 9px;background:#1d231c;border-color:#505646;color:#a1ad91}
+.union-cockpit footer{height:38px;min-height:38px;padding:4px 12px;justify-content:flex-end;background:#171c16;border-color:#4a4e40}
+.union-cockpit footer #controls{display:none}
+.union-cockpit .telemetry{left:39%;top:auto;bottom:27.6%;width:22%;padding:2px 0;transform:none;background:none;border:0;text-align:center;z-index:6;color:#9eaa8d}
+.union-cockpit .telemetry small{display:none}
+.union-cockpit .telemetry b{display:inline;font:clamp(10px,1vw,16px) monospace;letter-spacing:.1em;margin:0}
+.union-cockpit .telemetry .stat{display:none}
+.union-cockpit .objectives{top:13%;right:2%;padding:5px 8px;background:#11191099;border:0;font-size:8px;opacity:.5}
+.union-cockpit #flightHud{inset:0 0 38px}
+.union-cockpit .compass{top:35%;color:#64f564;font-size:10px}
+.union-cockpit .compass .ticks{font-size:clamp(16px,2.8vw,42px);letter-spacing:0;line-height:.7;color:#50ed52}
+.union-cockpit .throttle-meter{top:34%;left:60.2%;height:21%;width:1.3%;border-color:#dddd50;color:#ebed61}
+.union-cockpit .throttle-meter span{font-size:6px;bottom:-10px}
+.union-cockpit #notice{top:17%;bottom:auto;font-size:11px}
+@media(max-width:750px){
+ .union-cockpit .weapon-panel{font-size:10px;min-height:32px;gap:3px}
+ .union-cockpit .weapon-panel>div{gap:4%}
+ .union-cockpit .iff-display strong{font-size:12px}
+ .union-cockpit .iff-display{border-width:4px;border-radius:5px}
+ .union-cockpit .objectives,.union-cockpit .overhead-display{display:none}
+ .union-cockpit .topbar{padding:4px}.union-cockpit .topbar button{padding:4px;font-size:8px}
+ .union-cockpit footer .right{gap:3px}.union-cockpit footer button{padding:4px;font-size:8px}
+ .union-cockpit #viewLabel{display:none}
+ .union-cockpit .instrument .micro{font-size:5px}
+}
+
+.union-cockpit #targetHologram svg path,.union-cockpit #selfHologram svg path{fill-opacity:.24;stroke-width:1.15;filter:drop-shadow(2px -2px 0 #166923)}
+.union-cockpit .reticle{width:38px;height:26px;border-radius:0;opacity:.9}
+.union-cockpit .reticle:before{width:16px;height:1px}
+.union-cockpit .reticle:after{height:12px;width:1px}
+.union-cockpit .reticle i,.union-cockpit .reticle b{position:absolute;left:-2px;right:-2px;height:5px;border-left:2px solid var(--cursor);border-right:2px solid var(--cursor)}
+.union-cockpit .reticle i{top:0;border-top:1px solid transparent}.union-cockpit .reticle b{bottom:0;border-bottom:1px solid transparent}
+/* Retain the supplied panel's worn metal; mask out its world and live displays. */
+.cockpit-reference-metal{display:none}
+.union-cockpit .cockpit-reference-metal{display:block;position:absolute;inset:0;z-index:1;pointer-events:none;background:url('../assets/cockpits/union-sentry-reference.png') center/100% 100% no-repeat;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1622 1226' preserveAspectRatio='none'%3E%3Cmask id='m'%3E%3Cpath fill='white' d='M0 0h1622v1226H0z'/%3E%3Cpath fill='black' d='M143 147L1484 145 1140 735Q810 675 459 738Z M0 182L80 181 391 727 0 673Z M1544 177L1622 181 1622 672 1210 729Z'/%3E%3Crect x='35' y='28' width='472' height='96' fill='black'/%3E%3Crect x='708' y='25' width='209' height='95' fill='black'/%3E%3Crect x='643' y='37' width='60' height='69' fill='black'/%3E%3Crect x='1110' y='33' width='449' height='81' fill='black'/%3E%3Crect x='110' y='840' width='235' height='250' fill='black'/%3E%3Crect x='49' y='800' width='46' height='294' fill='black'/%3E%3Cellipse cx='230' cy='1027' rx='207' ry='82' fill='black'/%3E%3Crect x='1205' y='780' width='50' height='300' fill='black'/%3E%3Crect x='1245' y='842' width='250' height='250' fill='black'/%3E%3Crect x='1507' y='800' width='75' height='294' fill='black'/%3E%3Cellipse cx='1390' cy='1027' rx='200' ry='82' fill='black'/%3E%3Cellipse cx='812' cy='1047' rx='332' ry='129' fill='black'/%3E%3Crect x='1502' y='1080' width='120' height='146' fill='black'/%3E%3C/mask%3E%3Cpath fill='white' mask='url(%23m)' d='M0 0h1622v1226H0z'/%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
+
+.cockpit-well-underlay{display:none}.union-cockpit .cockpit-well-underlay{display:block;position:absolute;inset:64% 0 0;background:linear-gradient(#181e18,#0b140f);pointer-events:none}

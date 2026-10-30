@@ -7,6 +7,12 @@
 - 記録日：2026-10-22
 - 関連：[ワークスペースの作品一覧](../README.md)、[反映先ガイド](../docs/content-routing.md)
 
+## 公開URL
+
+https://g-gnome-ts.pages.dev/
+
+Cloudflare Pagesで自動デプロイ。mainへのpushで更新される。
+
 ## 試作版を起動する
 
 Node.js 22.18以降を使用する。

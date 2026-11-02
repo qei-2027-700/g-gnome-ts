@@ -72,16 +72,19 @@ test('pause cancels radio voices still loading and no stale clip starts afterwar
  await radioAudioFixture(async({audio,ctx,sources})=>{let finish:((buffer:any)=>void)|undefined;ctx.decodeAudioData=()=>new Promise(resolve=>finish=resolve);const loading=audio.sayRadio([{personId:'kylie',line:RADIO_DEFAULT_REPLY}]);for(let i=0;i<8&&!finish;i++)await Promise.resolve();assert.ok(finish);audio.pause();finish!({duration:2});await loading;assert.equal(sources.length,0);});
 });
 
-test('missile launch plays the roar asset once per shot, caches decoding and respects mute/pause',async()=>{
+test('missile launch volume falls with distance, caches decoding and respects mute/pause',async()=>{
  let fetches=0,decodes=0,starts=0;const gains:number[]=[];
  const descriptor=Object.getOwnPropertyDescriptor(globalThis,'fetch');
  const ctx={state:'running',destination:{},decodeAudioData:async()=>{decodes++;return {duration:1.2};},createGain:()=>({gain:{value:0},connect(){},disconnect(){}}),createBufferSource:()=>({buffer:null,onended:null,connect(gain:{gain:{value:number}}){gains.push(gain.gain.value);},disconnect(){},start(){starts++;}})};
  try{
   Object.defineProperty(globalThis,'fetch',{configurable:true,value:async()=>{fetches++;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};}});
   const settings=defaults(),audio=new GameAudio(settings);audio.ctx=ctx as unknown as AudioContext;
-  await audio.sound('missile');await audio.sound('missile');assert.equal(starts,2);assert.equal(fetches,1);assert.equal(decodes,1);assert.deepEqual(gains,[settings.sfx*.45,settings.sfx*.45]);
-  settings.sfx=0;await audio.sound('missile');assert.equal(starts,2);
-  settings.sfx=.5;ctx.state='suspended';await audio.sound('missile');assert.equal(starts,2);
+  await audio.sound('missile');await audio.sound('missile');await audio.sound('missile',false,undefined,{source:{x:0,z:0},listener:{x:0,z:0}});
+  await audio.sound('missile',false,undefined,{source:{x:300,z:0},listener:{x:0,z:0}});
+  await audio.sound('missile',false,undefined,{source:{x:601,z:0},listener:{x:0,z:0}});
+  assert.equal(starts,4);assert.equal(fetches,1);assert.equal(decodes,1);assert.deepEqual(gains,[settings.sfx*.45,settings.sfx*.45,settings.sfx*.45,settings.sfx*.225]);
+  settings.sfx=0;await audio.sound('missile');assert.equal(starts,4);
+  settings.sfx=.5;ctx.state='suspended';await audio.sound('missile');assert.equal(starts,4);
  }finally{if(descriptor)Object.defineProperty(globalThis,'fetch',descriptor);else Reflect.deleteProperty(globalThis,'fetch');}
 });
 

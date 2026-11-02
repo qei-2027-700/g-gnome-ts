@@ -92,8 +92,8 @@ test('a successful sortie freezes for a silent completion sequence and returns t
  const s=new Simulation('Easy',def),before=missionBriefing(def,[def],'ja'),target=s.units[1];target.shield=0;for(const key of Object.keys(target.parts))target.parts[key as keyof typeof target.parts]=.00001;
  s.lookBy(s.targetElevation(target));s.fire(1);s.tick(.01,idle);assert.equal(s.status,'won');assert.equal(s.events.filter(e=>e.type==='win').length,1);
  const completion=new MissionCompletion();assert.equal(completion.start(),true);assert.equal(completion.start(),false);const time=s.time;advanceSimulation(s,'completion',1,idle);assert.equal(s.time,time);
- assert.equal(completion.step(COMPLETION_TIMING.view),false);assert.equal(completion.closure,0);completion.step(COMPLETION_TIMING.closing/2);assert.ok(Math.abs(completion.closure-.5)<1e-8);assert.equal(completion.step(COMPLETION_TIMING.closing/2),false);assert.ok(Math.abs(completion.closure-1)<1e-8);assert.equal(completion.step(COMPLETION_TIMING.closed+.001),true);assert.equal(completion.step(1),false);
- const reset=new Simulation('Easy',def);assert.equal(resolveMissionPanel('briefing',false,false),'briefing');assert.equal(missionBriefing(reset.mission,[def],'ja'),before);assert.equal(reset.status,'running');assert.equal(reset.time,0);assert.ok(reset.units.every(u=>u.alive));assert.ok(missionCompletionMarkup().includes('MISSION COMPLETE'));assert.ok(missionCompletionMarkup().includes('completion-door-top'));assert.ok(missionCompletionMarkup().includes('completion-door-bottom'));
+ assert.equal(completion.viewDuration,1);assert.equal(completion.step(COMPLETION_TIMING.completeView),false);assert.equal(completion.closure,0);completion.step(COMPLETION_TIMING.closing/2);assert.ok(Math.abs(completion.closure-.5)<1e-8);assert.equal(completion.step(COMPLETION_TIMING.closing/2),false);assert.ok(Math.abs(completion.closure-1)<1e-8);assert.equal(completion.step(COMPLETION_TIMING.closed+.001),true);assert.equal(completion.step(1),false);
+ const reset=new Simulation('Easy',def);assert.equal(resolveMissionPanel('briefing',false,false),'briefing');assert.equal(missionBriefing(reset.mission,[def],'ja'),before);assert.equal(reset.status,'running');assert.equal(reset.time,0);assert.ok(reset.units.every(u=>u.alive));assert.ok(missionCompletionMarkup().includes('MISSION COMPLETE'));assert.ok(missionCompletionMarkup().includes('completion-door-image'));assert.ok(missionCompletionMarkup().includes('ui-system-end.png'));
  completion.start();assert.equal(completion.closure,0);completion.cancel();assert.equal(completion.active,false);
 });
 
@@ -119,27 +119,36 @@ test('abort confirmation can reach success or death; all endings freeze, close d
    for(let i=0;i<120&&s.status==='running';i++)advanceSimulation(s,'abort',1/60,idle);
    assert.equal(s.status,'lost');assert.equal(s.events.filter(e=>e.type==='lose').length,1);
   }
-  const completion=new MissionCompletion();assert.equal(completion.start(result),true);assert.equal(completion.start('complete'),false);assert.equal(completion.result,result);
-  const before=JSON.stringify({time:s.time,units:s.units,missiles:s.missiles});
-  for(let i=0;i<100;i++)assert.equal(advanceSimulation(s,'completion',.05,{...idle,forward:true,fire1:true}),0);
-  assert.equal(JSON.stringify({time:s.time,units:s.units,missiles:s.missiles}),before);
-  const markup=missionCompletionMarkup(completion.result);assert.ok(markup.includes({complete:'MISSION COMPLETE',failed:'MISSION FAILED',aborted:'MISSION ABORTED'}[result]));assert.ok(markup.includes('completion-door-top'));assert.ok(markup.includes('completion-door-bottom'));
-  completion.step(COMPLETION_TIMING.view);assert.equal(completion.closure,0);completion.step(COMPLETION_TIMING.closing);assert.ok(Math.abs(completion.closure-1)<1e-8);assert.equal(completion.step(COMPLETION_TIMING.closed+.001),true);assert.equal(completion.step(1),false);
+  const completion=new MissionCompletion();assert.equal(completion.start(result),true);assert.equal(completion.result,result);
+  if(result==='aborted'){
+   assert.equal(completion.active,true);const markup=missionCompletionMarkup('aborted');assert.ok(markup.includes('completion-door-image'));assert.ok(!markup.includes('MISSION ABORTED'));assert.equal(completion.viewDuration,0);
+   assert.equal(completion.step(COMPLETION_TIMING.closing-.01),false);assert.ok(completion.closure<1);completion.step(.02);assert.equal(completion.closure,1);assert.equal(completion.takeDoorImpact(),true);assert.equal(completion.step(COMPLETION_TIMING.closed+.01),true);
+  }else{
+   assert.equal(completion.start('complete'),false);
+   const before=JSON.stringify({time:s.time,units:s.units,missiles:s.missiles});
+   for(let i=0;i<100;i++)assert.equal(advanceSimulation(s,'completion',.05,{...idle,forward:true,fire1:true}),0);
+   assert.equal(JSON.stringify({time:s.time,units:s.units,missiles:s.missiles}),before);
+   const markup=missionCompletionMarkup(completion.result);assert.ok(markup.includes({complete:'MISSION COMPLETE',failed:'MISSION FAILED'}[result]));assert.ok(markup.includes('completion-door-image'));
+   assert.equal(completion.viewDuration,result==='complete'?COMPLETION_TIMING.completeView:COMPLETION_TIMING.failedView);
+   completion.step(completion.viewDuration);assert.equal(completion.closure,0);completion.step(COMPLETION_TIMING.closing);assert.ok(Math.abs(completion.closure-1)<1e-8);assert.equal(completion.step(COMPLETION_TIMING.closed+.001),true);assert.equal(completion.step(1),false);
+  }
   const fresh=new Simulation(s.difficulty,s.mission);assert.equal(fresh.mission.id,s.mission.id);assert.equal(fresh.time,0);assert.equal(fresh.status,'running');assert.equal(advanceSimulation(fresh,'briefing',.05,idle),0);
  }
 });
 
-test('door impact occurs once at contact for every ending and resets on restart or cancellation',async()=>{
+test('door impact occurs once at animated ending contact and resets on restart or cancellation',async()=>{
  const {MissionCompletion,COMPLETION_TIMING}=await import('./presentation/mission-completion.ts');
- const completion=new MissionCompletion(),contact=COMPLETION_TIMING.view+COMPLETION_TIMING.closing;
- for(const result of ['complete','failed','aborted'] as const){
+ const completion=new MissionCompletion();
+ for(const result of ['complete','failed'] as const){
   completion.start(result);assert.equal(completion.takeDoorImpact(),false);
-  completion.step(contact-.01);assert.ok(completion.closure<1);assert.equal(completion.takeDoorImpact(),false);
+  const resultContact=(result==='complete'?COMPLETION_TIMING.completeView:COMPLETION_TIMING.failedView)+COMPLETION_TIMING.closing;
+  completion.step(resultContact-.01);assert.ok(completion.closure<1);assert.equal(completion.takeDoorImpact(),false);
   completion.step(.02);assert.equal(completion.closure,1);assert.equal(completion.takeDoorImpact(),true);assert.equal(completion.takeDoorImpact(),false);
   completion.step(.1);assert.equal(completion.takeDoorImpact(),false);
   assert.equal(completion.step(1),true);assert.equal(completion.takeDoorImpact(),false);
  }
  completion.start();assert.equal(completion.step(100),true);assert.equal(completion.takeDoorImpact(),true);assert.equal(completion.takeDoorImpact(),false);
- completion.start();completion.step(contact+.01);completion.cancel();assert.equal(completion.takeDoorImpact(),false);
- completion.start();completion.step(contact+.01);assert.equal(completion.takeDoorImpact(),true);
+ completion.start();completion.step(COMPLETION_TIMING.completeView+COMPLETION_TIMING.closing+.01);completion.cancel();assert.equal(completion.takeDoorImpact(),false);
+ completion.start();completion.step(COMPLETION_TIMING.completeView+COMPLETION_TIMING.closing+.01);assert.equal(completion.takeDoorImpact(),true);
+ completion.cancel();completion.start('aborted');assert.equal(completion.active,true);assert.equal(completion.takeDoorImpact(),false);
 });

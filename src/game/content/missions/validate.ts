@@ -61,6 +61,8 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   if(!Number.isFinite(mission.terrain.halfWidth)||mission.terrain.halfWidth<=0||!Number.isFinite(mission.terrain.minZ)||!Number.isFinite(mission.terrain.maxZ)||mission.terrain.minZ>=mission.terrain.maxZ)fail('invalid terrain bounds');
   const finitePoint=(point:{x:number;z:number},label:string)=>{if(!Number.isFinite(point.x)||!Number.isFinite(point.z))fail(`${label} has non-finite coordinates`);};
   finitePoint(mission.player,'player');for(const unit of mission.units)finitePoint(unit,`unit ${unit.id}`);
+  if(mission.initialYaw!==undefined&&!Number.isFinite(mission.initialYaw))fail('initialYaw must be finite');
+  const river=mission.terrain.river;if(river?.path){if(river.path.length<2)fail('river path needs at least two points');for(const [i,point] of river.path.entries()){finitePoint(point,`river path point ${i+1}`);if(Math.abs(point.x)>mission.terrain.halfWidth||point.z<mission.terrain.minZ||point.z>mission.terrain.maxZ)fail(`river path point ${i+1} is outside terrain bounds`);}}
   for(const waypoint of mission.waypoints){finitePoint(waypoint,`waypoint ${waypoint.id}`);if(!(waypoint.radius>0))fail(`waypoint ${waypoint.id} needs a positive radius`);}
   for(const image of [mission.briefingPresentation?.mapPreview,mission.briefingPresentation?.vehiclePreview])if(image&&(!image.src||!(image.width>0)||!(image.height>0)||!/^[-\d.]+\s+[-\d.]+\s+[\d.]+\s+[\d.]+$/.test(image.viewBox)))fail('invalid briefing preview image');
  }

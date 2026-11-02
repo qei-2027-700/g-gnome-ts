@@ -649,6 +649,7 @@ test('4-2 renders grassland under amber skies, a dedicated rotating Scorp Meson 
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);
  assert.ok(world.scene.getMeshByName('scorp-meson-column'));assert.ok(world.scene.getMeshByName('scorp-meson-brace'));assert.ok(world.scene.getMeshByName('scorp-meson-cannon'));assert.ok(world.scene.getMeshByName('tower-launch-panel'));assert.ok(world.scene.clearColor.r>world.scene.clearColor.b);assert.ok(world.scene.getMaterialByName('grass'));
+ assert.ok(world.scene.getMeshByName('urkinsk-back-left-cliff'));assert.ok(world.scene.getMeshByName('rocky-mountain'));
  const tower=s.units.find(u=>u.id==='scorp-meson')!;tower.aim=.7;world.update(0);assert.equal(world.rigs.get(tower.id)!.torso.rotation.y,.7);assert.equal(world.rigs.get(tower.id)!.root.rotation.y,0);
  const {scorpMesonCockpitShellSvg}=await import('./scorp-meson-cockpit.ts');assert.ok(scorpMesonCockpitShellSvg().includes('scorp-meson-reference'));assert.ok(!scorpMesonCockpitShellSvg().includes('merc-mison'));
  }finally{engine.dispose();}
@@ -695,9 +696,9 @@ test('Merc Assault window scenery sways gently with its gait, freezes on pause a
  }finally{engine.dispose();}
 });
 
-test('bridge control raises both leaves and remains visible from the completion camera',async()=>{
+test('curved 4-2 river has a recessed bed and oriented bridge leaves',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
- try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);assert.ok(world.scene.getMeshByName('river-water'));assert.equal(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z,0);
+ try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);const water=world.scene.getMeshByName('river-water')!,ground=world.scene.getMeshByName('valley')!;assert.ok(water);assert.ok((water.getVerticesData('position')?.length??0)>0);const groundVertices=ground.getVerticesData('position')!;let lowest=Infinity;for(let i=1;i<groundVertices.length;i+=3)lowest=Math.min(lowest,groundVertices[i]!);assert.ok(lowest<-1);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.y)>.1);assert.equal(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z,0);
  const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());world.update(0);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),false);
  assert.ok(s.raiseBridge());world.completionTime=0;world.update(0);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z)>1.4);assert.ok(world.scene.getTransformNodeByName('bridge-hinge--1')!.rotation.z>1.4);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),true);
  const {bridgeControlMarkup}=await import('./bridge-control.ts');assert.ok(bridgeControlMarkup().includes('id="bridgeSwitch"'));assert.ok(bridgeControlMarkup().includes('bridge-control-building'));

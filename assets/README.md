@@ -26,6 +26,7 @@
 | [audio/bgm/credits.mp3](audio/bgm/credits.mp3) | ユーザー指定の原作クレジット曲。4-2で再生。[出典・検査値](../docs/audio/bgm-mapping.md#原作クレジット曲と4-2への接続2026-10-30) |
 | [audio/bgm/snow-maze-D0jKDtJPqLM.mp3](audio/bgm/snow-maze-D0jKDtJPqLM.mp3) | 指定YouTube動画D0jKDtJPqLMの15 Snow Maze。4-2のUnion部隊全滅後に再生。[出典・検査値](../docs/audio/bgm-mapping.md#4-2のunion部隊全滅後の切り替え2026-10-30) |
 | `ui/mission-console.png` | [3-3の開始画面](../docs/reference/observations/mission-3-3/3-3-launch前.png)。開始画面の枠と3-3のプレビューに使用 |
+| `ui-system/ui-system-end.png` | 任務成功・失敗時に閉じる扉の画面素材。成功時は完了表示後、失敗時は既存の表示時間後にフェードインする |
 
 現在の画像素材は元画像と同じ内容のコピーであり、描画側で窓・計器部分のマスクや切り出しを行う。元資料を更新しただけでは使用素材は変わらない。反映時は対応する素材を更新し、実画面も確認する。
 

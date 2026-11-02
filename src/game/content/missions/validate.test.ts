@@ -20,9 +20,9 @@ test('invalid authoring data cannot silently create an unfinishable mission',()=
  const mission=structuredClone(MISSION_3_3);
  mission.objectives=[{id:'board',type:'board-faction',faction:'scorp',personIds:['unknown'],label:{ja:'test',en:'test'}},{id:'lure',type:'lure',unitId:'unknown',label:{ja:'test',en:'test'}}];
  mission.lures=[{unitId:'unknown',weapon:'VISOM',hits:0}];
- mission.terrain.minZ=mission.terrain.maxZ;mission.units[0].x=NaN;
+ mission.terrain.minZ=mission.terrain.maxZ;mission.units[0].x=NaN;mission.initialYaw=NaN;
  const errors=validateMissions([mission]).join('\n');
- for(const expected of ['missing person: unknown','missing unit: unknown','positive integer','terrain bounds','non-finite coordinates'])assert.ok(errors.includes(expected),expected);
+ for(const expected of ['missing person: unknown','missing unit: unknown','positive integer','terrain bounds','non-finite coordinates','initialYaw must be finite'])assert.ok(errors.includes(expected),expected);
  mission.objectives=[];assert.ok(validateMissions([mission]).some(e=>e.includes('no objectives')));
  mission.completionEnabled=false;assert.ok(!validateMissions([mission]).some(e=>e.includes('no objectives')));
 });
@@ -39,6 +39,12 @@ test('infantry sorties reject a missing source facility and invalid timing',()=>
 test('4-2 occupation and garrison references are validated',async()=>{
  const {MISSION_4_2}=await import('./mission-4-2.ts');const mission=structuredClone(MISSION_4_2);mission.garrison=['missing-guard'];mission.objectives=[{id:'board',type:'board-unit',unitId:'missing-tower',label:{ja:'搭乗',en:'Board'}}];
  const errors=validateMissions([mission]).join('\n');assert.ok(errors.includes('missing-guard'));assert.ok(errors.includes('missing-tower'));
+});
+
+test('river paths need multiple finite points inside the mission bounds',async()=>{
+ const {MISSION_4_2}=await import('./mission-4-2.ts');const mission=structuredClone(MISSION_4_2);
+ mission.terrain.river!.path=[{x:0,z:0}];assert.ok(validateMissions([mission]).some(error=>error.includes('river path needs at least two points')));
+ mission.terrain.river!.path=[{x:0,z:0},{x:mission.terrain.halfWidth+1,z:0}];assert.ok(validateMissions([mission]).some(error=>error.includes('river path point 2 is outside terrain bounds')));
 });
 
 

@@ -279,9 +279,9 @@ test('foot attack never shoots through an ally; foot follow moves to the command
 
 test('foot attack is shared by every current mission with companions, including interrupting 2-6 automatic tower boarding',async()=>{
  const {MISSIONS}=await import('../content/missions/index.ts');
- for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];def.terrain.cliffs=[];def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
+ for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];delete def.terrain.river;def.terrain.cliffs=[];def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
   const s=new Simulation('Easy',def),radio=s.radioMembers[0],soldier=radio.soldier??s.forceEject(radio.unit!,'boarding')!,target=makeUnit('ordered-enemy','merc-sentry',soldier.x,soldier.z+200,true);soldier.flight=null;target.iff='0000';target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=999;s.units.push(target);s.selected=target.id;
-  assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1,source.id);assert.equal(soldier.boardingTarget,undefined,source.id);run(s,40);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),source.id);assert.ok(target.shield<target.spec.shield||!target.pilot,source.id);
+  assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1,source.id);assert.equal(soldier.boardingTarget,undefined,source.id);soldier.x+=100;target.x=soldier.x;run(s,40);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),source.id);assert.ok(target.shield<target.spec.shield||!target.pilot,source.id);
  }
 });
 

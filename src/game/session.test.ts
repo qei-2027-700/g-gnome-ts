@@ -121,7 +121,8 @@ test('abort confirmation can reach success or death; all endings freeze, close d
   }
   const completion=new MissionCompletion();assert.equal(completion.start(result),true);assert.equal(completion.result,result);
   if(result==='aborted'){
-   assert.equal(completion.active,false);assert.equal(completion.step(1),false);assert.equal(completion.takeDoorImpact(),false);assert.equal(missionCompletionMarkup('aborted'),'');
+   assert.equal(completion.active,true);const markup=missionCompletionMarkup('aborted');assert.ok(markup.includes('completion-door-image'));assert.ok(!markup.includes('MISSION ABORTED'));assert.equal(completion.viewDuration,0);
+   assert.equal(completion.step(COMPLETION_TIMING.closing-.01),false);assert.ok(completion.closure<1);completion.step(.02);assert.equal(completion.closure,1);assert.equal(completion.takeDoorImpact(),true);assert.equal(completion.step(COMPLETION_TIMING.closed+.01),true);
   }else{
    assert.equal(completion.start('complete'),false);
    const before=JSON.stringify({time:s.time,units:s.units,missiles:s.missiles});
@@ -149,5 +150,5 @@ test('door impact occurs once at animated ending contact and resets on restart o
  completion.start();assert.equal(completion.step(100),true);assert.equal(completion.takeDoorImpact(),true);assert.equal(completion.takeDoorImpact(),false);
  completion.start();completion.step(COMPLETION_TIMING.completeView+COMPLETION_TIMING.closing+.01);completion.cancel();assert.equal(completion.takeDoorImpact(),false);
  completion.start();completion.step(COMPLETION_TIMING.completeView+COMPLETION_TIMING.closing+.01);assert.equal(completion.takeDoorImpact(),true);
- completion.cancel();completion.start('aborted');assert.equal(completion.active,false);assert.equal(completion.takeDoorImpact(),false);
+ completion.cancel();completion.start('aborted');assert.equal(completion.active,true);assert.equal(completion.takeDoorImpact(),false);
 });

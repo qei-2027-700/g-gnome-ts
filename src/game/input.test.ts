@@ -77,7 +77,7 @@ test('external horizontal arrows turn and vertical arrows pitch without moving o
 test('turning and advancing in external view changes the path while the turret follows the chassis',async()=>{
  const {makeUnit}=await import('./simulation/simulation.ts');const s=new Simulation();s.units=[makeUnit('own','union-asv',0,0,false)];s.human={x:0,z:0};s.board();
  for(let i=0;i<120;i++)s.tick(1/60,readInput(defaults(),new Set(['KeyW','ArrowRight']),false,true));
- assert.ok(s.player.x>1);assert.ok(s.player.z>1);assert.ok(s.yaw>0);assert.equal(s.mounted!.aim,s.mounted!.yaw);assert.equal(s.pitch,0);
+ assert.ok(s.player.x>1);assert.ok(Math.hypot(s.player.x,s.player.z)>1);assert.ok(s.yaw>0);assert.equal(s.mounted!.aim,s.mounted!.yaw);assert.equal(s.pitch,0);
 });
 
 test('held custom keys and mouse repeat at controlled intervals while releases and presses keep weapon cooldowns',async()=>{
@@ -128,8 +128,16 @@ test('HAWC mouse look carries past upper-body limits without slowing or moving f
   s.aimMouseBy(-800,0);assert.ok(Math.abs(s.aim+2)<1e-8);s.tick(1/60,readInput(defaults(),new Set()));assert.ok(Math.abs(s.aim+2)<1e-8);assert.deepEqual({x:u.x,z:u.z},start);assert.equal(s.speed,0);
  }
 });
-test('Union ASV, AIP and infantry retain their existing manual horizontal look speed',()=>{
- for(const kind of ['union-asv','merc-aip',null] as const){const s=new Simulation();s.units=[];s.human={x:0,z:0};if(kind){s.units=[makeUnit('own',kind,0,0,false)];assert.ok(s.board());}for(let i=0;i<30;i++)s.tick(1/60,readInput(defaults(),new Set(['ArrowRight'])));assert.ok(Math.abs(s.aim-(kind?.3:.9))<1e-8);const aim=s.aim;s.aimMouseBy(40,0);assert.ok(Math.abs(s.aim-aim-.1)<1e-8);}
+test('all mobile chassis share horizontal keyboard and mouse look speed while infantry remains unchanged',()=>{
+ for(const kind of ['darken-sentry','union-asv','scorp-asv','union-aip','merc-aip'] as const){
+  const s=new Simulation();s.units=[makeUnit('own',kind,0,0,false)];s.human={x:0,z:0};assert.ok(s.board());const settings=defaults();
+  for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set(['ArrowRight'])));
+  assert.ok(Math.abs(s.aim-.75)<1e-8,`${kind} keyboard horizontal look`);const aim=s.aim;
+  s.aimMouseBy(40,0);assert.ok(Math.abs(s.aim-aim-.2)<1e-8,`${kind} mouse horizontal look`);assert.equal(s.speed,0);
+ }
+ const infantry=new Simulation();infantry.units=[];infantry.human={x:0,z:0};
+ for(let i=0;i<30;i++)infantry.tick(1/60,readInput(defaults(),new Set(['ArrowRight'])));
+ assert.ok(Math.abs(infantry.aim-.9)<1e-8);const aim=infantry.aim;infantry.aimMouseBy(40,0);assert.ok(Math.abs(infantry.aim-aim-.1)<1e-8);
 });
 
 test('actual Merc Assault RUPP keeps firing both barrels while key or mouse is held, even before moving recharge completes',()=>{

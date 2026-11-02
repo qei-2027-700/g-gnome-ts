@@ -2,8 +2,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
 import {vehicleRadius} from './parts.ts';
+import {riverDistance,riverFrameAtZ} from '../content/missions/river.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function setup(){const s=new Simulation();s.units=[makeUnit('own','union-sentry',0,0,false),makeUnit('other','merc-sentry',0,20)];s.human={x:0,z:0};s.board();s.iff='6707';return s;}
+const riverSide=(river:NonNullable<Simulation['mission']['terrain']['river']>,z:number,side:number,offset:number)=>{
+ const frame=riverFrameAtZ(river,z),nx=frame.tz,nz=-frame.tx;
+ return {frame,nx,nz,point:{x:frame.x+nx*side*offset,z:frame.z+nz*side*offset},yaw:Math.atan2(nx,nz)};
+};
 test('2-6 buildings stop infantry and the full reserve HAWC footprint on every side, including a fast crossing and retreat',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');
  for(const facilityId of ['citadel'])for(const kind of ['foot','merc-assault','merc-cruiser'] as const)for(const [axis,sign] of [['x',1],['x',-1],['z',1],['z',-1]] as const){
@@ -125,7 +130,7 @@ test('swept foot contact clips a fast step at a wall and can reverse away afterw
 test('river water blocks people and ground chassis in both directions, with only AIPs able to cross without a bridge',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  for(const kind of ['foot','union-sentry','merc-assault','merc-cruiser','union-asv','union-aip','merc-aip'] as const)for(const sign of [-1,1]){
-  const mission=structuredClone(MISSION_4_2);mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
+  const mission=structuredClone(MISSION_4_2);mission.terrain.river!.path=undefined;mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
   const s=new Simulation('Easy',mission),r=mission.terrain.river!,start=r.x-sign*(r.width/2+20),z=r.bridgeZ+100;s.human={x:start,z};
   if(kind!=='foot'){s.units=[makeUnit('river-own',kind,start,z,false)];assert.ok(s.board());}
   const actor=s.mounted??s.human;s.move(actor,sign*Math.PI/2,r.width+40);
@@ -137,10 +142,23 @@ test('river water blocks people and ground chassis in both directions, with only
  }
 });
 
+test('4-2 river follows the mapped bends and confines the open bridge crossing to its curved channel',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts'),mission=structuredClone(MISSION_4_2);
+ mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
+ const river=mission.terrain.river!,north=riverFrameAtZ(river,900),south=riverFrameAtZ(river,-180);
+ assert.ok(Math.abs(north.x-south.x)>150);
+ for(const raised of [false,true]){
+  const s=new Simulation('Easy',mission),start=riverSide(river,river.bridgeZ,-1,river.width/2+20);s.human={...start.point};if(raised)s.raisedBridges.add(river.bridgeId);
+  s.move(s.human,start.yaw,river.width+40);
+  const across=(s.human.x-start.frame.x)*start.nx+(s.human.z-start.frame.z)*start.nz;
+  assert.equal(across>river.width/2+19,!raised,`raised=${raised}`);
+ }
+});
+
 test('lowered bridges admit people and HAWCs, while raised bridges block ground crossing and preserve the AIP exception',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  for(const raised of [false,true])for(const kind of ['foot','union-sentry','merc-assault','union-aip','merc-aip'] as const)for(const sign of [-1,1]){
-  const mission=structuredClone(MISSION_4_2);mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
+  const mission=structuredClone(MISSION_4_2);mission.terrain.river!.path=undefined;mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
   const s=new Simulation('Easy',mission),r=mission.terrain.river!,start=r.x-sign*(r.width/2+20);s.human={x:start,z:r.bridgeZ};if(raised)s.raisedBridges.add(r.bridgeId);
   if(kind!=='foot'){s.units=[makeUnit('river-own',kind,start,r.bridgeZ,false)];assert.ok(s.board());}const actor=s.mounted??s.human;s.move(actor,sign*Math.PI/2,r.width+40);
   if(!raised||kind==='union-aip'||kind==='merc-aip')assert.ok(sign*(actor.x-r.x)>r.width/2+19,`${kind}/${raised}: bridge passage blocked`);
@@ -161,7 +179,7 @@ test('2-2 bridge lies across its river and raising it closes the crossing',async
 test('normal forward input cannot walk or drive a HAWC through the river bank',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  for(const mounted of [false,true]){
-  const mission=structuredClone(MISSION_4_2);mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
+  const mission=structuredClone(MISSION_4_2);mission.terrain.river!.path=undefined;mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
   const s=new Simulation('Easy',mission),r=mission.terrain.river!,start={x:r.x-r.width/2-15,z:r.bridgeZ+100};s.human={...start};s.humanYaw=Math.PI/2;
   if(mounted){const unit=makeUnit('river-own','union-sentry',start.x,start.z,false);unit.yaw=unit.aim=Math.PI/2;s.units=[unit];assert.ok(s.board());}
   for(let i=0;i<300;i++)s.tick(.05,{...idle,forward:true});assert.ok(s.player.x<r.x-r.width/2);assert.equal(s.humanHealth,100);
@@ -170,8 +188,9 @@ test('normal forward input cannot walk or drive a HAWC through the river bank',a
 
 test('an ejected person cannot bypass water from the air, and an allied HAWC routes through the lowered bridge',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const mission=structuredClone(MISSION_4_2);mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
- const flight=new Simulation('Easy',mission),r=mission.terrain.river!;flight.human={x:r.x-r.width/2-10,z:r.bridgeZ+100};flight.flight={altitude:20,vy:10,vx:100,vz:0};for(let i=0;i<100;i++)flight.tick(.05,idle);assert.ok(flight.human.x<r.x-r.width/2);assert.equal(flight.humanHealth,100);
- mission.units=[{id:'river-ally',kind:'union-sentry',x:r.x-r.width/2-25,z:r.bridgeZ+80,pilot:true,personId:'kylie',iff:mission.initialIff}];mission.companions=[{personId:'kylie',unitId:'river-ally',key:'F2',name:{ja:'キリー',en:'Kylie'}}];
- const follow=new Simulation('Easy',mission);follow.human={x:r.x+r.width/2+25,z:r.bridgeZ+80};assert.deepEqual(follow.sendAllyOrder('kylie','follow').accepted,['river-ally']);let usedBridge=false;for(let i=0;i<1200;i++){follow.tick(.05,idle);const ally=follow.units[0];if(Math.abs(ally.x-r.x)<r.width/2){usedBridge=true;assert.ok(Math.abs(ally.z-r.bridgeZ)<r.bridgeWidth/2);}}
- assert.ok(usedBridge);assert.ok(follow.units[0].x>r.x+r.width/2);
+ const flight=new Simulation('Easy',mission),r=mission.terrain.river!,airStart=riverSide(r,r.bridgeZ+100,-1,r.width/2+10);flight.human={...airStart.point};flight.flight={altitude:20,vy:10,vx:airStart.nx*100,vz:airStart.nz*100};for(let i=0;i<100;i++)flight.tick(.05,idle);assert.ok((flight.human.x-airStart.frame.x)*airStart.nx+(flight.human.z-airStart.frame.z)*airStart.nz<-r.width/2);assert.equal(flight.humanHealth,100);
+ const bridgeStart=riverSide(r,r.bridgeZ,-1,r.width/2+25),bridgeGoal=riverSide(r,r.bridgeZ,1,r.width/2+25);
+ mission.units=[{id:'river-ally',kind:'union-sentry',x:bridgeStart.point.x,z:bridgeStart.point.z,pilot:true,personId:'kylie',iff:mission.initialIff}];mission.companions=[{personId:'kylie',unitId:'river-ally',key:'F2',name:{ja:'キリー',en:'Kylie'}}];
+ const follow=new Simulation('Easy',mission);follow.human={...bridgeGoal.point};assert.deepEqual(follow.sendAllyOrder('kylie','follow').accepted,['river-ally']);let usedBridge=false;for(let i=0;i<1200;i++){follow.tick(.05,idle);const ally=follow.units[0]!,along=(ally.x-bridgeStart.frame.x)*bridgeStart.frame.tx+(ally.z-bridgeStart.frame.z)*bridgeStart.frame.tz;if(riverDistance(r,ally.x,ally.z)<r.width/2){usedBridge=true;assert.ok(Math.abs(along)<r.bridgeWidth/2+4);}}
+ assert.ok(usedBridge);assert.ok((follow.units[0]!.x-bridgeStart.frame.x)*bridgeStart.nx+(follow.units[0]!.z-bridgeStart.frame.z)*bridgeStart.nz>r.width/2);
 });

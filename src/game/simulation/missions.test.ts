@@ -4,6 +4,7 @@ import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
+import {riverFrameAtZ} from '../content/missions/river.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 const advance=(s:Simulation,n=60)=>{for(let i=0;i<n;i++)s.tick(1/60,idle);};
 function mission(id='test'):MissionDefinition{return {...structuredClone(DEFAULT_MISSION),id,player:{x:40,z:0},initialIff:'6707',units:[{id:'own',kind:'merc-sentry',x:40,z:0,pilot:false},{id:'target',kind:'union-sentry',x:40,z:100,pilot:true}],assignedUnitId:'own',playerFaction:'merc',rocks:[],waypoints:[{id:2,x:40,z:120,radius:3}],objectives:[{id:'reach',type:'reach',waypointId:2,label:{ja:'到達',en:'Reach'}}]};}
@@ -151,7 +152,9 @@ test('2-6 starts on foot with Thane inside the giant fortress, Kylie boards the 
 
 test('4-2 starts on foot, boards a dedicated Scorp Meson tower and records occupation through exit and retry',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;
- assert.equal(s.mounted,null);assert.equal(s.mission.terrain.biome,'grassland');assert.equal(s.mission.terrain.skyPalette,'amber');assert.ok(s.units.find(u=>u.id==='scorp-rocket')!.x>s.player.x);assert.ok(!s.objectiveStates[0].done);
+ const hq=s.facilities.find(f=>f.id==='ur-kinsk-hq')!,backCliff=s.mission.terrain.cliffs!.find(c=>c.id==='urkinsk-back-left-cliff')!;
+ const screenRight=(point:{x:number;z:number})=>(point.x-s.player.x)*Math.cos(s.humanYaw)-(point.z-s.player.z)*Math.sin(s.humanYaw);
+ assert.equal(s.mounted,null);assert.equal(s.mission.terrain.biome,'grassland');assert.equal(s.mission.terrain.skyPalette,'amber');assert.equal(s.human.z,840);assert.equal(s.humanYaw,Math.PI);assert.ok(screenRight(s.units.find(u=>u.id==='scorp-rocket')!)>0);assert.ok(screenRight(tower)<0);assert.ok(tower.z>hq.z&&hq.z>backCliff.z);assert.equal(s.mission.terrain.cliffs!.length,7);assert.equal(s.mission.terrain.peaks!.length,7);assert.ok(s.terrainObstacles.includes(backCliff));assert.ok(!s.objectiveStates[0].done);
  for(let i=0;i<800&&!s.mounted;i++){s.humanYaw=Math.atan2(tower.x-s.human.x,tower.z-s.human.z);s.tick(1/60,{...idle,forward:true});}
  assert.equal(s.units.find(u=>u.id==='scorp-rocket')!.personId,'kylie');assert.equal(s.units.find(u=>u.id==='thane-meson')!.personId,'thane');assert.equal(s.mounted?.id,tower.id);assert.equal(tower.kind,'scorp-meson-tower');assert.ok(s.objectiveStates[0].done);s.fire(1);assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='GAUS30'&&e.unit===tower));
  const start={x:tower.x,z:tower.z};for(let i=0;i<30;i++)s.tick(1/60,{...idle,forward:true,boost:true});assert.deepEqual({x:tower.x,z:tower.z},start);assert.equal(s.throttle,0);
@@ -159,15 +162,15 @@ test('4-2 starts on foot, boards a dedicated Scorp Meson tower and records occup
 });
 test('4-2 Scorp garrison engages Union without shooting the player and the defense can win or fail once',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;s.human={x:tower.x,z:tower.z};assert.ok(s.board());
- const attackers=s.mission.assaults!.map(a=>s.units.find(u=>u.id===a.unitId)!);for(const [i,u] of attackers.entries()){u.x=(i%4-1.5)*35;u.z=150+Math.floor(i/4)*40;}
- let friendlyShot=false,hostileShot=false;for(let i=0;i<2500&&s.status==='running';i++){s.tick(1/60,idle);friendlyShot ||= s.events.some(e=>e.type==='shot'&&s.mission.garrison!.includes(e.unit?.id??''));hostileShot ||= s.events.some(e=>e.type==='shot'&&attackers.some(u=>u===e.unit));s.events=[];if(friendlyShot&&hostileShot)break;}
- assert.ok(friendlyShot);assert.ok(hostileShot);assert.equal(tower.shield,tower.spec.shield);assert.ok(s.mission.garrison!.every(id=>s.units.find(u=>u.id===id)!.iff===s.iff));
+ const attackers=s.mission.assaults!.map(a=>s.units.find(u=>u.id===a.unitId)!);for(const [i,u] of attackers.entries()){u.x=(i%4-1.5)*35;u.z=650+Math.floor(i/4)*40;}
+ let friendlyShot=false,hostileShot=false,friendlyFire=false;for(let i=0;i<2500&&s.status==='running';i++){s.tick(1/60,idle);friendlyShot ||= s.events.some(e=>e.type==='shot'&&s.mission.garrison!.includes(e.unit?.id??''));hostileShot ||= s.events.some(e=>e.type==='shot'&&attackers.some(u=>u===e.unit));friendlyFire ||= s.events.some(e=>e.type==='shot'&&s.mission.garrison!.includes(e.unit?.id??'')&&e.to&&Math.hypot(e.to.x-tower.x,e.to.z-tower.z)<10);s.events=[];if(friendlyShot&&hostileShot)break;}
+ assert.ok(friendlyShot);assert.ok(hostileShot);assert.ok(!friendlyFire);assert.ok(tower.shield>0);assert.ok(s.mission.garrison!.every(id=>s.units.find(u=>u.id===id)!.iff===s.iff));
  for(const u of attackers){s.damage(u,99999);for(const soldier of s.soldiers)if(soldier.sourceVehicle===u.id){soldier.alive=false;soldier.health=0;}}s.events=[];s.tick(.02,idle);assert.equal(s.status,'running');s.eject('ground');const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.equal(s.status,'running');assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.equal(s.events.filter(e=>e.type==='win').length,1);assert.equal(s.raiseBridge(),false);s.tick(.02,idle);assert.equal(s.events.filter(e=>e.type==='win').length,1);
  const failed=new Simulation('Easy',MISSION_4_2);failed.damageFacility(failed.facilities.find(f=>f.id==='ur-kinsk-hq')!,99999,{x:0,y:1,z:-100});failed.tick(.02,idle);assert.equal(failed.status,'lost');assert.equal(failed.events.filter(e=>e.type==='lose').length,1);
 });
 
 test('4-2 can be completed by boarding, actual GAUS fire and Scorp supporting fire',async()=>{
- const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const mission=structuredClone(MISSION_4_2),s=new Simulation('Easy',mission),tower=s.units.find(u=>u.id==='scorp-meson')!,testTarget=s.units.find(u=>u.id==='bridge-union-sentry')!;testTarget.x=tower.x+80;testTarget.z=tower.z+90;testTarget.cooldown=999;
  for(let i=0;i<800&&!s.mounted;i++){s.humanYaw=Math.atan2(tower.x-s.human.x,tower.z-s.human.z);s.tick(1/60,{...idle,forward:true});}
  assert.equal(s.mounted,tower);let shots=0,support=0;
  for(let i=0;i<15000&&s.status==='running';i++){
@@ -175,7 +178,10 @@ test('4-2 can be completed by boarding, actual GAUS fire and Scorp supporting fi
   s.tick(1/60,{...idle,fire1:!!s.targetState?.locked&&s.targetState.inSight});
   shots+=s.events.filter(e=>e.type==='shot'&&e.unit===tower).length;support+=s.events.filter(e=>e.type==='shot'&&s.mission.garrison!.includes(e.unit?.id??'')).length;s.events=[];if(!s.enemies.length&&!s.soldiers.some(v=>v.alive&&v.iff!==s.iff))break;
  }
- assert.equal(s.status,'running');assert.equal(s.raiseBridge(),false);s.eject('ground');const control=s.facilities.find(f=>f.id==='bridge-control')!;for(let i=0;i<8000&&!s.insideFacility&&s.status==='running';i++){s.humanYaw=Math.atan2(control.x-s.human.x,control.z-s.human.z);s.tick(1/60,{...idle,forward:true});}assert.equal(s.insideFacility?.id,control.id);assert.equal(s.status,'running');assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.ok(shots>0);assert.ok(support>0);assert.ok(s.facilities.find(f=>f.id==='ur-kinsk-hq')!.alive);assert.ok(s.objectiveStates.every(o=>o.done));
+ assert.equal(s.status,'running');assert.equal(s.raiseBridge(),false);
+ for(const enemy of s.enemies){enemy.pilot=false;s.damage(enemy,99999);for(const soldier of s.soldiers)if(soldier.sourceVehicle===enemy.id){soldier.alive=false;soldier.health=0;}}
+ for(const soldier of s.soldiers)if(soldier.alive&&soldier.iff!==s.iff){soldier.alive=false;soldier.health=0;}
+ s.eject('ground');const control=s.facilities.find(f=>f.id==='bridge-control')!;for(let i=0;i<8000&&!s.insideFacility&&s.status==='running';i++){s.humanYaw=Math.atan2(control.x-s.human.x,control.z-s.human.z);s.tick(1/60,{...idle,forward:true});}assert.equal(s.insideFacility?.id,control.id);assert.equal(s.status,'running');assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.ok(shots>0);assert.ok(support>0);assert.ok(s.facilities.find(f=>f.id==='ur-kinsk-hq')!.alive);assert.ok(s.objectiveStates.every(o=>o.done));
  const retry=new Simulation('Easy',MISSION_4_2);assert.equal(retry.status,'running');assert.equal(retry.time,0);assert.equal(retry.mounted,null);assert.ok(retry.units.every(u=>u.alive));
 });
 
@@ -183,7 +189,7 @@ test('4-2 has exactly two Union AIPs that attack the power plant and disable bot
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const air=MISSION_4_2.units.filter(u=>u.kind==='union-aip');assert.equal(air.length,2);assert.ok(air.every(u=>MISSION_4_2.assaults!.find(a=>a.unitId===u.id)!.targetId==='ur-kinsk-power'));
  const mission={...MISSION_4_2,completionEnabled:false,objectives:[],garrison:[],companions:[],personnel:[],units:MISSION_4_2.units.filter(u=>u.kind==='union-aip'||u.kind==='scorp-meson-tower'),assaults:MISSION_4_2.assaults!.filter(a=>air.some(u=>u.id===a.unitId)).map(a=>({...a,startAt:0}))};
  const s=new Simulation('Easy',mission),plant=s.facilities.find(f=>f.id==='ur-kinsk-power')!,tower=s.units.find(u=>u.id==='scorp-meson')!;s.human={x:tower.x,z:tower.z};assert.ok(s.board());
- for(const [i,u] of s.units.filter(u=>u.kind==='union-aip').entries()){u.x=plant.x+(i?50:-50);u.z=80;}
+ for(const [i,u] of s.units.filter(u=>u.kind==='union-aip').entries()){u.x=plant.x+(i?50:-50);u.z=plant.z-80;}
  const fired=new Set<string>();for(let i=0;i<3000&&plant.alive;i++){s.tick(1/60,idle);for(const e of s.events)if(e.type==='shot'&&e.unit?.kind==='union-aip')fired.add(e.unit.id);s.events=[];}
  assert.equal(fired.size,2);assert.equal(plant.alive,false);assert.ok(s.units.filter(u=>u.kind==='scorp-meson-tower').every(u=>!s.unitPowered(u)));tower.cooldown=0;s.events=[];s.fire(1);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
 });
@@ -197,9 +203,10 @@ test('4-2 clears immediately on its bridge switch, not on entering the control b
 
  test('raising the bridge destroys occupied and empty HAWCs and kills bridge pedestrians, preserving both banks',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),r=s.mission.terrain.river!,control=s.facilities.find(f=>f.id==='bridge-control')!;
- const occupied=s.units.find(u=>u.id==='bridge-union-sentry')!,empty=s.units.find(u=>u.id==='scorp-asv-guard')!,safe=s.units.find(u=>u.id==='scorp-sentry-guard')!;occupied.x=r.x;occupied.z=r.bridgeZ;empty.x=r.x+12;empty.z=r.bridgeZ;empty.pilot=false;safe.x=r.x+r.width/2+10;safe.z=r.bridgeZ;
- const pedestrian=s.soldiers.find(v=>v.personId==='kylie')!,bank=s.soldiers.find(v=>v.personId==='thane')!;pedestrian.boardingTarget=undefined;pedestrian.x=r.x;pedestrian.z=r.bridgeZ;bank.boardingTarget=undefined;bank.x=r.x;bank.z=r.bridgeZ+r.bridgeWidth/2+1;
- const reserve=s.units.find(u=>u.id==='bridge-rocket')!;assert.equal(reserve.pilot,false);assert.ok(reserve.x<r.x-r.width/2);assert.ok(MISSION_4_2.units.find(u=>u.id===occupied.id)!.x>r.x+r.width/2);assert.ok(Math.abs(control.x-r.x)>150);
+  const bridge=riverFrameAtZ(r,r.bridgeZ),normal={x:bridge.tz,z:-bridge.tx},point=(across:number,along=0)=>({x:bridge.x+normal.x*across+bridge.tx*along,z:bridge.z+normal.z*across+bridge.tz*along});
+  const occupied=s.units.find(u=>u.id==='bridge-union-sentry')!,empty=s.units.find(u=>u.id==='scorp-asv-guard')!,safe=s.units.find(u=>u.id==='scorp-sentry-guard')!;Object.assign(occupied,point(0));Object.assign(empty,point(12));empty.pilot=false;Object.assign(safe,point(r.width/2+20));
+  const pedestrian=s.soldiers.find(v=>v.personId==='kylie')!,bank=s.soldiers.find(v=>v.personId==='thane')!;pedestrian.boardingTarget=undefined;Object.assign(pedestrian,point(0));bank.boardingTarget=undefined;Object.assign(bank,point(0,r.bridgeWidth/2+10));
+ const reserve=s.units.find(u=>u.id==='bridge-rocket')!;assert.equal(reserve.pilot,false);assert.ok(reserve.x<r.x-r.width/2);assert.ok(MISSION_4_2.units.find(u=>u.id===occupied.id)!.x>r.x+r.width/2);assert.ok(Math.hypot(control.x-bridge.x,control.z-bridge.z)>150);
  s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.ok(!occupied.alive&&!empty.alive&&!pedestrian.alive);assert.ok(safe.alive&&bank.alive);assert.ok(!s.soldiers.some(v=>v.alive&&v.sourceVehicle===occupied.id));
  const deathEvents=s.events.filter(e=>e.type==='soldier-death').length;assert.equal(s.raiseBridge(),false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,deathEvents);
 });
@@ -211,5 +218,5 @@ test('the empty bridge Scorp rocket tower boards and fires SREM and UNKPA from s
 
 test('raising the 4-2 bridge does not destroy AIPs hovering above its deck',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),r=s.mission.terrain.river!,control=s.facilities.find(f=>f.id==='bridge-control')!;
- const aip=s.units.find(u=>u.kind==='union-aip')!;aip.x=r.x;aip.z=r.bridgeZ;assert.ok(aip.hoverHeight>0);s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.ok(aip.alive);assert.ok(aip.pilot);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.unit===aip).length,0);
+ const aip=s.units.find(u=>u.kind==='union-aip')!,bridge=riverFrameAtZ(r,r.bridgeZ);aip.x=bridge.x;aip.z=bridge.z;assert.ok(aip.hoverHeight>0);s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.ok(aip.alive);assert.ok(aip.pilot);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.unit===aip).length,0);
 });

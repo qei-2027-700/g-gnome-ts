@@ -4,7 +4,8 @@ import {makeFacilities,isFacility,facilityDistance,facilityExit,entryAllowed,typ
 export {isFacility} from './facilities.ts';
 import {VEHICLE_SHAPES,FACILITY_WRECK,MERC_TACTICAL_RAID_MUZZLE,SCORP_TACTICAL_RAID_MUZZLES} from '../content/vehicle-shapes.ts';
 import {allyRoute} from './ally-navigation.ts';
-import {sweptCircle,crossesBuilding,buildingContact,buildingMotionContact,circleMotionContact} from './battlefield.ts';
+import {sweptCircle,crossesBuilding,buildingContact,buildingMotionContact,rotatedBuildingMotionContact,circleMotionContact} from './battlefield.ts';
+import {riverFrameAtZ,riverStripBoxes} from '../content/missions/river.ts';
 import {followPosition,type AllyOrder,type AllyCommand,type RadioRecipient,type RadioFailure,type OrderResult} from './ally-orders.ts';
 import {INFANTRY_WEAPONS} from '../content/weapons.ts';
 import {INFANTRY_MOVEMENT,INFANTRY_HIT_RADIUS,INFANTRY_AI_AIM_TOLERANCE,BOARDING_DISTANCE,launchFlight,isEmbarked,type Flight,type Soldier} from './infantry.ts';
@@ -16,6 +17,7 @@ import {steerMissile,homeMissile} from './guided-flight.ts';
 import {isLaser,isMissile,laserRange} from './weapons.ts';
 import {type Difficulty} from '../settings.ts';
 export type Vec = {x:number;z:number};
+type MovementObstacle=Vec&{width:number;depth:number;yaw?:number};
 export type Unit = Vec & {id:string;hoverHeight:number;hoverDisabled:boolean;passengers:string[];iff:string;kind:VehicleKind;spec:VehicleSpec;personId?:string;order:AllyOrder|null;aggressorId:string|null;aggressorUntil:number;ammunition:Partial<Record<VehicleWeapon,number>>;readonly slotAmmo:(number|undefined)[];yaw:number;aim:number;aimPitch:number;speed:number;shield:number;armor:number;energy:number;ammo:number;laserCharge:number;pilot:boolean;alive:boolean;cooldown:number;alert:boolean;phase:number;lastHit:number;attackCycle:number;lureHits:number;lured:boolean;parts:PartState};
 export type CombatTarget=Unit|Soldier;
 export type SelectionTarget=CombatTarget|Facility;
@@ -68,7 +70,7 @@ export class Simulation {
   facilities:Facility[];readonly mission:MissionDefinition;readonly weapons:ReturnType<typeof resolveWeapons>;reachedWaypoints=new Set<number>();
   constructor(difficulty:Difficulty='Easy',mission:MissionDefinition=DEFAULT_MISSION){
     this.difficulty=difficulty;this.mission=structuredClone(mission);this.weapons=resolveWeapons(mission.weaponOverrides);
-    this.human={...mission.player};this.iff=mission.initialIff;this.facilities=makeFacilities(this.mission.base,mission.factionCodes[mission.base?.faction??'scorp']??mission.base?.faction??'scorp');
+    this.human={...mission.player};this.humanYaw=mission.initialYaw??0;this.iff=mission.initialIff;this.facilities=makeFacilities(this.mission.base,mission.factionCodes[mission.base?.faction??'scorp']??mission.base?.faction??'scorp');
     this.mines=(mission.minefields??[]).flatMap(field=>field.mines.map(mine=>({...mine,radius:field.triggerRadius,spent:false})));
     this.units=mission.units.map(spawn=>Object.assign(makeUnit(spawn.id,spawn.kind,spawn.x,spawn.z,spawn.pilot,resolveVehicle(spawn.kind,mission.vehicleOverrides?.[spawn.kind],spawn.overrides)),{yaw:spawn.yaw??0,aim:spawn.yaw??0,personId:spawn.personId,iff:spawn.iff??mission.factionCodes[resolveVehicle(spawn.kind,mission.vehicleOverrides?.[spawn.kind],spawn.overrides).faction]??resolveVehicle(spawn.kind).faction}));
     for(const person of mission.personnel??[]){const facility=this.facilities.find(f=>f.id===person.facilityId);this.soldiers.push({id:`person-${person.personId}`,personId:person.personId,sourceVehicle:person.boardingTargetId??person.facilityId??person.personId,insideFacility:person.facilityId,boardingTarget:person.boardingTargetId,boardingRole:person.boardingTargetId?'pilot':undefined,iff:this.iff,faction:mission.playerFaction,x:facility?.x??person.x,z:facility?.z??person.z,yaw:0,health:100,alive:true,alert:false,cooldown:0,flight:null,aggressorId:null,aggressorUntil:0});}
@@ -133,13 +135,33 @@ export class Simulation {
     });
   }
   readonly raisedBridges=new Set<string>();
-  private get riverObstacles(){
+  private get riverObstacles():MovementObstacle[]{
     const river=this.mission.terrain.river;if(!river)return [];
+    if(river.path)return riverStripBoxes(river,this.raisedBridges.has(river.bridgeId));
     const start=river.z-river.length/2,end=river.z+river.length/2;
     const spans=this.raisedBridges.has(river.bridgeId)?[[start,end]]:[[start,Math.min(end,river.bridgeZ-river.bridgeWidth/2)],[Math.max(start,river.bridgeZ+river.bridgeWidth/2),end]];
     return spans.filter(([a,b])=>b>a).map(([a,b])=>({x:river.x,z:(a+b)/2,width:river.width,depth:b-a}));
   }
-  private movementObstacles(unit?:Unit){return canFlyAcrossRiver(unit?.kind)?this.terrainObstacles:[...this.terrainObstacles,...this.riverObstacles];}
+  private movementObstacles(unit?:Unit):MovementObstacle[]{
+    const terrain=this.terrainObstacles.map(({x,z,width,depth})=>({x,z,width,depth}));
+    return canFlyAcrossRiver(unit?.kind)?terrain:[...terrain,...this.riverObstacles];
+  }
+  private navigationObstacles(unit?:Unit){
+    const obstacles:MovementObstacle[]=this.terrainObstacles.map(({x,z,width,depth})=>({x,z,width,depth}));
+    if(!canFlyAcrossRiver(unit?.kind)){
+      const river=this.mission.terrain.river;
+      if(river)obstacles.push(...(river.path?riverStripBoxes(river,this.raisedBridges.has(river.bridgeId),river.width/3,river.width/2+12):this.riverObstacles));
+    }
+    return obstacles.map(obstacle=>{
+      if(typeof obstacle.yaw!=='number')return obstacle;
+      const c=Math.abs(Math.cos(obstacle.yaw)),s=Math.abs(Math.sin(obstacle.yaw));
+      return {...obstacle,width:c*obstacle.width+s*obstacle.depth,depth:s*obstacle.width+c*obstacle.depth};
+    });
+  }
+  private obstacleMotionContact(from:Vec,to:Vec,obstacle:MovementObstacle,padding=0){
+    if(typeof obstacle.yaw!=='number')return buildingMotionContact(from,to,obstacle,padding);
+    return rotatedBuildingMotionContact(from,to,{...obstacle,yaw:obstacle.yaw},padding);
+  }
 
   private boardedUnits=new Set<string>();
   private securedDefenses=new Set<string>();
@@ -147,7 +169,7 @@ export class Simulation {
   private approachPerson(soldier:Soldier,goal:Vec,dt:number,stop=0){
     const allied=soldier.iff===this.iff||!!soldier.personId&&this.mission.companions?.some(member=>member.personId===soldier.personId),walk=allied?INFANTRY_MOVEMENT.allyWalk:INFANTRY_MOVEMENT.walk;
     if(distance(soldier,goal)<=stop){this.moveInfantry(soldier,soldier.yaw,0,dt);return;}
-    let route=this.personRoutes.get(soldier.id);if(!route||this.time>=route.until||distance(route.goal,goal)>4){const path=allyRoute(soldier,goal,this.mission.terrain,[...this.mission.rocks.map(r=>({...r,r:r.r+2.3})),...this.units.filter(u=>u.alive&&u!==goal).map(u=>({...u,r:vehicleRadius(u.kind)+.65}))],this.movementObstacles().map(b=>({...b,width:b.width+4.6,depth:b.depth+4.6})))??[];route={until:this.time+.8,goal:{...goal},route:path};this.personRoutes.set(soldier.id,route);}
+    let route=this.personRoutes.get(soldier.id);if(!route||this.time>=route.until||distance(route.goal,goal)>4){const path=allyRoute(soldier,goal,this.mission.terrain,[...this.mission.rocks.map(r=>({...r,r:r.r+2.3})),...this.units.filter(u=>u.alive&&u!==goal).map(u=>({...u,r:vehicleRadius(u.kind)+.65}))],this.navigationObstacles().map(b=>({...b,width:b.width+4.6,depth:b.depth+4.6})))??[];route={until:this.time+.8,goal:{...goal},route:path};this.personRoutes.set(soldier.id,route);}
     while(route.route.length>1&&distance(soldier,route.route[0])<1)route.route.shift();const next=route.route[0]??goal;soldier.yaw=Math.atan2(next.x-soldier.x,next.z-soldier.z);this.moveInfantry(soldier,soldier.yaw,Math.min(walk,distance(soldier,next)/dt),dt);
   }
   private tickPickups(){for(const pickup of this.mission.pickups??[]){const soldier=this.soldiers.find(s=>s.personId===pickup.personId);if(!soldier?.alive||soldier.order!==undefined)continue;if(soldier.insideFacility){if(pickup.attackerIds.filter(id=>this.eliminated(id)).length<pickup.requiredKills)continue;const facility=this.facilities.find(f=>f.id===pickup.facilityId&&f.alive);if(!facility)continue;soldier.insideFacility=undefined;Object.assign(soldier,facilityExit(facility));this.emit({type:'mission-radio',radioId:`pickup-${pickup.personId}`,text:'pickup-ready'});}
@@ -233,7 +255,7 @@ export class Simulation {
     if(!plan||plan.targetId!==targetId||this.time>=plan.until||distance(plan.goal,goal)>5){
       const area=this.mission.terrain;
       const circles=[...this.mission.rocks.map(r=>({...r,r:r.r+3})),...this.units.filter(other=>other!==unit&&other.alive).map(other=>({...other,r:vehicleRadius(unit.kind)+vehicleRadius(other.kind)+.6}))];
-      const clearance=buildingClearance(unit)+.5,boxes=this.movementObstacles(unit).map(b=>({...b,width:b.width+clearance*2,depth:b.depth+clearance*2}));
+      const clearance=buildingClearance(unit)+.5,boxes=this.navigationObstacles(unit).map(b=>({...b,width:b.width+clearance*2,depth:b.depth+clearance*2}));
       const candidates=[{...goal,deviation:0}];for(const radius of [6,12,18,24])for(let i=0;i<12;i++)candidates.push({x:goal.x+Math.sin(i*Math.PI/6)*radius,z:goal.z+Math.cos(i*Math.PI/6)*radius,deviation:radius});
       candidates.sort((a,b)=>a.deviation-b.deviation||distance(a,anchor)-distance(b,anchor)||distance(a,unit)-distance(b,unit));
       let route:Vec[]=[];
@@ -259,7 +281,7 @@ export class Simulation {
       const side=index%2===0?1:-1,bearing=Math.atan2(unit.x-target.x,unit.z-target.z);
       const obstacles=this.units.filter(other=>other!==unit&&other.alive).map(other=>({...other,r:vehicleRadius(unit.kind)+vehicleRadius(other.kind)+.6}));
       const circles=[...this.mission.rocks.map(r=>({...r,r:r.r+3})),...obstacles];
-      const clearance=buildingClearance(unit)+.5,boxes=this.movementObstacles(unit).map(b=>({...b,width:b.width+clearance*2,depth:b.depth+clearance*2}));
+      const clearance=buildingClearance(unit)+.5,boxes=this.navigationObstacles(unit).map(b=>({...b,width:b.width+clearance*2,depth:b.depth+clearance*2}));
       const candidates:Vec[]=[];
       // Try a nearby orbit point first, then alternative firing positions around the target.
       for(const radius of [preferred,preferred*1.4])for(const offset of [.38*side,-.38*side,0,...Array.from({length:12},(_,i)=>(i+1)*Math.PI/6*side)]){
@@ -411,7 +433,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(Math.abs(next.x)<=this.mission.terrain.halfWidth&&next.z>=this.mission.terrain.minZ&&next.z<=this.mission.terrain.maxZ){
       const from={...body,y:flight.altitude+.9},to={...next,y:altitude+.9};let contact=1;
       for(const obstacle of this.terrainObstacles){const t=buildingContact(from,to,obstacle,.4);if(t!==null)contact=Math.min(contact,Math.max(0,t-.001));}
-      for(const water of this.riverObstacles){const hit=buildingMotionContact(body,next,water,.4);if(hit)contact=Math.min(contact,Math.max(0,hit.t-.001));}
+      for(const water of this.riverObstacles){const hit=this.obstacleMotionContact(body,next,water,.4);if(hit)contact=Math.min(contact,Math.max(0,hit.t-.001));}
       for(const rock of this.mission.rocks){const t=segmentSphere(from,to,{x:rock.x,y:rock.r*.55,z:rock.z},rock.r+.4);if(t!==null)contact=Math.min(contact,Math.max(0,t-.001));}
       body.x+=(next.x-body.x)*contact;body.z+=(next.z-body.z)*contact;
     }
@@ -616,7 +638,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       for(let pass=0;pass<6;pass++){
         const end={x:position.x+remaining.x,z:position.z+remaining.z};let first:{unit?:Unit;t:number;nx:number;nz:number}|null=null;
         for(const unit of this.units){if(!unit.alive)continue;const boarding=soldier?.boardingTarget===unit.id||u===this.human&&(!unit.pilot||unit.iff===this.iff&&unit.spec.passengerCapacity>unit.passengers.length);const radius=boarding?Math.min(vehicleRadius(unit.kind)+.35,BOARDING_DISTANCE-.15):vehicleRadius(unit.kind)+.35;const contact=circleMotionContact(position,end,unit,radius);if(contact&&(!first||contact.t<first.t))first={unit,...contact};}
-        for(const obstacle of this.movementObstacles()){const contact=buildingMotionContact(position,end,obstacle,2);if(contact&&(!first||contact.t<first.t))first=contact;}
+        for(const obstacle of this.movementObstacles()){const contact=this.obstacleMotionContact(position,end,obstacle,2);if(contact&&(!first||contact.t<first.t))first=contact;}
         for(const rock of this.mission.rocks){const contact=circleMotionContact(position,end,rock,rock.r+2);if(contact&&(!first||contact.t<first.t))first=contact;}
         if(!first){Object.assign(position,end);break;}
         if(first.unit?.pilot&&iff!==undefined&&first.unit.iff!==iff){if(soldier)this.damageSoldier(soldier,soldier.health,{...position,y:0},first.unit);else if(u===this.human&&!this.occupiedContact(first.unit,false))this.damage(null,this.humanHealth);}
@@ -637,7 +659,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const groundActors=[...this.soldiers.filter(s=>s.alive&&!s.flight&&!isEmbarked(s)&&(!vehicle.pilot||s.iff===vehicle.iff)),...(!this.mounted&&!this.passenger&&!this.flight&&(!vehicle.pilot||this.iff===vehicle.iff)?[this.human]:[])];
       for(const actor of groundActors){const id=actor===this.human?'player':(actor as Soldier).id;take(circleMotionContact(from,to,actor,vehicleRadius(vehicle.kind)+.35),`${vehicle.id}/infantry/${id}`,[vehicle.id,id]);}
       for(const [i,rock] of this.mission.rocks.entries())take(circleMotionContact(from,to,rock,rock.r+2),`${vehicle.id}/rock/${i}`,[vehicle.id]);
-      for(const b of this.movementObstacles(vehicle))take(buildingMotionContact(from,to,b,buildingClearance(vehicle)),`${vehicle.id}/wall/${b.x}/${b.z}`,[vehicle.id]);
+      for(const b of this.movementObstacles(vehicle))take(this.obstacleMotionContact(from,to,b,buildingClearance(vehicle)),`${vehicle.id}/wall/${b.x}/${b.z}`,[vehicle.id]);
       return hit as Contact|null;
     };
     const start={x:u.x,z:u.z},position={...start},touching=new Set<string>();let remaining={x:destination.x-start.x,z:destination.z-start.z},stopped=false;
@@ -897,7 +919,10 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     const facility=this.insideFacility,id=facility?.bridgeId;
     if(this.status!=='running'||facility?.facilityType!=='bridge-control'||!id||this.mission.terrain.river?.bridgeId!==id||this.raisedBridges.has(id))return false;
     const river=this.mission.terrain.river!;
-    const onBridge=(actor:Vec)=>Math.abs(actor.x-river.x)<=river.width/2+9&&Math.abs(actor.z-river.bridgeZ)<=river.bridgeWidth/2;
+    const bridge=riverFrameAtZ(river,river.bridgeZ),onBridge=(actor:Vec)=>{
+      const dx=actor.x-bridge.x,dz=actor.z-bridge.z;
+      return Math.abs(dx*bridge.tx+dz*bridge.tz)<=river.bridgeWidth/2&&Math.abs(dx*bridge.tz-dz*bridge.tx)<=river.width/2+9;
+    };
     // Resolve occupants before completion; no ejection can evade the lifting deck.
     for(const unit of this.units)if(unit.alive&&onBridge(unit)&&!(canFlyAcrossRiver(unit.kind)&&unit.hoverHeight>0)){this.killVehicleCrew(unit);this.damage(unit,99999);}
     for(const soldier of this.soldiers)if(soldier.alive&&!isEmbarked(soldier)&&!soldier.insideFacility&&onBridge(soldier))this.damageSoldier(soldier,soldier.health,{x:soldier.x,y:1,z:soldier.z});

@@ -36,3 +36,9 @@ export function buildingMotionContact(from:Vec,to:Vec,b:{x:number;z:number;width
  if(near<0||near>1||far<0)return null;
  const length=Math.hypot(nx,nz);return length?{t:near,nx:nx/length,nz:nz/length}:null;
 }
+
+export function rotatedBuildingMotionContact(from:Vec,to:Vec,b:{x:number;z:number;width:number;depth:number;yaw:number},padding=0){
+ const c=Math.cos(b.yaw),s=Math.sin(b.yaw),local=(point:Vec)=>({x:c*(point.x-b.x)-s*(point.z-b.z),z:s*(point.x-b.x)+c*(point.z-b.z)});
+ const hit=buildingMotionContact(local(from),local(to),{x:0,z:0,width:b.width,depth:b.depth},padding);
+ return hit?{...hit,nx:c*hit.nx+s*hit.nz,nz:-s*hit.nx+c*hit.nz}:null;
+}

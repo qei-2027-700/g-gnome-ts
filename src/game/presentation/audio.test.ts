@@ -402,7 +402,7 @@ test('missing elimination BGM keeps the current cue playing and reports the miss
 
 test('4-2 changes Credits to Snow Maze after the base assault is destroyed even while the bridge guard remains alive',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const {Simulation}=await import('../simulation/simulation.ts');const sim=new Simulation('Easy',MISSION_4_2),ids=MISSION_4_2.bgm!.afterEliminate!.unitIds;
- assert.equal(ids.length,10);assert.ok(sim.units.filter(u=>ids.includes(u.id)).every(u=>u.spec.faction==='union'));assert.ok(!ids.includes(MISSION_4_2.assignedUnitId));const bridgeGuard=sim.units.find(u=>u.id==='bridge-union-sentry')!;assert.ok(bridgeGuard?.alive);assert.ok(!ids.includes(bridgeGuard.id));
+ assert.equal(ids.length,10);assert.deepEqual(ids,MISSION_4_2.assaults!.map(assault=>assault.unitId));assert.ok(sim.units.filter(u=>ids.includes(u.id)).every(u=>u.spec.faction==='union'));assert.ok(!ids.includes(MISSION_4_2.assignedUnitId));const bridgeGuard=sim.units.find(u=>u.id==='bridge-union-sentry')!;assert.ok(bridgeGuard?.alive);assert.ok(!ids.includes(bridgeGuard.id));
  await musicFixture(async(audio,tracks)=>{
   audio.beginMissionMusic(MISSION_4_2);audio.updateMissionMusic(0,false,sim.units);await Promise.resolve();assert.equal(tracks[0].src,'credits.mp3');
   for(const unit of sim.units)if(ids.includes(unit.id)&&unit.id!==ids.at(-1))unit.alive=false;

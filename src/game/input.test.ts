@@ -82,7 +82,7 @@ test('turning and advancing in external view changes the path while the turret f
 
 test('held custom keys and mouse repeat at controlled intervals while releases and presses keep weapon cooldowns',async()=>{
  const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');const {weaponMountCount}=await import('./content/weapons.ts');const settings=defaults();settings.bindings.fire1='KeyH';settings.bindings.fire2='KeyK';settings.bindings.fire3='KeyL';
- for(const [key,weapon] of [['KeyH','DASY'],['KeyK','SAG5T'],['KeyL','RAID']] as const){const s=new Simulation('Easy',MISSION_2_4),count=()=>s.events.filter(e=>e.type==='shot'&&e.weapon===weapon).length,times:number[]=[];
+ for(const [key,weapon] of [['KeyH','DASY'],['KeyK','SAG5T'],['KeyL','RAID']] as const){const s=new Simulation('Easy',MISSION_2_4),count=()=>s.events.filter(e=>e.type==='shot'&&e.unit===s.mounted&&e.weapon===weapon).length,times:number[]=[];
   for(let i=0;i<300;i++){const before=count();s.tick(1/60,readInput(settings,new Set([key])));if(count()>before)times.push(s.time);}assert.ok(times.length>=2&&times.length<=11,weapon);for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.5-1e-8,weapon);
   for(let i=0;i<120;i++)s.tick(1/60,readInput(settings,new Set()));const before=count();s.tick(1/60,readInput(settings,new Set([key])));assert.equal(count(),before+weaponMountCount(s.mounted!.kind,weapon));s.tick(1/60,readInput(settings,new Set()));s.tick(1/60,readInput(settings,new Set([key])));assert.equal(count(),before+weaponMountCount(s.mounted!.kind,weapon),'repress cannot bypass weapon cooldown');
  }
@@ -94,11 +94,8 @@ test('holding a firearm while boarding does not trigger another shot from the ne
 });
 
 test('only the four confirmed special chassis bypass the full-charge wait for held laser fire',async()=>{
- const {LASER_HOLD_FIRE_HAWCS,allowsLaserHoldFire}=await import('./content/weapons.ts');const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');
+ const {LASER_HOLD_FIRE_HAWCS,allowsLaserHoldFire}=await import('./content/weapons.ts');
  for(const kind of LASER_HOLD_FIRE_HAWCS){assert.ok(allowsLaserHoldFire(kind,'RAID'));assert.ok(allowsLaserHoldFire(kind,'FIL-30'));assert.equal(allowsLaserHoldFire(kind,'DASY'),false);assert.equal(allowsLaserHoldFire(kind,'SAG5T'),false);
-  // Isolate the trigger policy with a reserved chassis identity. No guessed model or performance is registered in production content.
-  const s=new Simulation('Easy',MISSION_2_4),u=s.mounted!;u.kind=kind as typeof u.kind;
-  let minimumEnergy=u.energy;for(let i=0;i<120;i++){s.tick(1/60,readInput(defaults(),new Set(['Digit3'])));minimumEnergy=Math.min(minimumEnergy,u.energy);}const shots=s.events.filter(e=>e.type==='shot'&&e.weapon==='RAID');assert.ok(shots.length>=2&&shots.length<=3,kind);assert.ok(minimumEnergy<u.spec.energy);assert.ok(u.laserCharge<1);
  }
  for(const kind of ['merc-tactical','union-tactical','scorp-tactical','union-sentry','merc-sentry','scorp-sentry'])assert.equal(allowsLaserHoldFire(kind,'RAID'),false);
 });

@@ -1,11 +1,10 @@
 import type {MissionDefinition,Spawn} from './types.ts';
 // User-confirmed scenario; coordinates, roster, timings and IFF are provisional.
 const groundAttackers:Spawn[]=Array.from(
-  {length:12},(_,i)=>(
+  {length:8},(_,i)=>(
     {
       id:`sheridan-union-${i+1}`,
-      // kind:i<4?'union-sentry':i<6?'union-asv':'union-tactical',
-      kind:i<6?'union-sentry':i<9?'union-asv':'union-tactical',
+      kind:i<4?'union-sentry':i<6?'union-asv':'union-tactical',
       x:(i%4-1.5)*90,z:360+Math.floor(i/4)*160,
       yaw:Math.PI,pilot:true
     }
@@ -14,10 +13,6 @@ const groundAttackers:Spawn[]=Array.from(
 const airAttackers:Spawn[]=[
   {id:'union-aip-1',kind:'union-aip',x:-260,z:600,yaw:Math.PI,pilot:true},
   {id:'union-aip-2',kind:'union-aip',x:260,z:650,yaw:Math.PI,pilot:true},
-  {id:'union-aip-3',kind:'union-aip',x:160,z:650,yaw:Math.PI,pilot:true},
-  {id:'union-aip-4',kind:'union-aip',x:360,z:650,yaw:Math.PI,pilot:true},
-  {id:'union-aip-5',kind:'union-aip',x:360,z:450,yaw:Math.PI,pilot:true},
-  {id:'union-aip-6',kind:'union-aip',x:360,z:250,yaw:Math.PI,pilot:true},
 ];
 // Base assault only: the separate bridge-union-sentry is excluded from the BGM elimination cue.
 const attackers=[...groundAttackers,...airAttackers];

@@ -1,11 +1,6 @@
 # G-Nome再現プロジェクト
 
-- 作品：G-Nome（1997年のPCゲーム）の再現
-- 媒体：Babylon.jsによるPC向けブラウザゲーム
-- 対象：企画・技術検討・ミッション再現
-- 状態：Babylon.js・TypeScript・Viteを採用。初回対象は製品版1-1。主要機能を試作し、ビルドと自動テストを実施。ブラウザ操作は未確認
-- 記録日：2026-10-22
-- 関連：[ワークスペースの作品一覧](../README.md)、[反映先ガイド](../docs/content-routing.md)
+1997年のPCゲーム「G-Nome」を、Babylon.js・TypeScript・Viteでブラウザ上に再現するプロジェクト。最初の対象は製品版1-1。全編への拡張を見据える。
 
 ## 公開URL
 
@@ -18,12 +13,11 @@ Cloudflare Pagesで自動デプロイ。mainへのpushで更新される。
 Node.js 22.18以降を使用する。
 
 ```sh
-cd g_nome
-npm install
-npm run dev -- --port 5173
+pnpm install
+pnpm dev
 ```
 
-`http://127.0.0.1:5173` を開き、「任務開始」を選ぶ。現在のワークスペースでは依存を配置済み。Wで近くのUnion Sentryへ進むと搭乗できる。Eで敵を選び、Tで追尾照準、1/2で射撃、Bで任務地図。
+`http://127.0.0.1:5173` を開き、「任務開始」を選ぶ。Wで近くのUnion Sentryへ進むと搭乗できる。Eで敵を選び、Tで追尾照準、1/2で射撃、Bで任務地図。
 
 [2-4 Merc編の雪原](docs/missions/mission-2-4.md)も任務選択から開始できる。Merc Tactical Defense HAWCに搭乗し、雪原・雪山と専用の機内表示を確認できる。敵配置・クリア条件は未確認。
 
@@ -43,24 +37,6 @@ npm run dev -- --port 5173
 
 最初の再現対象は[製品版1-1](docs/missions/mission-1-1.md)。作業順序と採用技術は[実装計画](docs/technical/implementation-plan.md)を参照。
 
-## 目的と会話で確認したこと
-
-G-Nomeを再現する。Babylon.js・TypeScript・Viteを採用し、最初は製品版1-1「Renegade Mercs」を作る。Union SentryでMerc Sentry・Merc Tactical Defenseと交戦する。
-
-ユーザーから、原作には20以上のミッションがあるとの指摘があった。操縦や戦闘だけでなく、キャンペーン全体の規模を踏まえて再現方法を検討する。全ミッションの収録範囲と再現精度は、今後整理する。
-
-## 参考ページ
-
-[G-NOMEのページ](https://ameblo.jp/g-nome/)は、ユーザーが有用と評価した日本語の専門ブログ。機体・武器・攻略・操作の参考資料として使う。記事別リンクと出典の扱いは[参考資料一覧](docs/reference/sources-and-macos.md)を参照。
-
-[英語マニュアルPDF](docs/reference/manuals/G-Nome_Manual_Win_EN.pdf)を保存済み。取得元・確認範囲・ファイル情報は同一覧に記録した。
-
-[The Collection Chamber: G-NOME](https://collectionchamber.blogspot.com/p/g-nome.html)
-
-ユーザーが参考として評価したページ。2026-10-22に本文を確認した。原作の紹介、画面写真、操作やゲームシステムの解説があり、再現に向けた調査の入口にする。
-
-ページに転載されたパッケージ裏面の説明では「20-plus missions」とされている。正確なミッション総数、訓練ミッションの扱い、各ミッションの名称・順序・内容は未確認。
-
 ## 採用する構成
 
 Babylon.js・TypeScript・Viteで、コードとデータファイルを中心に制作する。シングルプレイはフロントエンド内で動かす案とする。操縦・戦闘・AI・乗降・ミッション進行は独自に実装する。詳細は[実装計画](docs/technical/implementation-plan.md)を参照。
@@ -74,16 +50,8 @@ Babylon.js・TypeScript・Viteで、コードとデータファイルを中心�
 
 設定画面を初回から用意する。難易度は3段階で初期値はEasy。BGMも重要な再現項目として、曲と場面の対応、再生・音量・消音を調査する。
 
-再現で作り込む必要があるのは、機体の重さや操縦感、敵の反応、音、HUD、各ミッションの内容。完全再現を目指す場合は、原作のマップ・モデル・ミッション仕様を調査する必要がある。
+## 参考ページ
 
-## 全ミッションを見据えた設計案
-
-共通のゲーム処理と、ミッションごとのデータを分ける。ミッションごとに地形、初期配置、目標、イベント、成功・失敗条件を定義する構成を検討する。
-
-初期検証として「小さな地形、自機1体、敵1体、射撃、降機して敵機へ乗り換え」を作る案がある。これは全編の再現に向けた基礎検証であり、最終的な収録範囲を限定するものではない。実装順序は未確定。
-
-## 実装計画への追記
-
-2026-10-22に実装計画の依頼と、軍隊が4つあるはずとの指摘があった。公開資料でUnion（人類側）、Darken、Merc、Scorpの4勢力を確認した。確認元と未確認の詳細は[実装計画](docs/technical/implementation-plan.md)に記録した。
-
-シングルプレイならフロントエンドのみで構成する案とし、全ミッション・4勢力を見据えて段階的に実装する。対象範囲は計画案、Babylon.js・TypeScript・Viteの採用はユーザー指定として扱う。
+- [G-NOMEのページ](https://ameblo.jp/g-nome/)：機体・武器・攻略・操作の日本語専門ブログ。記事別リンクと出典の扱いは[参考資料一覧](docs/reference/sources-and-macos.md)参照。
+- [英語マニュアルPDF](docs/reference/manuals/G-Nome_Manual_Win_EN.pdf)：取得元・確認範囲は同一覧に記録。
+- [The Collection Chamber: G-NOME](https://collectionchamber.blogspot.com/p/g-nome.html)：原作紹介・画面写真・操作・ゲームシステムの解説。

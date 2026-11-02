@@ -106,13 +106,23 @@ test('Scorp paired CETI and chin RAID fire from both mounts for player and AI wi
  }
 });
 
-test('GAUS30 tolerates a grazing AIP shot without accepting wider misses or shots through cover',()=>{
- for(const {padding,offset,cover,hit} of [{padding:0,offset:.32,cover:false,hit:false},{padding:.45,offset:.32,cover:false,hit:true},{padding:.45,offset:.8,cover:false,hit:false},{padding:.45,offset:.32,cover:true,hit:false}]){
+test('GAUS30 has a wider hit area without accepting clear misses or shots through cover',()=>{
+ for(const {padding,offset,cover,hit} of [{padding:0,offset:.32,cover:false,hit:false},{padding:.75,offset:.6,cover:false,hit:true},{padding:.75,offset:1,cover:false,hit:false},{padding:.75,offset:.6,cover:true,hit:false}]){
   const s=new Simulation(),tower=makeUnit('own','merc-meson-tower',0,20,false),target=makeUnit('target','merc-aip',0,100,true,{speed:0,ai:{detection:0}});
   s.mission={...s.mission,rocks:cover?[{x:3+offset,z:90,r:3}]:[],base:undefined};s.facilities=[];s.units=[tower,target];s.soldiers=[];s.human={x:0,z:20};assert.ok(s.board());target.iff='enemy';s.weapons.lasers.GAUS30.hitPadding=padding;
-  s.fire(1);const beam=s.missiles.find(m=>m.weapon==='GAUS30')!;assert.ok(beam);assert.ok(Math.abs(Math.hypot(beam.vx,beam.vy,beam.vz)-600)<1e-8);
-  Object.assign(beam,{x:3+offset,y:target.hoverHeight+target.spec.height*.6-.4,z:80,vx:0,vy:0,vz:600});
-  const shield=target.shield;s.tick(.01,idle);assert.equal(target.shield,shield);assert.ok(Math.abs(beam.z-86)<1e-8);s.tick(.04,idle);
+  s.fire(1);const beam=s.missiles.find(m=>m.weapon==='GAUS30')!;assert.ok(beam);assert.ok(Math.abs(Math.hypot(beam.vx,beam.vy,beam.vz)-450)<1e-8);
+  Object.assign(beam,{x:3+offset,y:target.hoverHeight+target.spec.height*.6-.4,z:80,vx:0,vy:0,vz:450});
+  const shield=target.shield;s.tick(.01,idle);assert.equal(target.shield,shield);assert.ok(Math.abs(beam.z-84.5)<1e-8);s.tick(.04,idle);
   assert.equal(target.shield,hit?shield-17:shield,JSON.stringify({padding,offset,cover}));
  }
+});
+
+test('Meson towers can select and hit targets across their extended GAUS30 range',()=>{
+ assert.equal(LASERS.GAUS30.range,1000);assert.equal(LASERS.GAUS30.speed,450);
+ for(const kind of ['merc-meson-tower','scorp-meson-tower'] as const)assert.equal(makeUnit('tower',kind,0,0).spec.ai.detection,1000);
+ const s=mounted('merc-meson-tower'),tower=s.mounted!;s.mission={...s.mission,rocks:[],base:undefined,terrain:{...s.mission.terrain,cliffs:[]}};s.facilities=[];
+ const target=makeUnit('far-target','merc-meson-tower',tower.x,tower.z+900,true,{ai:{detection:0}});target.iff='enemy';s.units.push(target);s.pitch=s.targetElevation(target);
+ assert.equal(s.selectInCrosshair(),target);s.clearTarget();s.fire(1);
+ const beam=s.missiles.find(m=>m.weapon==='GAUS30')!;assert.ok(beam);assert.ok(Math.abs(Math.hypot(beam.vx,beam.vy,beam.vz)-450)<1e-8);assert.ok(Math.abs(beam.life-1000/450)<1e-8);
+ step(s,125);assert.ok(target.shield<tower.spec.shield);
 });

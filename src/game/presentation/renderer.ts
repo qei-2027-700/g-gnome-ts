@@ -467,7 +467,7 @@ export class World {
   }
   private fxMaterial(name:string,hex:string,glow=false){
     let material=this.fxMaterials.get(name);
-    if(!material){material=this.material(name,hex,glow);if(name==='smoke'||name==='gas-cloud'||name==='run-dust'){material.alpha=.5;material.disableLighting=true;material.emissiveColor=color(hex);}this.fxMaterials.set(name,material);}
+    if(!material){material=this.material(name,hex,glow);    if(name==='smoke'||name==='gas-cloud'||name==='run-dust'||name==='gaus-impact-smoke'){material.alpha=.5;material.disableLighting=true;material.emissiveColor=color(hex);}this.fxMaterials.set(name,material);}
     return material;
   }
   private retireVehicle(unit:Unit){if(unit.spec.category==='hovercraft'){this.rigs.get(unit.id)?.root.dispose(false,true);this.rigs.delete(unit.id);return;}
@@ -524,7 +524,7 @@ export class World {
   }
   private laserBolt(name='laser-bolt',weapon?:string){
     if(weapon==='GAUS30'){
-      const bolt=MeshBuilder.CreateBox(name,{width:.12,height:.008,depth:24},this.scene);
+      const bolt=MeshBuilder.CreateBox(name,{width:.2,height:.012,depth:24},this.scene);
       const paint=this.gausMaterial(weapon);bolt.material=paint;bolt.isPickable=false;bolt.metadata={weapon,visual:'blue-laser',shape:'thin-plate'};
       return bolt;
     }
@@ -541,6 +541,13 @@ export class World {
   }
   private yellowLaserFlash(position:Point3,weapon:string){const flash=MeshBuilder.CreateSphere(weapon==='TAR12'?'tar12-yellow-flash':'rupp-yellow-flash',{diameter:.45,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.fxMaterial('laser-yellow','#ffe529',true);this.addEffect(flash,.12,'flash');}
   private gausFlash(position:Point3,weapon?:string){const flash=MeshBuilder.CreateSphere('gaus-blue-flash',{diameter:.55,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.gausMaterial(weapon);this.addEffect(flash,.12,'flash');}
+  private gausImpactSmoke(position:Point3){
+    for(let i=0;i<5;i++){
+      const angle=i*Math.PI*2/5,smoke=MeshBuilder.CreateSphere('gaus-blue-smoke',{diameter:1.5,segments:5},this.scene);
+      smoke.position.set(position.x+Math.cos(angle)*.45,position.y,position.z+Math.sin(angle)*.45);smoke.material=this.fxMaterial('gaus-impact-smoke','#426de0');
+      this.addEffect(smoke,1.1,'smoke',new Vector3(Math.cos(angle)*.45,.8,Math.sin(angle)*.45));
+    }
+  }
   private burst(position:Point3,large=false){
     const blast=MeshBuilder.CreateSphere('impact-flash',{diameter:1,segments:8},this.scene);
     blast.position.set(position.x,Math.max(.4,position.y),position.z);
@@ -588,7 +595,7 @@ export class World {
       }
     }
     if(e.type==='mine'&&e.position)this.burst(e.position,true);
-    if(e.type==='impact'&&e.position){if(e.weapon==='GAUS30'||e.weapon==='GAUS20')this.gausFlash(e.position,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(e.position,e.weapon);else if(e.weapon==='GASHR')this.gasCloud(e.position);else if(e.weapon!=='EGGER')this.burst(e.position);}
+    if(e.type==='impact'&&e.position){if(e.weapon==='GAUS30'){this.gausFlash(e.position,e.weapon);this.gausImpactSmoke(e.position);}else if(e.weapon==='GAUS20')this.gausFlash(e.position,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(e.position,e.weapon);else if(e.weapon==='GASHR')this.gasCloud(e.position);else if(e.weapon!=='EGGER')this.burst(e.position);}
     if(e.type==='soldier-death'&&e.position&&(!e.soldier||!isEmbarked(e.soldier)))this.bloodBurst(e.position);
     if(e.type==='hit'&&e.unit&&e.unit!==this.sim.mounted){const point=e.position??{x:e.unit.x,y:e.unit.spec.height*.6,z:e.unit.z};if(e.weapon==='GAUS30'||e.weapon==='GAUS20')this.gausFlash(point,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(point,e.weapon);else this.burst(point);}
     if(e.type==='hit'&&e.unit===this.sim.mounted)this.kick=.12;

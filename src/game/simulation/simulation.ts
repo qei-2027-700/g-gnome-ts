@@ -601,10 +601,11 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   selectInCrosshair(){
     if(this.passenger)return null;
     this.emit({type:'target-select'});
+    const rangeLimit=this.mounted?.spec.weapons.includes('GAUS30')?this.weapons.lasers.GAUS30.range:CROSSHAIR_SELECTION.range;
     const candidates=this.selectionTargets.filter(unit=>unit.alive&&unit!==this.mounted).map(unit=>{
       const range=distance(unit,this.player),horizontal=Math.abs(angle(Math.atan2(unit.x-this.player.x,unit.z-this.player.z)-this.aim)),vertical=Math.abs(this.targetElevation(unit)-this.pitch);
       return {unit,range,horizontal,vertical};
-    }).filter(c=>c.range<=CROSSHAIR_SELECTION.range&&c.horizontal<Math.max(CROSSHAIR_SELECTION.horizontalAngle,Math.atan2(isFacility(c.unit)?Math.max(c.unit.width,c.unit.depth)*.5:2.5,c.range))&&c.vertical<Math.max(CROSSHAIR_SELECTION.verticalAngle,Math.atan2(isFacility(c.unit)?c.unit.height*.5:isVehicle(c.unit)?c.unit.spec.height*.5:.9,c.range)));
+    }).filter(c=>c.range<=rangeLimit&&c.horizontal<Math.max(CROSSHAIR_SELECTION.horizontalAngle,Math.atan2(isFacility(c.unit)?Math.max(c.unit.width,c.unit.depth)*.5:2.5,c.range))&&c.vertical<Math.max(CROSSHAIR_SELECTION.verticalAngle,Math.atan2(isFacility(c.unit)?c.unit.height*.5:isVehicle(c.unit)?c.unit.spec.height*.5:.9,c.range)));
     const unit=candidates.sort((a,b)=>Math.hypot(a.horizontal,a.vertical)-Math.hypot(b.horizontal,b.vertical)||a.range-b.range)[0]?.unit;
     this.setTarget(unit??null);
     return unit??null;

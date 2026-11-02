@@ -1,13 +1,12 @@
 export type MissionResult='complete'|'failed'|'aborted';
-type AnimatedMissionResult=Exclude<MissionResult,'aborted'>;
-const RESULT_LABELS:Record<AnimatedMissionResult,string>={complete:'MISSION COMPLETE',failed:'MISSION FAILED'};
+const RESULT_LABELS:Record<Exclude<MissionResult,'aborted'>,string>={complete:'MISSION COMPLETE',failed:'MISSION FAILED'};
 // Provisional presentation timings; mission simulation stays frozen throughout.
-export const COMPLETION_TIMING={completeView:1,failedView:3.5,closing:.6,closed:.25} as const;
+export const COMPLETION_TIMING={completeView:1,failedView:3.5,closing:.6,closed:1} as const;
 const doorImage=new URL('../../../assets/ui-system/ui-system-end.png',import.meta.url).href;
 export class MissionCompletion {
  elapsed=0;active=false;result:MissionResult='complete';
  private doorImpactPending=false;
- start(result:MissionResult='complete'){if(this.active)return false;this.result=result;this.elapsed=0;this.active=result!=='aborted';this.doorImpactPending=false;return true;}
+ start(result:MissionResult='complete'){if(this.active)return false;this.result=result;this.elapsed=0;this.active=true;this.doorImpactPending=false;return true;}
  cancel(){this.elapsed=0;this.active=false;this.result='complete';this.doorImpactPending=false;}
  takeDoorImpact(){const pending=this.doorImpactPending;this.doorImpactPending=false;return pending;}
  get viewDuration(){return this.result==='complete'?COMPLETION_TIMING.completeView:this.result==='failed'?COMPLETION_TIMING.failedView:0;}
@@ -21,7 +20,6 @@ export class MissionCompletion {
  }
 }
 export function missionCompletionMarkup(result:MissionResult='complete'){
- if(result==='aborted')return '';
- const label=RESULT_LABELS[result];
- return `<section class="mission-completion" role="status" aria-label="${label}"><div class="completion-label">${label}</div><img class="completion-door-image" src="${doorImage}" alt="" aria-hidden="true"></section>`;
+ const label=result==='aborted'?null:RESULT_LABELS[result];
+ return `<section class="mission-completion"${label?` role="status" aria-label="${label}"`:''}>${label?`<div class="completion-label">${label}</div>`:''}<img class="completion-door-image" src="${doorImage}" alt="" aria-hidden="true"></section>`;
 }

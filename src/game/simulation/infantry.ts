@@ -2,6 +2,8 @@ import type {AllyOrder} from './ally-orders.ts';
 import type {Faction} from '../content/vehicles.ts';
 // Boarding radius from the vehicle center; user-tuned prototype value.
 export const BOARDING_DISTANCE=4;
+export const INFANTRY_HIT_RADIUS=1;
+export const INFANTRY_AI_AIM_TOLERANCE=.06;
 // User-tuned walking/turning response; full speed uses the Union manual maximum.
 export const INFANTRY_MOVEMENT={walk:4.4,allyWalk:8,full:32/3.6,prone:2.5,turn:2.8} as const;
 export type Flight={altitude:number;vy:number;vx:number;vz:number};

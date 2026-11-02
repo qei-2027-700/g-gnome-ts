@@ -58,8 +58,8 @@ test('allies automatically engage approaching vehicles by IFF, without an attack
 });
 test('E selects enemy infantry, allies attack it, and infantry rifles can damage an ally',()=>{
  const s=setup(),enemy=s.units.find(u=>u.id==='scorp-asv')!,ally=s.units[1];s.mission.rocks=[];
- const soldier=s.forceEject(enemy)!;enemy.alive=false;soldier.flight=null;soldier.x=0;soldier.z=60;soldier.cooldown=0;
- s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;s.units[2].pilot=false;s.units[3].pilot=false;
+ const soldier=s.forceEject(enemy)!;enemy.alive=false;soldier.flight=null;soldier.x=0;soldier.z=60;soldier.yaw=Math.PI;soldier.cooldown=0;soldier.gashrAmmo=0;
+ s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.spec.speed=0;ally.spec.ai.keepMoving=false;ally.yaw=0;ally.aim=0;s.units[2].pilot=false;s.units[3].pilot=false;
  s.selectTarget();assert.equal(s.target,soldier);assert.ok(s.targetState);assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1);
  run(s,3);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(ally.shield<ally.spec.shield||s.events.some(e=>e.type==='pilot-eject'&&e.unit===ally));assert.ok(soldier.health<35);
 });

@@ -263,7 +263,7 @@ export const VEHICLES = {
     color:SCORP_ASV_PALETTE.armor,
     weapons:[
       'zWASP',
-      // '',
+      'zWASP',
       'SREM',
       'UNKPA'],
     torsoLimit:Math.PI,

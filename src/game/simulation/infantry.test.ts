@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {VEHICLES} from '../content/vehicles.ts';
-import {INFANTRY_WEAPONS} from '../content/weapons.ts';
+import {INFANTRY_WEAPONS,weaponMountCount} from '../content/weapons.ts';
 import {mobilityMultiplier} from './parts.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 const step=(s:Simulation,seconds:number)=>{for(let i=0;i<seconds*60;i++)s.tick(1/60,idle);};
@@ -47,6 +47,33 @@ for(const kind of ['merc-sentry','merc-tactical'] as const){
 test('PRIF44 can defeat ejected infantry without destroying the captured machine',()=>{
  const s=foot(),unit=s.units[1],soldier=s.forceEject(unit)!;step(s,3);aimAt(s,soldier.x,1,soldier.z);
  for(let i=0;i<5;i++){s.footCooldown.PRIF44=0;s.fire(1);}assert.equal(soldier.alive,false);assert.equal(unit.alive,true);assert.equal(s.kills,1);
+});
+test('PRIF44 hits infantry slightly outside the old narrow aiming line',()=>{
+ const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:0,z:0};
+ const soldier=s.forceEject(makeUnit('target','merc-sentry',0,20,true))!;soldier.flight=null;soldier.x=.8;soldier.z=20;
+ s.pitch=Math.atan2(1-s.eyeHeight,20);s.fire(1);assert.equal(soldier.health,28);assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='PRIF44'));
+});
+test('ordered infantry fires at a nearby enemy within the wider aim tolerance',()=>{
+ const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:-100,z:-100};
+ const target=s.forceEject(makeUnit('target','merc-sentry',0,30,true))!,attacker=s.forceEject(makeUnit('attacker','merc-sentry',0,0,true))!;
+ target.flight=null;target.iff='target';target.x=2.5;target.z=30;
+ attacker.flight=null;attacker.x=0;attacker.z=0;attacker.iff='attacker';attacker.cooldown=0;attacker.order={kind:'attack',targetId:target.id};
+ s.tick(.02,idle);assert.equal(target.health,28);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===attacker));
+});
+test('vehicle machine guns apply their higher infantry damage to exposed soldiers',()=>{
+ for(const [weapon,damage] of [['DASY',6],['zWASP',4.5]] as const){
+  const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:-100,z:-100};
+  const kind=weapon==='zWASP'?'scorp-asv':'merc-tactical';
+  const gunner=makeUnit('gunner',kind,0,0,true,{weapons:[weapon],speed:0,ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});
+  const target=s.forceEject(makeUnit('target','merc-sentry',0,40,true))!;target.flight=null;target.x=0;target.z=40;target.iff='target';gunner.iff='attacker';gunner.alert=true;gunner.aggressorId=target.id;gunner.aggressorUntil=10;gunner.aim=gunner.yaw=0;s.units=[gunner];
+  for(let i=0;i<120&&!s.events.some(e=>e.type==='shot'&&e.unit===gunner);i++)s.tick(.02,idle);
+  assert.equal(target.health,35-damage*weaponMountCount(gunner.kind,weapon),weapon);
+  const againstPlayer=new Simulation();againstPlayer.units=[];againstPlayer.mission.base=undefined;againstPlayer.mission.rocks=[];againstPlayer.mission.terrain.cliffs=[];againstPlayer.human={x:0,z:40};againstPlayer.iff='player';
+  const playerTarget=makeUnit('gunner',kind,0,0,true,{weapons:[weapon],speed:0,ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});
+  playerTarget.iff='attacker';playerTarget.alert=true;playerTarget.aggressorId='player';playerTarget.aggressorUntil=10;playerTarget.aim=playerTarget.yaw=0;againstPlayer.units=[playerTarget];
+  for(let i=0;i<120&&!againstPlayer.events.some(e=>e.type==='shot'&&e.unit===playerTarget);i++)againstPlayer.tick(.02,idle);
+  assert.equal(againstPlayer.humanHealth,100-damage*weaponMountCount(playerTarget.kind,weapon),`${weapon} player`);
+ }
 });
 test('Backspace launches upward, blocks boarding in the air and lands outside; ground exit stays quiet',()=>{
  const s=new Simulation();s.human={...MISSION.vehicle};s.board();const unit=s.mounted!;s.eject();assert.equal(s.mounted,null);assert.ok(s.flight);assert.equal(s.events.at(-1)?.launch,true);const height=s.flight!.altitude;

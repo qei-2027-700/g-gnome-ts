@@ -39,6 +39,19 @@ test('ejected enemy infantry also dies from direct missile contact',()=>{
  const p=s.fireMissile(shooter,'CHUM');p.x=soldier.x;p.y=1;p.z=soldier.z+10;p.vx=0;p.vy=0;p.vz=-100;step(s,.2);assert.equal(soldier.alive,false);assert.equal(soldier.health,0);
 });
 
+test('explosive missile near-misses damage exposed infantry with distance falloff and cover protection',()=>{
+ const makeBlast=(covered=false)=>{
+  const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=covered?[{x:1,z:0,r:.8}]:[];s.mission.terrain.cliffs=[];s.human={x:-100,z:-100};
+  const soldier=s.forceEject(makeUnit('blast-target','merc-sentry',0,0,true))!;soldier.flight=null;soldier.x=2;soldier.z=0;
+  const missile=s.fireMissile(makeUnit('blast-source','union-asv',-100,-100,true),'CHUM');missile.x=0;missile.y=1;missile.z=0;missile.vx=0;missile.vy=-100;missile.vz=0;
+  return {s,soldier};
+ };
+ const near=makeBlast();step(near.s,.02);assert.ok(near.soldier.health<20,`near blast health ${near.soldier.health}`);
+ const covered=makeBlast(true);step(covered.s,.02);assert.equal(covered.soldier.health,35);
+ const player=new Simulation();player.units=[];player.mission.base=undefined;player.mission.rocks=[];player.mission.terrain.cliffs=[];player.human={x:2,z:0};
+ const missile=player.fireMissile(makeUnit('source','union-asv',-100,-100,true),'CHUM');missile.x=0;missile.y=1;missile.z=0;missile.vx=0;missile.vy=-100;missile.vz=0;
+ step(player,.02);assert.ok(player.humanHealth<100&&player.humanHealth>0);
+});
 
 function aiMissileVolley(airborne:boolean,index:number){
  const def=structuredClone(MISSION);def.completionEnabled=false;def.rocks=[];def.units=[{id:'own',kind:'union-sentry',x:0,z:0,pilot:false}];def.assignedUnitId='own';def.startMountedUnitId='own';

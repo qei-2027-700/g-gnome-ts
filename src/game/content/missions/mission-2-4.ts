@@ -12,15 +12,15 @@ const attackers=[...groundAttackers];
 // User reference confirms the cockpit, snow plain and right-hand mountain.
 // Coordinates and bounds are provisional; no original objectives are inferred.
 export const MISSION_2_4:MissionDefinition={
- id:'2-4',title:'Merc · Snowfield',playerFaction:'union',initialIff:'2620',factionCodes:{merc:'5031',union:'2620'},
+ id:'2-4',title:'Merc · Snowfield',playerFaction:'merc',initialIff:'5031',factionCodes:{merc:'5031',union:'2620'},
  subtitle:{ja:'Merc編・雪原',en:'Merc snowfield'},
  briefing:{ja:'Merc Tactical Defense HAWCに搭乗した状態で雪原から開始する。地形は提供画像を基準にした仮配置。原作の敵配置・任務目標は未確認。',en:'Start aboard a Merc Tactical Defense HAWC on a snow plain. Terrain placement is provisional, based on the supplied image. Original enemies and objectives are unverified.'},
  startHint:{ja:'Merc Tactical Defense HAWC · 雪原。B：地図、C：視点切替。任務目標は未確定。',en:'Merc Tactical Defense HAWC · Snowfield. B: map, C: camera. Objectives unverified.'},
  success:{ja:'任務完了。',en:'Mission complete.'},radio:{ja:'キリーへF2で個別に指示できる。原作の会話内容は未確認。',en:'Use F2 to command Kylie. Original mission dialogue is unverified.'},
- player:{x:0,z:0},assignedUnitId:'union-player',startMountedUnitId:'union-player',initialView:'first-person',completionEnabled:false,
+ player:{x:0,z:0},assignedUnitId:'merc-player',startMountedUnitId:'merc-player',initialView:'first-person',completionEnabled:false,
  units:[
-  {id:'union-player',kind:'merc-tactical',x:0,z:0,yaw:0,pilot:false},
-  {id:'kylie',kind:'merc-tactical',x:-18,z:-28,yaw:0,pilot:true,personId:'kylie',iff:'2620'},
+  {id:'merc-player',kind:'merc-tactical',x:0,z:0,yaw:0,pilot:false},
+  {id:'kylie',kind:'union-sentry',x:-18,z:-28,yaw:0,pilot:true,personId:'kylie',iff:'5031'},
   ...attackers,
   {id:'merc-meson',kind:'merc-meson-tower',x:-25,z:-5,pilot:false,powerSourceId:'merc-power'},
   {id:'scorp-rocket',kind:'scorp-rocket-tower',x:-5,z:-10,pilot:false},

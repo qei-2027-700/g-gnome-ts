@@ -18,7 +18,7 @@ export const LASERS = {
 } as const;
 export type LaserWeapon = keyof typeof LASERS;
 export const INFANTRY_WEAPONS={
-  PRIF44:{range:150,damage:7,vehicleDamage:.2,cooldown:.7,tracerSpeed:160},
+  PRIF44:{range:150,damage:7,vehicleDamage:.3,cooldown:.7,tracerSpeed:160},
   GASHR:{range:100,speed:60,cooldown:.8,ammo:5},
   // EGGER ballistics and capacity are provisional, pending original-game measurements.
   EGGER:{range:100,speed:60,cooldown:.8,ammo:5},
@@ -26,18 +26,18 @@ export const INFANTRY_WEAPONS={
 // VISOM flight speed in m/s; lifetime below preserves the 1000 m range.
 export const VISOM_SPEED=90;
 // Manual p.46: PUG range/velocity/armor damage; radius and homing remain provisional.
-export const MISSILES={PUG:{speed:700,damage:38,radius:.45,lifetime:625/700},HSSO:{speed:110,damage:4.5,radius:.5,lifetime:600/110},CHUM:{speed:94,damage:5,radius:.45,lifetime:425/94},SAG5T:{speed:110,damage:4.5,radius:.5,lifetime:600/110},TCROCK:{speed:94,damage:5,radius:.45,lifetime:425/94},SREM:{speed:110,damage:4.5,radius:.5,lifetime:600/110},UNKPA:{speed:110,damage:4.5,radius:.5,lifetime:600/110},
+export const MISSILES={PUG:{speed:700,damage:38,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},HSSO:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},CHUM:{speed:94,damage:5,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},SAG5T:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},TCROCK:{speed:94,damage:5,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},SREM:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},UNKPA:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
  VISOM:{speed:VISOM_SPEED,damage:2,radius:.45,lifetime:1000/VISOM_SPEED}
 };
 
-export const MACHINE_GUNS={FLECH:{range:150,interval:.11,damage:3},DASY:{range:180,interval:.11,damage:4},TCREAP:{range:160,interval:.11,damage:3,projectileSpeed:60},zWASP:{range:180,interval:.11,damage:3}};
+export const MACHINE_GUNS={FLECH:{range:150,interval:.11,damage:3,infantryDamage:4.5},DASY:{range:180,interval:.11,damage:4,infantryDamage:6},TCREAP:{range:160,interval:.11,damage:3,infantryDamage:4.5,projectileSpeed:60},zWASP:{range:180,interval:.11,damage:3,infantryDamage:4.5}};
 export type MachineGun=keyof typeof MACHINE_GUNS;
 export type MissileWeapon=keyof typeof MISSILES;
 export type VehicleWeapon=LaserWeapon|MachineGun|MissileWeapon;
 export const MISSILE_INTERVAL=.4;
 export type LaserSpec={hitPadding?:number;range:number;minRange:number;recharge:number;movingRechargeFactor:number;interval:number;energy:number;damage:number;speed:number};
-export type GunSpec={projectileSpeed?:number;range:number;interval:number;damage:number};
-export type MissileSpec={speed:number;damage:number;radius:number;lifetime:number};
+export type GunSpec={projectileSpeed?:number;infantryDamage?:number;range:number;interval:number;damage:number};
+export type MissileSpec={infantryBlastDamage?:number;infantryBlastRadius?:number;speed:number;damage:number;radius:number;lifetime:number};
 export type WeaponOverrides={lasers?:Partial<Record<LaserWeapon,Partial<LaserSpec>>>;guns?:Partial<Record<MachineGun,Partial<GunSpec>>>;missiles?:Partial<Record<MissileWeapon,Partial<MissileSpec>>>};
 export function resolveWeapons(overrides:WeaponOverrides={}){
  const lasers=Object.fromEntries(Object.entries(LASERS).map(([id,p])=>[id,{...p,...overrides.lasers?.[id as LaserWeapon]}])) as Record<LaserWeapon,LaserSpec>;

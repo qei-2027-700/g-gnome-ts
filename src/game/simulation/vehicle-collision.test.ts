@@ -147,6 +147,16 @@ test('lowered bridges admit people and HAWCs, while raised bridges block ground 
   else assert.ok(sign*(actor.x-r.x)<-r.width/2,`${kind}: raised bridge still passed`);
  }
 });
+test('2-2 bridge lies across its river and raising it closes the crossing',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ for(const raised of [false,true]){
+  const mission=structuredClone(MISSION_2_2);mission.startMountedUnitId=undefined;mission.terrain.cliffs=[];mission.base=undefined;mission.rocks=[];
+  const s=new Simulation('Easy',mission),river=mission.terrain.river!;s.human={x:river.x-river.width/2-20,z:river.bridgeZ};
+  if(raised)s.raisedBridges.add(river.bridgeId);
+  s.move(s.human,Math.PI/2,river.width+40);
+  assert.equal(s.human.x>river.x+river.width/2+19,!raised,`raised=${raised}`);
+ }
+});
 
 test('normal forward input cannot walk or drive a HAWC through the river bank',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');

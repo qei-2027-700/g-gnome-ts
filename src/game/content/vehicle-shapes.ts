@@ -8,6 +8,7 @@ const unionTacticalHip=7.5*.5*unionTacticalLegScale.y;
 export const VEHICLE_SHAPES = {
  'union-sentry':{hull:{w:2.45,h:1.05,d:2.1,y:-.85,z:0},cockpit:{w:1.5,h:1.1,d:1.7,y:-.12,z:.5},weapon:{w:.5,h:.42,d:1.1,x:.65,y:-1.02,z:1.05},shoulder:{w:1.45,h:1.3,d:2.4,x:2.35,y:2.05,z:.05},legX:2.35,upperLeg:{w:.85,h:2.65,d:1.1,y:4.72,z:-.1},brace:{x:1.5,y:.9,z:-.15,w:1.7,h:2.2,d:.7}},
  'union-tactical':{hull:{w:2.9,h:1.1,d:2.1,y:-.35,z:0},cockpit:{w:2.65,h:1.6,d:2.2,y:1.2,z:.2},weapon:{w:1.7,h:1.3,d:2.6,x:2.65,y:1.5,z:.05},legX:1.65,legScale:unionTacticalLegScale,legHip:unionTacticalHip,support:{w:1.65*unionTacticalLegScale.x,h:unionTacticalHip,d:2.35*unionTacticalLegScale.z,y:unionTacticalHip/2,z:.2*unionTacticalLegScale.z}},
+ 'darken-sentry':{hull:{w:2.45,h:1.05,d:2.1,y:-.85,z:0},cockpit:{w:1.5,h:1.1,d:1.7,y:-.12,z:.5},weapon:{w:.5,h:.42,d:1.1,x:.65,y:-1.02,z:1.05},shoulder:{w:1.45,h:1.3,d:2.4,x:2.35,y:2.05,z:.05},legX:2.35,upperLeg:{w:.85,h:2.65,d:1.1,y:4.72,z:-.1},brace:{x:1.5,y:.9,z:-.15,w:1.7,h:2.2,d:.7}},
  'merc-sentry':{hull:{w:2.6,h:1.3,d:2.5,y:0,z:0},cockpit:{w:2.65,h:2.15,d:2.25,y:1.35,z:0},weapon:{w:1.3,h:1.05,d:2.9,x:2.05,y:.65,z:.3},legX:1.5},
  'merc-tactical':{hull:{w:2.6,h:1.25,d:2.3,y:-.45,z:0},cockpit:{w:2.65,h:1.85,d:1.95,y:1.4,z:.1},weapon:{w:1.25,h:1.25,d:2.1,x:2.65,y:2.05,z:.05},legX:1.6},
  // Side reference: low pointed body and four raised, outward-splayed legs. Dimensions remain provisional.

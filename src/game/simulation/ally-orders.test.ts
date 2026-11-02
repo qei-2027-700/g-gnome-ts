@@ -61,7 +61,7 @@ test('E selects enemy infantry, allies attack it, and infantry rifles can damage
  const soldier=s.forceEject(enemy)!;enemy.alive=false;soldier.flight=null;soldier.x=0;soldier.z=60;soldier.cooldown=0;
  s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;s.units[2].pilot=false;s.units[3].pilot=false;
  s.selectTarget();assert.equal(s.target,soldier);assert.ok(s.targetState);assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1);
- run(s,3);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier&&e.weapon==='PRIF44'));assert.ok(ally.shield<ally.spec.shield);assert.ok(soldier.health<35);
+ run(s,3);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(ally.shield<ally.spec.shield||s.events.some(e=>e.type==='pilot-eject'&&e.unit===ally));assert.ok(soldier.health<35);
 });
 test('IFF overrides faction for selection, radio and autonomous ally fire, and ejection keeps the code',()=>{
  const s=setup(),ally=s.units[1],enemy=s.units.find(u=>u.id==='scorp-asv')!;enemy.iff=s.iff;assert.equal(s.isHostile(enemy),false);
@@ -261,7 +261,7 @@ function orderedFootSetup(){const {s,people}=footSquad();s.mission.base=undefine
 
 test('dismounted F2/F1 attack advances into common PRIF44 range, fires and damages the selected enemy; invalid target clears once',()=>{
  const {s,people,target}=orderedFootSetup(),soldier=people[0],menu=new RadioMenu();key(s,menu,'F2');assert.deepEqual(key(s,menu,'F1')!.accepted,['kylie']);assert.deepEqual(soldier.order,{kind:'attack',targetId:target.id});const shield=target.shield;
- run(s,40);assert.ok(soldier.z>100);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier&&e.weapon==='PRIF44'));assert.ok(target.shield<shield);assert.ok(distance(soldier,target)<150);
+ run(s,40);assert.ok(soldier.z>100);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(target.shield<shield||!target.pilot);assert.ok(distance(soldier,target)<150);
  target.pilot=false;run(s,.1);assert.equal(soldier.order,null);assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&e.soldier===soldier).length,1);run(s,1);assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&e.soldier===soldier).length,1);
 });
 
@@ -281,7 +281,7 @@ test('foot attack is shared by every current mission with companions, including 
  const {MISSIONS}=await import('../content/missions/index.ts');
  for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];def.terrain.cliffs=[];def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
   const s=new Simulation('Easy',def),radio=s.radioMembers[0],soldier=radio.soldier??s.forceEject(radio.unit!,'boarding')!,target=makeUnit('ordered-enemy','merc-sentry',soldier.x,soldier.z+200,true);soldier.flight=null;target.iff='0000';target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=999;s.units.push(target);s.selected=target.id;
-  assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1,source.id);assert.equal(soldier.boardingTarget,undefined,source.id);run(s,40);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),source.id);assert.ok(target.shield<target.spec.shield,source.id);
+  assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1,source.id);assert.equal(soldier.boardingTarget,undefined,source.id);run(s,40);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),source.id);assert.ok(target.shield<target.spec.shield||!target.pilot,source.id);
  }
 });
 

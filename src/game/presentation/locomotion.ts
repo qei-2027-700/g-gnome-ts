@@ -4,6 +4,7 @@ import {VEHICLES,type VehicleKind} from '../content/vehicles.ts';
 export const GAITS={
  'union-sentry':{stride:6.8,lift:.65,lean:.085,bounce:.10},
  'union-tactical':{stride:7,lift:.65,lean:.06,bounce:.13},
+ 'darken-sentry':{stride:6.8,lift:.65,lean:.085,bounce:.10},
  'merc-assault':{stride:4,lift:.25,lean:.03,bounce:.05},
  'merc-sentry':{stride:7.6,lift:.85,lean:.12,bounce:.24},
  'union-asv':{stride:5,lift:0,lean:0,bounce:0},

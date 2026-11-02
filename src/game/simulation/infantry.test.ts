@@ -165,6 +165,7 @@ test('lethal rifle hits emit one death event, while further hits and player dama
 
 test('a facing infantry shot is intercepted by an intervening empty vehicle',()=>{
  const s=new Simulation();s.human={...s.units[0]};s.board();const own=s.mounted!,soldier=s.forceEject(makeUnit('enemy','merc-sentry',own.x,own.z+70,true))!,blocker=makeUnit('cover','union-asv',own.x,own.z+35,false);
+ own.pilot=false;// empty: soldier uses PRIF44 (not GASHR) so blocker intercepts the shot
  s.units=[own,blocker];soldier.x=own.x;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];soldier.flight=null;soldier.yaw=Math.PI;soldier.cooldown=0;const shield=own.shield,before=blocker.shield;
  s.tick(.02,idle);assert.equal(own.shield,shield);assert.equal(blocker.shield,before-INFANTRY_WEAPONS.PRIF44.vehicleDamage);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));
 });

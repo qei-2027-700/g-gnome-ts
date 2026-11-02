@@ -26,6 +26,13 @@ test('mission and spawn overrides affect movement, regeneration limits, damage, 
  const next=new Simulation('Easy',mission('next'));assert.equal(next.units[0].spec.speed,85);assert.equal(next.weapons.lasers.RAID.damage,5);assert.equal(LASERS.RAID.damage,5);
  const retry=new Simulation('Easy',def);assert.equal(retry.units[0].spec.speed,36);assert.equal(retry.units[0].ammo,2);assert.equal(retry.units[0].parts.hull,1);
 });
+test('2-2 starts in the Merc Tactical with its configured loadout and Union IFF',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ const s=new Simulation('Easy',MISSION_2_2),player=s.mounted!;
+ assert.equal(player.id,'merc-player');assert.equal(player.kind,'merc-tactical');assert.equal(player.iff,'2620');
+ assert.deepEqual(player.spec.weapons,['DASY','SAG5T','RAID']);
+ assert.equal(player.ammunition.DASY,300);assert.equal(player.ammunition.SAG5T,40);
+});
 test('mission objectives support multiple waypoints and targeted elimination without Merc or enemy-count assumptions',()=>{
  const def=mission();def.waypoints=[{id:2,x:40,z:20,radius:2},{id:3,x:40,z:50,radius:2}];
  def.objectives=[{id:'two',type:'reach',waypointId:2,label:{ja:'2',en:'2'}},{id:'three',type:'reach',waypointId:3,label:{ja:'3',en:'3'}},{id:'kill',type:'eliminate',unitIds:['target'],label:{ja:'排除',en:'Eliminate'}}];

@@ -10,7 +10,7 @@
 | [merc-assult-hawk-yoko.png](merc-assult-hawk-yoko.png) | ユーザー提供のMerc Assault横向き画像。[4本脚と配色の参照](../docs/reference/vehicles/merc-assault/README.md)。ゲーム画面の背景には使用しない |
 | `cockpits/union-sentry-reference.png` | [Union Sentryの提供画像](../docs/reference/vehicles/union-sentry/user-sentry-identification-2026-10-23.png) |
 | `cockpits/union-tactical-reference.png` | [Union Tacticalの機内参照](../docs/reference/vehicles/union-tactical/1-3-darken軍-sentry-hawk.png)。適用先はユーザー指定 |
-| `cockpits/merc-tactical-reference.png` | [Merc Tacticalの機内](../docs/reference/vehicles/merc-tactical/2-4-merc軍-タクティカルディフェンスhawk内view.png) |
+| [cockpits/merc-td-hawk.png](cockpits/merc-td-hawk.png) | Merc Tacticalの機内フレーム。窓とHUDを除いて使用。[機内資料](../docs/reference/vehicles/merc-tactical/2-4-merc軍-タクティカルディフェンスhawk内view.png) |
 | [cockpits/merc-assault.png](cockpits/merc-assault.png) | ユーザー指定のMerc Assault HAWCの機内。窓と固定計器を除いて使用。[専用コックピット](../docs/gameplay/cockpit-hud.md#merc-assault-hawcの操縦席2026-10-29) |
 | [cockpits/merc-mison-guard-tower.png](cockpits/merc-mison-guard-tower.png) | ユーザー提供のミーゾン・ガードタワーの機内とMerc AIP。窓・固定計器を除いたフレームに使用。[専用機内表示](../docs/gameplay/cockpit-hud.md#mercミーゾンガードタワーの機内2026-10-29) |
 | [cockpits/merc-mison-guard-tower3.png](cockpits/merc-mison-guard-tower3.png) | 徒歩視点から見たMercミーゾンタワーの外観と周辺配置の追加資料。塔の機内画像とは区別。[外観の観察記録](../docs/reference/vehicles/merc-meson-tower/README.md#徒歩視点からの外観追加資料2026-10-30) |

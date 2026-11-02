@@ -428,7 +428,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       this.emit({type:'soldier-death',soldier,faction:soldier?.faction??unit.spec.faction,position:{x:unit.x,y:unit.spec.height*.6,z:unit.z}});return null;
     }
 
-    if(!soldier){soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,personId:unit.personId,faction:unit.spec.faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null};this.soldiers.push(soldier);}
+    if(!soldier){soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,personId:unit.personId,faction:unit.spec.faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};this.soldiers.push(soldier);}
     soldier.order=undefined;soldier.driverOf=undefined;soldier.iff=unit.iff;soldier.yaw=unit.yaw;this.cancelBoarding(soldier);
     const launch=cause!=='boarding'&&unit.spec.ejectionSeat!==false&&unit.spec.category!=='tower';soldier.velocity=undefined;soldier.x=unit.x+(launch?0:Math.cos(unit.yaw)*9);soldier.z=unit.z-(launch?0:Math.sin(unit.yaw)*9);soldier.flight=launch?launchFlight(unit.spec.height,unit.yaw):null;
     if(cause!=='boarding')this.emit({type:'pilot-eject',unit,soldier,ejection:cause});return soldier;
@@ -437,7 +437,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!unit.alive)return;
     const crew=this.soldiers.filter(s=>s.alive&&(s.driverOf===unit.id||s.passengerOf===unit.id));
     if(unit.pilot&&!crew.some(s=>s.driverOf===unit.id)){
-      const pilot:Soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,driverOf:unit.id,personId:unit.personId,faction:unit.spec.faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:false,cooldown:0,flight:null};
+      const pilot:Soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,driverOf:unit.id,personId:unit.personId,faction:unit.spec.faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:false,cooldown:0,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};
       this.soldiers.push(pilot);crew.push(pilot);
     }
     for(const soldier of crew){soldier.health=0;soldier.alive=false;soldier.flight=null;soldier.velocity=undefined;soldier.driverOf=unit.id;soldier.passengerOf=undefined;this.cancelBoarding(soldier);this.emit({type:'soldier-death',soldier,faction:soldier.faction,position:{x:unit.x,y:unit.spec.height*.6,z:unit.z}});}
@@ -495,7 +495,15 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     const bearing=Math.atan2(target.x-soldier.x,target.z-soldier.z);soldier.yaw+=Math.max(-INFANTRY_MOVEMENT.turn*dt,Math.min(INFANTRY_MOVEMENT.turn*dt,angle(bearing-soldier.yaw)));
     const origin={x:soldier.x,y:1.2,z:soldier.z},to={x:target.x,y:targetHeight(target),z:target.z};
     if(Math.hypot(to.x-origin.x,to.y-origin.y,to.z-origin.z)<=range&&Math.abs(angle(bearing-soldier.yaw))<.025&&soldier.cooldown===0&&this.clearAIShot(soldier,origin,to,target)){
-      soldier.cooldown=INFANTRY_WEAPONS.PRIF44.cooldown;this.fireAIBullet(soldier,origin,to,'PRIF44',INFANTRY_WEAPONS.PRIF44.vehicleDamage,INFANTRY_WEAPONS.PRIF44.damage);
+      const dist=distance(soldier,target),useGashr=isVehicle(target)&&target.pilot&&(soldier.gashrAmmo??0)>0&&dist<=INFANTRY_WEAPONS.GASHR.range;
+      if(useGashr){
+        soldier.gashrAmmo=(soldier.gashrAmmo??0)-1;soldier.cooldown=INFANTRY_WEAPONS.GASHR.cooldown;
+        const speed=INFANTRY_WEAPONS.GASHR.speed;const direction={x:Math.sin(soldier.yaw),y:(targetHeight(target)-origin.y)/(dist||1),z:Math.cos(soldier.yaw)};
+        const projectile:Missile={...origin,id:this.nextMissileId++,owner:soldier.id,playerOwned:false,weapon:'GASHR',vx:direction.x*speed,vy:direction.y*speed,vz:direction.z*speed,damage:0,radius:.22,life:INFANTRY_WEAPONS.GASHR.range/speed};
+        this.missiles.push(projectile);this.emit({type:'shot',soldier,from:origin,to,weapon:'GASHR',projectileId:projectile.id,position:origin});
+      }else{
+        soldier.cooldown=INFANTRY_WEAPONS.PRIF44.cooldown;this.fireAIBullet(soldier,origin,to,'PRIF44',INFANTRY_WEAPONS.PRIF44.vehicleDamage,INFANTRY_WEAPONS.PRIF44.damage);
+      }
     }
     return true;
   }
@@ -533,7 +541,15 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(dist<100&&Math.abs(angle(aim-soldier.yaw))<.025&&this.lineOfSight(soldier,opponent.position)&&soldier.cooldown===0){
         const origin={x:soldier.x,y:1.2,z:soldier.z},range=dist+2,targetY=opponent.unit?targetHeight(opponent.unit):this.eyeHeight;
         const to={x:origin.x+Math.sin(soldier.yaw)*range,y:origin.y+(targetY-origin.y)*range/(distance(soldier,opponent.position)||1),z:origin.z+Math.cos(soldier.yaw)*range};
-        soldier.cooldown=1.4;this.fireAIBullet(soldier,origin,to,'PRIF44',INFANTRY_WEAPONS.PRIF44.vehicleDamage,INFANTRY_WEAPONS.PRIF44.damage);
+        const useGashr=opponent.unit&&isVehicle(opponent.unit)&&opponent.unit.pilot&&(soldier.gashrAmmo??0)>0&&dist<=INFANTRY_WEAPONS.GASHR.range;
+        if(useGashr){
+          soldier.gashrAmmo=(soldier.gashrAmmo??0)-1;soldier.cooldown=INFANTRY_WEAPONS.GASHR.cooldown;
+          const speed=INFANTRY_WEAPONS.GASHR.speed;const direction={x:Math.sin(soldier.yaw),y:(targetY-origin.y)/(dist||1),z:Math.cos(soldier.yaw)};
+          const projectile:Missile={...origin,id:this.nextMissileId++,owner:soldier.id,playerOwned:false,weapon:'GASHR',vx:direction.x*speed,vy:direction.y*speed,vz:direction.z*speed,damage:0,radius:.22,life:INFANTRY_WEAPONS.GASHR.range/speed};
+          this.missiles.push(projectile);this.emit({type:'shot',soldier,from:origin,to,weapon:'GASHR',projectileId:projectile.id,position:origin});
+        }else{
+          soldier.cooldown=1.4;this.fireAIBullet(soldier,origin,to,'PRIF44',INFANTRY_WEAPONS.PRIF44.vehicleDamage,INFANTRY_WEAPONS.PRIF44.damage);
+        }
       }
     }
   }
@@ -741,7 +757,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!facility.pilot||this.insideFacility===facility)return;
     facility.pilot=false;const point=facilityExit(facility);
     let soldier=this.soldiers.find(s=>s.alive&&s.driverOf===facility.id);
-    if(!soldier){soldier={id:`crew-${facility.id}-${this.soldiers.length}`,sourceVehicle:facility.id,iff:facility.iff,faction:facility.faction,x:point.x,z:point.z,yaw:facility.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,aggressorId:null,aggressorUntil:0};this.soldiers.push(soldier);}
+    if(!soldier){soldier={id:`crew-${facility.id}-${this.soldiers.length}`,sourceVehicle:facility.id,iff:facility.iff,faction:facility.faction,x:point.x,z:point.z,yaw:facility.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,aggressorId:null,aggressorUntil:0,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};this.soldiers.push(soldier);}
     if(lethal){soldier.driverOf=facility.id;soldier.health=0;soldier.alive=false;this.emit({type:'soldier-death',soldier,faction:soldier.faction,position:{x:facility.x,y:1,z:facility.z}});}
     else{soldier.driverOf=undefined;Object.assign(soldier,point);soldier.flight=null;this.emit({type:'pilot-eject',facility,soldier,ejection:'gas'});}
   }

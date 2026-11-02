@@ -1,3 +1,11 @@
 node_modules/
 dist/
 .artifacts/
+
+# 参照用画像（ビルド不要、原作資料・スクリーンショット）
+assets/hawk-building/
+assets/mission-map/
+assets/ui-system/
+
+# assetsルート直下の参照用PNG（ビルドでは使わない）
+assets/*.png

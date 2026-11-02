@@ -319,11 +319,11 @@ test('mounted Merc AIP accelerates and brakes with more inertia without lowering
 });
 
 
-test('Scorp ASV horizontal key and mouse aiming matches HAWCs without starting movement or changing Union ASV controls',()=>{
+test('all tested ASVs and HAWCs share horizontal key and mouse turning without starting movement',()=>{
  const turn=(kind:'scorp-asv'|'union-asv'|'union-sentry')=>{
   const s=new Simulation(),unit=makeUnit('scorp-asv-controls',kind,0,0,false);s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());for(let i=0;i<60;i++)s.tick(1/60,{...idle,right:true});const key=unit.yaw,before=unit.aim;s.aimMouseBy(100,0);assert.equal(unit.x,0);assert.equal(unit.z,0);assert.equal(s.speed,0);return {key,mouse:angle(unit.aim-before)};
  };
- const scorp=turn('scorp-asv'),hawc=turn('union-sentry'),union=turn('union-asv');assert.deepEqual(scorp,hawc);assert.ok(Math.abs(scorp.key-1.5)<1e-8);assert.ok(Math.abs(scorp.mouse-.5)<1e-8);assert.ok(Math.abs(union.key-.6)<1e-8);assert.ok(Math.abs(union.mouse-.25)<1e-8);
+ const scorp=turn('scorp-asv'),hawc=turn('union-sentry'),union=turn('union-asv');assert.deepEqual(scorp,hawc);assert.deepEqual(union,hawc);assert.ok(Math.abs(scorp.key-1.5)<1e-8);assert.ok(Math.abs(scorp.mouse-.5)<1e-8);
 });
 
 test('selecting allied infantry resolves each person name in the active mission and locale',async()=>{

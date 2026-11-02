@@ -2,8 +2,15 @@ import {VEHICLE_SHAPES,mercAssaultLegPose} from '../content/vehicle-shapes.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GAITS,legPose} from './locomotion.ts';
+import {DRIVE_PROFILES} from './audio.ts';
 import {VEHICLES,type VehicleKind} from '../content/vehicles.ts';
 const kinds=Object.keys(GAITS).filter(kind=>!kind.endsWith('-asv')) as VehicleKind[];
+test('every vehicle kind has shape, gait and drive profile data',()=>{
+ const kinds=Object.keys(VEHICLES).sort();
+ assert.deepEqual(Object.keys(VEHICLE_SHAPES).sort(),kinds);
+ assert.deepEqual(Object.keys(GAITS).sort(),kinds);
+ assert.deepEqual(Object.keys(DRIVE_PROFILES).sort(),kinds);
+});
 test('articulated feet land on the ground and lift during recovery on every biped chassis',()=>{
  for(const kind of kinds)for(const run of [.2,.5,1])for(let i=0;i<32;i++){
   const phase=i/32*Math.PI*2,height=VEHICLES[kind].height,shape=VEHICLE_SHAPES[kind],scale='legScale' in shape?shape.legScale.y:1,hipHeight=('legHip' in shape?shape.legHip:height*.5)-.55*run+Math.abs(Math.sin(phase))*GAITS[kind].bounce*(kind==='merc-tactical'?run:Math.sqrt(run)),pose=legPose(kind,phase,run,hipHeight);

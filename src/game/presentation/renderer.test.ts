@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {NullEngine} from '@babylonjs/core/Engines/nullEngine.js';
 import {World} from './renderer.ts';
 import {Simulation,makeUnit} from '../simulation/simulation.ts';
+import type {FacilityType} from '../simulation/facilities.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 test('Merc Assault has four raised spider legs, grounded alternating feet, shared leg hit zones and yellow RUPP beams',async()=>{
  const {intersectParts,buildingClearance}=await import('../simulation/parts.ts');
@@ -349,6 +350,11 @@ test('selected command facility has a building hologram, projects onto the HUD, 
  const mesh=world.scene.getMeshByName('command-center')!;assert.equal(mesh.position.x,command.x);assert.equal(mesh.metadata.facilityId,command.id);
  assert.ok(world.scene.getMeshByName('command-center-roof-turret'));assert.ok(world.scene.getMeshByName('command-center-antenna'));
  assert.ok(facilityHologramSvg('command').includes('司令部ホログラム'));assert.ok(missionMap(s,'ja').includes('司令部ホログラム'));engine.dispose();
+});
+
+test('every facility kind has a named hologram label',async()=>{
+ const {FACILITY_NAMES}=await import('../simulation/facilities.ts');const {facilityHologramSvg}=await import('./facility-hologram.ts');
+ for(const [kind,name] of Object.entries(FACILITY_NAMES))assert.ok(facilityHologramSvg(kind as FacilityType).includes(`${name}ホログラム`),kind);
 });
 
 test('player and Scorp infantry keep a smooth eight-head silhouette with longer legs, a compact torso and grounded boots',async()=>{

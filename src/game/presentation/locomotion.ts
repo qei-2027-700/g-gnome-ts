@@ -18,7 +18,7 @@ export const GAITS={
  'scorp-meson-tower':{stride:1,lift:0,lean:0,bounce:0},
  'scorp-rocket-tower':{stride:1,lift:0,lean:0,bounce:0},
  'merc-tactical':{stride:7.4,lift:2.15,lean:.105,bounce:.52},
-} as const;
+} as const satisfies Record<VehicleKind,{stride:number;lift:number;lean:number;bounce:number}>;
 export function legPose(kind:VehicleKind,phase:number,run:number,hipHeight:number,height?:number){
  const h=height??VEHICLES[kind].height,profile=GAITS[kind],strength=Math.max(0,Math.min(1,run));
  const cycle=((phase/(Math.PI*2))%1+1)%1,stance=cycle<.5;

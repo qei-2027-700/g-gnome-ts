@@ -8,6 +8,7 @@
 
 - 対象は1997年のPCゲーム『G-Nome』の再現。Babylon.js・TypeScript・Viteを使うブラウザゲームで、最初の対象は製品版1-1。全編への拡張を見据える。
 - 起動と構成は [README.md](README.md)、仕様の入口は [制作資料の目次](docs/README.md)、実装順序は [実装計画](docs/technical/implementation-plan.md) を参照する。
+- Mission・Vehicle・Facilityの追加・変更では[コンテンツ拡張手順](docs/technical/content-extension.md)を参照する。
 - 実装済み・未実装・検証範囲は [起動・実装範囲](docs/technical/playable-1-1.md) と対象コードを照合する。資料に記述があるだけで実装済みと判断しない。
 
 ## 作業別スキル

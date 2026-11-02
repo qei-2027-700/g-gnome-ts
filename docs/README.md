@@ -49,6 +49,7 @@
 ## 技術設計
 
 - [ミッションの追加と共通仕様](technical/mission-definitions.md)：任務定義、機体・武器の再利用、任務限定の例外、再挑戦
+- [Mission・Vehicle・Facilityの拡張手順](technical/content-extension.md)：追加時の変更箇所、共通／固有データ、型・挙動検証
 - [1-1試作版の起動と実装範囲](technical/playable-1-1.md)：起動・操作、仮設定、実装箇所、検証結果
 
 - [実装計画](technical/implementation-plan.md)：採用技術、ゲーム基盤、段階と完了条件

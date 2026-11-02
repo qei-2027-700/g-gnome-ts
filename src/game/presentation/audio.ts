@@ -27,7 +27,7 @@ export const DRIVE_PROFILES={
  'scorp-rocket-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
   'merc-assault':{idle:58,rev:40,harmonic:2.8,filter:280,volume:.035,wave:'triangle'},
   'merc-tactical':{idle:62,rev:45,harmonic:2.8,filter:300,volume:.035,wave:'triangle'},
-} as const;
+} as const satisfies Record<VehicleKind,{idle:number;rev:number;harmonic:number;filter:number;volume:number;wave:'sine'|'triangle'}>;
 // Dedicated character voices; system announcements retain their existing profiles.
 export const CHARACTER_VOICE_PROFILES={
  kylie:{pitch:.94,rate:1.04,preferred:/Otoya|Eddy|Alex|Tom/i},

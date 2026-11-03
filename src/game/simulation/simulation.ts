@@ -30,7 +30,7 @@ export const targetName=(target:SelectionTarget,companions:MissionDefinition['co
 };
 export type Input = {forward:boolean;back:boolean;left:boolean;right:boolean;boost:boolean;stop:boolean;fire1:boolean;fire2:boolean;fire3?:boolean;fire4?:boolean;lookUp?:boolean;lookDown?:boolean;center?:boolean};
 export type Point3 = Vec & {y:number};
-export type Missile = Point3 & {id:number;owner:string;weapon:MissileWeapon|'GASHR'|'EGGER'|'TCREAP'|LaserWeapon;playerOwned?:boolean;homingScale?:number;homingTargetId?:string;aiGuidance?:{point:Point3;offset:Point3;refreshAt:number};vx:number;vy:number;vz:number;damage:number;radius:number;life:number};
+export type Missile = Point3 & {id:number;owner:string;weapon:MissileWeapon|'GASHR'|'EGGER'|'TCREAP'|'PRIF44'|LaserWeapon;playerOwned?:boolean;homingScale?:number;homingTargetId?:string;aiGuidance?:{point:Point3;offset:Point3;refreshAt:number};vx:number;vy:number;vz:number;damage:number;infantryDamage?:number;facilityDamage?:number;radius:number;life:number;fresh?:boolean};
 export type GameEvent = {type:'bridge-raised'|'enemy-detected'|'minefield-found'|'occupied-contact'|'vehicle-contact'|'mission-radio'|'mine'|'ally-order'|'ally-order-complete'|'lured'|'guidance-end'|'pilot-eject'|'soldier-hit'|'soldier-death'|'stop'|'center'|'target-select'|'laser-ready'|'foot-ready'|'target'|'impact'|'board'|'shot'|'hit'|'facility-hit'|'destroy'|'waypoint'|'win'|'lose'|'boost'|'eject'|'warning';text?:string;minefieldId?:string;faction?:Faction;radioId?:string;otherUnitId?:string;unit?:Unit;from?:Vec&{y?:number};to?:Vec&{y?:number};weapon?:string;projectileId?:number;position?:Point3;part?:BodyPart;soldier?:Soldier;facility?:Facility;launch?:boolean;ejection?:'gas'|'destruction';command?:AllyCommand;recipients?:string[];targetId?:string};
 export const AGGRO_LOCK_SECONDS=3;
 export const CROSSHAIR_SELECTION={range:800,horizontalAngle:12*Math.PI/180,verticalAngle:8*Math.PI/180};
@@ -350,8 +350,12 @@ export class Simulation {
     if(isLaser(weapon)){unit.energy-=this.laserEnergyCost(unit,weapon);unit.laserCharge=0;this.laserRechargePending.add(unit);this.fireLaser(unit,weapon,origin,endpoint,range);}
     else{unit.slotAmmo[slot]!--;if(weapon==='TCREAP'){this.fireReapTracer(unit,origin,endpoint);return;}const gun=this.weapons.guns[weapon as MachineGun];for(const muzzle of this.weaponOrigins(unit,weapon,origin,slot))if(unit.iff!==this.iff||this.clearAIShot(unit,muzzle,point,target))this.fireAIBullet(unit,muzzle,endpoint,weapon as MachineGun,gun.damage,gun.infantryDamage??gun.damage);}
   }
-  // Hitscan AI guns stop at the nearest physical contact, regardless of IFF.
+  // Hitscan AI machine guns stop at the nearest physical contact, regardless of IFF.
   private fireAIBullet(owner:CombatTarget,from:Point3,to:Point3,weapon:MachineGun|'PRIF44',damage:number,infantryDamage=damage){
+    if(weapon==='PRIF44'){
+      this.launchPRIF44(owner,from,to,damage,infantryDamage);
+      return;
+    }
     let first=Infinity,hit:Unit|null|undefined,body:Soldier|undefined,structure:Facility|undefined,part:BodyPart='hull';
     for(const obstacle of this.terrainObstacles){const t=buildingContact(from,to,obstacle,.1);if(t!==null&&t<first){first=t;structure=isFacility(obstacle)?obstacle:undefined;}}
     for(const rock of this.mission.rocks){const t=segmentSphere(from,to,{x:rock.x,y:rock.r*.55,z:rock.z},rock.r+.1);if(t!==null&&t<first){first=t;structure=undefined;}}
@@ -363,6 +367,13 @@ export class Simulation {
     this.emit({type:'shot',...(isVehicle(owner)?{unit:owner}:{soldier:owner}),from,to:point,weapon,position:from});
     if(structure)this.damageFacility(structure,damage,point);else if(body)this.damageSoldier(body,infantryDamage,point,owner);else if(hit!==undefined)this.damage(hit,hit===null?infantryDamage:damage,part,point,owner,weapon);
     else if(first!==Infinity)this.emit({type:'impact',weapon,position:point});
+  }
+  private launchPRIF44(owner:CombatTarget|string,from:Point3,to:Point3,damage:number,infantryDamage:number,facilityDamage=damage){
+    const dx=to.x-from.x,dy=to.y-from.y,dz=to.z-from.z,length=Math.hypot(dx,dy,dz);
+    if(length===0)return;
+    const player=typeof owner==='string',id=this.nextMissileId++,speed=INFANTRY_WEAPONS.PRIF44.tracerSpeed;
+    this.missiles.push({...from,id,owner:player?owner:owner.id,playerOwned:player,weapon:'PRIF44',vx:dx/length*speed,vy:dy/length*speed,vz:dz/length*speed,damage,infantryDamage,facilityDamage,radius:.12,life:length/speed,fresh:true});
+    this.emit({type:'shot',...(player?{}:isVehicle(owner)?{unit:owner}:{soldier:owner}),from,to,weapon:'PRIF44',projectileId:id,...(player?{}:{position:from})});
   }
   get guidedMissile(){return this.status==='running'&&this.mounted?.alive?this.missiles.find(p=>p.id===this.guidedMissileId&&p.owner===this.mounted!.id):undefined;}
   releaseGuidance(reason='released'){if(this.guidedMissileId===null)return;this.guidedMissileId=null;this.emit({type:'guidance-end',text:reason});}
@@ -810,13 +821,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const projectile:Missile={...from,id:this.nextMissileId++,owner:'player',playerOwned:true,weapon:weapon==='EGGER'?'EGGER':'GASHR',vx:direction.x*speed,vy:direction.y*speed,vz:direction.z*speed,damage:0,radius:.22,life:profile.range/speed};
       this.missiles.push(projectile);this.emit({type:'shot',from,to:end,weapon,projectileId:projectile.id,position:from});return;
     }
-    const structure=this.facilityShot(from,end,.12);if(structure){this.damageFacility(structure.facility,INFANTRY_WEAPONS.PRIF44.damage,structure.point);this.acquireHitTarget(structure.facility);this.emit({type:'shot',from,to:structure.point,weapon});return;}
-    const units=this.units.filter(u=>u.alive&&u!==this.mounted).map(unit=>({unit,contact:intersectParts(unit,from,end,.12)})).filter((v):v is {unit:Unit;contact:NonNullable<ReturnType<typeof intersectParts>>}=>!!v.contact&&this.lineOfSight(from,v.contact.point)).sort((a,b)=>a.contact.t-b.contact.t);
-    const bodies=this.soldiers.filter(s=>s.alive&&!isEmbarked(s)).map(soldier=>({soldier,t:segmentSphere(from,end,{x:soldier.x,y:(soldier.flight?.altitude??0)+1,z:soldier.z},INFANTRY_HIT_RADIUS)})).filter((v):v is {soldier:Soldier;t:number}=>v.t!==null&&this.lineOfSight(from,v.soldier)).sort((a,b)=>a.t-b.t);
-    const unit=units[0],body=bodies[0];let to=end;
-    if(body&&(!unit||body.t<unit.contact.t)){to={x:from.x+(end.x-from.x)*body.t,y:from.y+(end.y-from.y)*body.t,z:from.z+(end.z-from.z)*body.t};this.damageSoldier(body.soldier,INFANTRY_WEAPONS.PRIF44.damage,to);this.acquireHitTarget(body.soldier);}
-    else if(unit){to=unit.contact.point;this.damage(unit.unit,INFANTRY_WEAPONS.PRIF44.vehicleDamage,unit.contact.part,to,null,'PRIF44');this.acquireHitTarget(unit.unit);}
-    this.emit({type:'shot',from,to,weapon});
+    this.launchPRIF44('player',from,end,INFANTRY_WEAPONS.PRIF44.vehicleDamage,INFANTRY_WEAPONS.PRIF44.damage,INFANTRY_WEAPONS.PRIF44.damage);
   }
   private missileOrigin(unit:Unit,weapon:MissileWeapon,side:number):Point3{
     const tactical=unit.kind==='union-tactical'&&(weapon==='TCROCK'||weapon==='SAG5T');
@@ -844,6 +849,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   private advanceMissiles(dt:number){
     const survivors:Missile[]=[];
     for(const p of this.missiles){
+      if(p.weapon==='PRIF44'&&p.fresh){p.fresh=false;survivors.push(p);continue;}
       const from={x:p.x,y:p.y,z:p.z},step=Math.min(dt,p.life);
       const hitPadding=isLaser(p.weapon)?(this.weapons.lasers[p.weapon].hitPadding??0):0;
       if(p.homingTargetId&&isMissile(p.weapon)&&p.weapon!=='VISOM'){
@@ -863,20 +869,20 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const test=(center:Point3,radius:number,unit?:Unit|null)=>{const t=segmentSphere(from,to,center,radius+p.radius);if(t!==null&&t<first){first=t;hit=unit;hitFacility=undefined;}};
       for(const building of this.terrainObstacles){const t=buildingContact(from,to,building,p.radius);if(t!==null&&t<first){first=t;hit=undefined;hitFacility=isFacility(building)?building:undefined;}}
       for(const rock of this.mission.rocks)test({x:rock.x,y:rock.r*.55,z:rock.z},rock.r);
-      const owner=this.units.find(u=>u.id===p.owner);
+      const owner=this.units.find(u=>u.id===p.owner),ownerCombat=owner??this.soldiers.find(s=>s.id===p.owner);
       for(const unit of this.units){
         if(!unit.alive||unit.id===p.owner||(p.owner==='player'&&unit===this.mounted))continue;
         const contact=intersectParts(unit,from,to,p.radius+hitPadding);if(contact&&contact.t<first){first=contact.t;hit=unit;hitFacility=undefined;part=contact.part;}
       }
       if(!this.mounted&&!this.passenger&&!this.insideFacility&&p.owner!=='player')test({x:this.human.x,y:(this.flight?.altitude??0)+(this.prone?.5:1),z:this.human.z},(this.prone?.65:.9)+hitPadding,null);
-      if(p.weapon!=='GASHR'&&p.weapon!=='EGGER')for(const soldier of this.soldiers){if(!soldier.alive||isEmbarked(soldier))continue;const t=segmentSphere(from,to,{x:soldier.x,y:(soldier.flight?.altitude??0)+1,z:soldier.z},INFANTRY_HIT_RADIUS+p.radius+hitPadding);if(t!==null&&t<first){first=t;hit=undefined;hitSoldier=soldier;hitFacility=undefined;}}
+      if(p.weapon!=='GASHR'&&p.weapon!=='EGGER')for(const soldier of this.soldiers){if(!soldier.alive||soldier.id===p.owner||isEmbarked(soldier))continue;const t=segmentSphere(from,to,{x:soldier.x,y:(soldier.flight?.altitude??0)+1,z:soldier.z},INFANTRY_HIT_RADIUS+p.radius+hitPadding);if(t!==null&&t<first){first=t;hit=undefined;hitSoldier=soldier;hitFacility=undefined;}}
       if(to.y<=.1&&from.y>.1){const t=(from.y-.1)/(from.y-to.y);if(t<first){first=t;hit=undefined;hitSoldier=undefined;hitFacility=undefined;}}
       p.life-=step;
       if(first!==Infinity){
         Object.assign(p,{x:from.x+(to.x-from.x)*first,y:from.y+(to.y-from.y)*first,z:from.z+(to.z-from.z)*first});
         if(hit)this.lureImpact(hit,p);
-        if(hitFacility){if(p.weapon==='EGGER'||p.weapon==='GASHR')this.facilityCrewHit(hitFacility,p.weapon==='EGGER');else this.damageFacility(hitFacility,p.damage,{x:p.x,y:p.y,z:p.z});}
-        else if(hitSoldier)this.damageSoldier(hitSoldier,p.weapon==='TCREAP'?this.weapons.guns.TCREAP.infantryDamage??p.damage:isLaser(p.weapon)?p.damage:hitSoldier.health,{x:p.x,y:p.y,z:p.z},owner??null);else if(p.weapon==='EGGER'){if(hit)this.killVehicleCrew(hit);}else if(p.weapon==='GASHR'){if(hit)this.forceEject(hit);}else if(hit!==undefined)this.damage(hit,hit===null?(p.weapon==='TCREAP'?this.weapons.guns.TCREAP.infantryDamage??p.damage:!isLaser(p.weapon)?this.humanHealth:p.damage):p.damage,part,{x:p.x,y:p.y,z:p.z},owner,p.weapon);
+        if(hitFacility){if(p.weapon==='EGGER'||p.weapon==='GASHR')this.facilityCrewHit(hitFacility,p.weapon==='EGGER');else this.damageFacility(hitFacility,p.weapon==='PRIF44'?p.facilityDamage??p.damage:p.damage,{x:p.x,y:p.y,z:p.z});}
+        else if(hitSoldier)this.damageSoldier(hitSoldier,p.weapon==='PRIF44'?p.infantryDamage??p.damage:p.weapon==='TCREAP'?this.weapons.guns.TCREAP.infantryDamage??p.damage:isLaser(p.weapon)?p.damage:hitSoldier.health,{x:p.x,y:p.y,z:p.z},ownerCombat??null);else if(p.weapon==='EGGER'){if(hit)this.killVehicleCrew(hit);}else if(p.weapon==='GASHR'){if(hit)this.forceEject(hit);}else if(hit!==undefined)this.damage(hit,hit===null?(p.weapon==='PRIF44'?p.infantryDamage??p.damage:p.weapon==='TCREAP'?this.weapons.guns.TCREAP.infantryDamage??p.damage:!isLaser(p.weapon)?this.humanHealth:p.damage):p.damage,part,{x:p.x,y:p.y,z:p.z},ownerCombat,p.weapon);
         this.damageInfantryBlast(p,owner);
         if(p.playerOwned)this.acquireHitTarget(hitFacility??hitSoldier??hit);
         this.emit({type:'impact',projectileId:p.id,weapon:p.weapon,position:{x:p.x,y:p.y,z:p.z}});

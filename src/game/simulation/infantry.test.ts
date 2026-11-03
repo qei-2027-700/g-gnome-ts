@@ -11,7 +11,8 @@ const step=(s:Simulation,seconds:number)=>{for(let i=0;i<seconds*60;i++)s.tick(1
 function foot(){const s=new Simulation();s.units[0].x=100;s.units[0].z=-40;s.units[2].z=500;s.units[1].x=0;s.units[1].z=60;s.iff='6707';return s;}
 function aimAt(s:Simulation,x:number,y:number,z:number){s.humanYaw=Math.atan2(x-s.human.x,z-s.human.z);s.pitch=Math.atan2(y-s.eyeHeight,Math.hypot(x-s.human.x,z-s.human.z));}
 test('PRIF44 damages without ejecting; GASHR has five canisters and ejects after physical impact',()=>{
- const s=foot(),enemy=s.units[1];aimAt(s,0,4,60);s.fire(1);assert.ok(enemy.shield<22);assert.equal(enemy.pilot,true);assert.equal(s.gashrAmmo,5);
+ const s=foot(),enemy=s.units[1];aimAt(s,0,4,60);s.fire(1);assert.equal(enemy.shield,22);assert.ok(s.missiles.some(m=>m.weapon==='PRIF44'));assert.equal(enemy.pilot,true);assert.equal(s.gashrAmmo,5);
+ step(s,.5);assert.ok(enemy.shield<22);
  const shield=enemy.shield,armor=enemy.armor;s.fire(2);assert.equal(s.gashrAmmo,4);assert.equal(enemy.pilot,true);assert.equal(s.soldiers.length,0);
  step(s,1.1);assert.equal(enemy.pilot,false);assert.equal(s.soldiers.length,1);assert.equal(enemy.shield,shield);assert.equal(enemy.armor,armor);assert.equal(s.soldiers[0].flight,null);assert.ok(Math.hypot(s.soldiers[0].x-enemy.x,s.soldiers[0].z-enemy.z)>4);assert.ok(s.events.some(e=>e.type==='pilot-eject'));
  s.footCooldown.GASHR=0;s.fire(2);step(s,1.1);assert.equal(s.soldiers.length,1);
@@ -81,19 +82,21 @@ for(const kind of ['merc-sentry','merc-tactical'] as const){
 }
 test('PRIF44 can defeat ejected infantry without destroying the captured machine',()=>{
  const s=foot(),unit=s.units[1],soldier=s.forceEject(unit)!;step(s,3);aimAt(s,soldier.x,1,soldier.z);
- for(let i=0;i<5;i++){s.footCooldown.PRIF44=0;s.fire(1);}assert.equal(soldier.alive,false);assert.equal(unit.alive,true);assert.equal(s.kills,1);
+ soldier.iff=s.iff;soldier.order={kind:'follow',targetId:soldier.id};
+ for(let i=0;i<5;i++){s.footCooldown.PRIF44=0;s.fire(1);}assert.equal(soldier.alive,true);step(s,1);assert.equal(soldier.alive,false);assert.equal(unit.alive,true);assert.equal(s.kills,1);
 });
 test('PRIF44 hits infantry slightly outside the old narrow aiming line',()=>{
  const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:0,z:0};
  const soldier=s.forceEject(makeUnit('target','merc-sentry',0,20,true))!;soldier.flight=null;soldier.x=.8;soldier.z=20;
- s.pitch=Math.atan2(1-s.eyeHeight,20);s.fire(1);assert.equal(soldier.health,28);assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='PRIF44'));
+ s.pitch=Math.atan2(1-s.eyeHeight,20);s.tick(1/60,{...idle,fire1:true});assert.equal(soldier.health,35);assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='PRIF44'));assert.ok(s.missiles.some(m=>m.weapon==='PRIF44'));
+ step(s,.3);assert.equal(soldier.health,28);assert.ok(s.events.some(e=>e.type==='impact'&&e.weapon==='PRIF44'));assert.ok(s.events.findIndex(e=>e.type==='shot'&&e.weapon==='PRIF44')<s.events.findIndex(e=>e.type==='impact'&&e.weapon==='PRIF44'));
 });
 test('ordered infantry fires at a nearby enemy within the wider aim tolerance',()=>{
  const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:-100,z:-100};
  const target=s.forceEject(makeUnit('target','merc-sentry',0,30,true))!,attacker=s.forceEject(makeUnit('attacker','merc-sentry',0,0,true))!;
- target.flight=null;target.iff='target';target.x=2.5;target.z=30;
+ target.flight=null;target.iff='target';target.x=2.5;target.z=30;target.order={kind:'follow',targetId:target.id};
  attacker.flight=null;attacker.x=0;attacker.z=0;attacker.iff='attacker';attacker.cooldown=0;attacker.order={kind:'attack',targetId:target.id};
- s.tick(.02,idle);assert.equal(target.health,28);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===attacker));
+ s.tick(.02,idle);assert.equal(target.health,35);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===attacker&&e.weapon==='PRIF44'));step(s,.3);assert.equal(target.health,28);
 });
 test('vehicle machine guns apply their higher infantry damage to exposed soldiers',()=>{
  for(const [weapon,damage] of [['DASY',6],['zWASP',4.5]] as const){
@@ -219,8 +222,8 @@ test('infantry turns toward its opponent before firing and shots follow its faci
  const dx=shot.to!.x-shot.from!.x,dz=shot.to!.z-shot.from!.z;assert.ok(Math.abs(Math.atan2(dx,dz)-soldier.yaw)<.025);
 });
 test('lethal rifle hits emit one death event, while further hits and player damage cannot repeat death',()=>{
- const s=new Simulation();s.units=[];const soldier=s.forceEject(makeUnit('pilot','merc-sentry',0,20,true))!;soldier.flight=null;soldier.x=0;soldier.z=20;soldier.health=1;
- aimAt(s,0,1,20);s.fire(1);assert.equal(soldier.alive,false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,1);
+ const s=new Simulation();s.units=[];const soldier=s.forceEject(makeUnit('pilot','merc-sentry',0,20,true))!;soldier.flight=null;soldier.x=0;soldier.z=20;soldier.health=1;soldier.iff=s.iff;soldier.order={kind:'follow',targetId:soldier.id};
+ aimAt(s,0,1,20);s.fire(1);assert.equal(soldier.alive,true);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,0);step(s,.2);assert.equal(soldier.alive,false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,1);
  s.footCooldown.PRIF44=0;s.fire(1);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,1);
  s.events=[];s.damage(null,100);s.damage(null,100);const deaths=s.events.filter(e=>e.type==='soldier-death');assert.equal(deaths.length,1);assert.equal(deaths[0].faction,s.mission.playerFaction);assert.equal(s.events.filter(e=>e.type==='lose').length,1);
 });
@@ -229,7 +232,7 @@ test('a facing infantry shot is intercepted by an intervening empty vehicle',()=
  const s=new Simulation();s.human={...s.units[0]};s.board();const own=s.mounted!,soldier=s.forceEject(makeUnit('enemy','merc-sentry',own.x,own.z+70,true))!,blocker=makeUnit('cover','union-asv',own.x,own.z+35,false);
  own.pilot=false;// empty: soldier uses PRIF44 (not GASHR) so blocker intercepts the shot
  s.units=[own,blocker];soldier.x=own.x;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];soldier.flight=null;soldier.yaw=Math.PI;soldier.cooldown=0;const shield=own.shield,before=blocker.shield;
- s.tick(.02,idle);assert.equal(own.shield,shield);assert.equal(blocker.shield,before-INFANTRY_WEAPONS.PRIF44.vehicleDamage);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));
+ s.tick(.02,idle);assert.equal(own.shield,shield);assert.equal(blocker.shield,before);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));step(s,.3);assert.equal(blocker.shield,before-INFANTRY_WEAPONS.PRIF44.vehicleDamage);
 });
 
 function occupiedCarrier(moving=false){

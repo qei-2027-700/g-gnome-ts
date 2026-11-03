@@ -30,8 +30,9 @@ test('mission and spawn overrides affect movement, regeneration limits, damage, 
 test('direct infantry fire reduces facility integrity and destroys the building at zero health',()=>{
  const def=mission();def.units=[];def.assignedUnitId=undefined;def.startMountedUnitId=undefined;def.player={x:40,z:0};def.base={name:'facility-damage',x:40,z:30,width:20,depth:20,buildings:[{id:'target-building',kind:'command',x:40,z:30,width:20,depth:20,height:10,health:14}]};def.objectives=[];
  const s=new Simulation('Easy',def),facility=s.facilities[0]!;s.humanYaw=0;s.pitch=Math.atan2(4-s.eyeHeight,30);s.fire(1);
- assert.equal(facility.health,14-INFANTRY_WEAPONS.PRIF44.damage);assert.equal(facility.alive,true);assert.ok(s.events.some(e=>e.type==='facility-hit'&&e.facility===facility));s.selected=facility.id;assert.equal(s.targetState?.armor,.5);
- advance(s,60);s.events=[];s.fire(1);
+ assert.equal(facility.health,14);assert.equal(facility.alive,true);assert.ok(!s.events.some(e=>e.type==='facility-hit'&&e.facility===facility));
+ advance(s,60);assert.equal(facility.health,14-INFANTRY_WEAPONS.PRIF44.damage);assert.ok(s.events.some(e=>e.type==='facility-hit'&&e.facility===facility));s.selected=facility.id;assert.equal(s.targetState?.armor,.5);
+ s.events=[];s.fire(1);assert.equal(facility.health,7);advance(s,60);
  assert.equal(facility.health,0);assert.equal(facility.alive,false);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.facility===facility).length,1);
 });
 test('2-2 starts in the Merc Tactical with its configured loadout and Union IFF',async()=>{
@@ -58,8 +59,8 @@ test('manual downward aim reaches nearby infantry, guns and travelling lasers hi
  const cover=new Simulation();cover.human={x:-40,z:20};cover.units[0].x=-40;cover.units[0].z=20;cover.board();const soldier=cover.forceEject(cover.units[1])!;soldier.flight=null;soldier.x=-40;soldier.z=120;cover.iff='6707';cover.pitch=Math.atan2(1-cover.eyeHeight,100);cover.fire(2);advance(cover);assert.equal(soldier.health,35);
 });
 test('PRIF44 modestly damages vehicles for player and enemy infantry',()=>{
- const s=new Simulation();s.human={x:0,z:0};s.units[0].x=100;const target=s.units[1];target.x=0;target.z=60;s.pitch=Math.atan2(4-s.eyeHeight,60);s.fire(1);assert.ok(Math.abs(target.shield-(22-INFANTRY_WEAPONS.PRIF44.vehicleDamage))<1e-9);
- const mounted=new Simulation();mounted.human={...DEFAULT_MISSION.units[0]};mounted.board();const soldier=mounted.forceEject(mounted.units[1])!;soldier.flight=null;soldier.x=0;soldier.z=70;soldier.iff='enemy';soldier.gashrAmmo=0;mounted.iff='player';soldier.yaw=Math.atan2(mounted.mounted!.x-soldier.x,mounted.mounted!.z-soldier.z);mounted.units=[mounted.mounted!];soldier.cooldown=0;mounted.mission.base=undefined;mounted.mission.rocks=[];mounted.mission.terrain.cliffs=[];const shield=mounted.mounted!.shield;for(let i=0;i<120&&mounted.events.every(e=>e.type!=='shot'||e.soldier!==soldier);i++)mounted.tick(.02,idle);assert.equal(mounted.mounted!.shield,shield-INFANTRY_WEAPONS.PRIF44.vehicleDamage);
+ const s=new Simulation();s.human={x:0,z:0};s.units[0].x=100;const target=s.units[1];target.x=0;target.z=60;s.pitch=Math.atan2(4-s.eyeHeight,60);s.fire(1);assert.equal(target.shield,22);advance(s,60);assert.ok(Math.abs(target.shield-(22-INFANTRY_WEAPONS.PRIF44.vehicleDamage))<1e-9);
+ const mounted=new Simulation();mounted.human={...DEFAULT_MISSION.units[0]};mounted.board();const soldier=mounted.forceEject(mounted.units[1])!;soldier.flight=null;soldier.x=0;soldier.z=70;soldier.iff='enemy';soldier.gashrAmmo=0;mounted.iff='player';soldier.yaw=Math.atan2(mounted.mounted!.x-soldier.x,mounted.mounted!.z-soldier.z);mounted.units=[mounted.mounted!];soldier.cooldown=0;mounted.mission.base=undefined;mounted.mission.rocks=[];mounted.mission.terrain.cliffs=[];const shield=mounted.mounted!.shield;for(let i=0;i<120&&mounted.events.every(e=>e.type!=='shot'||e.soldier!==soldier);i++)mounted.tick(.02,idle);assert.equal(mounted.mounted!.shield,shield);advance(mounted,60);assert.equal(mounted.mounted!.shield,shield-INFANTRY_WEAPONS.PRIF44.vehicleDamage);
 });
 test('missiles are slightly faster while their maximum travel range is preserved',()=>{
  const s=new Simulation();for(const [weapon,expectedSpeed,expectedRange] of [['CHUM',94,425],['SAG5T',110,600]] as const){const p=s.fireMissile(s.units[1],weapon);assert.ok(Math.abs(Math.hypot(p.vx,p.vy,p.vz)-expectedSpeed)<1e-9);assert.ok(Math.abs(expectedSpeed*p.life-expectedRange)<1e-9);}

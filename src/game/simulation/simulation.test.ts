@@ -263,9 +263,9 @@ test('rifle and laser impacts select surviving infantry and vehicles; destroyed 
   if(type==='vehicle'){
    s.pitch=Math.atan2(target.spec.height*.6-s.eyeHeight,60);s.fire(1);for(let i=0;i<100&&s.missiles.length;i++)s.tick(.02,idle);assert.equal(s.selected,target.id);
   }else{
-   const soldier=s.forceEject(target)!;assert.ok(soldier);soldier.flight=null;soldier.x=0;soldier.z=60;soldier.health=type==='destroyed'?1:35;target.x=500;
+   const soldier=s.forceEject(target)!;assert.ok(soldier);soldier.flight=null;soldier.x=0;soldier.z=60;soldier.health=type==='destroyed'?1:35;soldier.order={kind:'follow',targetId:soldier.id};target.x=500;
    s.eject('ground');s.units[0].x=-500;s.human={x:0,z:0};s.humanYaw=0;s.pitch=Math.atan2(1-s.eyeHeight,60);s.fire(1);
-   assert.equal(s.selected,type==='destroyed'?null:soldier.id);
+   assert.equal(s.selected,null);for(let i=0;i<100&&s.missiles.length;i++)s.tick(.02,idle);assert.equal(s.selected,type==='destroyed'?null:soldier.id);
   }
  }
 });

@@ -572,7 +572,7 @@ export class World {
       if(e.weapon==='GAUS30'&&unit===this.sim.mounted&&unit?.kind==='merc-meson-tower'&&this.mode===0&&!this.sim.guidedMissile&&this.completionTime===null)this.mesonCockpitJet(unit.id);
       if(unit===this.sim.mounted&&unit?.spec.category!=='tower')this.kick=e.projectileId!==undefined?.09:.035;
       const infantryRifle=e.weapon==='PRIF44',dasy=e.weapon==='DASY';
-      if(infantryRifle&&!e.unit&&!e.soldier&&this.mode===0&&!this.sim.mounted){
+      if(infantryRifle&&e.projectileId===undefined&&!e.unit&&!e.soldier&&this.mode===0&&!this.sim.mounted){
         const streak=MeshBuilder.CreateTube('prif44-first-person-streak',{path:[new Vector3(.3,-.12,.8),new Vector3(.08,-.03,2)],radius:.015,tessellation:6,cap:Mesh.CAP_ALL},this.scene);
         streak.parent=this.camera;streak.material=this.fxMaterial('prif44-red-tracer','#ff2413',true);streak.isPickable=false;streak.metadata={visual:'prif44-first-person-streak'};this.addEffect(streak,.2,'beam');
       }
@@ -609,6 +609,11 @@ export class World {
     for(const [id,rig] of this.missileRigs)if(!live.has(id)){rig.root.dispose();this.missileRigs.delete(id);}
     for(const missile of this.sim.missiles){
       let rig=this.missileRigs.get(missile.id);
+      if(missile.weapon==='PRIF44'){
+        if(!rig){const root=new TransformNode(`prif44-projectile-${missile.id}`,this.scene),tracer=MeshBuilder.CreateCylinder('prif44-projectile',{height:.75,diameter:.1,tessellation:6},this.scene);tracer.parent=root;tracer.rotation.x=Math.PI/2;tracer.material=this.fxMaterial('prif44-projectile','#ff2413',true);tracer.isPickable=false;rig={root,flame:tracer,smokeTimer:0};this.missileRigs.set(missile.id,rig);}
+        rig.root.position.set(missile.x,missile.y,missile.z);rig.root.lookAt(rig.root.position.add(new Vector3(missile.vx,missile.vy,missile.vz)));
+        continue;
+      }
       if(isLaser(missile.weapon)||missile.weapon==='TCREAP'){
         if(!rig){const root=new TransformNode(`laser-${missile.id}`,this.scene),bolt=this.laserBolt('laser-bolt',missile.weapon);bolt.parent=root;rig={root,flame:bolt,smokeTimer:0};this.missileRigs.set(missile.id,rig);}
         rig.root.setEnabled(missile.id!==this.sim.guidedMissile?.id);rig.root.position.set(missile.x,missile.y,missile.z);rig.root.lookAt(rig.root.position.add(new Vector3(missile.vx,missile.vy,missile.vz)));

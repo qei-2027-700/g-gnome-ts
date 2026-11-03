@@ -180,6 +180,18 @@ test('infantry rifle fires one red shot from a fixed right-hand muzzle in every 
  engine.dispose();
 });
 
+test('PRIF44 projectile is rendered as a moving tracer after the shot event',()=>{
+ const engine=new NullEngine({renderWidth:1280,renderHeight:720,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ const sim=new Simulation(),world=new World({} as HTMLCanvasElement,sim,engine);
+ sim.fire(1);const shot=sim.events.find(e=>e.type==='shot'&&e.weapon==='PRIF44')!;
+ assert.ok(shot.projectileId);world.event(shot);world.update(0);
+ const projectile=sim.missiles.find(m=>m.id===shot.projectileId)!;
+ const rig=world.missileRigs.get(projectile.id);
+ assert.ok(rig);assert.equal(rig.root.position.x,projectile.x);assert.equal(rig.root.position.y,projectile.y);assert.equal(rig.root.position.z,projectile.z);
+ assert.equal(world.scene.getMeshByName('prif44-projectile'),rig.flame);
+ engine.dispose();
+});
+
 test('Merc Tactical Defense has white armor, blue shin panels and a dark unlit upper cabin',()=>{
  const engine=new NullEngine({renderWidth:1280,renderHeight:720,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  const sim=new Simulation(),world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get('merc-1')!;

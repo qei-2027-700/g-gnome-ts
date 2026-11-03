@@ -8,7 +8,7 @@ import {sweptCircle,crossesBuilding,buildingContact,buildingMotionContact,rotate
 import {riverFrameAtZ,riverStripBoxes} from '../content/missions/river.ts';
 import {followPosition,type AllyOrder,type AllyCommand,type RadioRecipient,type RadioFailure,type OrderResult} from './ally-orders.ts';
 import {INFANTRY_WEAPONS} from '../content/weapons.ts';
-import {INFANTRY_MOVEMENT,INFANTRY_HIT_RADIUS,INFANTRY_AI_AIM_TOLERANCE,BOARDING_DISTANCE,launchFlight,isEmbarked,type Flight,type Soldier} from './infantry.ts';
+import {INFANTRY_MOVEMENT,INFANTRY_HIT_RADIUS,INFANTRY_AI_AIM_TOLERANCE,INFANTRY_AUTO_BOARD_DELAY,INFANTRY_AUTO_BOARD_RANGE,BOARDING_DISTANCE,launchFlight,isEmbarked,type Flight,type Soldier} from './infantry.ts';
 import {PARTS,PART_DAMAGE_THRESHOLDS,freshParts,applyPartDamage,intersectParts,mobilityMultiplier,sweptVehicleContact,vehicleContactFraction,vehicleRadius,buildingClearance,type BodyPart,type PartState} from './parts.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {resolveVehicle,type Faction,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
@@ -31,7 +31,7 @@ export const targetName=(target:SelectionTarget,companions:MissionDefinition['co
 export type Input = {forward:boolean;back:boolean;left:boolean;right:boolean;boost:boolean;stop:boolean;fire1:boolean;fire2:boolean;fire3?:boolean;fire4?:boolean;lookUp?:boolean;lookDown?:boolean;center?:boolean};
 export type Point3 = Vec & {y:number};
 export type Missile = Point3 & {id:number;owner:string;weapon:MissileWeapon|'GASHR'|'EGGER'|'TCREAP'|LaserWeapon;playerOwned?:boolean;homingScale?:number;homingTargetId?:string;aiGuidance?:{point:Point3;offset:Point3;refreshAt:number};vx:number;vy:number;vz:number;damage:number;radius:number;life:number};
-export type GameEvent = {type:'bridge-raised'|'enemy-detected'|'minefield-found'|'occupied-contact'|'vehicle-contact'|'mission-radio'|'mine'|'ally-order'|'ally-order-complete'|'lured'|'guidance-end'|'pilot-eject'|'soldier-hit'|'soldier-death'|'stop'|'center'|'target-select'|'laser-ready'|'foot-ready'|'target'|'impact'|'board'|'shot'|'hit'|'destroy'|'waypoint'|'win'|'lose'|'boost'|'eject'|'warning';text?:string;minefieldId?:string;faction?:Faction;radioId?:string;otherUnitId?:string;unit?:Unit;from?:Vec&{y?:number};to?:Vec&{y?:number};weapon?:string;projectileId?:number;position?:Point3;part?:BodyPart;soldier?:Soldier;facility?:Facility;launch?:boolean;ejection?:'gas'|'destruction';command?:AllyCommand;recipients?:string[];targetId?:string};
+export type GameEvent = {type:'bridge-raised'|'enemy-detected'|'minefield-found'|'occupied-contact'|'vehicle-contact'|'mission-radio'|'mine'|'ally-order'|'ally-order-complete'|'lured'|'guidance-end'|'pilot-eject'|'soldier-hit'|'soldier-death'|'stop'|'center'|'target-select'|'laser-ready'|'foot-ready'|'target'|'impact'|'board'|'shot'|'hit'|'facility-hit'|'destroy'|'waypoint'|'win'|'lose'|'boost'|'eject'|'warning';text?:string;minefieldId?:string;faction?:Faction;radioId?:string;otherUnitId?:string;unit?:Unit;from?:Vec&{y?:number};to?:Vec&{y?:number};weapon?:string;projectileId?:number;position?:Point3;part?:BodyPart;soldier?:Soldier;facility?:Facility;launch?:boolean;ejection?:'gas'|'destruction';command?:AllyCommand;recipients?:string[];targetId?:string};
 export const AGGRO_LOCK_SECONDS=3;
 export const CROSSHAIR_SELECTION={range:800,horizontalAngle:12*Math.PI/180,verticalAngle:8*Math.PI/180};
 export const distance=(a:Vec,b:Vec)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -382,8 +382,8 @@ export class Simulation {
   private humanVelocity={x:0,z:0};
   private centerVehicle(unit:Unit,stop=true){unit.aim=unit.yaw;unit.aimPitch=0;if(stop)unit.speed=0;unit.alert=false;unit.aggressorId=null;unit.aggressorUntil=0;}
   private pilotReserved(unit:Unit,id:string){return this.soldiers.some(s=>s.alive&&s.id!==id&&s.boardingTarget===unit.id&&s.boardingRole==='pilot');}
-  private cancelBoarding(soldier:Soldier){soldier.boardingTarget=undefined;soldier.boardingRole=undefined;}
-  private validBoarding(soldier:Soldier,unit:Unit|undefined){return soldier.alive&&soldier.iff===this.iff&&!!unit?.alive&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&(soldier.boardingRole==='pilot'?!unit.pilot:unit.iff===soldier.iff&&unit.passengers.length<unit.spec.passengerCapacity);}
+  private cancelBoarding(soldier:Soldier){soldier.boardingTarget=undefined;soldier.boardingRole=undefined;soldier.automaticBoarding=undefined;}
+  private validBoarding(soldier:Soldier,unit:Unit|undefined){return soldier.alive&&(soldier.iff===this.iff||soldier.automaticBoarding===true)&&!!unit?.alive&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&(soldier.boardingRole==='pilot'?!unit.pilot&&!this.pilotReserved(unit,soldier.id):unit.iff===soldier.iff&&unit.passengers.length<unit.spec.passengerCapacity);}
   private canReserve(unit:Unit,iff:string,id:string){return unit.alive&&unit.iff===iff&&unit.spec.passengerCapacity>0&&unit.passengers.length+this.soldiers.filter(s=>s.alive&&s.iff===unit.iff&&s.id!==id&&s.boardingTarget===unit.id&&s.boardingRole!=='pilot').length<unit.spec.passengerCapacity;}
   entryShielded(target:Unit|Facility){
     const faction=isFacility(target)?target.faction:target.spec.faction;
@@ -477,7 +477,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     actor.aggressorId=player?'player':attacker!.id;actor.aggressorUntil=this.time+AGGRO_LOCK_SECONDS;
   }
   private damageSoldier(soldier:Soldier,amount:number,position:Point3,attacker:CombatTarget|null=null){
-    if(!soldier.alive||isEmbarked(soldier))return;if(amount>0)this.rememberAggressor(soldier,attacker);soldier.health=Math.max(0,soldier.health-amount);this.emit({type:'soldier-hit',soldier,position});
+    if(!soldier.alive||isEmbarked(soldier))return;if(amount>0){this.rememberAggressor(soldier,attacker);if(soldier.automaticBoarding)this.cancelBoarding(soldier);}soldier.health=Math.max(0,soldier.health-amount);this.emit({type:'soldier-hit',soldier,position});
     if(soldier.health===0){soldier.alive=false;this.cancelBoarding(soldier);this.emit({type:'soldier-death',soldier,position});}
   }
   private crushSoldier(soldier:Soldier,from:Point3,previousVehicle:Vec,unit:Unit|null=this.mounted){
@@ -499,6 +499,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   private coastVehicle(unit:Unit,dt:number){this.brakingUnits.add(unit.id);unit.speed=accelerateSpeed(unit.speed,0,dt,unit.hoverDisabled?undefined:unit.kind);if(unit.speed)this.move(unit,unit.yaw,unit.speed*dt);}
   private tickFootOrder(soldier:Soldier,dt:number,from:Point3){
     const order=soldier.order;if(order===undefined)return false;
+    soldier.combatIdleTime=0;
     const complete=()=>{soldier.order=null;this.emit({type:'ally-order-complete',soldier,command:order?.kind,targetId:order?.targetId});};
     if(order?.kind==='follow'){
       const anchor=order.targetId?this.selectionTargets.find(t=>t.id===order.targetId&&t.alive):undefined;
@@ -548,13 +549,21 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(soldier.flight){soldier.flight=this.advanceFlight(soldier,soldier.flight,dt);for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);continue;}
       soldier.cooldown=Math.max(0,soldier.cooldown-dt);
       if(this.tickFootOrder(soldier,dt,from))continue;
-      if(this.mission.pickups?.some(p=>p.personId===soldier.personId)){this.approachPerson(soldier,this.player,dt,6);continue;}
+      if(this.mission.pickups?.some(p=>p.personId===soldier.personId)){soldier.combatIdleTime=0;this.approachPerson(soldier,this.player,dt,6);continue;}
       const opponents:{position:Vec;unit:Unit|null}[]=this.units.filter(u=>u.alive&&u.pilot&&u!==this.mounted&&u.iff!==soldier.iff).map(u=>({position:u,unit:u as Unit|null}));
       if(this.soldierHostile(soldier))opponents.push({position:this.player,unit:this.mounted??this.passenger});
       const aggressor=this.activeAggressor(soldier);
       const visible=opponents.filter(o=>distance(soldier,o.position)<120&&this.lineOfSight(soldier,o.position)).sort((a,b)=>distance(soldier,a.position)-distance(soldier,b.position));
       const opponent=aggressor?opponents.find(o=>o.position===aggressor):visible[0];
-      if(!opponent){soldier.alert=false;this.moveInfantry(soldier,soldier.yaw,0,dt);continue;}soldier.alert=true;
+      if(!opponent){
+        soldier.alert=false;soldier.combatIdleTime=(soldier.combatIdleTime??0)+dt;
+        if(soldier.combatIdleTime>=INFANTRY_AUTO_BOARD_DELAY-1e-9){
+          const carrier=this.units.filter(unit=>unit!==this.mounted&&unit!==this.passenger&&unit.alive&&!unit.pilot&&isHawc(unit.kind)&&unit.iff===soldier.iff&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&!this.pilotReserved(unit,soldier.id)&&distance(soldier,unit)<=INFANTRY_AUTO_BOARD_RANGE).sort((a,b)=>distance(soldier,a)-distance(soldier,b))[0];
+          if(carrier){soldier.boardingTarget=carrier.id;soldier.boardingRole='pilot';soldier.automaticBoarding=true;soldier.combatIdleTime=0;this.approachPerson(soldier,carrier,dt);for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);continue;}
+        }
+        this.moveInfantry(soldier,soldier.yaw,0,dt);continue;
+      }
+      soldier.combatIdleTime=0;soldier.alert=true;
       const dist=distance(soldier,opponent.position),away=Math.atan2(soldier.x-opponent.position.x,soldier.z-opponent.position.z);
       const bearing=away+Math.PI;
       soldier.yaw+=Math.max(-INFANTRY_MOVEMENT.turn*dt,Math.min(INFANTRY_MOVEMENT.turn*dt,angle(bearing-soldier.yaw)));
@@ -767,6 +776,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   damageFacility(facility:Facility,amount:number,position:Point3){
     if(!facility.alive||amount<=0)return;
     facility.health=Math.max(0,facility.health-amount);
+    this.emit({type:'facility-hit',facility,position});
     if(facility.health===0){if(this.insideFacility===facility)this.eject('ground');facility.alive=false;facility.pilot=false;this.emit({type:'destroy',facility,position});}
   }
   private facilityShot(from:Point3,to:Point3,padding:number){

@@ -107,7 +107,7 @@ test('Scorp paired CETI and chin RAID fire from both mounts for player and AI wi
 });
 
 test('GAUS30 has a wider hit area without accepting clear misses or shots through cover',()=>{
- for(const {padding,offset,cover,hit} of [{padding:0,offset:.32,cover:false,hit:false},{padding:.75,offset:.6,cover:false,hit:true},{padding:.75,offset:1,cover:false,hit:false},{padding:.75,offset:.6,cover:true,hit:false}]){
+ for(const {padding,offset,cover,hit} of [{padding:0,offset:.32,cover:false,hit:false},{padding:1.5,offset:1.2,cover:false,hit:true},{padding:1.5,offset:2.1,cover:false,hit:false},{padding:1.5,offset:1.2,cover:true,hit:false}]){
   const s=new Simulation(),tower=makeUnit('own','merc-meson-tower',0,20,false),target=makeUnit('target','merc-aip',0,100,true,{speed:0,ai:{detection:0}});
   s.mission={...s.mission,rocks:cover?[{x:3+offset,z:90,r:3}]:[],base:undefined};s.facilities=[];s.units=[tower,target];s.soldiers=[];s.human={x:0,z:20};assert.ok(s.board());target.iff='enemy';s.weapons.lasers.GAUS30.hitPadding=padding;
   s.fire(1);const beam=s.missiles.find(m=>m.weapon==='GAUS30')!;assert.ok(beam);assert.ok(Math.abs(Math.hypot(beam.vx,beam.vy,beam.vz)-450)<1e-8);

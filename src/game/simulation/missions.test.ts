@@ -27,6 +27,13 @@ test('mission and spawn overrides affect movement, regeneration limits, damage, 
  const next=new Simulation('Easy',mission('next'));assert.equal(next.units[0].spec.speed,85);assert.equal(next.weapons.lasers.RAID.damage,5);assert.equal(LASERS.RAID.damage,5);
  const retry=new Simulation('Easy',def);assert.equal(retry.units[0].spec.speed,36);assert.equal(retry.units[0].ammo,2);assert.equal(retry.units[0].parts.hull,1);
 });
+test('direct infantry fire reduces facility integrity and destroys the building at zero health',()=>{
+ const def=mission();def.units=[];def.assignedUnitId=undefined;def.startMountedUnitId=undefined;def.player={x:40,z:0};def.base={name:'facility-damage',x:40,z:30,width:20,depth:20,buildings:[{id:'target-building',kind:'command',x:40,z:30,width:20,depth:20,height:10,health:14}]};def.objectives=[];
+ const s=new Simulation('Easy',def),facility=s.facilities[0]!;s.humanYaw=0;s.pitch=Math.atan2(4-s.eyeHeight,30);s.fire(1);
+ assert.equal(facility.health,14-INFANTRY_WEAPONS.PRIF44.damage);assert.equal(facility.alive,true);assert.ok(s.events.some(e=>e.type==='facility-hit'&&e.facility===facility));s.selected=facility.id;assert.equal(s.targetState?.armor,.5);
+ advance(s,60);s.events=[];s.fire(1);
+ assert.equal(facility.health,0);assert.equal(facility.alive,false);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.facility===facility).length,1);
+});
 test('2-2 starts in the Merc Tactical with its configured loadout and Union IFF',async()=>{
  const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
  const s=new Simulation('Easy',MISSION_2_2),player=s.mounted!;

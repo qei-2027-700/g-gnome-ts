@@ -4,6 +4,7 @@ import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {INFANTRY_WEAPONS,weaponMountCount} from '../content/weapons.ts';
+import {MISSION_2_2} from '../content/missions/mission-2-2.ts';
 import {mobilityMultiplier} from './parts.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 const step=(s:Simulation,seconds:number)=>{for(let i=0;i<seconds*60;i++)s.tick(1/60,idle);};
@@ -23,6 +24,32 @@ test('gas misses, obstacles, empty vehicles and ammunition exhaustion cannot cre
 test('ejected enemy lands alive; empty HAWC is boardable and infantry ammunition is preserved',()=>{
  const s=foot(),unit=s.units[1],soldier=s.forceEject(unit)!;const shield=unit.shield,armor=unit.armor;step(s,3);assert.equal(soldier.flight,null);assert.ok(soldier.alive);
  s.gashrAmmo=3;s.human={x:unit.x,z:unit.z};assert.ok(s.board());assert.equal(s.mounted,unit);assert.equal(unit.shield,shield);assert.equal(unit.armor,armor);s.eject();assert.equal(s.gashrAmmo,3);
+});
+test('allied and enemy infantry automatically board a nearby friendly unmanned HAWC after one quiet minute',()=>{
+ for(const {faction,iff,kind} of [{faction:'union',iff:'2620',kind:'union-sentry'},{faction:'merc',iff:'5031',kind:'merc-sentry'}] as const){
+  const mission=structuredClone(MISSION_2_2);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.companions=[];mission.personnel=[];mission.assaults=[];mission.pickups=[];mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
+  const s=new Simulation('Easy',mission),source=makeUnit('source',kind,-200,0,true),carrier=makeUnit('empty-hawc',kind,12,0,false),opponent=makeUnit('opponent',faction==='union'?'merc-sentry':'union-sentry',300,300,true);
+  source.iff=carrier.iff=iff;opponent.iff=faction==='union'?'5031':'2620';s.units=[source,carrier,opponent];s.iff='2620';s.human={x:-400,z:-400};
+  const soldier=s.forceEject(source,'boarding')!;soldier.x=0;soldier.z=0;
+  for(let i=0;i<1199;i++)s.tick(.05,idle);
+  assert.equal(soldier.boardingTarget,undefined,`${faction} before one minute`);
+  s.tick(.05,idle);assert.equal(soldier.boardingTarget,carrier.id,`${faction} at one minute`);assert.equal(carrier.pilot,false);
+  for(let i=0;i<300&&!carrier.pilot;i++)s.tick(.05,idle);
+  assert.equal(carrier.pilot,true,faction);assert.equal(carrier.personId,soldier.personId);assert.equal(carrier.iff,iff);assert.equal(soldier.driverOf,carrier.id);
+ }
+});
+test('infantry combat and explicit orders prevent automatic boarding countdown',()=>{
+ const mission=structuredClone(MISSION_2_2);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.companions=[];mission.personnel=[];mission.assaults=[];mission.pickups=[];mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
+ const s=new Simulation('Easy',mission),source=makeUnit('source','union-sentry',-200,0,true),carrier=makeUnit('empty-hawc','union-sentry',12,0,false),opponent=makeUnit('opponent','merc-sentry',300,300,true);
+ source.iff=carrier.iff='2620';opponent.iff='5031';s.units=[source,carrier,opponent];s.human={x:-400,z:-400};
+ const soldier=s.forceEject(source,'boarding')!;soldier.x=0;soldier.z=0;
+ for(let i=0;i<1198;i++)s.tick(.05,idle);
+ assert.ok((soldier.combatIdleTime??0)>59);
+ opponent.x=20;opponent.z=0;
+ s.tick(.05,idle);assert.equal(soldier.combatIdleTime,0);assert.equal(soldier.boardingTarget,undefined);
+ opponent.x=300;opponent.z=300;soldier.order={kind:'follow'};
+ for(let i=0;i<1300;i++)s.tick(.05,idle);
+ assert.equal(soldier.boardingTarget,undefined);assert.equal(carrier.pilot,false);
 });
 for(const kind of ['merc-sentry','merc-tactical'] as const){
  test(`GASHR clears ${kind} for automatic boarding on foot and player control`,()=>{

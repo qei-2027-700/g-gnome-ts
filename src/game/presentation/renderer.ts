@@ -30,6 +30,8 @@ import {isLaser} from '../simulation/weapons.ts';
 import {mercAssaultLegPose,VEHICLE_SHAPES,FACILITY_WRECK,MERC_TACTICAL_RAID_MUZZLE,SCORP_TACTICAL_RAID_MUZZLES} from '../content/vehicle-shapes.ts';
 import {Simulation,isVehicle,isFacility,targetHeight,type SelectionTarget,type CombatTarget,type Unit,type GameEvent,type Point3} from '../simulation/simulation.ts';
 import {riverDistance,riverFrameAtZ,riverSamples} from '../content/missions/river.ts';
+const GAUS30_BEAM_WIDTH=1.5;
+const GAUS30_BEAM_THICKNESS=.035;
 const color=(hex:string)=>Color3.FromHexString(hex);
 type Effect={mesh:Mesh;life:number;duration:number;kind:'beam'|'tracer'|'flash'|'smoke'|'blast'|'blood';velocity?:Vector3};
 type PartVisual={meshes:Mesh[];paint:{material:StandardMaterial;base:Color3;glow:Color3}[];flash:number;smoke:number};
@@ -524,7 +526,7 @@ export class World {
   }
   private laserBolt(name='laser-bolt',weapon?:string){
     if(weapon==='GAUS30'){
-      const bolt=MeshBuilder.CreateBox(name,{width:.2,height:.012,depth:24},this.scene);
+      const bolt=MeshBuilder.CreateBox(name,{width:GAUS30_BEAM_WIDTH,height:GAUS30_BEAM_THICKNESS,depth:24},this.scene);
       const paint=this.gausMaterial(weapon);bolt.material=paint;bolt.isPickable=false;bolt.metadata={weapon,visual:'blue-laser',shape:'thin-plate'};
       return bolt;
     }
@@ -562,6 +564,7 @@ export class World {
   event(e:GameEvent){
     if(e.type==='board'&&e.facility)this.mode=0;
     if(e.type==='board'&&!e.soldier&&(e.unit===this.sim.mounted||e.unit===this.sim.passenger))this.mode=0;
+    if(e.type==='facility-hit'&&e.position){const spark=MeshBuilder.CreateSphere('facility-hit-spark',{diameter:.35,segments:6},this.scene);spark.position.set(e.position.x,e.position.y,e.position.z);spark.material=this.fxMaterial('facility-hit-spark','#ffc458',true);spark.isPickable=false;this.addEffect(spark,.1,'blast');}
     if(e.type==='hit'&&e.unit&&e.part){const visual=this.rigs.get(e.unit.id)?.parts[e.part];if(visual)visual.flash=1;}
     if(e.type==='shot'&&e.from&&e.to){
       const unit=e.unit,rig=unit?this.rigs.get(unit.id):undefined;
@@ -615,7 +618,7 @@ export class World {
           rig.flame.rotation.z=Math.atan2(-localCamera.x,localCamera.y);
           const nearOwnJet=this.mode===0&&this.completionTime===null&&!this.sim.guidedMissile&&this.sim.mounted?.kind==='merc-meson-tower'&&missile.owner===this.sim.mounted.id&&Vector3.Distance(this.camera.position,rig.root.position)<24;rig.root.setEnabled(!nearOwnJet);
           const distance=Vector3.Distance(this.camera.position,rig.root.position),width=distance*2*Math.tan(this.camera.fov/2)*3/this.engine.getHardwareScalingLevel()/Math.max(1,this.engine.getRenderHeight());
-          rig.flame.scaling.x=Math.max(1,width/.12);
+          rig.flame.scaling.x=Math.max(1,width/GAUS30_BEAM_WIDTH);
         }
         continue;
       }

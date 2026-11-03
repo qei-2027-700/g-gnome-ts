@@ -542,7 +542,7 @@ test('Merc Meson tower has a fixed pedestal, rotating head and one cannon; reset
 test('GAUS30 renders a wider blue laser and blue impact smoke without an explosion',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const sim=new Simulation('Easy',MISSION_2_6),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);sim.human={x:-80,z:210};sim.board();sim.fire(1);for(const e of sim.events)world.event(e);world.update(.01);
  const bolt=world.scene.meshes.find(m=>m.metadata?.visual==='blue-laser')!;assert.ok(bolt);const paint=bolt.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.emissiveColor.b>paint.emissiveColor.r);assert.ok(world.missileRigs.get(sim.missiles[0].id)!.root.name.startsWith('laser-'));
- const size=bolt.getBoundingInfo().boundingBox.extendSize;assert.ok(size.z/size.x>110);assert.ok(size.x/size.y>14);assert.equal(bolt.metadata.shape,'thin-plate');assert.equal(paint.emissiveColor.toHexString(),'#2015A6');assert.equal(world.scene.getMeshByName('muzzle-flash')!.material,paint);assert.ok(paint.emissiveColor.b>paint.emissiveColor.g*3);assert.ok(paint.emissiveColor.b>paint.emissiveColor.r*5);assert.equal(paint.disableLighting,true);assert.equal(paint.fogEnabled,false);assert.equal(world.scene.getMeshByName('meson-blue-core'),null);
+ const size=bolt.getBoundingInfo().boundingBox.extendSize;assert.ok(size.x*2>=1.5);assert.ok(size.z/size.x>15);assert.ok(size.x/size.y>30);assert.equal(bolt.metadata.shape,'thin-plate');assert.equal(paint.emissiveColor.toHexString(),'#2015A6');assert.equal(world.scene.getMeshByName('muzzle-flash')!.material,paint);assert.ok(paint.emissiveColor.b>paint.emissiveColor.g*3);assert.ok(paint.emissiveColor.b>paint.emissiveColor.r*5);assert.equal(paint.disableLighting,true);assert.equal(paint.fogEnabled,false);assert.equal(world.scene.getMeshByName('meson-blue-core'),null);
  sim.missiles[0].z+=300;world.update(0);assert.ok(bolt.scaling.x>1);assert.equal(bolt.scaling.y,1);assert.equal(bolt.scaling.z,1);
  const before=world.scene.meshes.filter(m=>m.name==='impact-flash'||m.name==='impact-smoke').length;world.event({type:'impact',weapon:'GAUS30',position:{x:0,y:2,z:100}});assert.equal(world.scene.meshes.filter(m=>m.name==='impact-flash'||m.name==='impact-smoke').length,before);assert.equal(world.scene.meshes.filter(m=>m.name==='gaus-blue-smoke').length,5);const smokeMaterial=world.scene.getMeshByName('gaus-blue-smoke')!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(smokeMaterial.diffuseColor.b>smokeMaterial.diffuseColor.r);assert.equal(smokeMaterial.alpha,.5);assert.equal(world.scene.getMeshByName('gaus-blue-flash')!.material,paint);engine.dispose();
 });
@@ -614,7 +614,7 @@ test('Meson shots have no tower or camera recoil and the ribbon faces rear and d
    const laser=world.missileRigs.get(missile.id)!,bolt=laser.flame,normal=Vector3.TransformNormal(Vector3.Up(),bolt.computeWorldMatrix(true)).normalize(),axis=new Vector3(missile.vx,missile.vy,missile.vz).normalize();
    const view=world.camera.position.subtract(laser.root.position),side=view.subtract(axis.scale(Vector3.Dot(view,axis))).normalize();
    assert.ok(Math.abs(Vector3.Dot(normal,side))>.999,'the wide face must remain visible from each camera');
-   const distance=Vector3.Distance(world.camera.position,laser.root.position),pixelWidth=.12*bolt.scaling.x/(distance*2*Math.tan(world.camera.fov/2))*engine.getRenderHeight();assert.ok(pixelWidth>=3-1e-8);
+   const distance=Vector3.Distance(world.camera.position,laser.root.position),pixelWidth=1.5*bolt.scaling.x/(distance*2*Math.tan(world.camera.fov/2))*engine.getRenderHeight();assert.ok(pixelWidth>=3-1e-8);
    world.scene.dispose();
   }
  }finally{engine.dispose();}
@@ -702,6 +702,19 @@ test('curved 4-2 river has a recessed bed and oriented bridge leaves',async()=>{
  const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());world.update(0);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),false);
  assert.ok(s.raiseBridge());world.completionTime=0;world.update(0);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z)>1.4);assert.ok(world.scene.getTransformNodeByName('bridge-hinge--1')!.rotation.z>1.4);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),true);
  const {bridgeControlMarkup}=await import('./bridge-control.ts');assert.ok(bridgeControlMarkup().includes('id="bridgeSwitch"'));assert.ok(bridgeControlMarkup().includes('bridge-control-building'));
+ }finally{engine.dispose();}
+});
+
+test('facility hits flash visibly and destroyed buildings disappear from the battlefield',()=>{
+ const mission=structuredClone(MISSION);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.objectives=[];mission.waypoints=[];mission.base={name:'facility-damage',x:0,z:30,width:20,depth:20,buildings:[{id:'test-building',kind:'command',x:0,z:30,width:20,depth:20,height:10,health:100}]};
+ const sim=new Simulation('Easy',mission),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const world=new World({} as HTMLCanvasElement,sim,engine),facility=sim.facilities[0]!,root=world.scene.getTransformNodeByName('facility-test-building')!;
+  const position={x:facility.x,y:facility.height*.5,z:facility.z};sim.damageFacility(facility,25,position);world.event(sim.events.at(-1)!);
+  assert.equal(sim.events.at(-1)?.type,'facility-hit');assert.equal(facility.health,75);assert.ok(world.scene.getMeshByName('facility-hit-spark'));
+  sim.selected=facility.id;assert.equal(sim.targetState?.armor,.75);
+  sim.damageFacility(facility,100,position);world.event(sim.events.at(-1)!);world.update(0);
+  assert.equal(facility.alive,false);assert.equal(root.isEnabled(),false);assert.ok(world.scene.meshes.some(mesh=>mesh.name==='impact-flash'));
  }finally{engine.dispose();}
 });
 

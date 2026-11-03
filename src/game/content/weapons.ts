@@ -9,7 +9,7 @@ export const LASERS = {
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
   RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:18,speed:LASER_FLIGHT_SPEED},
   // Manual p.57 lists 800 m range and 1000 m/s; current requested tuning widens range/hit width and slows flight.
-  GAUS30:{range:1000,minRange:80,recharge:1.6,movingRechargeFactor:1,interval:1.6,energy:5,damage:17,speed:450,hitPadding:.75},
+  GAUS30:{range:1000,minRange:80,recharge:1.6,movingRechargeFactor:1,interval:1.6,energy:5,damage:17,speed:450,hitPadding:1.5},
   P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:18,speed:LASER_FLIGHT_SPEED},
   'FIL-30': {range:220,minRange:22,recharge:LASER_RECHARGE_SECONDS,movingRechargeFactor:.5,interval:1,energy:2,damage:9,speed:LASER_FLIGHT_SPEED},
   CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:5,speed:LASER_FLIGHT_SPEED},

@@ -38,6 +38,14 @@ test('allied and enemy infantry automatically board a nearby friendly unmanned H
   assert.equal(carrier.pilot,true,faction);assert.equal(carrier.personId,soldier.personId);assert.equal(carrier.iff,iff);assert.equal(soldier.driverOf,carrier.id);
  }
 });
+test('infantry with depleted GASHR boards a nearby unmanned HAWC despite an enemy in detection range',()=>{
+ const mission=structuredClone(MISSION_2_2);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.companions=[];mission.personnel=[];mission.assaults=[];mission.pickups=[];mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
+ const s=new Simulation('Easy',mission),source=makeUnit('source','union-sentry',-200,0,true),carrier=makeUnit('empty-hawc','union-sentry',12,0,false),opponent=makeUnit('opponent','merc-sentry',0,50,true);
+ source.iff=carrier.iff='2620';opponent.iff='5031';s.units=[source,carrier,opponent];s.iff='2620';s.human={x:-400,z:-400};
+ const soldier=s.forceEject(source,'boarding')!;soldier.x=0;soldier.z=0;soldier.gashrAmmo=0;
+ s.tick(.05,idle);
+ assert.equal(soldier.boardingTarget,carrier.id);assert.equal(soldier.automaticBoarding,true);assert.equal(carrier.pilot,false);
+});
 test('infantry combat and explicit orders prevent automatic boarding countdown',()=>{
  const mission=structuredClone(MISSION_2_2);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.companions=[];mission.personnel=[];mission.assaults=[];mission.pickups=[];mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
  const s=new Simulation('Easy',mission),source=makeUnit('source','union-sentry',-200,0,true),carrier=makeUnit('empty-hawc','union-sentry',12,0,false),opponent=makeUnit('opponent','merc-sentry',300,300,true);

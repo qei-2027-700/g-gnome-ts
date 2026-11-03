@@ -550,6 +550,10 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       soldier.cooldown=Math.max(0,soldier.cooldown-dt);
       if(this.tickFootOrder(soldier,dt,from))continue;
       if(this.mission.pickups?.some(p=>p.personId===soldier.personId)){soldier.combatIdleTime=0;this.approachPerson(soldier,this.player,dt,6);continue;}
+      const carrier=this.units.filter(unit=>unit!==this.mounted&&unit!==this.passenger&&unit.alive&&!unit.pilot&&isHawc(unit.kind)&&unit.iff===soldier.iff&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&!this.pilotReserved(unit,soldier.id)&&distance(soldier,unit)<=INFANTRY_AUTO_BOARD_RANGE).sort((a,b)=>distance(soldier,a)-distance(soldier,b))[0];
+      if((soldier.gashrAmmo??0)<=0&&carrier){
+        soldier.boardingTarget=carrier.id;soldier.boardingRole='pilot';soldier.automaticBoarding=true;soldier.combatIdleTime=0;this.approachPerson(soldier,carrier,dt);for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);continue;
+      }
       const opponents:{position:Vec;unit:Unit|null}[]=this.units.filter(u=>u.alive&&u.pilot&&u!==this.mounted&&u.iff!==soldier.iff).map(u=>({position:u,unit:u as Unit|null}));
       if(this.soldierHostile(soldier))opponents.push({position:this.player,unit:this.mounted??this.passenger});
       const aggressor=this.activeAggressor(soldier);
@@ -558,7 +562,6 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(!opponent){
         soldier.alert=false;soldier.combatIdleTime=(soldier.combatIdleTime??0)+dt;
         if(soldier.combatIdleTime>=INFANTRY_AUTO_BOARD_DELAY-1e-9){
-          const carrier=this.units.filter(unit=>unit!==this.mounted&&unit!==this.passenger&&unit.alive&&!unit.pilot&&isHawc(unit.kind)&&unit.iff===soldier.iff&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&!this.pilotReserved(unit,soldier.id)&&distance(soldier,unit)<=INFANTRY_AUTO_BOARD_RANGE).sort((a,b)=>distance(soldier,a)-distance(soldier,b))[0];
           if(carrier){soldier.boardingTarget=carrier.id;soldier.boardingRole='pilot';soldier.automaticBoarding=true;soldier.combatIdleTime=0;this.approachPerson(soldier,carrier,dt);for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);continue;}
         }
         this.moveInfantry(soldier,soldier.yaw,0,dt);continue;

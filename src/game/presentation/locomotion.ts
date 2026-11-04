@@ -1,5 +1,5 @@
-import {VEHICLE_GAITS as GAITS,VEHICLE_SHAPES,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
-export {GAITS};
+import {VEHICLE_GAITS,VEHICLE_SHAPES,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
+export const GAITS=VEHICLE_GAITS satisfies Record<VehicleKind,{stride:number;lift:number;lean:number;bounce:number}>;
 export function legPose(kind:VehicleKind,phase:number,run:number,hipHeight:number,height?:number){
  const h=height??VEHICLES[kind].height,profile=GAITS[kind],strength=Math.max(0,Math.min(1,run));
  const cycle=((phase/(Math.PI*2))%1+1)%1,stance=cycle<.5;

@@ -46,3 +46,10 @@ test('Merc Assault legs swing their knees sideways and carry raised feet outward
   assert.deepEqual(mercAssaultLegPose(side,front,1.7,0),rest);
  }
 });
+
+test('legPose is deterministic for every vehicle kind and representative inputs',()=>{
+ const phases=[-Math.PI*2,-Math.PI,0,Math.PI/2,Math.PI*2,17.4],runs=[0,.25,.5,1],heights=[0,.225,1];
+ for(const kind of Object.keys(GAITS) as VehicleKind[])for(const phase of phases)for(const run of runs)for(const hipHeight of heights){
+  assert.deepEqual(legPose(kind,phase,run,hipHeight),legPose(kind,phase,run,hipHeight),`${kind}: ${phase}, ${run}, ${hipHeight}`);
+ }
+});

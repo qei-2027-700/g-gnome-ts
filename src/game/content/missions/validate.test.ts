@@ -52,3 +52,16 @@ test('elimination BGM rejects an empty roster, duplicate IDs and absent enemies'
  const mission=structuredClone(MISSION_3_3);mission.bgm!.afterEliminate={unitIds:[],trackId:'next'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterEliminate has no units')));
  mission.bgm!.afterEliminate.unitIds=['missing','missing'];const errors=validateMissions([mission]).join('\n');assert.ok(errors.includes('duplicate BGM afterEliminate unit ID'));assert.ok(errors.includes('BGM afterEliminate references missing unit: missing'));
 });
+
+test('catalog validation always reports an assigned unit reference absent from the mission',()=>{
+ for(let index=0;index<64;index++){
+  const mission=structuredClone(MISSION_3_3);mission.assignedUnitId=`missing-unit-${index}`;
+  assert.ok(validateMissions([mission]).length>0,mission.assignedUnitId);
+ }
+});
+
+test('Codex content rules document all three content-addition templates',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const rules=await readFile(new URL('../../../../docs/technical/codex-rules.md',import.meta.url),'utf8');
+ for(const section of ['機体追加のプロンプトテンプレート','ミッション追加のプロンプトテンプレート','既存ミッションのマップ拡張テンプレート'])assert.ok(rules.includes(section),section);
+});

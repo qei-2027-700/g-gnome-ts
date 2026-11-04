@@ -18,6 +18,7 @@ export type BriefingPresentation={
 };
 export type MissionDefinition={
  bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string}};
+ audioPath?:string;
  briefingPresentation?:BriefingPresentation;
  id:string;title:string;subtitle:Localized;briefing:Localized;startHint:Localized;success:Localized;radio:Localized;
  player:{x:number;z:number};initialYaw?:number;playerFaction:'union'|'merc'|'darken'|'scorp';initialIff:string;factionCodes:Partial<Record<string,string>>;

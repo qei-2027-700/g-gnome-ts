@@ -83,6 +83,8 @@ export class GameAudio {
   async updateMissionRadio(paused=false){if(paused||this.radioPending>0||this.occupiedUtterance||!this.missionRadioQueue.length)return;await this.sayRadio([this.missionRadioQueue.shift()!]);}
   private radioPending=0;private radioGeneration=0;
   private radioSources=new Map<AudioBufferSourceNode,GainNode>();private radioBuffers=new Map<string,Promise<AudioBuffer|null>>();
+  private guidanceBuffer=new Map<string,Promise<AudioBuffer|null>>();private guidanceSource:AudioBufferSourceNode|null=null;private guidanceGeneration=0;
+  guidanceError:string|null=null;
   ctx:AudioContext|null=null; music:HTMLAudioElement|null=null;url:string|null=null;lastSpeech=0;
   private drive:{gain:GainNode;osc:OscillatorNode;harmonic:OscillatorNode;filter:BiquadFilterNode;volume:number;pitch:number;kind:VehicleKind|null}|null=null;
   private buildingHum:{source:AudioBufferSourceNode;gain:GainNode}|null=null;
@@ -230,6 +232,29 @@ export class GameAudio {
     const ctx=this.ctx;if(!ctx)return Promise.resolve(null);const cached=this.radioBuffers.get(url);if(cached)return cached;
     const loading=fetch(url).then(response=>{if(!response.ok)throw new Error('Radio voice unavailable');return response.arrayBuffer();}).then(bytes=>ctx.decodeAudioData(bytes)).catch(()=>{this.radioBuffers.delete(url);return null;});this.radioBuffers.set(url,loading);return loading;
   }
+  async playGuidance(audioPath:string):Promise<void>{
+    if(this.settings.voice===0)return;
+    const ctx=this.ctx;if(!ctx)return;
+    const generation=++this.guidanceGeneration;
+    this.guidanceSource?.stop();this.guidanceSource=null;this.guidanceError=null;
+    if(ctx.state==='suspended'){
+      try{await ctx.resume();}catch(error){this.guidanceError='resume';console.warn(`[GameAudio] unable to resume guidance audio: ${audioPath}`,error);return;}
+      if(generation!==this.guidanceGeneration)return;
+    }
+    let loading=this.guidanceBuffer.get(audioPath);
+    if(!loading){
+      loading=fetch(audioPath).then(response=>{if(!response.ok)throw new Error('Guidance audio unavailable');return response.arrayBuffer();}).then(bytes=>ctx.decodeAudioData(bytes)).catch(error=>{
+        this.guidanceBuffer.delete(audioPath);this.guidanceError='unavailable';console.warn(`[GameAudio] guidance audio unavailable: ${audioPath}`,error);return null;
+      });
+      this.guidanceBuffer.set(audioPath,loading);
+    }
+    const buffer=await loading;
+    if(generation!==this.guidanceGeneration||!buffer||ctx.state!=='running'||this.settings.voice===0)return;
+    const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.voice*.8;source.connect(gain);gain.connect(ctx.destination);
+    this.guidanceSource=source;
+    source.onended=()=>{if(this.guidanceSource===source)this.guidanceSource=null;source.disconnect();gain.disconnect();};
+    source.start();
+  }
   private radioHiss(start:number,generation:number,finish?:()=>void){
     const ctx=this.ctx;if(!ctx||ctx.state!=='running'||!this.settings.sfx)return 0;
     if(!this.radioStaticBuffer){const samples=radioStaticSamples(ctx.sampleRate);this.radioStaticBuffer=ctx.createBuffer(1,samples.length,ctx.sampleRate);this.radioStaticBuffer.copyToChannel(samples,0);}
@@ -288,6 +313,6 @@ export class GameAudio {
     u.pitch=japanese?.82:.68;u.rate=.88;speechSynthesis.speak(u);
   }
   loadMusic(file:File){this.stopMusic();this.missionMusic=null;this.musicOwner='manual';this.musicError=null;this.url=URL.createObjectURL(file);this.music=new Audio(this.url);this.music.loop=true;this.music.volume=this.settings.music;return this.musicPaused?Promise.resolve():this.music.play();}
-  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
+  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.guidanceGeneration++;this.guidanceSource?.stop();this.guidanceSource=null;this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
   resume(){this.musicPaused=false;this.musicFailed=false;if(this.music)this.music.volume=this.musicVolume;this.playCurrentMusic();}
 }

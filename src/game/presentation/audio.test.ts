@@ -38,16 +38,51 @@ test('Ready speaks one complete Japanese word in the same female voice and respe
  }
 });
 
-async function radioAudioFixture(check:(fixture:{audio:GameAudio;settings:ReturnType<typeof defaults>;sources:any[];gains:number[];spoken:SpeechSynthesisUtterance[];urls:string[];ctx:any})=>Promise<void>){
+async function radioAudioFixture(check:(fixture:{audio:GameAudio;settings:ReturnType<typeof defaults>;sources:any[];gains:number[];spoken:SpeechSynthesisUtterance[];urls:string[];ctx:any})=>Promise<void>,fetchAudio: (url:string)=>Promise<{ok:boolean;arrayBuffer:()=>Promise<ArrayBuffer>}> = async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)})){
  const sources:any[]=[],gains:number[]=[],spoken:SpeechSynthesisUtterance[]=[],urls:string[]=[];
  const synth={getVoices:()=>[],cancel(){},speak(u:SpeechSynthesisUtterance){spoken.push(u);}};
  const keys=['window','speechSynthesis','SpeechSynthesisUtterance','fetch'] as const,previous=new Map(keys.map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
  class Utterance{constructor(public text:string){}lang='';pitch=1;rate=1;volume=1;voice:unknown=null;}
  const ctx={currentTime:10,state:'running',sampleRate:22050,createBuffer:(_channels:number,length:number,sampleRate:number)=>({duration:length/sampleRate,copyToChannel(samples:Float32Array){assert.equal(Math.abs(samples[0]),0);assert.equal(Math.abs(samples.at(-1)!),0);assert.ok(samples.some(v=>Math.abs(v)>.2));}}),destination:{},decodeAudioData:async()=>({duration:2}),createGain:()=>({gain:{set value(v:number){gains.push(v);}},connect(){},disconnect(){}}),createBufferSource:()=>{const source={buffer:null as any,onended:null as (()=>void)|null,startTime:0,stopped:false,connect(){},disconnect(){},start(time:number){this.startTime=time;},stop(){this.stopped=true;}};sources.push(source);return source;}};
- try{Object.defineProperty(globalThis,'window',{configurable:true,value:{speechSynthesis:synth}});Object.defineProperty(globalThis,'speechSynthesis',{configurable:true,value:synth});Object.defineProperty(globalThis,'SpeechSynthesisUtterance',{configurable:true,value:Utterance});Object.defineProperty(globalThis,'fetch',{configurable:true,value:async(url:string)=>{urls.push(url);return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};}});
+ try{Object.defineProperty(globalThis,'window',{configurable:true,value:{speechSynthesis:synth}});Object.defineProperty(globalThis,'speechSynthesis',{configurable:true,value:synth});Object.defineProperty(globalThis,'SpeechSynthesisUtterance',{configurable:true,value:Utterance});Object.defineProperty(globalThis,'fetch',{configurable:true,value:async(url:string)=>{urls.push(url);return fetchAudio(url);}});
  const settings=defaults(),audio=new GameAudio(settings);audio.ctx=ctx as unknown as AudioContext;await check({audio,settings,sources,gains,spoken,urls,ctx});
  }finally{for(const key of keys){const descriptor=previous.get(key);if(descriptor)Object.defineProperty(globalThis,key,descriptor);else Reflect.deleteProperty(globalThis,key);}}
 }
+test('mission guidance audio is cached, replaces prior playback and stops on pause',async()=>{
+ await radioAudioFixture(async({audio,settings,sources,gains,urls})=>{
+  await audio.playGuidance('/audio/mission-intro.wav');assert.equal(urls.length,1);assert.equal(sources.length,1);assert.equal(gains[0],settings.voice*.8);
+  await audio.playGuidance('/audio/mission-intro.wav');assert.equal(urls.length,1);assert.equal(sources.length,2);assert.equal(sources[0].stopped,true);
+  sources[1].onended();assert.equal(audio.guidanceError,null);
+  await audio.playGuidance('/audio/mission-intro.wav');assert.equal(sources.length,3);
+  audio.pause();assert.equal(sources[2].stopped,true);
+  const mutedFetchCount=urls.length;settings.voice=0;await audio.playGuidance('/audio/muted.wav');assert.equal(urls.length,mutedFetchCount);
+ });
+});
+test('playGuidance warns and resolves for unavailable mission audio paths',async()=>{
+ const warnings:unknown[][]=[];
+ const originalWarn=console.warn;
+ console.warn=(...args:unknown[])=>{warnings.push(args);};
+ try{
+  await radioAudioFixture(async({audio,urls})=>{
+   for(const audioPath of ['', '/missing/briefing.wav', 'https://invalid.example/audio.wav']){
+    await assert.doesNotReject(audio.playGuidance(audioPath));
+   }
+   assert.equal(urls.length,3);assert.equal(warnings.length,3);assert.equal(audio.guidanceError,'unavailable');
+  },async()=>{throw new Error('network unavailable');});
+ }finally{console.warn=originalWarn;}
+});
+test('playGuidance does not start a pending clip after pause or voice mute',async()=>{
+ for(const pause of [true,false]){
+  let resolveFetch!: (response:{ok:boolean;arrayBuffer:()=>Promise<ArrayBuffer>})=>void;
+  const pendingResponse=new Promise<{ok:boolean;arrayBuffer:()=>Promise<ArrayBuffer>}>(resolve=>{resolveFetch=resolve;});
+  await radioAudioFixture(async({audio,settings,sources})=>{
+   const request=audio.playGuidance('/audio/pending.wav');
+   if(pause)audio.pause();else settings.voice=0;
+   resolveFetch({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)});
+   await request;assert.equal(sources.length,0);
+  },()=>pendingResponse);
+ }
+});
 test('radio transmissions bracket overlapping voices with one opening and one closing static sound',async()=>{
  await radioAudioFixture(async({audio,settings,sources,gains,spoken,urls,ctx})=>{
   const replies=['kylie','thane','sheridan'].map(personId=>({personId,line:RADIO_DEFAULT_REPLY}));const pending=audio.sayRadio(replies);audio.sayReady();await pending;

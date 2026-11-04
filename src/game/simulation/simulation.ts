@@ -74,7 +74,7 @@ export class Simulation {
     this.mines=(mission.minefields??[]).flatMap(field=>field.mines.map(mine=>({...mine,radius:field.triggerRadius,spent:false})));
     this.units=mission.units.map(spawn=>Object.assign(makeUnit(spawn.id,spawn.kind,spawn.x,spawn.z,spawn.pilot,resolveVehicle(spawn.kind,mission.vehicleOverrides?.[spawn.kind],spawn.overrides)),{yaw:spawn.yaw??0,aim:spawn.yaw??0,personId:spawn.personId,iff:spawn.iff??mission.factionCodes[resolveVehicle(spawn.kind,mission.vehicleOverrides?.[spawn.kind],spawn.overrides).faction]??resolveVehicle(spawn.kind).faction}));
     for(const person of mission.personnel??[]){const facility=this.facilities.find(f=>f.id===person.facilityId);this.soldiers.push({id:`person-${person.personId}`,personId:person.personId,sourceVehicle:person.boardingTargetId??person.facilityId??person.personId,insideFacility:person.facilityId,boardingTarget:person.boardingTargetId,boardingRole:person.boardingTargetId?'pilot':undefined,iff:this.iff,faction:mission.playerFaction,x:facility?.x??person.x,z:facility?.z??person.z,yaw:0,health:100,alive:true,alert:false,cooldown:0,flight:null,aggressorId:null,aggressorUntil:0});}
-    if(mission.startMountedUnitId){const unit=this.units.find(u=>u.id===mission.startMountedUnitId);if(!unit||!unit.alive)throw new Error('Invalid mounted start');this.mounted=unit;this.boardedUnits.add(unit.id);unit.iff=this.iff;unit.pilot=true;this.human={x:unit.x,z:unit.z};this.applyBoardingOrders(unit);}
+    if(mission.startMountedUnitId){const unit=this.units.find(u=>u.id===mission.startMountedUnitId);if(!unit||!unit.alive)throw new Error('Invalid mounted start');this.mounted=unit;this.boardedUnits.add(unit.id);unit.iff=this.iff;unit.pilot=true;this.human={x:unit.x,z:unit.z};this.syncWarningLevel(unit);this.applyBoardingOrders(unit);}
   }
   private applyBoardingOrders(unit:Unit){
     if(this.mission.autoFollowOnBoard?.includes(unit.kind))this.sendAllyOrder('all','follow',{followPlayer:true,excludeUnitId:unit.id});
@@ -423,19 +423,23 @@ export class Simulation {
     if(soldier){Object.assign(soldier,point);soldier.velocity=undefined;soldier.passengerOf=undefined;this.cancelBoarding(soldier);soldier.flight=launch&&unit.spec.ejectionSeat!==false&&unit.spec.category!=='tower'?launchFlight(unit.spec.height,unit.yaw):null;}
     else{this.passenger=null;this.humanVelocity={x:0,z:0};this.human=point;this.humanYaw=unit.yaw;this.flight=launch&&unit.spec.ejectionSeat!==false&&unit.spec.category!=='tower'?launchFlight(unit.spec.height,unit.yaw):null;this.pitch=0;this.throttle=0;this.speed=0;this.emit({type:'eject',unit,launch:!!this.flight});}
   }
+  private syncWarningLevel(unit?:Unit|null){
+    this.warningLevel=unit?Math.min(...PARTS.map(part=>unit.parts[part]))<=PART_DAMAGE_THRESHOLDS.critical?2:unit.shield<unit.spec.shield*.25?1:0:0;
+    this.pendingDamageWarning=null;
+  }
   board(allowPassenger=true){if(this.mounted||this.passenger||this.insideFacility||this.flight||this.status!=='running')return false;const u=this.boardingTargets.filter(u=>this.canBoard(u,allowPassenger)).sort((a,b)=>this.entryDistance(a)-this.entryDistance(b))[0];if(!u)return false;
-    if(isFacility(u)){this.insideFacility=u;u.pilot=true;this.human={x:u.x,z:u.z};this.humanYaw=u.yaw;this.humanVelocity={x:0,z:0};this.pitch=0;this.throttle=0;this.speed=0;this.tracking=false;this.clearTarget();this.emit({type:'board',facility:u});return true;}
-    if(u.pilot){this.footRechargePending.clear();this.humanVelocity={x:0,z:0};this.passenger=u;this.humanVelocity={x:0,z:0};this.setTarget(null);u.passengers.push('player');this.pitch=0;this.throttle=0;this.speed=0;this.tracking=false;this.emit({type:'board',unit:u});this.applyBoardingOrders(u);return true;}
-this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity={x:0,z:0};this.mounted=u;this.boardedUnits.add(u.id);u.hoverDisabled=false;u.iff=this.iff;this.pitch=0;u.aimPitch=0;this.tracking=false;u.pilot=true;this.throttle=0;this.speed=u.speed;this.emit({type:'board',unit:u});this.applyBoardingOrders(u);return true;}
+    if(isFacility(u)){this.insideFacility=u;u.pilot=true;this.human={x:u.x,z:u.z};this.humanYaw=u.yaw;this.humanVelocity={x:0,z:0};this.pitch=0;this.throttle=0;this.speed=0;this.tracking=false;this.clearTarget();this.syncWarningLevel(null);this.emit({type:'board',facility:u});return true;}
+    if(u.pilot){this.footRechargePending.clear();this.humanVelocity={x:0,z:0};this.passenger=u;this.humanVelocity={x:0,z:0};this.setTarget(null);u.passengers.push('player');this.pitch=0;this.throttle=0;this.speed=0;this.tracking=false;this.syncWarningLevel(null);this.emit({type:'board',unit:u});this.applyBoardingOrders(u);return true;}
+this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity={x:0,z:0};this.mounted=u;this.boardedUnits.add(u.id);u.hoverDisabled=false;u.iff=this.iff;this.pitch=0;u.aimPitch=0;this.tracking=false;u.pilot=true;this.throttle=0;this.speed=u.speed;this.syncWarningLevel(u);this.emit({type:'board',unit:u});this.applyBoardingOrders(u);return true;}
   eject(mode:'launch'|'ground'='launch'){
-    if(this.insideFacility){const facility=this.insideFacility;facility.pilot=false;this.insideFacility=null;this.human=facilityExit(facility);this.flight=null;this.humanVelocity={x:0,z:0};this.humanYaw=facility.yaw;this.pitch=0;this.throttle=0;this.speed=0;this.emit({type:'eject',facility,launch:false});return;}
+    if(this.insideFacility){const facility=this.insideFacility;facility.pilot=false;this.insideFacility=null;this.human=facilityExit(facility);this.flight=null;this.humanVelocity={x:0,z:0};this.humanYaw=facility.yaw;this.pitch=0;this.throttle=0;this.speed=0;this.syncWarningLevel(null);this.emit({type:'eject',facility,launch:false});return;}
     if(this.passenger&&this.status==='running'){this.exitPassenger();return;}
     if(!this.mounted||this.status!=='running')return;
     this.releaseGuidance('ejected');const u=this.mounted;this.playerIff=u.iff;u.pilot=false;this.centerVehicle(u,false);this.humanVelocity={x:0,z:0};
     const launch=mode==='launch'&&u.spec.ejectionSeat!==false&&u.spec.category!=='tower';
     this.human=launch?{x:u.x,z:u.z}:{x:u.x+Math.cos(u.yaw)*9,z:u.z-Math.sin(u.yaw)*9};
     this.flight=launch?launchFlight(u.spec.height,u.yaw):null;
-    this.humanYaw=u.yaw;this.pitch=0;this.tracking=false;this.mounted=null;this.throttle=0;this.speed=0;this.emit({type:'eject',unit:u,launch});
+    this.humanYaw=u.yaw;this.pitch=0;this.tracking=false;this.mounted=null;this.throttle=0;this.speed=0;this.syncWarningLevel(null);this.emit({type:'eject',unit:u,launch});
   }
   private advanceFlight(body:Vec,flight:Flight,dt:number){
     const next={x:body.x+flight.vx*dt,z:body.z+flight.vz*dt};

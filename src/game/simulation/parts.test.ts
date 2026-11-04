@@ -118,6 +118,23 @@ test('damage warnings ignore shield-only and enemy hits, and prioritize critical
  const enemy=makeUnit('enemy','merc-sentry',50,50,false);enemy.shield=0;s.units.push(enemy);s.events=[];s.damage(enemy,20,'hull');s.tick(.016,idle);assert.equal(s.events.filter(e=>e.type==='warning'&&e.text==='ダメージ').length,0);
 });
 
+test('boarding an already damaged vehicle or facility suppresses entry damage warnings until further damage arrives',()=>{
+ const s=new Simulation();const unit=makeUnit('damaged','union-sentry',0,0,false);
+ unit.shield=unit.spec.shield*0.1; // low shield (< 25%)
+ unit.parts.hull=0.2; // critical damage (<= 0.3)
+ s.units=[unit];s.human={x:0,z:0};
+ assert.ok(s.board());
+ s.events=[];
+ s.tick(1/60,idle);
+ assert.equal(s.events.filter(e=>e.type==='warning').length,0);
+
+ // Newly arriving damage continues to alert properly
+ s.damage(unit,20,'cockpit');
+ s.tick(1/60,idle);
+ assert.ok(s.events.some(e=>e.type==='warning'));
+});
+
+
 test('Merc Meson photo dimensions retain separate pedestal, bowl, roof, cannon and foot hit regions',()=>{
  const tower=makeUnit('meson','merc-meson-tower',0,0,false);
  assert.equal(intersectParts(tower,{x:0,y:3,z:20},{x:0,y:3,z:-20})?.part,'hull');

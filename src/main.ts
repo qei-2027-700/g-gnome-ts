@@ -175,14 +175,15 @@ let hologramKey='',selfHologramKey='',viewportSizeKey='';
 function targetName(target:SelectionTarget){return baseTargetName(target,sim.mission.companions,settings.locale);}
 function updateTargetHud(){
   const state=sim.targetState,holo=$('#targetHologram'),meter=$('#targetShieldMeter'),reticle=$('#reticle');
-  holo.hidden=!state;meter.hidden=!state||isFacility(state.unit);$('#clearTarget').hidden=!state;
+  holo.hidden=!state;meter.hidden=!state;$('#clearTarget').hidden=!state;
   reticle.classList.toggle('on-target',!!state?.onAim&&!!state?.inSight);reticle.classList.toggle('locked',!!state?.locked);
   $('#lockDistance').textContent=state?`${Math.round(state.distance)} m`:'';
   if(!state){$('#targetData').textContent='NO TARGET';hologramKey='';holo.innerHTML='';document.querySelectorAll('.weapon-panel>div').forEach(el=>el.classList.remove('ready'));return;}
   const targetUnit=state.unit,vehicle=isVehicle(targetUnit),crewName=vehicle?sim.companionCrew(targetUnit).map(m=>m.name.en).join(' / '):'',key=isFacility(targetUnit)?targetUnit.id:vehicle?targetUnit.kind+JSON.stringify(targetUnit.parts)+crewName:'infantry:'+targetName(targetUnit);if(hologramKey!==key){holo.innerHTML=isFacility(targetUnit)?facilityHologramSvg(targetUnit.facilityType):vehicle?hologramSvg(targetUnit.kind,targetUnit.parts,crewName):infantryHologramSvg(targetName(targetUnit));hologramKey=key;}
-  const damageColor=(ratio:number)=>ratio>.6?'#72ff75':ratio>.25?'#ffe36c':'#ff5a49';
-  const fill=$('#targetShieldFill');fill.style.height=`${Math.max(0,state.shield)*100}%`;fill.style.background=damageColor(state.shield);
-  $('#targetData').textContent=`${targetName(state.unit)}\n${Math.round(state.distance)} m · ${isFacility(targetUnit)?t('施設','FACILITY'):`${vehicle?'SHIELD':'HEALTH'} ${Math.max(0,Math.round(state.shield*100))}%`} · IFF ${state.unit.iff}${sim.tracking?' · TRACK':''}`;
+  const damageColor=(ratio:number)=>ratio>.6?'#72ff75':ratio>.25?'#ffe36c':'#ff5a49',durability=isFacility(targetUnit)?state.armor:state.shield;
+  meter.classList.toggle('facility',isFacility(targetUnit));
+  const fill=$('#targetShieldFill');fill.style.height=`${Math.max(0,durability)*100}%`;fill.style.background=damageColor(durability);
+  $('#targetData').textContent=`${targetName(state.unit)}\n${Math.round(state.distance)} m · ${isFacility(targetUnit)?`${t('施設','FACILITY')} · ${t('耐久','INTEGRITY')} ${Math.max(0,Math.round(state.armor*100))}%`:`${vehicle?'SHIELD':'HEALTH'} ${Math.max(0,Math.round(state.shield*100))}%`} · IFF ${state.unit.iff}${sim.tracking?' · TRACK':''}`;
   document.querySelectorAll('.weapon-panel>div').forEach((el,i)=>el.classList.toggle('ready',state.onAim&&state.inSight&&state.distance<(sim.mounted?sim.weaponRange(i+1):150)));
 }
 function updateTargetMarkers(){

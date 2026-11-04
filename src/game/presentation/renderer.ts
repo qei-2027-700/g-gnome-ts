@@ -30,6 +30,8 @@ import {isLaser} from '../simulation/weapons.ts';
 import {mercAssaultLegPose,VEHICLE_SHAPES,FACILITY_WRECK,MERC_TACTICAL_RAID_MUZZLE,SCORP_TACTICAL_RAID_MUZZLES} from '../content/vehicle-shapes.ts';
 import {Simulation,isVehicle,isFacility,targetHeight,type SelectionTarget,type CombatTarget,type Unit,type GameEvent,type Point3} from '../simulation/simulation.ts';
 import {riverDistance,riverFrameAtZ,riverSamples} from '../content/missions/river.ts';
+const GAUS30_BEAM_WIDTH=1.5;
+const GAUS30_BEAM_THICKNESS=.035;
 const color=(hex:string)=>Color3.FromHexString(hex);
 type Effect={mesh:Mesh;life:number;duration:number;kind:'beam'|'tracer'|'flash'|'smoke'|'blast'|'blood';velocity?:Vector3};
 type PartVisual={meshes:Mesh[];paint:{material:StandardMaterial;base:Color3;glow:Color3}[];flash:number;smoke:number};
@@ -381,7 +383,7 @@ export class World {
       const pose=legPose(unit.kind,rig.phase+i*Math.PI,run,leg.position.y+rig.root.position.y,spec.height);
       leg.rotation.x=pose.hip;rig.knees[i].rotation.x=pose.knee;rig.feet[i].rotation.x=pose.ankle;
     });
-    if(dt>0&&run>.25&&Math.floor(before/Math.PI)!==Math.floor(rig.phase/Math.PI)){
+    if(dt>0&&run>.25&&rig.feet.length>0&&Math.floor(before/Math.PI)!==Math.floor(rig.phase/Math.PI)){
       const foot=rig.feet[Math.floor(rig.phase/Math.PI)%2];foot.computeWorldMatrix(true);const point=foot.getAbsolutePosition();
       for(const side of [-1,1]){const dust=MeshBuilder.CreateSphere('footfall-dust',{diameter:.65+run*.6,segments:4},this.scene);dust.position.set(point.x+side*.25,.2,point.z);dust.material=this.fxMaterial('run-dust','#bbae80');this.addEffect(dust,.55,'smoke',new Vector3(side*.6-Math.sin(unit.yaw)*.8,.7,-Math.cos(unit.yaw)*.8));}
     }
@@ -467,7 +469,7 @@ export class World {
   }
   private fxMaterial(name:string,hex:string,glow=false){
     let material=this.fxMaterials.get(name);
-    if(!material){material=this.material(name,hex,glow);if(name==='smoke'||name==='gas-cloud'||name==='run-dust'){material.alpha=.5;material.disableLighting=true;material.emissiveColor=color(hex);}this.fxMaterials.set(name,material);}
+    if(!material){material=this.material(name,hex,glow);    if(name==='smoke'||name==='gas-cloud'||name==='run-dust'||name==='gaus-impact-smoke'){material.alpha=.5;material.disableLighting=true;material.emissiveColor=color(hex);}this.fxMaterials.set(name,material);}
     return material;
   }
   private retireVehicle(unit:Unit){if(unit.spec.category==='hovercraft'){this.rigs.get(unit.id)?.root.dispose(false,true);this.rigs.delete(unit.id);return;}
@@ -524,7 +526,7 @@ export class World {
   }
   private laserBolt(name='laser-bolt',weapon?:string){
     if(weapon==='GAUS30'){
-      const bolt=MeshBuilder.CreateBox(name,{width:.12,height:.008,depth:24},this.scene);
+      const bolt=MeshBuilder.CreateBox(name,{width:GAUS30_BEAM_WIDTH,height:GAUS30_BEAM_THICKNESS,depth:24},this.scene);
       const paint=this.gausMaterial(weapon);bolt.material=paint;bolt.isPickable=false;bolt.metadata={weapon,visual:'blue-laser',shape:'thin-plate'};
       return bolt;
     }
@@ -541,6 +543,13 @@ export class World {
   }
   private yellowLaserFlash(position:Point3,weapon:string){const flash=MeshBuilder.CreateSphere(weapon==='TAR12'?'tar12-yellow-flash':'rupp-yellow-flash',{diameter:.45,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.fxMaterial('laser-yellow','#ffe529',true);this.addEffect(flash,.12,'flash');}
   private gausFlash(position:Point3,weapon?:string){const flash=MeshBuilder.CreateSphere('gaus-blue-flash',{diameter:.55,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.gausMaterial(weapon);this.addEffect(flash,.12,'flash');}
+  private gausImpactSmoke(position:Point3){
+    for(let i=0;i<5;i++){
+      const angle=i*Math.PI*2/5,smoke=MeshBuilder.CreateSphere('gaus-blue-smoke',{diameter:1.5,segments:5},this.scene);
+      smoke.position.set(position.x+Math.cos(angle)*.45,position.y,position.z+Math.sin(angle)*.45);smoke.material=this.fxMaterial('gaus-impact-smoke','#426de0');
+      this.addEffect(smoke,1.1,'smoke',new Vector3(Math.cos(angle)*.45,.8,Math.sin(angle)*.45));
+    }
+  }
   private burst(position:Point3,large=false){
     const blast=MeshBuilder.CreateSphere('impact-flash',{diameter:1,segments:8},this.scene);
     blast.position.set(position.x,Math.max(.4,position.y),position.z);
@@ -555,6 +564,7 @@ export class World {
   event(e:GameEvent){
     if(e.type==='board'&&e.facility)this.mode=0;
     if(e.type==='board'&&!e.soldier&&(e.unit===this.sim.mounted||e.unit===this.sim.passenger))this.mode=0;
+    if(e.type==='facility-hit'&&e.position){const spark=MeshBuilder.CreateSphere('facility-hit-spark',{diameter:.35,segments:6},this.scene);spark.position.set(e.position.x,e.position.y,e.position.z);spark.material=this.fxMaterial('facility-hit-spark','#ffc458',true);spark.isPickable=false;this.addEffect(spark,.1,'blast');}
     if(e.type==='hit'&&e.unit&&e.part){const visual=this.rigs.get(e.unit.id)?.parts[e.part];if(visual)visual.flash=1;}
     if(e.type==='shot'&&e.from&&e.to){
       const unit=e.unit,rig=unit?this.rigs.get(unit.id):undefined;
@@ -562,7 +572,7 @@ export class World {
       if(e.weapon==='GAUS30'&&unit===this.sim.mounted&&unit?.kind==='merc-meson-tower'&&this.mode===0&&!this.sim.guidedMissile&&this.completionTime===null)this.mesonCockpitJet(unit.id);
       if(unit===this.sim.mounted&&unit?.spec.category!=='tower')this.kick=e.projectileId!==undefined?.09:.035;
       const infantryRifle=e.weapon==='PRIF44',dasy=e.weapon==='DASY';
-      if(infantryRifle&&!e.unit&&!e.soldier&&this.mode===0&&!this.sim.mounted){
+      if(infantryRifle&&e.projectileId===undefined&&!e.unit&&!e.soldier&&this.mode===0&&!this.sim.mounted){
         const streak=MeshBuilder.CreateTube('prif44-first-person-streak',{path:[new Vector3(.3,-.12,.8),new Vector3(.08,-.03,2)],radius:.015,tessellation:6,cap:Mesh.CAP_ALL},this.scene);
         streak.parent=this.camera;streak.material=this.fxMaterial('prif44-red-tracer','#ff2413',true);streak.isPickable=false;streak.metadata={visual:'prif44-first-person-streak'};this.addEffect(streak,.2,'beam');
       }
@@ -588,7 +598,7 @@ export class World {
       }
     }
     if(e.type==='mine'&&e.position)this.burst(e.position,true);
-    if(e.type==='impact'&&e.position){if(e.weapon==='GAUS30'||e.weapon==='GAUS20')this.gausFlash(e.position,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(e.position,e.weapon);else if(e.weapon==='GASHR')this.gasCloud(e.position);else if(e.weapon!=='EGGER')this.burst(e.position);}
+    if(e.type==='impact'&&e.position){if(e.weapon==='GAUS30'){this.gausFlash(e.position,e.weapon);this.gausImpactSmoke(e.position);}else if(e.weapon==='GAUS20')this.gausFlash(e.position,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(e.position,e.weapon);else if(e.weapon==='GASHR')this.gasCloud(e.position);else if(e.weapon!=='EGGER')this.burst(e.position);}
     if(e.type==='soldier-death'&&e.position&&(!e.soldier||!isEmbarked(e.soldier)))this.bloodBurst(e.position);
     if(e.type==='hit'&&e.unit&&e.unit!==this.sim.mounted){const point=e.position??{x:e.unit.x,y:e.unit.spec.height*.6,z:e.unit.z};if(e.weapon==='GAUS30'||e.weapon==='GAUS20')this.gausFlash(point,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(point,e.weapon);else this.burst(point);}
     if(e.type==='hit'&&e.unit===this.sim.mounted)this.kick=.12;
@@ -599,6 +609,11 @@ export class World {
     for(const [id,rig] of this.missileRigs)if(!live.has(id)){rig.root.dispose();this.missileRigs.delete(id);}
     for(const missile of this.sim.missiles){
       let rig=this.missileRigs.get(missile.id);
+      if(missile.weapon==='PRIF44'){
+        if(!rig){const root=new TransformNode(`prif44-projectile-${missile.id}`,this.scene),tracer=MeshBuilder.CreateCylinder('prif44-projectile',{height:.75,diameter:.1,tessellation:6},this.scene);tracer.parent=root;tracer.rotation.x=Math.PI/2;tracer.material=this.fxMaterial('prif44-projectile','#ff2413',true);tracer.isPickable=false;rig={root,flame:tracer,smokeTimer:0};this.missileRigs.set(missile.id,rig);}
+        rig.root.position.set(missile.x,missile.y,missile.z);rig.root.lookAt(rig.root.position.add(new Vector3(missile.vx,missile.vy,missile.vz)));
+        continue;
+      }
       if(isLaser(missile.weapon)||missile.weapon==='TCREAP'){
         if(!rig){const root=new TransformNode(`laser-${missile.id}`,this.scene),bolt=this.laserBolt('laser-bolt',missile.weapon);bolt.parent=root;rig={root,flame:bolt,smokeTimer:0};this.missileRigs.set(missile.id,rig);}
         rig.root.setEnabled(missile.id!==this.sim.guidedMissile?.id);rig.root.position.set(missile.x,missile.y,missile.z);rig.root.lookAt(rig.root.position.add(new Vector3(missile.vx,missile.vy,missile.vz)));
@@ -608,7 +623,7 @@ export class World {
           rig.flame.rotation.z=Math.atan2(-localCamera.x,localCamera.y);
           const nearOwnJet=this.mode===0&&this.completionTime===null&&!this.sim.guidedMissile&&this.sim.mounted?.kind==='merc-meson-tower'&&missile.owner===this.sim.mounted.id&&Vector3.Distance(this.camera.position,rig.root.position)<24;rig.root.setEnabled(!nearOwnJet);
           const distance=Vector3.Distance(this.camera.position,rig.root.position),width=distance*2*Math.tan(this.camera.fov/2)*3/this.engine.getHardwareScalingLevel()/Math.max(1,this.engine.getRenderHeight());
-          rig.flame.scaling.x=Math.max(1,width/.12);
+          rig.flame.scaling.x=Math.max(1,width/GAUS30_BEAM_WIDTH);
         }
         continue;
       }

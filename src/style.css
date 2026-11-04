@@ -13,7 +13,7 @@
 .reticle{--cursor:#8fff87;border-color:var(--cursor)}.reticle.on-target{--cursor:#ffe36c}.reticle.locked{--cursor:#ff6354}
 .reticle:before,.reticle:after{background:var(--cursor)}#lockDistance{position:absolute;left:50%;top:110%;transform:translateX(-50%);color:var(--cursor);font:11px monospace;white-space:nowrap}
 .target-instrument{height:23%}#targetHologram{position:absolute;left:17%;top:14%;width:66%;height:65%;filter:drop-shadow(0 0 3px currentColor)}#targetHologram svg{width:100%;height:100%}
-#targetShieldMeter{position:absolute;left:11%;bottom:26%;height:52%;width:7px;border:1px solid #6edc78;display:flex;align-items:end}#targetShieldFill{width:100%;height:100%}
+#targetShieldMeter{position:absolute;left:11%;bottom:26%;height:52%;width:7px;border:1px solid #6edc78;display:flex;align-items:end}#targetShieldMeter.facility{border-color:#f2c56b}#targetShieldFill{width:100%;height:100%}
 #targetData{top:auto;bottom:7%;left:14%;right:14%;font-size:8px;line-height:1.6;z-index:3}
 #clearTarget{position:absolute;right:16%;top:19%;padding:0 4px;line-height:1.2;font:13px monospace;border:0;background:#06160d;color:#d9e99c;pointer-events:auto;z-index:4}
 .weapon-panel>div.ready{color:#adff91;text-shadow:0 0 6px #78ff5a}

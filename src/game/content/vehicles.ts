@@ -455,7 +455,7 @@ export const VEHICLES = {
     initialAmmo:{
     },
     ai:{
-      detection:800,
+      detection:1000,
       strafe:0,
       keepMoving:false,
       stopDistance:0,
@@ -483,7 +483,7 @@ export const VEHICLES = {
     initialAmmo:{
     },
     ai:{
-      detection:800,
+      detection:1000,
       strafe:0,
       keepMoving:false,
       stopDistance:0,

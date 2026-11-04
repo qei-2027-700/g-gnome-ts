@@ -435,7 +435,7 @@ test('4-2 switches BGM after the last ejected enemy pilot is shot even though th
  for(const unit of sim.units)if(ids.includes(unit.id)&&unit!==last)sim.damage(unit,99999);sim.soldiers=[];last.x=-300;last.z=-150;const pilot=sim.forceEject(last)!;assert.ok(pilot.alive);pilot.flight=null;pilot.x=-300;pilot.z=-170;sim.human={x:-300,z:-200};sim.humanYaw=0;sim.pitch=sim.targetElevation(pilot);
  await musicFixture(async(audio,tracks)=>{
   audio.beginMissionMusic(mission);audio.updateMissionMusic(sim.time,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks[0].src,'credits.mp3');assert.equal(sim.missionMusicUnits.find(u=>u.id===last.id)!.defeated,false);
-  for(let i=0;i<6&&pilot.alive;i++){sim.footCooldown.PRIF44=0;sim.fire(1);}assert.equal(pilot.alive,false);assert.equal(last.alive,true);assert.equal(last.pilot,false);assert.ok(sim.units.find(u=>u.id==='bridge-union-sentry')!.alive);
+  for(let i=0;i<6&&pilot.alive;i++){sim.footCooldown.PRIF44=0;sim.fire(1);for(let step=0;step<30&&pilot.alive;step++)sim.tick(1/60,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});}assert.equal(pilot.alive,false);assert.equal(last.alive,true);assert.equal(last.pilot,false);assert.ok(sim.units.find(u=>u.id==='bridge-union-sentry')!.alive);
   audio.updateMissionMusic(sim.time,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].src,'snow-maze.mp3');assert.equal(tracks[1].paused,false);assert.equal(sim.status,'running');
  });
 });

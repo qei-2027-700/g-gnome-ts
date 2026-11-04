@@ -4,7 +4,7 @@
 
 本設計は、G-Nomeの機体・ミッションを「最小ファイル追記で完結させる体制」を確立するための変更をまとめたものです。コードベースはすでにデータ駆動型の設計になっているため、本設計の主な目的は次の3点です。
 
-1. **型安全性の強化** — `VehicleKind` と `VEHICLE_SHAPES` のパリティをコンパイル時に保証する
+1. **追記差分の集約** — 性能・形状・歩行・駆動音を機体単位で一元定義し、`VehicleKind` をそのキーから導出する
 2. **機能追加** — `MissionDefinition` に `audioPath` フィールドを追加し、`GameAudio.playGuidance()` を実装する
 3. **規約の文書化** — `docs/technical/codex-rules.md` に追記テンプレートを整備する
 
@@ -16,7 +16,10 @@
 
 | ファイル | 変更種別 | 目的 |
 |---|---|---|
-| `src/game/content/vehicle-shapes.ts` | 変更 | `satisfies Record<VehicleKind, unknown>` の型注釈追加によるコンパイル時パリティ検証（**既に実装済み**） |
+| `src/game/content/vehicles.ts` | 変更 | `VEHICLES` の各エントリに性能・形状・歩行・駆動音を集約し、`VehicleKind` をキーから導出 |
+| `src/game/content/vehicle-shapes.ts` | 変更 | 中央定義から形状データを再exportする互換窓口 |
+| `src/game/presentation/locomotion.ts` | 変更 | 歩行プロファイルを中央定義から参照 |
+| `src/game/presentation/audio.ts` | 変更 | 駆動音プロファイルを中央定義から参照 |
 | `src/game/content/missions/types.ts` | 変更 | `MissionDefinition` に `audioPath?: string` フィールドを追加 |
 | `src/game/presentation/audio.ts` | 変更 | `playGuidance(phase: string): void` メソッドを `GameAudio` に追加 |
 | `docs/technical/codex-rules.md` | 新規 | 日本語によるAIエージェント向け追記規約とプロンプトテンプレート |
@@ -38,30 +41,23 @@ docs/technical/            ← 規約・仕様文書
 
 ## コンポーネントとインターフェース
 
-### 1. VehicleKind コンパイル時パリティ検証
+### 1. 機体定義の集約と型検証
 
-`vehicle-shapes.ts` は **既に** `satisfies Record<VehicleKind, unknown>` の型注釈を持っています。
-
-```typescript
-export const VEHICLE_SHAPES = {
-  'union-sentry': { ... },
-  // ...
-} as const satisfies Record<VehicleKind, unknown>;
-```
-
-`VehicleKind` に新しい値を追加したとき、対応するエントリが `VEHICLE_SHAPES` になければ TypeScript がコンパイルエラーを出します。同様に `locomotion.ts` の `GAITS` も `Record<VehicleKind, ...>` に対して `satisfies` を追加することで同等の保証が得られます（`GAITS` は現在 `as const` のみ）。
-
-**変更箇所**（`locomotion.ts`）:
+`vehicles.ts` の `VEHICLES` を標準機体データの唯一の編集元とする。各機体エントリは `VehicleSpec` の性能データに加え、`shape`・`gait`・`drive` を必須で持つ `VehicleDefinition` として型検証する。`VehicleKind` は `keyof typeof VEHICLES` から導出するため、種別追加時に識別子のunionや別の機体キー表を更新しない。
 
 ```typescript
-// 変更前
-export const GAITS = { ... } as const;
-
-// 変更後
-export const GAITS = { ... } as const satisfies Record<VehicleKind, {
-  stride: number; lift: number; lean: number; bounce: number;
-}>;
+export const VEHICLES = {
+  'union-sentry': {
+    // 性能・武装・AI
+    shape: { ... },
+    gait: { ... },
+    drive: { ... },
+  },
+} as const satisfies Record<string, VehicleDefinition>;
+export type VehicleKind = keyof typeof VEHICLES;
 ```
+
+`VEHICLE_SHAPES`、`GAITS`、`DRIVE_PROFILES` はこの定義から派生する互換参照で、新機体追加時に別ファイルへキーを重複登録しない。`resolveVehicle` は `shape`・`gait`・`drive` を除外してシミュレーション用の `VehicleSpec` を返す。
 
 ### 2. MissionDefinition.audioPath
 
@@ -174,16 +170,9 @@ export type MissionDefinition = {
 
 `vehicles.ts` の `VehicleSpec` は変更しません。必須フィールドは要件3の規約文書に列挙します。
 
-### GAITS の satisfies 注釈（locomotion.ts）
+### 互換プロファイルの派生
 
-```typescript
-// 変更後の型注釈
-export const GAITS = { ... } as const satisfies Record<VehicleKind, {
-  stride: number; lift: number; lean: number; bounce: number;
-}>;
-```
-
-新しい `VehicleKind` が `locomotion.ts` の `GAITS` に存在しなければコンパイルエラーが発生します。
+`VEHICLE_SHAPES`・`GAITS`・`DRIVE_PROFILES` は `VEHICLES` の必須フィールドから生成し、従来のimport先では互換APIを維持します。新しい機種の定義漏れは `VehicleDefinition` に対する型検査で検出し、別マップ間のキー同期を不要にします。
 
 ### codex-rules.md のアウトライン
 
@@ -202,11 +191,11 @@ export const GAITS = { ... } as const satisfies Record<VehicleKind, {
 
 *プロパティとは、システムのあらゆる有効な実行において成立すべき特性・振る舞いのことです。人間が読める仕様と機械によって検証可能な正当性保証の橋渡しとなる形式的な記述です。*
 
-### Property 1: VEHICLE_SHAPES パリティ
+### Property 1: 中央機体定義の完全性
 
-*すべての* `VehicleKind` 値に対して、`VEHICLE_SHAPES` に対応するエントリが存在しなければならない。
+*すべての* 機体定義に `shape`・`gait`・`drive` が存在し、派生マップがその値を保持しなければならない。
 
-これは `satisfies Record<VehicleKind, unknown>` 注釈によりコンパイル時に保証される。ランタイムプロパティテストでは、全 `VehicleKind` キーを列挙して `VEHICLE_SHAPES` のキーと集合一致を検証する。
+必須フィールドは `VehicleDefinition` によりコンパイル時に保証する。テストでは全機体の派生マップが中央定義と一致し、シミュレーション用 `VehicleSpec` に表示データが混入しないことを確認する。
 
 **Validates: Requirements 1.2**
 
@@ -282,7 +271,7 @@ export const GAITS = { ... } as const satisfies Record<VehicleKind, {
 
 | プロパティ | テスト内容 | タグ |
 |---|---|---|
-| Property 1: VEHICLE_SHAPES パリティ | 全 `VehicleKind` キーが `VEHICLE_SHAPES` に存在する | `Feature: data-driven-refactor, Property 1: VEHICLE_SHAPES parity` |
+| Property 1: 中央機体定義の完全性 | shape・gait・driveと派生マップが一致し、resolve後のVehicleSpecに表示データがない | `Feature: data-driven-refactor, Property 1: Vehicle registry completeness` |
 | Property 2: validateMissions 参照検証 | ランダムな壊れた参照を持つ定義でエラーが返る | `Feature: data-driven-refactor, Property 2: validateMissions detects broken references` |
 | Property 3: legPose 純粋関数 | 同じ引数で2回呼び出した結果が一致する | `Feature: data-driven-refactor, Property 3: legPose is a pure function` |
 | Property 4: playGuidance 安全性 | 無効なパスで例外が送出されない | `Feature: data-driven-refactor, Property 4: playGuidance does not throw on missing file` |

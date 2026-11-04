@@ -30,27 +30,24 @@
 
 ### 基本定義と必須登録
 
-| 対象 | 場所 | 内容 |
-| --- | --- | --- |
-| `VehicleKind`・`VEHICLES` | `src/game/content/vehicles.ts` | 識別子・性能・勢力・武装・弾薬・AI |
-| `VEHICLE_SHAPES` | `src/game/content/vehicle-shapes.ts` | 外形寸法、部位、描画・命中に共有する形状値 |
-| `GAITS` | `src/game/presentation/locomotion.ts` | 歩行・脚アニメーションのプロファイル |
-| `DRIVE_PROFILES` | `src/game/presentation/audio.ts` | 駆動音のプロファイル。塔など無音にする機体も明示する |
+機体の標準定義は `src/game/content/vehicles.ts` の `VEHICLES` に集約する。キーから `VehicleKind` を導出し、各エントリに性能・武装・AIだけでなく外形 `shape`、歩行 `gait`、駆動音 `drive` も記述する。これらの表示用データは同ファイルの機体定義から生成され、従来の `vehicle-shapes.ts`・`locomotion.ts`・`audio.ts` は互換用の派生データや関数を提供する。新機体追加時に各ファイルへ別々の機体キーを登録する必要はない。
 
-`VEHICLES`・`VEHICLE_SHAPES`・`GAITS`・`DRIVE_PROFILES`は `VehicleKind` 全件との対応を型で検査する。形状キーは `VEHICLE_SHAPES` の `satisfies Record<VehicleKind, ...>`、歩行・駆動音キーは各定義の `satisfies Record<VehicleKind, ...>` で検出する。対応を欠かしたままビルドを通すための空値や型キャストを追加しない。
+`VehicleSpec` はシミュレーションへ渡す性能データの型であり、`resolveVehicle` は中央定義から `shape`・`gait`・`drive` を除いて返す。任務のvehicle overrideに表示データが混入しない。
 
-`VEHICLES`の基本項目は `VehicleSpec` が要求する。新機種に必要な値を既存機から流用する場合、確認済み原作値と試作仮値を区別して記録する。新しいweapon type、ミサイル挙動、砲口、部位や特殊移動が必要なら、次も調べる。
+通常の新機体追加は `vehicles.ts` と、機体を登場させる既存ミッションの定義が主な変更箇所になる。新しいミッションも作る場合はミッション定義ファイルと `missions/index.ts` への登録が必要になり、基本は合計3ファイルとなる。機体固有の描画・挙動・素材を新設する場合は、その機能の実装とテストも必要な範囲で追加する。
+
+`VehicleSpec` の基本項目は型で検査する。新機種に必要な値を既存機から流用する場合、確認済み原作値と試作仮値を区別して記録する。新しいweapon type、ミサイル挙動、砲口、部位や特殊移動が必要なら、次も調べる。
 
 - 武器定義と搭載数：`src/game/content/weapons.ts`
 - 命中領域・衝突外形・脚・砲口：`src/game/simulation/parts.ts` と必要に応じて `vehicle-shapes.ts`
 - 描画と機種固有の外観・更新：`src/game/presentation/renderer.ts`
 - コックピット、HUD、任務プレビュー：対応する `*-cockpit.ts`、CSS、`src/main.ts`。専用画像が要る場合は `assets/cockpits/` と `assets/README.md`
 
-`renderer.ts`と`parts.ts`の汎用形状で不足しない単純な機体と、特殊な脚・砲塔・履帯・ホバー・照準などを持つ機体では必要な変更範囲が異なる。すべての機体追加が一定の3ファイルだけで完了すると仮定しない。
+`renderer.ts`と`parts.ts`の汎用形状で不足しない機体と、特殊な脚・砲塔・履帯・ホバー・照準などを持つ機体では必要な変更範囲が異なる。機体データは集約できるが、新しい振る舞いや描画まで定義データだけで表現できるとは限らない。
 
 ### 機体検証
 
-- `locomotion.test.ts`で全VehicleKindの形状・歩行・駆動音登録を確認する。
+- `locomotion.test.ts`で全VehicleKindの中央定義と形状・歩行・駆動音の派生データを確認する。
 - 歩行姿勢を持つ機種では、脚の接地・遊脚を確認する。
 - 形状・部位・共有寸法を変えた場合は `parts.test.ts`、`vehicle-collision.test.ts`、必要な描画テストを選んで実行する。
 - 操作・性能・武器を変えた場合は、プレイヤー操作とAIの双方を該当するsimulationテストで検証する。
@@ -87,7 +84,7 @@ Mission固有のIDや条件を `simulation.ts`・`renderer.ts` の分岐へ直�
 
 ## `.kiro/specs/data-driven-refactor/`案の扱い
 
-- `VEHICLE_SHAPES`と`VehicleKind`の型パリティは既に実装されている。`GAITS`と`DRIVE_PROFILES`にも同じ型検査を適用した。
+- 性能・形状・歩行・駆動音を`vehicles.ts`の機体ごとの定義へ集約し、`VehicleKind`はそのキーから導出する。旧来の各モジュールは派生データや演算関数を提供する。
 - Mission・Vehicle・Facilityを1つのローダーやJavaScript設定へ移す案は採用しない。既存の型付きデータ定義と責務分割を維持する。
 - `audioPath`と案内音声再生APIは、この作業では採用しない。任務内のどのフェーズで再生するか、再生の重複・中断・言語差をどう扱うかが未定義で、パスだけを追加すると未使用データになるため。再生条件が決まった時点で音声仕様と一緒に設計する。
 - `fast-check`は追加しない。現状のキー網羅や参照検証は型チェックと `node:test` の決定的テストで確認でき、ランダムプロパティテスト用依存を増やす効果が見合わない。

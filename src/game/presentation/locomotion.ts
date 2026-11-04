@@ -1,24 +1,5 @@
-import {VEHICLE_SHAPES} from '../content/vehicle-shapes.ts';
-import {VEHICLES,type VehicleKind} from '../content/vehicles.ts';
-// Visual tuning, not measured original animation data. Stride is a full gait cycle.
-export const GAITS={
- 'union-sentry':{stride:6.8,lift:.65,lean:.085,bounce:.10},
- 'union-tactical':{stride:7,lift:.65,lean:.06,bounce:.13},
- 'darken-sentry':{stride:6.8,lift:.65,lean:.085,bounce:.10},
- 'merc-assault':{stride:4,lift:.25,lean:.03,bounce:.05},
- 'merc-sentry':{stride:7.6,lift:.85,lean:.12,bounce:.24},
- 'union-asv':{stride:5,lift:0,lean:0,bounce:0},
- 'scorp-asv':{stride:5,lift:0,lean:0,bounce:0},
- 'scorp-sentry':{stride:6,lift:.6,lean:.06,bounce:.1},
- 'scorp-tactical':{stride:7,lift:.65,lean:.05,bounce:.15},
- 'merc-cruiser':{stride:4,lift:.2,lean:.02,bounce:.02},
- 'union-aip':{stride:1,lift:0,lean:0,bounce:0},
- 'merc-aip':{stride:1,lift:0,lean:0,bounce:0},
- 'merc-meson-tower':{stride:1,lift:0,lean:0,bounce:0},
- 'scorp-meson-tower':{stride:1,lift:0,lean:0,bounce:0},
- 'scorp-rocket-tower':{stride:1,lift:0,lean:0,bounce:0},
- 'merc-tactical':{stride:7.4,lift:2.15,lean:.105,bounce:.52},
-} as const satisfies Record<VehicleKind,{stride:number;lift:number;lean:number;bounce:number}>;
+import {VEHICLE_GAITS as GAITS,VEHICLE_SHAPES,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
+export {GAITS};
 export function legPose(kind:VehicleKind,phase:number,run:number,hipHeight:number,height?:number){
  const h=height??VEHICLES[kind].height,profile=GAITS[kind],strength=Math.max(0,Math.min(1,run));
  const cycle=((phase/(Math.PI*2))%1+1)%1,stance=cycle<.5;

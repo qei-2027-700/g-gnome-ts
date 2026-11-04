@@ -11,10 +11,9 @@
 ```text
 新しい機体 <VehicleKind> を追加してください。
 
-- 性能と VehicleKind は src/game/content/vehicles.ts の VehicleSpec に従って定義する。
-- 外形は src/game/content/vehicle-shapes.ts に登録し、命中領域や描画に使う形状と整合させる。
-- 新しい VehicleKind の場合、src/game/presentation/locomotion.ts の GAITS と
-  src/game/presentation/audio.ts の DRIVE_PROFILES にも必須エントリを追加する。
+- src/game/content/vehicles.ts の VEHICLES に、性能・武装・AI・外形・歩行・駆動音を
+  ひとまとまりの機体定義として追加する。VehicleKind はこのキーから導出される。
+- shape は描画・命中領域と整合させ、gait と drive は必須フィールドとして設定する。
 - 既存ミッションに配置する場合は、その mission-<番号>.ts の units に追加する。
   新規ミッションへの配置ならミッション追加手順も適用する。
 - VehicleSpec の必須項目 name, jp, faction, speed, shield, energy, armor, height,
@@ -26,7 +25,9 @@
 - 対応するテストを実行し、型チェックで全必須レジストリの登録を確認する。
 ```
 
-`VEHICLES`・`VEHICLE_SHAPES`・`GAITS`・`DRIVE_PROFILES` は `VehicleKind` 全件との対応を型検査します。そのため、新しい機体種の追加は通常、これらの定義ファイルに加えて配置先ミッションも変更します。3ファイルだけで済むと決めつけず、実際の型エラーや機体固有の描画・挙動要件に従って必要箇所を更新してください。
+通常の機体データは `vehicles.ts` の1か所で完結します。`vehicle-shapes.ts`、`locomotion.ts`、`audio.ts` は互換性を保つ派生データ／関数の提供先であり、新機体のキーを個別に追記しません。既存ミッションへの配置も必要なら、基本の変更箇所は機体定義と対象ミッションの2ファイルです。新規ミッションなら定義ファイルと `missions/index.ts` の登録も必要になるため、最大3ファイルが基本です。
+
+機体固有の新しい描画、操作、戦闘挙動や素材が必要な場合は、共通コード・テスト・資料も変更対象になり得ます。データ登録だけで表現できるかを確認し、固有挙動が必要な場合に限って関連ファイルを追加してください。
 
 ## ミッション追加のプロンプトテンプレート
 

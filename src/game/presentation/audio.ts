@@ -8,31 +8,14 @@ import {mercInteriorSamples} from './merc-interior-audio.ts';
 import {ExternalWind} from './wind-audio.ts';
 import {RADIO_VOICE_CLIPS,radioVoiceKey} from '../content/radio-voice-assets.ts';
 import type {Settings} from '../settings.ts';
-import type {Faction,VehicleKind} from '../content/vehicles.ts';
+import {VEHICLE_DRIVE_PROFILES,type Faction,type VehicleKind} from '../content/vehicles.ts';
 const MISSILE_LAUNCH_URL=new URL('../../../assets/audio/sfx/missile-launch.wav',import.meta.url).href;
 const MISSILE_AUDIO_MAX_DISTANCE=600;
 type HorizontalPosition={x:number;z:number};
 function missileDistanceGain(source:HorizontalPosition,listener:HorizontalPosition){
   return Math.max(0,1-Math.hypot(source.x-listener.x,source.z-listener.z)/MISSILE_AUDIO_MAX_DISTANCE);
 }
-export const DRIVE_PROFILES={
-  'union-sentry':{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'},
-   'union-tactical':{idle:72,rev:52,harmonic:2.5,filter:320,volume:.035,wave:'triangle'},
-  'darken-sentry':{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'},
-   'merc-sentry':{idle:110,rev:90,harmonic:2,filter:450,volume:.032,wave:'sine'},
-  'union-asv':{idle:70,rev:50,harmonic:2.4,filter:320,volume:.035,wave:'triangle'},
-  'scorp-asv':{idle:64,rev:45,harmonic:2.6,filter:300,volume:.035,wave:'triangle'},
-  'scorp-sentry':{idle:78,rev:60,harmonic:2,filter:320,volume:.035,wave:'sine'},
-  'scorp-tactical':{idle:64,rev:50,harmonic:2.5,filter:300,volume:.035,wave:'triangle'},
-     'merc-cruiser':{idle:56,rev:35,harmonic:2.5,filter:280,volume:.035,wave:'triangle'},
- 'union-aip':{idle:110,rev:70,harmonic:2,filter:400,volume:.035,wave:'sine'},
- 'merc-aip':{idle:110,rev:70,harmonic:2,filter:400,volume:.035,wave:'sine'},
- 'merc-meson-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
- 'scorp-meson-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
- 'scorp-rocket-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
-  'merc-assault':{idle:58,rev:40,harmonic:2.8,filter:280,volume:.035,wave:'triangle'},
-  'merc-tactical':{idle:62,rev:45,harmonic:2.8,filter:300,volume:.035,wave:'triangle'},
-} as const satisfies Record<VehicleKind,{idle:number;rev:number;harmonic:number;filter:number;volume:number;wave:'sine'|'triangle'}>;
+export const DRIVE_PROFILES=VEHICLE_DRIVE_PROFILES;
 // Dedicated character voices; system announcements retain their existing profiles.
 export const CHARACTER_VOICE_PROFILES={
  kylie:{pitch:.94,rate:1.04,preferred:/Otoya|Eddy|Alex|Tom/i},

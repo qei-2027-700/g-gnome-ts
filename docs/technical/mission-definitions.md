@@ -32,7 +32,7 @@
 
 ## 機体と武器の共通仕様
 
-[vehicles.ts](../../src/game/content/vehicles.ts) を機種ごとの標準仕様、[weapons.ts](../../src/game/content/weapons.ts) を武器の共通仕様とする。機体の形状は [vehicle-shapes.ts](../../src/game/content/vehicle-shapes.ts) に置く。
+[vehicles.ts](../../src/game/content/vehicles.ts) を機種ごとの標準仕様（性能・形状・歩行・駆動音を含む）、[weapons.ts](../../src/game/content/weapons.ts) を武器の共通仕様とする。従来の [vehicle-shapes.ts](../../src/game/content/vehicle-shapes.ts) は `vehicles.ts` から形状データを再exportする互換窓口である。
 
 例外がない任務では同じ機種の速度、シールド、装甲、エネルギー、標準装備、初期弾数、AIの機種別設定を再利用する。難易度ごとの攻撃威力や最高速度の倍率は加えない。
 

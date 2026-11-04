@@ -7,17 +7,17 @@
 
 ## Tasks
 
-- [ ] 1. `locomotion.ts` の `GAITS` に `satisfies` 注釈を追加する
-  - `src/game/presentation/locomotion.ts` の `GAITS` 定数末尾の `as const` を `as const satisfies Record<VehicleKind, {stride: number; lift: number; lean: number; bounce: number}>` に変更する
-  - `VehicleKind` のインポートはすでにあるので追加不要
-  - `simulation.ts`・`renderer.ts`・`movement.ts` は変更しない
+- [x] 1. 機体標準データを `vehicles.ts` の機体ごとの定義へ集約する
+  - `VehicleKind` は `VEHICLES` のキーから導出する
+  - 各機体の性能・形状・歩行・駆動音を1エントリにまとめ、必須項目の欠落は型エラーにする
+  - `VEHICLE_SHAPES`・`GAITS`・`DRIVE_PROFILES` は互換性を保つ派生データとして公開する
+  - `resolveVehicle` は表示用データを除いた `VehicleSpec` を返す
   - _Requirements: 1.2_
 
-  - [ ]* 1.1 Property 1: VEHICLE_SHAPES パリティのプロパティテストを `locomotion.test.ts` に追加する
-    - **Property 1: VEHICLE_SHAPES parity**
+  - [x]* 1.1 Property 1: 中央機体定義と派生プロファイルの対応テスト
+    - **Property 1: Vehicle registry completeness**
     - **Validates: Requirements 1.2**
-    - `VEHICLES` の全キー（`VehicleKind`）が `VEHICLE_SHAPES` にも存在することを検証する
-    - fast-check の `fc.constantFrom(...Object.keys(VEHICLES))` でランダムサンプリングする
+    - 全機体の `shape`・`gait`・`drive` が派生マップと一致し、解決済み `VehicleSpec` に混入しないことを検証する
     - `src/game/presentation/locomotion.test.ts` の末尾に追記する
 
 - [ ] 2. `MissionDefinition` に `audioPath` フィールドを追加する

@@ -31,7 +31,7 @@
 | 出典、映像の時刻、画面の観察 | `docs/reference/observations/mission-3-3/`。開始配置・操縦席・レーザーの参照画像と観察記録を保存 |
 | 実行する任務定義 | `src/game/content/missions/mission-3-3.ts`。VISOM操作とASV誘引の検証版を追加済み |
 | 任務一覧への登録 | `src/game/content/missions/index.ts`。検証版として選択可能。正式な任務完了判定は無効 |
-| 機体・武器・形状 | 既存の `content/vehicles.ts`・`weapons.ts`・`vehicle-shapes.ts` を再利用。未登録の機種・武器は共通定義へ追加 |
+| 機体・武器・形状 | 既存の `content/vehicles.ts`（性能・形状・歩行・駆動音を一元定義）と `weapons.ts` を再利用。`vehicle-shapes.ts` は互換export。未登録の機種・武器は共通定義へ追加 |
 | 施設・地雷・進行条件などの処理 | `src/game/simulation/` の共通処理として拡張。配置・対象IDは任務定義に置く |
 | 施設の描画、ミサイル専用視点 | `src/game/presentation/`。入力の接続は既存の `input.ts`・`settings.ts`・`main.ts` と対応させる |
 | VISOMと3-3の回帰テスト | `src/game/simulation/visom.test.ts`、`presentation/renderer.test.ts`。発射から誘引、カメラ復帰までを検証 |

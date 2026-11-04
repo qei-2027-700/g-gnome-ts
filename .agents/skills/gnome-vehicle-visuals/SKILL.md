@@ -32,7 +32,7 @@ description: G-Nomeの1枚または複数の画像・マニュアル・形状デ
 | 原作の観察資料、根拠画像、確認済み・未確認の記録 | `docs/reference/vehicles/<既存の機種フォルダ>/`。既存画像は移動・複製せず参照する |
 | 実行時に使う機内画像 | `assets/cockpits/`。観察資料だけの画像を実行時コードから直接読み込まない |
 | 機内フレーム・機種別HUD形状 | `src/game/presentation/*-cockpit.ts`、`src/*-cockpit.css`、`src/main.ts`の選択・接続 |
-| 機種の識別と共有寸法 | `src/game/content/vehicles.ts`、`vehicle-shapes.ts` |
+| 機種の識別、性能、共有寸法、歩行・駆動音データ | `src/game/content/vehicles.ts`（旧 `vehicle-shapes.ts` は互換export） |
 | 外観・部位・動き・ホログラム | `src/game/presentation/renderer.ts`、`locomotion.ts`、`hologram.ts` |
 | 形状に対応する命中領域・砲口 | `src/game/simulation/parts.ts`、既存の発射位置計算 |
 | 現在の表示仕様と素材索引 | `docs/gameplay/cockpit-hud.md`、`assets/README.md`、`docs/reference/vehicles/README.md`の該当箇所 |

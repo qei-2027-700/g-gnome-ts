@@ -63,8 +63,8 @@
 
 #### 受入条件
 
-1. THE System SHALL define a process where adding a new HAWC vehicle requires modifications to at most 3 files: `vehicles.ts`（性能）、`vehicle-shapes.ts`（形状）、および対象ミッションの定義ファイル（配置）
-2. WHEN a new `VehicleKind` entry is added to `VEHICLES`, THE System SHALL surface a TypeScript compile error if the corresponding shape entry is absent from `VEHICLE_SHAPES`
+1. THE System SHALL define a process where a basic HAWC addition modifies at most 3 files: `vehicles.ts`（性能・形状・歩行・駆動音を1機体定義に集約）、ミッション定義（配置）、および新規ミッションの場合のみ `missions/index.ts`（登録）
+2. WHEN a new vehicle entry is added to `VEHICLES`, THE System SHALL surface a TypeScript compile error if its required `shape`, `gait`, or `drive` data is absent
 3. THE System SHALL document the minimum required fields for a new vehicle entry: `name`、`jp`、`faction`、`speed`、`shield`、`energy`、`armor`、`height`、`passengerCapacity`、`color`、`weapons`、`torsoLimit`、`voice`、`initialAmmo`、`ai`
 4. WHERE a cockpit image is needed for a new vehicle, THE System SHALL specify the image must be placed in `assets/cockpits/` with a consistent naming convention
 

@@ -3,13 +3,20 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GAITS,legPose} from './locomotion.ts';
 import {DRIVE_PROFILES} from './audio.ts';
-import {VEHICLES,type VehicleKind} from '../content/vehicles.ts';
+import {resolveVehicle,VEHICLE_DRIVE_PROFILES,VEHICLE_GAITS,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
 const kinds=Object.keys(GAITS).filter(kind=>!kind.endsWith('-asv')) as VehicleKind[];
 test('every vehicle kind has shape, gait and drive profile data',()=>{
  const kinds=Object.keys(VEHICLES).sort();
  assert.deepEqual(Object.keys(VEHICLE_SHAPES).sort(),kinds);
  assert.deepEqual(Object.keys(GAITS).sort(),kinds);
  assert.deepEqual(Object.keys(DRIVE_PROFILES).sort(),kinds);
+ for(const kind of kinds as VehicleKind[]){
+  assert.deepEqual(VEHICLE_SHAPES[kind],VEHICLES[kind].shape);
+  assert.deepEqual(GAITS[kind],VEHICLE_GAITS[kind]);
+  assert.deepEqual(DRIVE_PROFILES[kind],VEHICLE_DRIVE_PROFILES[kind]);
+ }
+ const resolved=resolveVehicle('union-sentry');
+ assert.ok(!('shape'in resolved||'gait'in resolved||'drive'in resolved));
 });
 test('articulated feet land on the ground and lift during recovery on every biped chassis',()=>{
  for(const kind of kinds)for(const run of [.2,.5,1])for(let i=0;i<32;i++){
@@ -44,5 +51,12 @@ test('Merc Assault legs swing their knees sideways and carry raised feet outward
   const offset=side*front>0?0:Math.PI,rest=mercAssaultLegPose(side,front),swing=mercAssaultLegPose(side,front,Math.PI/2-offset,1),stance=mercAssaultLegPose(side,front,Math.PI*1.5-offset,1),slow=mercAssaultLegPose(side,front,Math.PI/2-offset,.25);
   assert.ok(Math.abs(swing.knee.x)-Math.abs(stance.knee.x)>1.5);assert.ok(Math.abs(swing.foot.x)-Math.abs(rest.foot.x)>1);assert.equal(stance.foot.x,rest.foot.x);assert.equal(stance.foot.y,.1);assert.ok(swing.foot.y>.1);assert.ok(Math.abs(slow.foot.x)<Math.abs(swing.foot.x));
   assert.deepEqual(mercAssaultLegPose(side,front,1.7,0),rest);
+ }
+});
+
+test('legPose is deterministic for every vehicle kind and representative inputs',()=>{
+ const phases=[-Math.PI*2,-Math.PI,0,Math.PI/2,Math.PI*2,17.4],runs=[0,.25,.5,1],heights=[0,.225,1];
+ for(const kind of Object.keys(GAITS) as VehicleKind[])for(const phase of phases)for(const run of runs)for(const hipHeight of heights){
+  assert.deepEqual(legPose(kind,phase,run,hipHeight),legPose(kind,phase,run,hipHeight),`${kind}: ${phase}, ${run}, ${hipHeight}`);
  }
 });

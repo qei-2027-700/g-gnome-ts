@@ -8,31 +8,14 @@ import {mercInteriorSamples} from './merc-interior-audio.ts';
 import {ExternalWind} from './wind-audio.ts';
 import {RADIO_VOICE_CLIPS,radioVoiceKey} from '../content/radio-voice-assets.ts';
 import type {Settings} from '../settings.ts';
-import type {Faction,VehicleKind} from '../content/vehicles.ts';
+import {VEHICLE_DRIVE_PROFILES,type Faction,type VehicleKind} from '../content/vehicles.ts';
 const MISSILE_LAUNCH_URL=new URL('../../../assets/audio/sfx/missile-launch.wav',import.meta.url).href;
 const MISSILE_AUDIO_MAX_DISTANCE=600;
 type HorizontalPosition={x:number;z:number};
 function missileDistanceGain(source:HorizontalPosition,listener:HorizontalPosition){
   return Math.max(0,1-Math.hypot(source.x-listener.x,source.z-listener.z)/MISSILE_AUDIO_MAX_DISTANCE);
 }
-export const DRIVE_PROFILES={
-  'union-sentry':{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'},
-   'union-tactical':{idle:72,rev:52,harmonic:2.5,filter:320,volume:.035,wave:'triangle'},
-  'darken-sentry':{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'},
-   'merc-sentry':{idle:110,rev:90,harmonic:2,filter:450,volume:.032,wave:'sine'},
-  'union-asv':{idle:70,rev:50,harmonic:2.4,filter:320,volume:.035,wave:'triangle'},
-  'scorp-asv':{idle:64,rev:45,harmonic:2.6,filter:300,volume:.035,wave:'triangle'},
-  'scorp-sentry':{idle:78,rev:60,harmonic:2,filter:320,volume:.035,wave:'sine'},
-  'scorp-tactical':{idle:64,rev:50,harmonic:2.5,filter:300,volume:.035,wave:'triangle'},
-     'merc-cruiser':{idle:56,rev:35,harmonic:2.5,filter:280,volume:.035,wave:'triangle'},
- 'union-aip':{idle:110,rev:70,harmonic:2,filter:400,volume:.035,wave:'sine'},
- 'merc-aip':{idle:110,rev:70,harmonic:2,filter:400,volume:.035,wave:'sine'},
- 'merc-meson-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
- 'scorp-meson-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
- 'scorp-rocket-tower':{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'},
-  'merc-assault':{idle:58,rev:40,harmonic:2.8,filter:280,volume:.035,wave:'triangle'},
-  'merc-tactical':{idle:62,rev:45,harmonic:2.8,filter:300,volume:.035,wave:'triangle'},
-} as const satisfies Record<VehicleKind,{idle:number;rev:number;harmonic:number;filter:number;volume:number;wave:'sine'|'triangle'}>;
+export const DRIVE_PROFILES=VEHICLE_DRIVE_PROFILES;
 // Dedicated character voices; system announcements retain their existing profiles.
 export const CHARACTER_VOICE_PROFILES={
  kylie:{pitch:.94,rate:1.04,preferred:/Otoya|Eddy|Alex|Tom/i},
@@ -83,6 +66,8 @@ export class GameAudio {
   async updateMissionRadio(paused=false){if(paused||this.radioPending>0||this.occupiedUtterance||!this.missionRadioQueue.length)return;await this.sayRadio([this.missionRadioQueue.shift()!]);}
   private radioPending=0;private radioGeneration=0;
   private radioSources=new Map<AudioBufferSourceNode,GainNode>();private radioBuffers=new Map<string,Promise<AudioBuffer|null>>();
+  private guidanceBuffer=new Map<string,Promise<AudioBuffer|null>>();private guidanceSource:AudioBufferSourceNode|null=null;private guidanceGeneration=0;
+  guidanceError:string|null=null;
   ctx:AudioContext|null=null; music:HTMLAudioElement|null=null;url:string|null=null;lastSpeech=0;
   private drive:{gain:GainNode;osc:OscillatorNode;harmonic:OscillatorNode;filter:BiquadFilterNode;volume:number;pitch:number;kind:VehicleKind|null}|null=null;
   private buildingHum:{source:AudioBufferSourceNode;gain:GainNode}|null=null;
@@ -230,6 +215,29 @@ export class GameAudio {
     const ctx=this.ctx;if(!ctx)return Promise.resolve(null);const cached=this.radioBuffers.get(url);if(cached)return cached;
     const loading=fetch(url).then(response=>{if(!response.ok)throw new Error('Radio voice unavailable');return response.arrayBuffer();}).then(bytes=>ctx.decodeAudioData(bytes)).catch(()=>{this.radioBuffers.delete(url);return null;});this.radioBuffers.set(url,loading);return loading;
   }
+  async playGuidance(audioPath:string):Promise<void>{
+    if(this.settings.voice===0)return;
+    const ctx=this.ctx;if(!ctx)return;
+    const generation=++this.guidanceGeneration;
+    this.guidanceSource?.stop();this.guidanceSource=null;this.guidanceError=null;
+    if(ctx.state==='suspended'){
+      try{await ctx.resume();}catch(error){this.guidanceError='resume';console.warn(`[GameAudio] unable to resume guidance audio: ${audioPath}`,error);return;}
+      if(generation!==this.guidanceGeneration)return;
+    }
+    let loading=this.guidanceBuffer.get(audioPath);
+    if(!loading){
+      loading=fetch(audioPath).then(response=>{if(!response.ok)throw new Error('Guidance audio unavailable');return response.arrayBuffer();}).then(bytes=>ctx.decodeAudioData(bytes)).catch(error=>{
+        this.guidanceBuffer.delete(audioPath);this.guidanceError='unavailable';console.warn(`[GameAudio] guidance audio unavailable: ${audioPath}`,error);return null;
+      });
+      this.guidanceBuffer.set(audioPath,loading);
+    }
+    const buffer=await loading;
+    if(generation!==this.guidanceGeneration||!buffer||ctx.state!=='running'||this.settings.voice===0)return;
+    const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.voice*.8;source.connect(gain);gain.connect(ctx.destination);
+    this.guidanceSource=source;
+    source.onended=()=>{if(this.guidanceSource===source)this.guidanceSource=null;source.disconnect();gain.disconnect();};
+    source.start();
+  }
   private radioHiss(start:number,generation:number,finish?:()=>void){
     const ctx=this.ctx;if(!ctx||ctx.state!=='running'||!this.settings.sfx)return 0;
     if(!this.radioStaticBuffer){const samples=radioStaticSamples(ctx.sampleRate);this.radioStaticBuffer=ctx.createBuffer(1,samples.length,ctx.sampleRate);this.radioStaticBuffer.copyToChannel(samples,0);}
@@ -288,6 +296,6 @@ export class GameAudio {
     u.pitch=japanese?.82:.68;u.rate=.88;speechSynthesis.speak(u);
   }
   loadMusic(file:File){this.stopMusic();this.missionMusic=null;this.musicOwner='manual';this.musicError=null;this.url=URL.createObjectURL(file);this.music=new Audio(this.url);this.music.loop=true;this.music.volume=this.settings.music;return this.musicPaused?Promise.resolve():this.music.play();}
-  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
+  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.guidanceGeneration++;this.guidanceSource?.stop();this.guidanceSource=null;this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
   resume(){this.musicPaused=false;this.musicFailed=false;if(this.music)this.music.volume=this.musicVolume;this.playCurrentMusic();}
 }

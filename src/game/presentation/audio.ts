@@ -10,6 +10,11 @@ import {RADIO_VOICE_CLIPS,radioVoiceKey} from '../content/radio-voice-assets.ts'
 import type {Settings} from '../settings.ts';
 import type {Faction,VehicleKind} from '../content/vehicles.ts';
 const MISSILE_LAUNCH_URL=new URL('../../../assets/audio/sfx/missile-launch.wav',import.meta.url).href;
+const MISSILE_AUDIO_MAX_DISTANCE=600;
+type HorizontalPosition={x:number;z:number};
+function missileDistanceGain(source:HorizontalPosition,listener:HorizontalPosition){
+  return Math.max(0,1-Math.hypot(source.x-listener.x,source.z-listener.z)/MISSILE_AUDIO_MAX_DISTANCE);
+}
 export const DRIVE_PROFILES={
   'union-sentry':{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'},
    'union-tactical':{idle:72,rev:52,harmonic:2.5,filter:320,volume:.035,wave:'triangle'},
@@ -187,17 +192,17 @@ export class GameAudio {
       oscillator.connect(gain);gain.connect(ctx.destination);oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};oscillator.start(time);oscillator.stop(time+duration);
     }
   }
-  sound(kind:'shot'|'hit'|'destroy'|'board'|'missile'|'impact'|'gas'|'collision',laser=false,weapon?:string){if(!this.ctx||this.settings.sfx===0)return;if(kind==='missile')return this.playMissileLaunch();if(kind==='shot'&&(weapon==='GAUS30'||weapon==='GAUS20'))return this.playGausSweep();const gaus=(weapon==='GAUS30'||weapon==='GAUS20')&&(kind==='shot'||kind==='impact'),ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain();o.type=gaus?'sine':kind==='collision'||kind==='shot'&&laser?'sine':'sawtooth';const t=ctx.currentTime,duration=gaus?.09:kind==='collision'?.18:kind==='gas'?.3:kind==='impact'?.25:kind==='destroy'?.65:kind==='board'?.2:.12;o.frequency.setValueAtTime(gaus?420:kind==='collision'?70:kind==='impact'?65:kind==='shot'?(laser?1100:160):kind==='hit'?90:60,t);o.frequency.exponentialRampToValueAtTime(25,t+duration);g.gain.setValueAtTime(this.settings.sfx*(gaus?.008:.1),t);g.gain.exponentialRampToValueAtTime(gaus?.00001:.001,t+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(t+duration);}
+  sound(kind:'shot'|'hit'|'destroy'|'board'|'missile'|'impact'|'gas'|'collision',laser=false,weapon?:string,missilePositions?:{source:HorizontalPosition;listener:HorizontalPosition}){if(!this.ctx||this.settings.sfx===0)return;if(kind==='missile'){const distanceGain=missilePositions?missileDistanceGain(missilePositions.source,missilePositions.listener):1;if(distanceGain===0)return;return this.playMissileLaunch(distanceGain);}if(kind==='shot'&&(weapon==='GAUS30'||weapon==='GAUS20'))return this.playGausSweep();const gaus=(weapon==='GAUS30'||weapon==='GAUS20')&&(kind==='shot'||kind==='impact'),ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain();o.type=gaus?'sine':kind==='collision'||kind==='shot'&&laser?'sine':'sawtooth';const t=ctx.currentTime,duration=gaus?.09:kind==='collision'?.18:kind==='gas'?.3:kind==='impact'?.25:kind==='destroy'?.65:kind==='board'?.2:.12;o.frequency.setValueAtTime(gaus?420:kind==='collision'?70:kind==='impact'?65:kind==='shot'?(laser?1100:160):kind==='hit'?90:60,t);o.frequency.exponentialRampToValueAtTime(25,t+duration);g.gain.setValueAtTime(this.settings.sfx*(gaus?.008:.1),t);g.gain.exponentialRampToValueAtTime(gaus?.00001:.001,t+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(t+duration);}
   private loadMissileSound():Promise<AudioBuffer|null>{
     const ctx=this.ctx;if(!ctx)return Promise.resolve(null);
     if(this.missileBuffer)return Promise.resolve(this.missileBuffer);
     if(!this.missileLoading)this.missileLoading=fetch(MISSILE_LAUNCH_URL).then(response=>{if(!response.ok)throw new Error('Missile sound unavailable');return response.arrayBuffer();}).then(bytes=>ctx.decodeAudioData(bytes)).then(buffer=>{this.missileBuffer=buffer;return buffer;}).catch(()=>{this.missileLoading=null;return null;});
     return this.missileLoading;
   }
-  private async playMissileLaunch(){
+  private async playMissileLaunch(distanceGain:number){
     const ctx=this.ctx;if(!ctx)return;const requested=performance.now(),buffer=await this.loadMissileSound();
     if(!buffer||!this.settings.sfx||ctx.state!=='running'||performance.now()-requested>800)return;
-    const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.sfx*.45;
+    const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.sfx*.45*distanceGain;
     source.connect(gain);gain.connect(ctx.destination);source.onended=()=>{source.disconnect();gain.disconnect();};source.start();
   }
   private utterance(text:string,profile:'young'|'solemn',personId?:string){

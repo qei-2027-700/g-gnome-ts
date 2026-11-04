@@ -383,7 +383,7 @@ export class World {
       const pose=legPose(unit.kind,rig.phase+i*Math.PI,run,leg.position.y+rig.root.position.y,spec.height);
       leg.rotation.x=pose.hip;rig.knees[i].rotation.x=pose.knee;rig.feet[i].rotation.x=pose.ankle;
     });
-    if(dt>0&&run>.25&&Math.floor(before/Math.PI)!==Math.floor(rig.phase/Math.PI)){
+    if(dt>0&&run>.25&&rig.feet.length>0&&Math.floor(before/Math.PI)!==Math.floor(rig.phase/Math.PI)){
       const foot=rig.feet[Math.floor(rig.phase/Math.PI)%2];foot.computeWorldMatrix(true);const point=foot.getAbsolutePosition();
       for(const side of [-1,1]){const dust=MeshBuilder.CreateSphere('footfall-dust',{diameter:.65+run*.6,segments:4},this.scene);dust.position.set(point.x+side*.25,.2,point.z);dust.material=this.fxMaterial('run-dust','#bbae80');this.addEffect(dust,.55,'smoke',new Vector3(side*.6-Math.sin(unit.yaw)*.8,.7,-Math.cos(unit.yaw)*.8));}
     }

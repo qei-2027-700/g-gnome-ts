@@ -121,6 +121,16 @@ test('running follows actual travel, articulates knees, adds footfall dust and p
  for(let i=0;i<25;i++)world.update(.05);assert.equal(rig.phase,phase);assert.ok(rig.run<.001);assert.equal(world.effects.filter(e=>e.mesh.name==='footfall-dust').length,0);engine.dispose();
 });
 
+test('boarding and driving a Merc Cruiser does not require articulated feet',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation(),cruiser=makeUnit('cruiser','merc-cruiser',0,0,false);sim.units=[cruiser];sim.human={x:0,z:0};
+  const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get(cruiser.id)!;assert.ok(sim.board());assert.equal(rig.feet.length,0);
+  for(let i=0;i<120;i++){sim.tick(.05,{forward:true,back:false,left:false,right:false,boost:true,stop:false,fire1:false,fire2:false});world.update(.05);}
+  assert.ok(sim.speed>0);assert.ok(rig.run>.25);assert.equal(world.renderError,null);
+ }finally{engine.dispose();}
+});
+
 test('both Merc HAWCs bob vertically while moving, including the tactical low-speed walk',()=>{
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  const sim=new Simulation(),world=new World({} as HTMLCanvasElement,sim,engine);

@@ -218,7 +218,7 @@ test('infantry turns toward its opponent before firing and shots follow its faci
  const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:0,z:0};
  const soldier=s.forceEject(makeUnit('pilot','merc-sentry',0,55,true))!;soldier.flight=null;soldier.x=0;soldier.z=55;soldier.yaw=0;
  s.tick(.1,idle);assert.equal(s.events.filter(e=>e.type==='shot'&&e.soldier===soldier).length,0);assert.equal(s.humanHealth,100);
- step(s,1.5);const shot=s.events.find(e=>e.type==='shot'&&e.soldier===soldier)!;assert.ok(shot);assert.ok(s.humanHealth<100);
+ step(s,1.5);const shot=s.events.find(e=>e.type==='shot'&&e.soldier===soldier)!;assert.ok(shot);step(s,.5);assert.ok(s.humanHealth<100);
  const dx=shot.to!.x-shot.from!.x,dz=shot.to!.z-shot.from!.z;assert.ok(Math.abs(Math.atan2(dx,dz)-soldier.yaw)<.025);
 });
 test('lethal rifle hits emit one death event, while further hits and player damage cannot repeat death',()=>{

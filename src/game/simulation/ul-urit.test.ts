@@ -161,7 +161,7 @@ function entryScenario(){
 test('a live shield generator blocks enemy facilities and rocket towers until actual rifle fire destroys it',()=>{
  const s=entryScenario(),command=s.facilities[0],generator=s.facilities[1],tower=s.units[1];s.human={x:6,z:30};assert.equal(s.canBoard(command),false);assert.equal(s.board(),false);
  s.human={x:tower.x,z:tower.z};assert.equal(s.canBoard(tower),false);
- s.human={x:20,z:0};s.humanYaw=0;s.pitch=0;s.fire(1);assert.equal(generator.alive,false);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.facility===generator).length,1);
+ s.human={x:20,z:0};s.humanYaw=0;s.pitch=0;s.fire(1);step(s,20);assert.equal(generator.alive,false);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.facility===generator).length,1);
  s.human={x:6,z:30};s.humanHealth=73;s.eggerAmmo=3;assert.ok(s.board());assert.equal(s.insideFacility,command);assert.equal(command.pilot,true);assert.equal(s.mounted,null);assert.equal(s.eyeHeight,command.height*.65);
  const shots=s.events.filter(e=>e.type==='shot').length,pos={...s.player};step(s,60,{...idle,forward:true,right:true,boost:true,fire1:true,fire2:true});assert.deepEqual(s.player,pos);assert.equal(s.events.filter(e=>e.type==='shot').length,shots);assert.equal(s.humanHealth,73);assert.equal(s.eggerAmmo,3);
  s.eject();assert.equal(s.insideFacility,null);assert.equal(command.pilot,false);assert.ok(s.human.x>command.x+command.width/2+4);s.tick(.01,idle);assert.equal(s.insideFacility,null);

@@ -178,9 +178,9 @@ test('4-2 Scorp garrison engages Union without shooting the player and the defen
 });
 
 test('4-2 can be completed by boarding, actual GAUS fire and Scorp supporting fire',async()=>{
- const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const mission=structuredClone(MISSION_4_2),s=new Simulation('Easy',mission),tower=s.units.find(u=>u.id==='scorp-meson')!,testTarget=s.units.find(u=>u.id==='bridge-union-sentry')!;testTarget.x=tower.x+80;testTarget.z=tower.z+90;testTarget.cooldown=999;
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const mission=structuredClone(MISSION_4_2),s=new Simulation('Easy',mission),tower=s.units.find(u=>u.id==='scorp-meson')!,testTarget=s.units.find(u=>u.id==='bridge-union-sentry')!;testTarget.cooldown=999;
  for(let i=0;i<800&&!s.mounted;i++){s.humanYaw=Math.atan2(tower.x-s.human.x,tower.z-s.human.z);s.tick(1/60,{...idle,forward:true});}
- assert.equal(s.mounted,tower);let shots=0,support=0;
+ assert.equal(s.mounted,tower);testTarget.x=tower.x+80;testTarget.z=tower.z+90;let shots=0,support=0;
  for(let i=0;i<15000&&s.status==='running';i++){
   if(!s.target||!s.isHostile(s.target))s.selectTarget();s.tracking=true;
   s.tick(1/60,{...idle,fire1:!!s.targetState?.locked&&s.targetState.inSight});

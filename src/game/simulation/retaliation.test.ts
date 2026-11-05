@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,distance,type Input} from './simulation.ts';
+import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
 import {MISSION_3_3} from '../content/missions/mission-3-3.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function setup(){const s=new Simulation('Easy',MISSION_3_3);s.mission.terrain.cliffs=[];for(const [i,p] of [{x:-22,z:30},{x:10,z:65},{x:26,z:100}].entries())Object.assign(s.units[i+1],p);for(const u of s.units){u.yaw=0;u.aim=0;}Object.assign(s.units.find(u=>u.id==='scorp-asv')!,{x:0,z:350});return {s,enemy:s.units.find(u=>u.id==='scorp-asv')!};}
@@ -67,10 +67,16 @@ test('enemy laser and missile hit a chassis with the shooter IFF instead of pass
  }
 });
 
-test('incoming enemy missiles stop at buildings, cliffs and rocks before reaching the player',async()=>{
+test('incoming enemy missiles stop at buildings, cliffs, rocks and mountains before reaching the player',async()=>{
  const {makeUnit}=await import('./simulation.ts');
- for(const cover of ['building','cliff','rock'] as const){const s=new Simulation(),own=makeUnit('own','union-sentry',0,0,false),enemy=makeUnit('launcher','merc-sentry',0,120,false);s.units=[own,enemy];s.human={x:0,z:0};s.board();enemy.aim=Math.PI;s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];
+ for(const cover of ['building','cliff','rock','peak'] as const){const s=new Simulation(),own=makeUnit('own','union-sentry',0,0,false),enemy=makeUnit('launcher','merc-sentry',0,120,false);s.units=[own,enemy];s.human={x:0,z:0};s.board();enemy.aim=Math.PI;s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
   const wall={x:0,z:55,width:20,depth:10,height:20};if(cover==='building')s.mission.base={name:'cover',x:0,z:55,width:20,depth:10,buildings:[wall]};if(cover==='cliff')s.mission.terrain.cliffs=[{id:'cover',...wall}];if(cover==='rock')s.mission.rocks=[{x:0,z:55,r:12}];
+  if(cover==='peak')s.mission.terrain.peaks=[{x:0,z:55,width:60,depth:60,height:50}];
   s.fireMissile(enemy,'CHUM',1,{x:0,y:4,z:0});tick(s,3);assert.equal(own.shield,own.spec.shield,cover);assert.equal(s.missiles.length,0);assert.ok(s.events.some(e=>e.type==='impact'&&e.position!.z>45),cover);
  }
+});
+test('enemy AI does not fire through a mountain peak',()=>{
+ const s=new Simulation(),own=makeUnit('own','union-sentry',0,0,false),enemy=makeUnit('mountain-gunner','merc-tactical',0,120,true,{weapons:['DASY'],speed:0,ai:{detection:300,strafe:0,keepMoving:false,stopDistance:200,missileVolley:1}});s.units=[own,enemy];s.human={x:0,z:0};s.board();s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[{x:0,z:60,width:60,depth:60,height:65}];enemy.yaw=enemy.aim=Math.PI;enemy.alert=true;
+ for(let i=0;i<60;i++)s.tick(1/60,idle);
+ assert.equal(s.events.filter(e=>e.type==='shot'&&e.unit===enemy).length,0);assert.equal(own.shield,own.spec.shield);
 });

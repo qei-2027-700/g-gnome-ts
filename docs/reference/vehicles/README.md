@@ -7,6 +7,7 @@
 | 保存先 | 対象 |
 | --- | --- |
 | [union-sentry/](union-sentry/README.md) | Union Sentry（Prowler）の外観・機内・識別資料 |
+| [darken/](darken/README.md) | Darken SentryとTactical Defense HAWCの外観・武装、機内フレームとホログラム |
 | [union-tactical/](union-tactical/README.md) | Union Tactical（Rampage）の機内資料 |
 | [merc-tactical/](merc-tactical/README.md) | Merc Tacticalの正面識別と2-4の機内資料 |
 | [merc-assault/](merc-assault/README.md) | Merc Assault（Venom）の横向き画像、蜘蛛のような4本脚、黄色のRUPPレーザー |

@@ -3,7 +3,7 @@ import {weatheredArmor,mesonWeatheredArmor} from './vehicle-finish.ts';
 import {initialCameraMode,REAR_CAMERA_DISTANCE_SCALE} from './camera-mode.ts';
 import {isEmbarked} from '../simulation/infantry.ts';
 import {makeBase} from './base.ts';
-import {grassTexture,snowTexture,overcastSky,rockyMountains} from './landscape.ts';
+import {grassTexture,snowTexture,volcanicTexture,overcastSky,rockyMountains} from './landscape.ts';
 import {MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
 // Register rendering extensions and shaders before the first frame, including dev reloads.
 import '@babylonjs/core';
@@ -29,9 +29,10 @@ import {VISOM_GUIDANCE,INFANTRY_WEAPONS} from '../content/weapons.ts';
 import {isLaser} from '../simulation/weapons.ts';
 import {mercAssaultLegPose,VEHICLE_SHAPES,FACILITY_WRECK,MERC_TACTICAL_RAID_MUZZLE,SCORP_TACTICAL_RAID_MUZZLES} from '../content/vehicle-shapes.ts';
 import {Simulation,isVehicle,isFacility,targetHeight,type SelectionTarget,type CombatTarget,type Unit,type GameEvent,type Point3} from '../simulation/simulation.ts';
-import {riverDistance,riverFrameAtZ,riverSamples} from '../content/missions/river.ts';
+import {riverDistance,riverFrameAtZ,riverSamples,terrainRivers} from '../content/missions/river.ts';
 const GAUS30_BEAM_WIDTH=1.5;
 const GAUS30_BEAM_THICKNESS=.035;
+const isYellowLaser=(weapon?:string)=>weapon==='RUPP'||weapon==='TAR12'||weapon==='HOMP11';
 const color=(hex:string)=>Color3.FromHexString(hex);
 type Effect={mesh:Mesh;life:number;duration:number;kind:'beam'|'tracer'|'flash'|'smoke'|'blast'|'blood';velocity?:Vector3};
 type PartVisual={meshes:Mesh[];paint:{material:StandardMaterial;base:Color3;glow:Color3}[];flash:number;smoke:number};
@@ -66,37 +67,38 @@ export class World {
   material(name:string,hex:string,glow=false){const m=new StandardMaterial(name,this.scene);m.diffuseColor=color(hex);m.specularColor=new Color3(.08,.08,.08);if(glow)m.emissiveColor=color(hex);return m;}
   terrain(){
     this.mineRigs.clear();this.terrainRoot?.dispose(false,true);const before=new Set(this.scene.meshes),terrain=this.sim.mission.terrain;this.terrainRoot=new TransformNode('mission-terrain',this.scene);
-    const amber=terrain.skyPalette==='amber',storm=terrain.weather==='overcast',grass=terrain.biome==='grassland',snow=terrain.biome==='snow',groundPaint=this.material(snow?'snow':grass?'grass':'sand',snow?'#eef5f8':grass?'#649638':'#bbae80');
-    this.scene.clearColor=amber?new Color4(.78,.48,.12,1):snow?new Color4(.76,.79,.81,1):storm?new Color4(.22,.28,.34,1):new Color4(.46,.66,.79,1);this.scene.fogStart=storm?400:140;this.scene.fogEnd=storm?1550:680;this.scene.fogColor=amber?color('#bf994c'):snow?color('#e3edf2'):storm?color('#697574'):grass?color('#b2c7a0'):new Color3(.67,.72,.67);const sun=this.scene.getLightByName('sun')!;sun.intensity=storm?.48:1.1;if(storm)overcastSky(this.scene,terrain.seed,snow,amber);if(terrain.ridgeStyle==='rocky')rockyMountains(this.scene,terrain);const sky=this.scene.getLightByName('sky') as HemisphericLight;sky.intensity=storm?.9:.85;sky.groundColor=color(snow?'#b6c7d8':grass?'#40582e':'#544c34');
-    const ground=MeshBuilder.CreateGround('valley',{width:Math.max(1800,terrain.halfWidth*2+1000),height:grass||snow?Math.max(1800,terrain.maxZ-terrain.minZ+1200):1800,subdivisions:90,updatable:true},this.scene);ground.material=groundPaint;if(storm&&grass){groundPaint.diffuseColor=Color3.White();groundPaint.diffuseTexture=grassTexture(this.scene,terrain.seed);}if(snow){groundPaint.diffuseColor=Color3.White();groundPaint.diffuseTexture=snowTexture(this.scene,terrain.seed);}if(grass||snow)ground.position.z=(terrain.minZ+terrain.maxZ)/2;
-    const vertices=ground.getVerticesData('position')!;const colors:number[]=[];for(let i=0;i<vertices.length;i+=3){const x=vertices[i],z=vertices[i+2],distance=terrain.river?riverDistance(terrain.river,x,z):Infinity,inner=terrain.river?terrain.river.width/2-8:0,outer=terrain.river?terrain.river.width/2+22:0,bank=distance<=inner?1:distance>=outer?0:1-((distance-inner)/(outer-inner))**2*(3-2*(distance-inner)/(outer-inner));vertices[i+1]=(snow?0:grass?Math.min(1,Math.max(0,(Math.abs(x)-terrain.halfWidth-10)/180))*(10+8*Math.sin(x*.009)*Math.cos(z*.007)):Math.abs(x)>terrain.halfWidth+10?Math.max(0,(Math.abs(x)-terrain.halfWidth-10)*.22)*(1+.3*Math.sin(z*.018)):0)-bank*1.5;const v=grass?.94+.045*Math.sin(x*.018+z*.012)*Math.cos(z*.008):.88+.09*Math.sin(x*.14+z*.07)*Math.cos(z*.032);colors.push(v*(1-bank)+.48*bank,(grass||snow?v:v*.98)*(1-bank)+.38*bank,(grass||snow?v:v*.85)*(1-bank)+.25*bank,1);}ground.updateVerticesData('position',vertices);ground.setVerticesData('color',colors);ground.receiveShadows=true;
-    if(terrain.river){
-      const river=terrain.river,samples=riverSamples(river,Math.max(6,river.width/6)),halfWidth=river.width/2-7,left:Vector3[]=[],right:Vector3[]=[];
+    const amber=terrain.skyPalette==='amber',storm=terrain.weather==='overcast',grass=terrain.biome==='grassland',snow=terrain.biome==='snow',volcanic=terrain.biome==='volcanic',groundPaint=this.material(snow?'snow':grass?'grass':volcanic?'volcanic-ground':'sand',snow?'#eef5f8':grass?'#649638':volcanic?'#45403a':'#bbae80');
+    this.scene.clearColor=amber?new Color4(.78,.48,.12,1):snow?new Color4(.76,.79,.81,1):storm?new Color4(.22,.28,.34,1):new Color4(.46,.66,.79,1);this.scene.fogStart=storm?400:140;this.scene.fogEnd=storm?1550:680;this.scene.fogColor=volcanic?color('#55483b'):amber?color('#bf994c'):snow?color('#e3edf2'):storm?color('#697574'):grass?color('#b2c7a0'):new Color3(.67,.72,.67);const sun=this.scene.getLightByName('sun')!;sun.intensity=storm?.48:1.1;if(storm)overcastSky(this.scene,terrain.seed,snow,amber);if(terrain.ridgeStyle==='rocky')rockyMountains(this.scene,terrain);const sky=this.scene.getLightByName('sky') as HemisphericLight;sky.intensity=storm?.9:.85;sky.groundColor=color(snow?'#b6c7d8':grass?'#40582e':volcanic?'#292725':'#544c34');
+    const ground=MeshBuilder.CreateGround('valley',{width:Math.max(1800,terrain.halfWidth*2+1000),height:grass||snow?Math.max(1800,terrain.maxZ-terrain.minZ+1200):1800,subdivisions:90,updatable:true},this.scene);ground.material=groundPaint;if(storm&&grass){groundPaint.diffuseColor=Color3.White();groundPaint.diffuseTexture=grassTexture(this.scene,terrain.seed);}if(snow){groundPaint.diffuseColor=Color3.White();groundPaint.diffuseTexture=snowTexture(this.scene,terrain.seed);}if(volcanic){groundPaint.diffuseColor=Color3.White();groundPaint.diffuseTexture=volcanicTexture(this.scene,terrain.seed);}if(grass||snow)ground.position.z=(terrain.minZ+terrain.maxZ)/2;
+    const rivers=terrainRivers(terrain);const vertices=ground.getVerticesData('position')!;const colors:number[]=[];for(let i=0;i<vertices.length;i+=3){const x=vertices[i],z=vertices[i+2],nearest=rivers.map(river=>({river,distance:riverDistance(river,x,z)})).sort((a,b)=>a.distance-b.distance)[0],distance=nearest?.distance??Infinity,inner=nearest?nearest.river.width/2-8:0,outer=nearest?nearest.river.width/2+22:0,bank=distance<=inner?1:distance>=outer?0:1-((distance-inner)/(outer-inner))**2*(3-2*(distance-inner)/(outer-inner));vertices[i+1]=(snow?0:grass?Math.min(1,Math.max(0,(Math.abs(x)-terrain.halfWidth-10)/180))*(10+8*Math.sin(x*.009)*Math.cos(z*.007)):Math.abs(x)>terrain.halfWidth+10?Math.max(0,(Math.abs(x)-terrain.halfWidth-10)*.22)*(1+.3*Math.sin(z*.018)):0)-bank*1.5;const v=grass?.94+.045*Math.sin(x*.018+z*.012)*Math.cos(z*.008):.88+.09*Math.sin(x*.14+z*.07)*Math.cos(z*.032);colors.push(v*(1-bank)+(volcanic?.28:.48)*bank,(grass||snow?v:v*.98)*(1-bank)+(volcanic?.25:.38)*bank,(grass||snow?v:v*.85)*(1-bank)+(volcanic?.23:.25)*bank,1);}ground.updateVerticesData('position',vertices);ground.setVerticesData('color',colors);ground.receiveShadows=true;
+    for(const river of rivers){
+      const samples=riverSamples(river,Math.max(6,river.width/6)),halfWidth=river.width/2-7,left:Vector3[]=[],right:Vector3[]=[];
       for(const point of samples){const nx=point.tz,nz=-point.tx;left.push(new Vector3(point.x-nx*halfWidth,-.7,point.z-nz*halfWidth));right.push(new Vector3(point.x+nx*halfWidth,-.7,point.z+nz*halfWidth));}
-      const water=MeshBuilder.CreateRibbon('river-water',{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},this.scene);water.material=this.material('river-blue','#245c9a');
-      const waterMaterial=water.material as StandardMaterial;waterMaterial.specularColor=new Color3(.42,.52,.62);waterMaterial.emissiveColor=color('#10283b');
+      const water=MeshBuilder.CreateRibbon('river-water',{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},this.scene);water.material=this.material(`river-${river.bridgeId}`,river.surface==='lava'?'#d74712':'#245c9a');
+      const waterMaterial=water.material as StandardMaterial;waterMaterial.specularColor=river.surface==='lava'?new Color3(.5,.13,.02):new Color3(.42,.52,.62);waterMaterial.emissiveColor=color(river.surface==='lava'?'#9b2208':'#10283b');
       const bridge=riverFrameAtZ(river,river.bridgeZ),bridgeYaw=Math.atan2(bridge.tx,bridge.tz);
       for(const side of [-1,1]){
-        const hinge=new TransformNode(`bridge-hinge-${side}`,this.scene);hinge.position.set(bridge.x+bridge.tz*side*(river.width/2+9),.2,bridge.z-bridge.tx*side*(river.width/2+9));hinge.rotation.y=bridgeYaw;
+        const hinge=new TransformNode(river===terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`,this.scene);hinge.position.set(bridge.x+bridge.tz*side*(river.width/2+9),.2,bridge.z-bridge.tx*side*(river.width/2+9));hinge.rotation.y=bridgeYaw;
         const leaf=MeshBuilder.CreateBox('river-bridge-leaf',{width:(river.width+18)/2,height:.35,depth:river.bridgeWidth},this.scene);leaf.parent=hinge;leaf.position.x=-side*(river.width+18)/4;leaf.material=this.material(`bridge-deck-${side}`,'#77796c');
         for(const edge of [-1,1]){const rail=MeshBuilder.CreateBox('bridge-rail',{width:(river.width+18)/2,height:1,depth:.3},this.scene);rail.parent=hinge;rail.position.set(-side*(river.width+18)/4,.65,edge*river.bridgeWidth/2);rail.material=this.material(`bridge-rail-${side}-${edge}`,'#494d43');}
       }
     }
-    const stone=grass&&!this.sim.mission.rocks.length?null:this.material('sandstone',grass?'#5f853f':'#bda16d');const band=grass?null:this.material('strata','#897751');
+    const stone=grass&&!this.sim.mission.rocks.length?null:this.material('sandstone',grass?'#5f853f':volcanic?'#54504b':'#bda16d');const band=grass?null:this.material('strata',volcanic?'#3d3935':'#897751');
     const ridge=(x:number,z:number,i:number)=>{const h=terrain.ridgeHeight+(Math.sin(i*7.1+terrain.seed)+1)*terrain.ridgeVariation;const rock=MeshBuilder.CreateCylinder('mesa',{height:h,diameterTop:16+(i%4)*8,diameterBottom:75+(i%5)*18,tessellation:6,subdivisions:4},this.scene);rock.position.set(x,h/2-3,z);rock.rotation.y=i;rock.material=stone;const line=MeshBuilder.CreateCylinder('sediment',{height:2.5,diameterTop:40+(i%4)*7,diameterBottom:45+(i%4)*7,tessellation:6},this.scene);line.position.set(x,h*.61,z);line.rotation.y=i;line.material=band;};
     if(!grass&&!snow){for(let i=0;i<28;i++){ridge(-terrain.halfWidth-55-(i%3)*42,terrain.minZ-80+i*35,i);ridge(terrain.halfWidth+50+(i%4)*34,terrain.minZ-70+i*35,i+30);}for(let i=0;i<8;i++)ridge(-220+i*65,terrain.maxZ+100,i+60);}
     for(const [i,r] of this.sim.mission.rocks.entries()){const rock=MeshBuilder.CreateSphere('boulder',{diameter:r.r*2,segments:5},this.scene);rock.scaling.y=.75;rock.position.set(r.x,r.r*.55,r.z);rock.rotation.set(i,.4*i,.3);rock.material=stone;}
-    if(!grass&&!snow){const shrubMat=this.material('scrub','#666744');for(let i=0;i<75;i++){const x=Math.sin(i*27.3)*135,z=-40+(i*87.7)%610;if(Math.abs(x)<14)continue;const s=MeshBuilder.CreateCylinder('scrub',{height:1.4,diameterTop:.1,diameterBottom:2,tessellation:3},this.scene);s.position.set(x,.7,z);s.rotation.z=Math.sin(i)*.4;s.material=shrubMat;}}
+    if(!grass&&!snow&&!volcanic){const shrubMat=this.material('scrub','#666744');for(let i=0;i<75;i++){const x=Math.sin(i*27.3)*135,z=-40+(i*87.7)%610;if(Math.abs(x)<14)continue;const s=MeshBuilder.CreateCylinder('scrub',{height:1.4,diameterTop:.1,diameterBottom:2,tessellation:3},this.scene);s.position.set(x,.7,z);s.rotation.z=Math.sin(i)*.4;s.material=shrubMat;}}
     makeBase(this.scene,this.sim.mission);if(this.sim.mines.length){const mineMat=this.material('detected-mine','#ff1818',true);for(const mine of this.sim.mines){const mesh=MeshBuilder.CreateCylinder('detected-mine',{height:.25,diameter:1.3,tessellation:6},this.scene);mesh.position.set(mine.x,.48,mine.z);mesh.material=mineMat;mesh.isVisible=false;this.mineRigs.set(mine.id,mesh);}}
     for(const node of this.scene.transformNodes)if(node.metadata?.facilityId&&!node.parent)node.parent=this.terrainRoot;
     for(const mesh of this.scene.meshes)if(!before.has(mesh)&&!mesh.parent)mesh.parent=this.terrainRoot;
   }
   makeMech(u:Unit){const spec=u.spec,scorp=u.kind==='scorp-asv',tower=spec.category==='tower';const root=new TransformNode(u.id,this.scene);const torso=new TransformNode('upper',this.scene);torso.parent=root;torso.position.y=spec.height*.6;
-    const shell=this.material(`${u.id}-paint`,spec.color);const dark=this.material(`${u.id}-joints`,tower?SCORP_TOWER_PALETTE.dark:scorp?SCORP_ASV_PALETTE.black:u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#090d13':'#343d39');const glow=this.material(`${u.id}-visor`,tower?SCORP_TOWER_PALETTE.panel:scorp?SCORP_ASV_PALETTE.green:u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#0d1722':'#1b252b');
-    const unionTactical=u.kind==='union-tactical',union=u.kind==='union-sentry',merc=u.kind==='merc-sentry',heavy=u.kind.endsWith('-tactical'),shape=VEHICLE_SHAPES[u.kind];
-    const accent=this.material(`${u.id}-${heavy?'blue':'red'}-panels`,tower?SCORP_TOWER_PALETTE.ochre:scorp?SCORP_ASV_PALETTE.ochre:unionTactical?'#98463e':heavy?MERC_TACTICAL_PALETTE.blue:union?'#983f3b':'#813c3e');
+    const shell=this.material(`${u.id}-paint`,spec.color);const dark=this.material(`${u.id}-joints`,tower?SCORP_TOWER_PALETTE.dark:scorp?SCORP_ASV_PALETTE.black:u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#090d13':'#343d39');const glow=this.material(`${u.id}-visor`,tower?SCORP_TOWER_PALETTE.panel:scorp?SCORP_ASV_PALETTE.green:u.kind==='darken-sentry'?'#3f5f9b':u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#0d1722':'#1b252b');
+    const unionTactical=u.kind==='union-tactical',union=u.kind==='union-sentry',merc=u.kind==='merc-sentry',darkenSentry=u.kind==='darken-sentry',darkenTactical=u.kind==='darken-tactical',heavy=u.kind.endsWith('-tactical'),shape=VEHICLE_SHAPES[u.kind];
+    const accent=this.material(`${u.id}-${heavy?'blue':'red'}-panels`,tower?SCORP_TOWER_PALETTE.ochre:scorp?SCORP_ASV_PALETTE.ochre:unionTactical?'#98463e':darkenTactical?'#914536':heavy?MERC_TACTICAL_PALETTE.blue:union?'#983f3b':darkenSentry?'#b97319':'#813c3e');
+    const darkenPod=darkenSentry?this.material(`${u.id}-green-weapon-pods`,'#385323'):null;
     if(u.kind==='union-asv'||unionTactical){shell.diffuseColor=Color3.White();shell.diffuseTexture=weatheredArmor(this.scene);}
-    const trim=this.material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
+    const trim=this.material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:darkenTactical?'#aaa9a0':heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
     const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,mat:StandardMaterial,parent:TransformNode,part?:BodyPart)=>{const b=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},this.scene);b.parent=parent;b.position.set(x,y,z);b.material=mat;if(part)b.metadata={bodyPart:part};return b;};
     let cannon:TransformNode|undefined;
     const legs:TransformNode[]=[],knees:TransformNode[]=[],feet:Mesh[]=[],spiderLegs:SpiderLeg[]=[];
@@ -270,7 +272,13 @@ export class World {
         }
       }
       if(unionTactical){box('rampage armored brow',3.3,.45,1.3,0,1.92,.7,shell,torso,'cockpit');box('rampage central window',1.55,.65,.14,0,1.3,1.35,dark,torso,'cockpit');}
+      if(darkenTactical){
+        box('stalker gold front spine',.52,1.65,.18,0,.3,1.13,shell,torso,'hull');
+        box('stalker cockpit brow',1.45,.27,.3,0,cockpit.y+.55,cockpit.z+cockpit.d/2,trim,torso,'cockpit');
+        for(const side of [-1,1])box('stalker chest panel',.36,.85,.16,side*.48,.2,1.18,trim,torso,'hull');
+      }
     }else box('cockpit',cockpit.w,cockpit.h,cockpit.d,0,cockpit.y,cockpit.z,shell,torso);
+    if(darkenSentry){box('darken blue dorsal fin',.48,1.34,.55,0,cockpit.y+.7,cockpit.z-.23,glow,torso,'cockpit');box('darken gray central frame',.82,.48,1.05,0,-.22,.25,trim,torso,'hull');}
     if(!heavy){const visor=box('visor',cockpit.w*.84,cockpit.h*.61,.13,0,cockpit.y+.05,cockpit.z+cockpit.d/2+.04,glow,torso);visor.rotation.x=-.15;}
     if(u.kind==='scorp-tactical'){const mount=SCORP_TACTICAL_RAID_MUZZLES;box('raid chin carriage',1.6,.35,.65,0,mount.y,mount.z-1.05,trim,torso,'hull');for(const side of [-1,1])box('scorp raid chin barrel',.18,.18,1.2,side*mount.x,mount.y,mount.z-.6,dark,torso,side<0?'leftWeapon':'rightWeapon');}
     if(u.kind==='merc-tactical'){const mount=MERC_TACTICAL_RAID_MUZZLE;box('raid chin mount',.65,.4,.6,0,mount.y,mount.z-.85,trim,torso,'hull');box('raid chin barrel',.2,.2,1.1,0,mount.y,mount.z-.55,dark,torso,'hull');}
@@ -291,18 +299,19 @@ export class World {
     }
     for(const side of [-1,1]){
       const part:BodyPart=side<0?'leftWeapon':'rightWeapon',x=side*weapon.x;
-      const pod=unionTactical?MeshBuilder.CreateCylinder('weapon pod',{diameter:2,height:1,tessellation:8},this.scene):box('weapon pod',weapon.w,weapon.h,weapon.d,x,weapon.y,weapon.z,shell,torso,part);
+      const pod=unionTactical?MeshBuilder.CreateCylinder('weapon pod',{diameter:2,height:1,tessellation:8},this.scene):box('weapon pod',weapon.w,weapon.h,weapon.d,x,weapon.y,weapon.z,darkenPod??(darkenTactical?trim:shell),torso,part);
       if(unionTactical){pod.parent=torso;pod.position.set(x,weapon.y,weapon.z);pod.rotation.x=Math.PI/2;pod.scaling.set(weapon.w/2,weapon.d,weapon.h/2);pod.material=accent;pod.metadata={bodyPart:part};}
       if(!heavy){
         box('pod rim',weapon.w*.8,.14,weapon.d+.1,x,weapon.y+.35,weapon.z,trim,torso,part);
         box('weapon muzzle',weapon.w*.7,weapon.h*.55,.18,x,weapon.y,weapon.z+weapon.d/2+.07,dark,torso,part);
-        box('weapon face panel',.36,.3,.2,x+side*.28,weapon.y+.05,weapon.z+weapon.d/2+.12,accent,torso,part);
+        box('weapon face panel',.36,.3,.2,x+side*.28,weapon.y+.05,weapon.z+weapon.d/2+.12,darkenPod??accent,torso,part);
       }
       if(heavy){
         box('shoulder blue cap',weapon.w+.12,.27,weapon.d+.1,x,weapon.y+weapon.h/2+.05,weapon.z,accent,torso,part);
         box('shoulder black face',weapon.w*.75,weapon.h*.63,.16,x,weapon.y,weapon.z+weapon.d/2+.06,dark,torso,part);
         box('shoulder white divider',weapon.w*.88,.16,.2,x,weapon.y-.24,weapon.z+weapon.d/2+.12,shell,torso,part);
         box('shoulder lower rail',weapon.w+.06,.16,weapon.d+.12,x,weapon.y-weapon.h/2,weapon.z,trim,torso,part);
+        if(darkenTactical){for(let band=0;band<3;band++)box('stalker pod red grille',weapon.w*.77,.09,.035,x,weapon.y+.38-band*.2,weapon.z+weapon.d/2+.16,accent,torso,part);box('stalker pod lower silver face',weapon.w*.8,.33,.05,x,weapon.y-.53,weapon.z+weapon.d/2+.18,trim,torso,part);}
       }
       box('barrel',.22,.22,heavy?1.3:1.1,x,weapon.y-.17,weapon.z+weapon.d/2+.5,dark,torso,part);
       const leg=new TransformNode('leg',this.scene);leg.parent=root;leg.position.set(side*shape.legX,'legHip' in shape?shape.legHip:spec.height*.5,0);if('legScale' in shape)leg.scaling.set(shape.legScale.x,shape.legScale.y,shape.legScale.z);legs.push(leg);
@@ -334,6 +343,7 @@ export class World {
         box('shin black vent',.9,.32,.2,0,-spec.height*.12,.89,dark,knee);
         box('shin white seam',1.4,.18,.22,0,-spec.height*.065,.9,shell,knee);
         box('shin lower white cuff',1.5,.27,1.35,0,-spec.height*.2,.12,shell,knee);
+        if(darkenTactical){box('stalker shin gold column',.55,spec.height*.18,.18,0,-spec.height*.11,.91,shell,knee,side<0?'leftLeg':'rightLeg');box('stalker broad gold foot',1.75,.35,1.8,0,-spec.height*.24,.35,shell,knee,side<0?'leftLeg':'rightLeg');}
         if(u.kind==='merc-tactical'){
           box('rear shin blue armor',1.25,spec.height*.14,.18,0,-spec.height*.115,-.66,accent,knee,side<0?'leftLeg':'rightLeg');
           box('rear shin dark vent',.78,.34,.12,0,-spec.height*.12,-.78,dark,knee,side<0?'leftLeg':'rightLeg');
@@ -353,7 +363,7 @@ export class World {
       const original=mesh.material as StandardMaterial,material=original.clone(`${u.id}-${part}-${mesh.name}`)!;
       mesh.material=material;mesh.metadata={bodyPart:part};parts[part].meshes.push(mesh);parts[part].paint.push({material,base:original.diffuseColor.clone(),glow:original.emissiveColor.clone()});
     }
-    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();
+    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();
     this.rigs.set(u.id,{spiderLegs,cannon,root,torso,legs,knees,feet,phase:0,run:0,lastX:u.x,lastZ:u.z,recoil:0,parts});
   }
   get cockpitBackdropSwayPercent(){
@@ -534,14 +544,14 @@ export class World {
     if(weapon==='TCREAP')return this.dashedGunTrace(new Vector3(0,0,-4),new Vector3(0,0,.8),'TCREAP',name);
     if(weapon==='RAID'||weapon==='FIL-30'){const bolt=MeshBuilder.CreateCylinder(name,{height:1.8,diameter:.1,tessellation:8},this.scene);bolt.rotation.x=Math.PI/2;bolt.material=this.fxMaterial('laser-red','#ff2413',true);bolt.isPickable=false;bolt.metadata={weapon,visual:'slender-laser'};const core=MeshBuilder.CreateCylinder(weapon==='RAID'?'raid-white-core':'fil30-white-core',{height:1.65,diameter:.035,tessellation:6},this.scene);core.parent=bolt;core.material=this.fxMaterial('laser-core','#fff3df',true);core.isPickable=false;return bolt;}
     const bolt=MeshBuilder.CreateDisc(name,{radius:.55,tessellation:4,sideOrientation:Mesh.DOUBLESIDE},this.scene);bolt.billboardMode=Mesh.BILLBOARDMODE_ALL;
-    const yellow=weapon==='RUPP'||weapon==='TAR12';bolt.material=this.fxMaterial(yellow?'laser-yellow':weapon==='CETI'?'laser-green':'laser-red',yellow?'#ffe529':weapon==='CETI'?'#25ff43':'#ff2413',true);bolt.isPickable=false;bolt.metadata={weapon,visual:yellow?'yellow-laser':weapon==='CETI'?'green-laser':'red-laser'};
+    const yellow=isYellowLaser(weapon);bolt.material=this.fxMaterial(yellow?'laser-yellow':weapon==='CETI'?'laser-green':'laser-red',yellow?'#ffe529':weapon==='CETI'?'#25ff43':'#ff2413',true);bolt.isPickable=false;bolt.metadata={weapon,visual:yellow?'yellow-laser':weapon==='CETI'?'green-laser':'red-laser'};
     const core=MeshBuilder.CreateDisc('laser-white-core',{radius:.23,tessellation:4,sideOrientation:Mesh.DOUBLESIDE},this.scene);core.parent=bolt;core.position.z=-.015;core.material=this.fxMaterial('laser-core','#fff3df',true);core.isPickable=false;
     return bolt;
   }
   private addEffect(mesh:Mesh,duration:number,kind:Effect['kind'],velocity?:Vector3){
     this.effects.push({mesh,duration,life:duration,kind,velocity});
   }
-  private yellowLaserFlash(position:Point3,weapon:string){const flash=MeshBuilder.CreateSphere(weapon==='TAR12'?'tar12-yellow-flash':'rupp-yellow-flash',{diameter:.45,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.fxMaterial('laser-yellow','#ffe529',true);this.addEffect(flash,.12,'flash');}
+  private yellowLaserFlash(position:Point3,weapon:string){const flash=MeshBuilder.CreateSphere(`${weapon.toLowerCase()}-yellow-flash`,{diameter:.45,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.fxMaterial('laser-yellow','#ffe529',true);this.addEffect(flash,.12,'flash');}
   private gausFlash(position:Point3,weapon?:string){const flash=MeshBuilder.CreateSphere('gaus-blue-flash',{diameter:.55,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.gausMaterial(weapon);this.addEffect(flash,.12,'flash');}
   private gausImpactSmoke(position:Point3){
     for(let i=0;i<5;i++){
@@ -584,7 +594,7 @@ export class World {
       if(machineGun&&rig&&!e.position){const index=unit!.spec.weapons.indexOf(e.weapon as import('../content/weapons.ts').VehicleWeapon),part=index%2===0?'leftWeapon':'rightWeapon',barrel=rig.parts[part].meshes.find(mesh=>mesh.name==='barrel');if(barrel){barrel.computeWorldMatrix(true);const tip=barrel.getBoundingInfo().boundingBox.maximum;from=Vector3.TransformCoordinates(new Vector3(0,0,tip.z),barrel.getWorldMatrix());}}
       const flash=MeshBuilder.CreateSphere('muzzle-flash',{diameter:e.weapon==='GAUS30'?.6:e.weapon==='GAUS20'?.25:infantryRifle?(e.soldier?.18:.055):e.projectileId!==undefined?1.2:.7,segments:5},this.scene);
       if(e.weapon==='GAUS30'&&unit?.kind==='merc-meson-tower')flash.metadata={mesonMuzzleOwner:unit.id};
-      flash.position.copyFrom(from);flash.material=(e.weapon==='GAUS30'||e.weapon==='GAUS20')?this.gausMaterial(e.weapon):this.fxMaterial((e.weapon==='RUPP'||e.weapon==='TAR12')?'rupp-muzzle':dasy?'dasy-muzzle':infantryRifle?'rifle-muzzle':'muzzle',(e.weapon==='RUPP'||e.weapon==='TAR12')?'#ffe529':dasy?'#ff2413':infantryRifle?'#ff3020':'#ffda83',true);this.addEffect(flash,e.weapon==='GAUS30'?.14:.09,'flash');
+      flash.position.copyFrom(from);flash.material=(e.weapon==='GAUS30'||e.weapon==='GAUS20')?this.gausMaterial(e.weapon):this.fxMaterial(isYellowLaser(e.weapon)?'rupp-muzzle':dasy?'dasy-muzzle':infantryRifle?'rifle-muzzle':'muzzle',isYellowLaser(e.weapon)?'#ffe529':dasy?'#ff2413':infantryRifle?'#ff3020':'#ffda83',true);this.addEffect(flash,e.weapon==='GAUS30'?.14:.09,'flash');
       if(e.projectileId===undefined){
         const to=new Vector3(e.to.x,e.to.y??(e.unit===this.sim.mounted?4:(this.sim.mounted?4:1.1)),e.to.z),direction=to.subtract(from),length=direction.length();direction.normalize();
         const laser=isLaser(e.weapon??'');
@@ -598,9 +608,9 @@ export class World {
       }
     }
     if(e.type==='mine'&&e.position)this.burst(e.position,true);
-    if(e.type==='impact'&&e.position){if(e.weapon==='GAUS30'){this.gausFlash(e.position,e.weapon);this.gausImpactSmoke(e.position);}else if(e.weapon==='GAUS20')this.gausFlash(e.position,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(e.position,e.weapon);else if(e.weapon==='GASHR')this.gasCloud(e.position);else if(e.weapon!=='EGGER')this.burst(e.position);}
+    if(e.type==='impact'&&e.position){if(e.weapon==='GAUS30'){this.gausFlash(e.position,e.weapon);this.gausImpactSmoke(e.position);}else if(e.weapon==='GAUS20')this.gausFlash(e.position,e.weapon);else if(isYellowLaser(e.weapon))this.yellowLaserFlash(e.position,e.weapon);else if(e.weapon==='GASHR')this.gasCloud(e.position);else if(e.weapon!=='EGGER')this.burst(e.position);}
     if(e.type==='soldier-death'&&e.position&&(!e.soldier||!isEmbarked(e.soldier)))this.bloodBurst(e.position);
-    if(e.type==='hit'&&e.unit&&e.unit!==this.sim.mounted){const point=e.position??{x:e.unit.x,y:e.unit.spec.height*.6,z:e.unit.z};if(e.weapon==='GAUS30'||e.weapon==='GAUS20')this.gausFlash(point,e.weapon);else if(e.weapon==='RUPP'||e.weapon==='TAR12')this.yellowLaserFlash(point,e.weapon);else this.burst(point);}
+    if(e.type==='hit'&&e.unit&&e.unit!==this.sim.mounted){const point=e.position??{x:e.unit.x,y:e.unit.spec.height*.6,z:e.unit.z};if(e.weapon==='GAUS30'||e.weapon==='GAUS20')this.gausFlash(point,e.weapon);else if(isYellowLaser(e.weapon))this.yellowLaserFlash(point,e.weapon);else this.burst(point);}
     if(e.type==='hit'&&e.unit===this.sim.mounted)this.kick=.12;
     if(e.type==='destroy'&&e.unit)this.startDestruction(e.unit);if(e.type==='destroy'&&e.facility&&e.position)this.burst(e.position,true);
   }
@@ -641,7 +651,7 @@ export class World {
       if(missile.weapon!=='EGGER'&&rig.smokeTimer>=.035){rig.smokeTimer%=.035;const smoke=MeshBuilder.CreateSphere('rocket-smoke',{diameter:missile.weapon==='GASHR'?.5:.9,segments:4},this.scene);smoke.position.copyFrom(rig.root.position);smoke.material=missile.weapon==='GASHR'?this.fxMaterial('gas-cloud','#a5bb76'):this.fxMaterial('smoke','#6d6a60');this.addEffect(smoke,.65,'smoke',new Vector3(0,.7,0));}
     }
   }
-  update(dt:number){const sim=this.sim;const river=sim.mission.terrain.river;if(river)for(const side of [-1,1]){const hinge=this.scene.getTransformNodeByName(`bridge-hinge-${side}`);if(hinge)hinge.rotation.z=sim.raisedBridges.has(river.bridgeId)?-side*Math.PI*.48:0;}for(const facility of sim.facilities){const root=this.scene.getTransformNodeByName(`facility-${facility.id}`);root?.setEnabled(facility.alive&&!(sim.insideFacility===facility&&this.mode===0&&this.completionTime===null));}const detected=new Set(sim.detectedMines.map(m=>m.id));for(const [id,mesh] of this.mineRigs)mesh.isVisible=detected.has(id);this.updateDestructions(dt);for(const u of sim.units){const rig=this.rigs.get(u.id);if(!rig)continue;if(!u.alive&&!this.destructions.has(u.id)){this.retireVehicle(u);continue;}rig.recoil=Math.max(0,rig.recoil-dt*9);rig.torso.position.z=u.spec.category==='tower'||u.kind==='merc-assault'?0:-rig.recoil*.35;rig.torso.rotation.x=u.spec.category==='tower'||u.kind==='merc-assault'?0:(u.kind.endsWith('-asv')?-(u===sim.mounted?sim.pitch:u.aimPitch):0)-rig.recoil*.045;this.updateGait(u,rig,dt);rig.torso.rotation.y=(u.kind==='merc-meson-tower'||u.kind==='scorp-meson-tower')?u.aim:u.spec.category==='tower'||u.spec.torsoLimit===0?0:u.aim-u.yaw;if(u.kind!=='merc-assault')rig.torso.rotation.z=-rig.root.rotation.z*.65;rig.root.setEnabled(!((u===sim.mounted||u===sim.passenger)&&this.mode===0&&!sim.guidedMissile&&this.completionTime===null));if(rig.cannon)rig.cannon.rotation.x=-(u===sim.mounted?sim.pitch:u.aimPitch);this.updateDamage(u,rig,dt);}
+  update(dt:number){const sim=this.sim;for(const river of terrainRivers(sim.mission.terrain))for(const side of [-1,1]){const hinge=this.scene.getTransformNodeByName(river===sim.mission.terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`);if(hinge)hinge.rotation.z=sim.raisedBridges.has(river.bridgeId)?-side*Math.PI*.48:0;}for(const facility of sim.facilities){const root=this.scene.getTransformNodeByName(`facility-${facility.id}`);root?.setEnabled(facility.alive&&!(sim.insideFacility===facility&&this.mode===0&&this.completionTime===null));}const detected=new Set(sim.detectedMines.map(m=>m.id));for(const [id,mesh] of this.mineRigs)mesh.isVisible=detected.has(id);this.updateDestructions(dt);for(const u of sim.units){const rig=this.rigs.get(u.id);if(!rig)continue;if(!u.alive&&!this.destructions.has(u.id)){this.retireVehicle(u);continue;}rig.recoil=Math.max(0,rig.recoil-dt*9);rig.torso.position.z=u.spec.category==='tower'||u.kind==='merc-assault'?0:-rig.recoil*.35;rig.torso.rotation.x=u.spec.category==='tower'||u.kind==='merc-assault'?0:(u.kind.endsWith('-asv')?-(u===sim.mounted?sim.pitch:u.aimPitch):0)-rig.recoil*.045;this.updateGait(u,rig,dt);rig.torso.rotation.y=(u.kind==='merc-meson-tower'||u.kind==='scorp-meson-tower')?u.aim:u.spec.category==='tower'||u.spec.torsoLimit===0?0:u.aim-u.yaw;if(u.kind!=='merc-assault')rig.torso.rotation.z=-rig.root.rotation.z*.65;rig.root.setEnabled(!((u===sim.mounted||u===sim.passenger)&&this.mode===0&&!sim.guidedMissile&&this.completionTime===null));if(rig.cannon)rig.cannon.rotation.x=-(u===sim.mounted?sim.pitch:u.aimPitch);this.updateDamage(u,rig,dt);}
     this.updateSoldiers(dt);
     const p=sim.player;const yaw=sim.aim;const height=sim.eyeHeight;
     const guided=sim.guidedMissile;

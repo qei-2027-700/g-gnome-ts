@@ -19,6 +19,12 @@ test('aim, range and rocks block laser hits; damage arrives on contact and shiel
  }
  const s=mounted(),target=s.units[1];s.damage(target,30);assert.ok(target.armor<VEHICLES[target.kind].armor);assert.equal(s.lineOfSight({x:-40,z:30},{x:-40,z:120}),false);
 });
+test('player gun and laser stop at a mountain before a target behind it',()=>{
+ const s=new Simulation(),own=makeUnit('own','union-sentry',0,0,false),target=makeUnit('behind-peak','merc-sentry',0,110,false);s.units=[own,target];s.human={x:0,z:0};assert.ok(s.board());s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[{x:0,z:55,width:70,depth:70,height:75}];
+ assert.equal(s.lineOfSight(own,target),false);const shield=target.shield;
+ s.fire(1);const gun=s.events.find(e=>e.type==='shot'&&e.weapon==='FLECH')!;assert.ok(gun.to!.z<80);assert.equal(target.shield,shield);
+ own.cooldown=0;s.fire(2);step(s,2);assert.equal(target.shield,shield);assert.ok(s.events.some(e=>e.type==='impact'&&e.weapon==='FIL-30'&&e.position!.z<80));
+});
 test('IFF controls AI launch; missile damage stays identical across difficulty while aim can miss',()=>{
  for(const difficulty of ['Easy','Medium','Hard'] as const){
   const s=new Simulation(difficulty);s.units[0].z=100;s.human={x:0,z:100};s.board();s.units[1].x=0;s.units[1].yaw=Math.PI;s.units[1].aim=Math.PI;s.tick(.05,idle);

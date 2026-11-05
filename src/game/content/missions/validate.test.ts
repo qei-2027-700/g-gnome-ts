@@ -7,6 +7,12 @@ import {MISSION_3_3} from './mission-3-3.ts';
 test('every registered mission has valid identities, references and completion data',()=>{
  assert.deepEqual(validateMissions(MISSIONS),[]);
 });
+test('registered missions do not start units or personnel inside mountain peaks',()=>{
+ for(const mission of MISSIONS)for(const [index,peak] of (mission.terrain.peaks??[]).entries())for(const actor of [...mission.units,...(mission.personnel??[])]){
+  const radius=Math.hypot((actor.x-peak.x)/(peak.width/2+5),(actor.z-peak.z)/(peak.depth/2+5));
+  assert.ok(radius>=1,`${mission.id} peak ${index} encloses ${'id' in actor?actor.id:actor.personId}`);
+ }
+});
 test('catalog validation reports broken references and duplicate identities together',()=>{
  const mission=structuredClone(MISSION_3_3);
  mission.units=[...mission.units,mission.units[0]];

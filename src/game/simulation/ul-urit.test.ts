@@ -145,6 +145,16 @@ test('3-3 minefield discovery warns only aboard Union ASV, once at the area boun
 });
 
 
+test('hovering AIPs of every faction pass over active mines while a ground HAWC detonates one',()=>{
+ for(const [kind,grounded] of [['union-aip',false],['merc-aip',false],['darken-aip',false],['merc-aip',true],['union-sentry',false]] as const){
+  const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind,x:-20,z:0,yaw:Math.PI/2,pilot:false}];def.assignedUnitId='own';def.startMountedUnitId='own';def.player={x:-20,z:0};def.base=undefined;def.rocks=[];def.terrain={...def.terrain,river:undefined,cliffs:[]};def.objectives=[];def.completionEnabled=false;def.minefields=[{id:'test',x:0,z:0,width:30,depth:30,triggerRadius:2,mines:[{id:'one',x:0,z:0}]}];
+  const s=new Simulation('Easy',def),unit=s.mounted!;if(grounded){unit.hoverDisabled=true;unit.hoverHeight=0;}
+  for(let i=0;i<120&&unit.alive;i++)s.tick(.05,{...idle,forward:true});
+  if(kind==='union-sentry'||grounded){assert.equal(s.mines[0].spent,true);assert.equal(unit.alive,false);}
+  else{assert.ok(unit.x>10,`${kind} crosses the mine`);assert.equal(s.mines[0].spent,false);assert.equal(unit.alive,true);}
+ }
+});
+
 test('enemy mine immunity ends when the player captures and pilots the same Scorp ASV',()=>{
  const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:80,pilot:false},{id:'enemy',kind:'scorp-asv',x:0,z:0,pilot:true}];def.startMountedUnitId='own';def.base=undefined;def.rocks=[];def.minefields=[{id:'test',x:0,z:0,width:30,depth:30,triggerRadius:2,mines:[{id:'one',x:0,z:0}]}];
  const s=new Simulation('Easy',def),enemy=s.units[1];enemy.cooldown=999;

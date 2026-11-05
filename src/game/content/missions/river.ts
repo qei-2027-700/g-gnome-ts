@@ -1,7 +1,8 @@
-import type {River} from './types.ts';
+import type {River,Terrain} from './types.ts';
 import type {Vec} from '../../simulation/simulation.ts';
 
 export type RiverFrame=Vec&{tx:number;tz:number;distance:number};
+export const terrainRivers=(terrain:Terrain):readonly River[]=>[...(terrain.river?[terrain.river]:[]),...(terrain.rivers??[])];
 
 function points(river:River){return river.path?.length&&river.path.length>1?river.path:[{x:river.x,z:river.z-river.length/2},{x:river.x,z:river.z+river.length/2}];}
 
@@ -35,19 +36,22 @@ export function riverSamples(river:River,spacing=12){
  return Array.from({length:count+1},(_,i)=>riverFrameAtDistance(river,length*i/count));
 }
 
-export function riverStripBoxes(river:River,raised:boolean,spacing=river.width/3,bridgeClearance=0){
- const length=riverLength(river),bridge=riverFrameAtZ(river,river.bridgeZ),halfGap=raised?0:river.bridgeWidth/2+bridgeClearance;
+export function riverStripBoxes(river:River,raised:boolean,bridgeClearance=0){
+ const path=points(river),length=riverLength(river),bridge=riverFrameAtZ(river,river.bridgeZ),halfGap=raised?0:river.bridgeWidth/2+bridgeClearance;
  const ranges=raised?[[0,length]]:[[0,Math.max(0,bridge.distance-halfGap)],[Math.min(length,bridge.distance+halfGap),length]];
  const boxes:{x:number;z:number;width:number;depth:number;yaw:number}[]=[];
  for(const [distance,direction] of [[0,-1],[length,1]] as const){const end=riverFrameAtDistance(river,distance);boxes.push({x:end.x+end.tx*direction*river.width/2,z:end.z+end.tz*direction*river.width/2,width:river.width,depth:river.width,yaw:Math.atan2(end.tx,end.tz)});}
- for(const [start,end] of ranges){
-  if(end<=start)continue;
-  const count=Math.max(1,Math.ceil((end-start)/spacing));
-  for(let i=0;i<count;i++){
-   const from=riverFrameAtDistance(river,start+(end-start)*i/count),to=riverFrameAtDistance(river,start+(end-start)*(i+1)/count);
-   const dx=to.x-from.x,dz=to.z-from.z,segmentLength=Math.hypot(dx,dz),frame=riverFrameAtDistance(river,(from.distance+to.distance)/2);
-   boxes.push({x:(from.x+to.x)/2,z:(from.z+to.z)/2,width:river.width,depth:segmentLength+1,yaw:Math.atan2(frame.tx,frame.tz)});
+ let along=0;
+ for(let i=1;i<path.length;i++){
+  const a=path[i-1]!,b=path[i]!,dx=b.x-a.x,dz=b.z-a.z,segmentLength=Math.hypot(dx,dz);
+  if(!segmentLength)continue;
+  for(const [start,end] of ranges){
+   const first=Math.max(along,start),last=Math.min(along+segmentLength,end);
+   if(last<=first)continue;
+   const mid=(first+last)/2-along;
+   boxes.push({x:a.x+dx*mid/segmentLength,z:a.z+dz*mid/segmentLength,width:river.width,depth:last-first+1,yaw:Math.atan2(dx,dz)});
   }
+  along+=segmentLength;
  }
  return boxes;
 }

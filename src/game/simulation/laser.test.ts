@@ -46,6 +46,31 @@ test('Union Sentry FIL-30 fires both lower cockpit mounts for player and AI; wea
   const [a,b]=shots.map(e=>e.from!);assert.ok(Math.abs(Math.hypot(a.x-b.x,a.z-b.z)-1.3)<1e-8);assert.ok(shots.every(e=>e.from!.y!<unit.spec.height*.5));
  }
 });
+test('Darken Sentry fires RUPP laser and CHUM missile pairs from opposite sides',()=>{
+ assert.equal(weaponMountCount('darken-sentry','RUPP'),2);assert.equal(weaponMountCount('darken-sentry','CHUM'),2);
+ const laser=mounted('darken-sentry'),unit=laser.mounted!;laser.fire(2);
+ const beams=laser.events.filter(e=>e.type==='shot'&&e.weapon==='RUPP');assert.equal(beams.length,2);assert.ok(beams[0].from!.x*beams[1].from!.x<0);
+ const missile=mounted('darken-sentry'),shooter=missile.mounted!,before=shooter.ammunition.CHUM!;missile.fire(1);
+ const rockets=missile.events.filter(e=>e.type==='shot'&&e.weapon==='CHUM');assert.equal(rockets.length,2);assert.ok(rockets[0].from!.x*rockets[1].from!.x<0);assert.equal(shooter.ammunition.CHUM,before-2);
+ const enemy=new Simulation(),attacker=makeUnit('darken','darken-sentry',0,60,true);enemy.units=[attacker];attacker.iff='5142';attacker.yaw=attacker.aim=Math.PI;attacker.attackCycle=1;attacker.alert=true;enemy.tick(.02,idle);
+ assert.equal(enemy.events.filter(e=>e.type==='shot'&&e.weapon==='CHUM').length,2);
+});
+test('Darken Tactical Defense fires paired HOMP11 lasers and DASY guns from its shoulder pods',()=>{
+ const laser=mounted('darken-tactical'),unit=laser.mounted!;
+ assert.deepEqual(unit.spec.weapons,['HOMP11','DASY']);assert.equal(unit.spec.speed,67.5);assert.equal(unit.spec.shield,50);assert.equal(unit.spec.energy,1500);assert.equal(unit.spec.height,7.9);
+ assert.equal(weaponMountCount(unit.kind,'HOMP11'),2);assert.equal(weaponMountCount(unit.kind,'DASY'),2);
+ laser.fire(1);const beams=laser.events.filter(e=>e.type==='shot'&&e.weapon==='HOMP11');assert.equal(beams.length,2);assert.ok(beams[0].from!.x*beams[1].from!.x<0);assert.equal(unit.energy,1497);
+ assert.equal(LASERS.HOMP11.speed,72);assert.equal(laser.missiles.filter(p=>p.weapon==='HOMP11').length,2);assert.ok(laser.missiles.filter(p=>p.weapon==='HOMP11').every(p=>Math.abs(Math.hypot(p.vx,p.vy,p.vz)-72)<1e-8));
+ const gun=mounted('darken-tactical'),gunner=gun.mounted!;gun.fire(2);const bullets=gun.events.filter(e=>e.type==='shot'&&e.weapon==='DASY');assert.equal(bullets.length,2);assert.ok(bullets[0].from!.x*bullets[1].from!.x<0);assert.equal(gunner.ammunition.DASY,199);
+});
+test('Darken Tactical Defense repeats HOMP11 fire while held and stops on release',()=>{
+ const s=mounted('darken-tactical'),unit=s.mounted!,fire=()=>s.events.filter(e=>e.type==='shot'&&e.weapon==='HOMP11').length;
+ unit.laserCharge=0;s.throttle=.4;const charges:number[]=[],times:number[]=[];for(let i=0;i<75;i++){const before=fire(),charge=unit.laserCharge;s.tick(1/60,{...idle,fire1:true});if(fire()>before){charges.push(charge);times.push(s.time);}}
+ assert.equal(LASERS.HOMP11.interval,.25);assert.equal(charges[0],0);assert.ok(charges.length>=4&&charges.length<=6);assert.ok(charges.slice(1).every(charge=>charge<.9));assert.equal(fire(),charges.length*2);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.25-1e-8&&times[i]-times[i-1]<.3);
+ const count=fire();for(let i=0;i<90;i++)s.tick(1/60,idle);assert.equal(fire(),count);
+ s.tick(1/60,{...idle,fire1:true});assert.equal(fire(),count+2);
+});
 test('laser hits on dismounted players use laser damage rather than missile instant death',()=>{
  const s=new Simulation();s.units[0].x=100;s.units[0].z=-50;s.units[2].z=500;const enemy=s.units[1];enemy.x=0;enemy.z=100;enemy.yaw=Math.PI;enemy.aim=Math.PI;enemy.alert=true;enemy.attackCycle=1;
  s.tick(.02,idle);assert.equal(s.humanHealth,100);assert.ok(s.missiles.some(p=>p.weapon==='RAID'));s.iff='6707';step(s,100);assert.equal(s.humanHealth,100-LASERS.RAID.damage);assert.equal(s.status,'running');

@@ -292,6 +292,11 @@ for(const kind of ['merc-sentry','merc-tactical'] as const)test(`${kind} has no 
  enemy.damage(target,9999);assert.equal(enemy.events.filter(e=>e.type==='soldier-death').length,1);
 });
 
+for(const kind of ['darken-sentry','darken-tactical','darken-asv','darken-aip'] as const)test(`${kind} ejects its pilot on destruction`,()=>{
+ const s=new Simulation(),unit=makeUnit('darken-pilot',kind,0,60,true);s.units=[unit];unit.shield=0;s.damage(unit,9999,'cockpit');
+ assert.equal(unit.alive,false);assert.equal(s.soldiers.length,1);assert.equal(s.soldiers[0].alive,true);assert.ok(s.soldiers[0].flight);assert.equal(s.events.filter(e=>e.type==='pilot-eject').length,1);
+});
+
 
 async function eggerScenario(){
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');

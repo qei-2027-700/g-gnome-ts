@@ -99,6 +99,15 @@ test('only the four confirmed special chassis bypass the full-charge wait for he
  }
  for(const kind of ['merc-tactical','union-tactical','scorp-tactical','union-sentry','merc-sentry','scorp-sentry'])assert.equal(allowsLaserHoldFire(kind,'RAID'),false);
 });
+test('Darken TD HOMP11 fires rapidly with held 1 key or mouse before READY',()=>{
+ const s=new Simulation(),unit=makeUnit('darken-td','darken-tactical',0,0,false),settings=defaults();s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());unit.laserCharge=0;
+ const count=()=>s.events.filter(e=>e.type==='shot'&&e.weapon==='HOMP11').length;
+ const times:number[]=[];for(let i=0;i<75;i++){const before=count();s.tick(1/60,readInput(settings,new Set(['Digit1'])));if(count()>before)times.push(s.time);}
+ assert.ok(times.length>=4&&times.length<=6);assert.equal(count(),times.length*2);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.25-1e-8&&times[i]-times[i-1]<.3);
+ const before=count();for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set()));assert.equal(count(),before);
+ s.tick(1/60,readInput(settings,new Set(),true));assert.equal(count(),before+2);
+});
 
 test('ordinary held lasers wait for full moving recharge while the confirmed exception uses its own interval',async()=>{
  const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');
@@ -110,7 +119,7 @@ test('ordinary held lasers wait for full moving recharge while the confirmed exc
 
 
 test('HAWC horizontal look is shared across all chassis and preserves sensitivity, vertical tuning and release',()=>{
- for(const kind of ['union-sentry','union-tactical','merc-sentry','merc-tactical','merc-assault','scorp-sentry','scorp-tactical','merc-cruiser','merc-meson-tower'] as const){
+ for(const kind of ['union-sentry','union-tactical','merc-sentry','merc-tactical','merc-assault','scorp-sentry','scorp-tactical','merc-cruiser','darken-sentry','darken-tactical','merc-meson-tower'] as const){
   const s=new Simulation(),u=makeUnit('own',kind,0,0,false);s.units=[u];s.human={x:0,z:0};assert.ok(s.board());const settings=defaults();
   for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set(['ArrowRight','ArrowUp'])));
   assert.ok(Math.abs(u.aim-.75)<1e-8);assert.ok(Math.abs(s.pitch-(kind==='merc-assault'?.4125:.275))<1e-8);
@@ -129,7 +138,7 @@ test('HAWC mouse look carries past upper-body limits without slowing or moving f
  }
 });
 test('all mobile chassis share horizontal keyboard and mouse look speed while infantry remains unchanged',()=>{
- for(const kind of ['darken-sentry','union-asv','scorp-asv','union-aip','merc-aip'] as const){
+ for(const kind of ['darken-sentry','union-asv','scorp-asv','darken-asv','union-aip','merc-aip','darken-aip'] as const){
   const s=new Simulation();s.units=[makeUnit('own',kind,0,0,false)];s.human={x:0,z:0};assert.ok(s.board());const settings=defaults();
   for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set(['ArrowRight'])));
   assert.ok(Math.abs(s.aim-.75)<1e-8,`${kind} keyboard horizontal look`);const aim=s.aim;

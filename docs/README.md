@@ -54,6 +54,7 @@
 - [1-1試作版の起動と実装範囲](technical/playable-1-1.md)：起動・操作、仮設定、実装箇所、検証結果
 
 - [実装計画](technical/implementation-plan.md)：採用技術、ゲーム基盤、段階と完了条件
+- [判断モデルの利用検討](technical/decision-models-for-ai.md)：Clef・Jevによる敵味方AIの比較実験、実行方式、採用基準
 - [Windows・macOSの操作](technical/keybindings.md)：原作キーと共通プリセット案、キー変更、全速出力の女性音声
 - [ビルド・配布・プレイ環境](technical/build-and-distribution.md)：開発サーバー、配布用ビルド、静的配信、PCブラウザ
 

@@ -4,9 +4,105 @@ import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
-import {riverFrameAtZ} from '../content/missions/river.ts';
+import {riverFrameAtZ,riverDistance} from '../content/missions/river.ts';
+import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
+import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 const advance=(s:Simulation,n=60)=>{for(let i=0;i<n;i++)s.tick(1/60,idle);};
+function driveRoute(s:Simulation,points:readonly (readonly [number,number])[]){for(const [x,z] of points){for(let i=0;i<1500&&s.status==='running'&&Math.hypot(s.player.x-x,s.player.z-z)>8;i++){const unit=s.mounted;assert.ok(unit,'route vehicle remains occupied');unit.yaw=Math.atan2(x-unit.x,z-unit.z);unit.aim=unit.yaw;s.tick(.05,{...idle,forward:true});}assert.ok(s.status!=='running'||Math.hypot(s.player.x-x,s.player.z-z)<=8,`route blocked before ${x}, ${z}`);}}
+test('1-5 starts in a Darken TD, requires generator destruction and bridge lowering, then waits for Kylie',()=>{
+ const s=new Simulation('Easy',MISSION_1_5),player=s.mounted!,control=s.facilities.find(f=>f.id==='bridge-control')!,generator=s.facilities.find(f=>f.id==='shield-generator')!;
+ assert.equal(player.kind,'darken-tactical');assert.equal(s.iff,'0024');assert.ok(s.raisedBridges.has('chambers-bridge'));
+ const river=s.mission.terrain.river!,bridge=riverFrameAtZ(river,river.bridgeZ);
+ assert.ok(player.x>control.x&&player.yaw<0,'start east of the northwest control, facing west');
+ assert.ok(Math.abs(river.path![0]!.x-river.path!.at(-1)!.x)>800,'river runs east to west');
+ assert.ok(control.x<bridge.x&&control.z<bridge.z,'control lies west and south of the bridge on the approach bank');
+ assert.ok(riverDistance(river,control.x,control.z)>river.width/2,'control is outside the river');
+ assert.equal(s.mission.terrain.skyPalette,'amber');
+ assert.equal(s.mission.bgm?.start.trackId,'bgm-mission-1-1-sentry-combat');
+ assert.equal(s.units.find(u=>u.id==='rocket-tower')?.spec.missileHomingScale?.UNKPA,0);
+ s.eject('ground');s.human={x:control.x-control.width/2-1,z:control.z};assert.equal(s.board(),false);
+ s.damageFacility(generator,generator.health,{x:generator.x,y:1,z:generator.z});assert.ok(s.board());assert.equal(s.insideFacility?.id,'bridge-control');
+ assert.ok(s.operateBridge());assert.equal(s.objectiveStates.find(o=>o.id==='lower-bridge')?.done,true);
+ s.eject('ground');s.human={x:player.x,z:player.z+3};assert.ok(s.board());
+ for(const enemy of s.units.filter(u=>u!==player)){enemy.alive=false;enemy.pilot=false;}
+ assert.ok(s.changeIff('1234'));
+ driveRoute(s,[[180,-190],[0,-185],[-175,-160],[-325,-100],[-395,50],[-300,200],[-300,300],[-300,430],[-350,490]]);
+ assert.equal(s.status,'running');assert.equal(s.objectiveStates.find(o=>o.id==='contact')?.done,true);
+ assert.equal(s.objectiveStates.find(o=>o.id==='iff')?.done,false);
+ assert.ok(s.changeIff('0024'));s.tick(.05,idle);
+ assert.equal(s.status,'running');assert.ok(s.events.some(e=>e.type==='mission-radio'&&e.radioId==='kylie-contact'));
+ advance(s,120);assert.equal(s.status,'running');advance(s,70);assert.equal(s.status,'won');
+});
+test('1-5 player death fails the mission before rendezvous',()=>{
+ const s=new Simulation('Easy',MISSION_1_5);s.damage(null,s.humanHealth);assert.equal(s.status,'lost');
+});
+test('1-5 rocket tower missiles keep their original course when the player moves',()=>{
+ const s=new Simulation('Easy',MISSION_1_5),tower=s.units.find(u=>u.id==='rocket-tower')!,player=s.mounted!;
+ for(const unit of s.units)if(unit!==player)unit.pilot=false;
+ const missile=s.fireMissile(tower,'UNKPA',1,{x:player.x,y:player.spec.height*.6,z:player.z},player);
+ assert.equal(missile.homingScale,0);const velocity={vx:missile.vx,vy:missile.vy,vz:missile.vz};
+ player.x+=80;s.tick(.05,idle);
+ assert.ok(Math.abs(missile.vx-velocity.vx)<1e-9&&Math.abs(missile.vy-velocity.vy)<1e-9&&Math.abs(missile.vz-velocity.vz)<1e-9);
+});
+test('4-3 starts with Kylie and Thane mounted and the Darken Sentry waits about five seconds',()=>{
+ const s=new Simulation('Easy',MISSION_4_3),attacker=s.units.find(u=>u.id==='darken-opening-sentry')!;
+ assert.equal(s.mounted?.kind,'union-tactical');assert.equal(s.units.find(u=>u.id==='kylie-asv')?.personId,'kylie');assert.equal(s.units.find(u=>u.id==='thane-sentry')?.personId,'thane');
+ assert.equal(attacker.kind,'darken-sentry');assert.equal(s.mission.assaults?.find(a=>a.unitId===attacker.id)?.targetId,'union-player');
+ advance(s,240);assert.equal(attacker.alert,false);assert.equal(attacker.speed,0);
+ advance(s,70);assert.equal(attacker.alert,true);
+});
+test('4-3 Kylie can leave her Union ASV for the player to board',()=>{
+ const s=new Simulation('Easy',MISSION_4_3),asv=s.units.find(u=>u.id==='kylie-asv')!;
+ assert.equal(asv.pilot,true);assert.deepEqual(s.sendAllyOrder('kylie','disembark').accepted,['kylie-asv']);assert.equal(asv.pilot,false);
+ s.eject('ground');s.human={x:asv.x,z:asv.z+3};assert.ok(s.board());assert.equal(s.mounted,asv);assert.equal(s.mounted?.kind,'union-asv');
+});
+test('4-3 can cross WP1 and WP2, take each supply once, and finish at WP3',()=>{
+ const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'||u.id==='union-support'),assaults:[]};
+ const s=new Simulation('Easy',def),unit=s.mounted!;
+ assert.equal(unit.kind,'union-tactical');assert.equal(unit.iff,'2620');
+ unit.ammunition.TCROCK=1;unit.shield=10;
+ driveRoute(s,[[200,650],[255,470],[165,420],[95,410],[95,305],[0,305],[-230,320],[-290,320]]);
+ assert.equal(unit.ammunition.TCROCK,10);assert.equal(unit.shield,unit.spec.shield*2);
+ driveRoute(s,[[-290,0],[-290,-175],[265,-175]]);
+ assert.equal(s.status,'won');assert.deepEqual([...s.reachedWaypoints],[1,2,3]);assert.deepEqual([...s.usedSupplies],[1,2]);
+ assert.equal(s.events.filter(e=>e.type==='supply').length,2);
+ const direct=new Simulation('Easy',def);direct.mounted!.x=265;direct.mounted!.z=-175;direct.tick(.01,idle);assert.equal(direct.status,'won');assert.deepEqual([...direct.usedSupplies],[]);
+});
+test('4-3 route remains traversable after the north bridge is lowered',()=>{
+ const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>['union-player','union-support','kylie-asv','thane-sentry'].includes(u.id)),assaults:[],minefields:[]};
+ const s=new Simulation('Easy',def);assert.equal(s.callAirSupport(),false);
+ s.raisedBridges.delete('war-north-bridge');
+ driveRoute(s,[[200,650],[255,470],[165,420],[95,410],[95,305],[0,305],[-230,320],[-290,320],[-290,0],[-290,-175],[265,-175]]);
+ assert.equal(s.status,'won');assert.deepEqual([...s.reachedWaypoints],[1,2,3]);
+});
+test('4-3 shield doubler expires and air support is called only once',()=>{
+ const s=new Simulation('Easy',MISSION_4_3),unit=s.mounted!;
+ unit.x=-290;unit.z=320;s.tick(.01,idle);assert.equal(unit.shield,72);
+ unit.z=860;for(let i=0;i<1220&&s.status==='running';i++)s.tick(.05,idle);assert.ok(unit.shield<=unit.spec.shield);
+ assert.equal(s.callAirSupport(),true);assert.equal(s.callAirSupport(),false);const support=s.units.find(u=>u.id==='union-support')!;
+ assert.equal(s.airSupportUsed,1);assert.equal(support.pilot,true);assert.equal(support.iff,s.iff);
+ let shots=0;for(let i=0;i<500&&s.status==='running';i++){s.tick(.05,idle);shots+=s.events.filter(e=>e.type==='shot'&&e.unit===support).length;s.events=[];}
+ assert.ok(shots>0);
+});
+test('4-3 north bridge starts raised, lowers at its control, and the adjacent lava blocks vehicles',()=>{
+ const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
+ const cross=new Simulation('Easy',def);cross.mounted!.x=-50;cross.mounted!.z=700;cross.mounted!.yaw=Math.PI;
+ const blocked=new Simulation('Easy',def);blocked.mounted!.x=0;blocked.mounted!.z=700;blocked.mounted!.yaw=Math.PI;
+ assert.ok(cross.raisedBridges.has('war-north-bridge'));
+ cross.eject('ground');const control=cross.facilities.find(f=>f.id==='north-bridge-control')!;cross.human={x:control.x-control.width/2-1,z:control.z};assert.ok(cross.board());assert.equal(cross.insideFacility,control);assert.ok(cross.operateBridge());assert.ok(!cross.raisedBridges.has('war-north-bridge'));cross.eject('ground');cross.human={x:-50,z:700};assert.ok(cross.board());
+ for(let i=0;i<130;i++){cross.tick(.05,{...idle,forward:true});blocked.tick(.05,{...idle,forward:true});}
+ assert.ok(cross.player.z<620);assert.ok(blocked.player.z>650);assert.equal(def.terrain.rivers?.length,4);assert.ok(def.terrain.rivers?.every(r=>r.surface==='lava'));
+});
+test('4-3 Merc and Darken shoot each other and the player can change vehicles',()=>{
+ const s=new Simulation('Easy',MISSION_4_3),merc=s.units.find(u=>u.id==='merc-tactical')!,darken=s.units.find(u=>u.id==='darken-aip')!;
+ s.units.find(u=>u.id==='darken-opening-sentry')!.alive=false;
+ let mercShots=0,darkenShots=0,hits=0;for(let i=0;i<400&&s.status==='running';i++){s.tick(.05,idle);mercShots+=s.events.filter(e=>e.type==='shot'&&e.unit===merc).length;darkenShots+=s.events.filter(e=>e.type==='shot'&&e.unit===darken).length;hits+=s.events.filter(e=>e.type==='hit'&&!!e.unit&&(e.unit.spec.faction==='merc'||e.unit.spec.faction==='darken')).length;s.events=[];}
+ assert.ok(mercShots>0&&darkenShots>0&&hits>0);
+ const derelict=s.units.find(u=>u.id==='depot-unoccupied')!;s.mounted!.x=292;s.mounted!.z=487;s.eject('ground');s.humanYaw=Math.atan2(derelict.x-s.human.x,derelict.z-s.human.z);
+ for(let i=0;i<240&&!s.mounted&&s.status==='running';i++)s.tick(1/60,{...idle,forward:true});
+ assert.equal(s.mounted,derelict);assert.equal(s.mounted.iff,s.iff);
+});
 function mission(id='test'):MissionDefinition{return {...structuredClone(DEFAULT_MISSION),id,player:{x:40,z:0},initialIff:'6707',units:[{id:'own',kind:'merc-sentry',x:40,z:0,pilot:false},{id:'target',kind:'union-sentry',x:40,z:100,pilot:true}],assignedUnitId:'own',playerFaction:'merc',rocks:[],waypoints:[{id:2,x:40,z:120,radius:3}],objectives:[{id:'reach',type:'reach',waypointId:2,label:{ja:'到達',en:'Reach'}}]};}
 test('different missions reuse the same vehicle and weapon defaults; capacities are weapon-specific',()=>{
  const a=new Simulation('Easy',mission('a')),b=new Simulation('Hard',mission('b'));

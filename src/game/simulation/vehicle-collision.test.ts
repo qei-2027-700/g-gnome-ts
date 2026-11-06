@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
 import {vehicleRadius} from './parts.ts';
 import {riverDistance,riverFrameAtZ} from '../content/missions/river.ts';
+import {peakHeight,peakSegmentContact} from './battlefield.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function setup(){const s=new Simulation();s.units=[makeUnit('own','union-sentry',0,0,false),makeUnit('other','merc-sentry',0,20)];s.human={x:0,z:0};s.board();s.iff='6707';return s;}
 const riverSide=(river:NonNullable<Simulation['mission']['terrain']['river']>,z:number,side:number,offset:number)=>{
@@ -81,13 +82,21 @@ test('shallow wall contact slides along its face; direct frontal wall contact st
  u.x=0;u.z=10;u.speed=15;s.move(u,0,10);assert.ok(u.z<14.001);assert.equal(u.speed,0);assert.equal(s.events.filter(e=>e.type==='vehicle-contact').length,1);
 });
 
-for(const obstacle of ['rock','building','cliff'] as const)test(`frontal ${obstacle} contact emits the common thump once while pushing`,()=>{
+for(const obstacle of ['rock','building','cliff','peak'] as const)test(`frontal ${obstacle} contact emits the common thump once while pushing`,()=>{
  const s=setup(),own=s.mounted!;s.units=[own];s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];
  if(obstacle==='rock')s.mission.rocks=[{x:0,z:20,r:5}];
  else if(obstacle==='building')s.mission.base={name:'wall',x:0,z:20,width:30,depth:8,buildings:[{x:0,z:20,width:30,depth:8,height:15}]};
- else s.mission.terrain.cliffs=[{id:'cliff',x:0,z:20,width:30,depth:8,height:30}];
+ else if(obstacle==='cliff')s.mission.terrain.cliffs=[{id:'cliff',x:0,z:20,width:30,depth:8,height:30}];
+ else s.mission.terrain.peaks=[{x:0,z:35,width:40,depth:40,height:50}];
  s.speed=15;own.speed=15;s.throttle=1;for(let i=0;i<150;i++)s.tick(.02,idle);
  const contacts=s.events.filter(e=>e.type==='vehicle-contact');assert.equal(contacts.length,1);assert.equal(contacts[0].unit,own);assert.equal(contacts[0].otherUnitId,undefined);assert.equal(s.speed,0);assert.ok(own.z<20);
+});
+test('mountain peaks stop ground infantry and fast AI vehicles but allow clear side routes and shots over the summit',()=>{
+ const peak={x:0,z:50,width:60,depth:60,height:80},s=new Simulation();s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[peak];s.units=[];s.human={x:0,z:0};
+ s.move(s.human,0,100);assert.ok(s.human.z<25);s.move(s.human,Math.PI/2,60);assert.ok(s.human.x>50);s.move(s.human,0,100);assert.ok(s.human.z>90);
+ const ai=makeUnit('mountain-ai','merc-sentry',0,0,true);s.units=[ai];s.move(ai,0,100);assert.ok(ai.z<25);
+ assert.ok(peakHeight(peak,0,50)>70);assert.notEqual(peakSegmentContact({x:0,y:4,z:0},{x:0,y:4,z:100},peak),null);
+ assert.equal(peakSegmentContact({x:0,y:90,z:0},{x:0,y:90,z:100},peak),null);
 });
 
 test('same-IFF infantry cannot walk through occupied or empty ASVs, even with a large swept step',()=>{
@@ -129,12 +138,12 @@ test('swept foot contact clips a fast step at a wall and can reverse away afterw
 
 test('river water blocks people and ground chassis in both directions, with only AIPs able to cross without a bridge',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
- for(const kind of ['foot','union-sentry','merc-assault','merc-cruiser','union-asv','union-aip','merc-aip'] as const)for(const sign of [-1,1]){
+ for(const kind of ['foot','union-sentry','merc-assault','merc-cruiser','union-asv','union-aip','merc-aip','darken-aip'] as const)for(const sign of [-1,1]){
   const mission=structuredClone(MISSION_4_2);mission.terrain.river!.path=undefined;mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
   const s=new Simulation('Easy',mission),r=mission.terrain.river!,start=r.x-sign*(r.width/2+20),z=r.bridgeZ+100;s.human={x:start,z};
   if(kind!=='foot'){s.units=[makeUnit('river-own',kind,start,z,false)];assert.ok(s.board());}
   const actor=s.mounted??s.human;s.move(actor,sign*Math.PI/2,r.width+40);
-  if(kind==='union-aip'||kind==='merc-aip')assert.ok(sign*(actor.x-r.x)>r.width/2+19);
+  if(kind.endsWith('-aip'))assert.ok(sign*(actor.x-r.x)>r.width/2+19);
   else{
    assert.ok(sign*(actor.x-r.x)<-r.width/2,`${kind}: crossed the water`);const x=actor.x;s.move(actor,0,10);assert.ok(actor.z>z+9);assert.ok(Math.abs(actor.x-x)<1e-6);s.move(actor,-sign*Math.PI/2,8);assert.ok(sign*(x-actor.x)>7.9);
   }
@@ -157,11 +166,11 @@ test('4-2 river follows the mapped bends and confines the open bridge crossing t
 
 test('lowered bridges admit people and HAWCs, while raised bridges block ground crossing and preserve the AIP exception',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
- for(const raised of [false,true])for(const kind of ['foot','union-sentry','merc-assault','union-aip','merc-aip'] as const)for(const sign of [-1,1]){
+ for(const raised of [false,true])for(const kind of ['foot','union-sentry','merc-assault','union-aip','merc-aip','darken-aip'] as const)for(const sign of [-1,1]){
   const mission=structuredClone(MISSION_4_2);mission.terrain.river!.path=undefined;mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
   const s=new Simulation('Easy',mission),r=mission.terrain.river!,start=r.x-sign*(r.width/2+20);s.human={x:start,z:r.bridgeZ};if(raised)s.raisedBridges.add(r.bridgeId);
   if(kind!=='foot'){s.units=[makeUnit('river-own',kind,start,r.bridgeZ,false)];assert.ok(s.board());}const actor=s.mounted??s.human;s.move(actor,sign*Math.PI/2,r.width+40);
-  if(!raised||kind==='union-aip'||kind==='merc-aip')assert.ok(sign*(actor.x-r.x)>r.width/2+19,`${kind}/${raised}: bridge passage blocked`);
+  if(!raised||kind.endsWith('-aip'))assert.ok(sign*(actor.x-r.x)>r.width/2+19,`${kind}/${raised}: bridge passage blocked`);
   else assert.ok(sign*(actor.x-r.x)<-r.width/2,`${kind}: raised bridge still passed`);
  }
 });
@@ -193,4 +202,44 @@ test('an ejected person cannot bypass water from the air, and an allied HAWC rou
  mission.units=[{id:'river-ally',kind:'union-sentry',x:bridgeStart.point.x,z:bridgeStart.point.z,pilot:true,personId:'kylie',iff:mission.initialIff}];mission.companions=[{personId:'kylie',unitId:'river-ally',key:'F2',name:{ja:'キリー',en:'Kylie'}}];
  const follow=new Simulation('Easy',mission);follow.human={...bridgeGoal.point};assert.deepEqual(follow.sendAllyOrder('kylie','follow').accepted,['river-ally']);let usedBridge=false;for(let i=0;i<1200;i++){follow.tick(.05,idle);const ally=follow.units[0]!,along=(ally.x-bridgeStart.frame.x)*bridgeStart.frame.tx+(ally.z-bridgeStart.frame.z)*bridgeStart.frame.tz;if(riverDistance(r,ally.x,ally.z)<r.width/2){usedBridge=true;assert.ok(Math.abs(along)<r.bridgeWidth/2+4);}}
  assert.ok(usedBridge);assert.ok((follow.units[0]!.x-bridgeStart.frame.x)*bridgeStart.nx+(follow.units[0]!.z-bridgeStart.frame.z)*bridgeStart.nz>r.width/2);
+});
+test('4-3 Union ASV follows through the east bridge instead of stopping against magma',async()=>{
+ const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts'),mission=structuredClone(MISSION_4_3);
+ mission.units=mission.units.filter(u=>u.id==='union-player'||u.id==='kylie-asv');mission.companions=mission.companions!.filter(c=>c.personId==='kylie');mission.assaults=[];mission.garrison=[];mission.minefields=[];mission.objectives=[];mission.completionEnabled=false;
+ const s=new Simulation('Easy',mission),ally=s.units.find(u=>u.id==='kylie-asv')!;s.mounted!.x=255;s.mounted!.z=470;ally.x=70;ally.z=440;
+ assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie-asv']);
+ const river=mission.terrain.rivers!.find(r=>r.bridgeId==='war-east-bridge')!,bridge=riverFrameAtZ(river,river.bridgeZ);let crossed=false;
+ for(let i=0;i<900;i++){s.tick(.05,idle);if(riverDistance(river,ally.x,ally.z)<river.width/2){const along=(ally.x-bridge.x)*bridge.tx+(ally.z-bridge.z)*bridge.tz;if(Math.abs(along)<river.bridgeWidth/2+5)crossed=true;}}
+ assert.ok(crossed);assert.ok(ally.x>210);assert.ok(distance(ally,s.player)<35);
+});
+test('hostile HAWC crosses the lowered 4-3 bridge to pursue its target',async()=>{
+ const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts'),mission=structuredClone(MISSION_4_3);
+ mission.units=[{id:'own',kind:'union-tactical',x:-100,z:480,pilot:true},{id:'enemy',kind:'darken-sentry',x:-130,z:780,pilot:true}];mission.startMountedUnitId='own';mission.assignedUnitId='own';mission.player={x:-100,z:480};mission.companions=[];mission.garrison=[];mission.assaults=[{unitId:'enemy',targetId:'own',startAt:0}];mission.base=undefined;mission.minefields=[];mission.rocks=[];mission.terrain.cliffs=[];mission.terrain.peaks=[];mission.objectives=[];mission.completionEnabled=false;
+ const s=new Simulation('Easy',mission),enemy=s.units[1]!;s.raisedBridges.delete('war-north-bridge');enemy.cooldown=9999;
+ const river=mission.terrain.rivers!.find(r=>r.bridgeId==='war-north-bridge')!,bridge=riverFrameAtZ(river,river.bridgeZ);let crossed=false;
+ for(let i=0;i<320;i++){s.tick(.05,idle);if(riverDistance(river,enemy.x,enemy.z)<river.width/2){const along=(enemy.x-bridge.x)*bridge.tx+(enemy.z-bridge.z)*bridge.tz;if(Math.abs(along)<river.bridgeWidth/2+5)crossed=true;}}
+ assert.ok(crossed);assert.ok(enemy.z<620,`${enemy.x}, ${enemy.z}`);
+});
+test('hostile HAWC routes around a building instead of driving into its wall',async()=>{
+ const {DEFAULT_MISSION}=await import('../content/missions/index.ts'),mission=structuredClone(DEFAULT_MISSION);
+ mission.units=[{id:'own',kind:'union-sentry',x:0,z:200,pilot:true},{id:'enemy',kind:'darken-sentry',x:0,z:0,pilot:true}];mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.player={x:0,z:200};mission.playerFaction='union';mission.initialIff='2620';mission.factionCodes={union:'2620',darken:'5142'};mission.assaults=[{unitId:'enemy',targetId:'own',startAt:0}];mission.base={name:'wall',x:0,z:100,width:100,depth:100,buildings:[{id:'wall',kind:'command',x:0,z:100,width:70,depth:35,height:15}]};mission.terrain={...mission.terrain,river:undefined,rivers:[],cliffs:[],halfWidth:300,minZ:-100,maxZ:300};mission.rocks=[];mission.objectives=[];mission.completionEnabled=false;
+ const s=new Simulation('Easy',mission),enemy=s.units[1]!;enemy.cooldown=9999;let lateral=0;
+ for(let i=0;i<500;i++){s.tick(.05,idle);lateral=Math.max(lateral,Math.abs(enemy.x));}
+ assert.ok(lateral>38);assert.ok(enemy.z>160,`${enemy.x}, ${enemy.z}`);
+});
+test('hostile HAWC routes around a mountain without entering its slopes',async()=>{
+ const {DEFAULT_MISSION}=await import('../content/missions/index.ts'),mission=structuredClone(DEFAULT_MISSION);
+ mission.units=[{id:'own',kind:'union-sentry',x:0,z:200,pilot:true},{id:'enemy',kind:'darken-sentry',x:0,z:0,pilot:true}];mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.player={x:0,z:200};mission.playerFaction='union';mission.initialIff='2620';mission.factionCodes={union:'2620',darken:'5142'};mission.assaults=[{unitId:'enemy',targetId:'own',startAt:0}];mission.base=undefined;mission.terrain={...mission.terrain,river:undefined,rivers:[],cliffs:[],peaks:[{x:0,z:100,width:80,depth:80,height:80}],halfWidth:300,minZ:-100,maxZ:300};mission.rocks=[];mission.objectives=[];mission.completionEnabled=false;
+ const s=new Simulation('Easy',mission),enemy=s.units[1]!,peak=mission.terrain.peaks![0];enemy.cooldown=9999;let lateral=0;
+ for(let i=0;i<500;i++){s.tick(.05,idle);lateral=Math.max(lateral,Math.abs(enemy.x));assert.ok(Math.hypot((enemy.x-peak.x)/(peak.width/2+3),(enemy.z-peak.z)/(peak.depth/2+3))>=1-1e-6);}
+ assert.ok(lateral>40);assert.ok(enemy.z>160,`${enemy.x}, ${enemy.z}`);
+});
+test('hostile HAWC waits at a raised bridge and crosses after it is lowered',async()=>{
+ const {DEFAULT_MISSION}=await import('../content/missions/index.ts'),mission=structuredClone(DEFAULT_MISSION);
+ mission.units=[{id:'own',kind:'union-sentry',x:70,z:0,pilot:true},{id:'enemy',kind:'darken-sentry',x:-70,z:0,pilot:true}];mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.player={x:70,z:0};mission.playerFaction='union';mission.initialIff='2620';mission.factionCodes={union:'2620',darken:'5142'};mission.assaults=[{unitId:'enemy',targetId:'own',startAt:0}];mission.base=undefined;mission.terrain={...mission.terrain,river:{bridgeId:'test',x:0,z:0,width:30,length:300,bridgeZ:0,bridgeWidth:32},rivers:[],cliffs:[],halfWidth:120,minZ:-140,maxZ:140};mission.rocks=[];mission.objectives=[];mission.completionEnabled=false;
+ const s=new Simulation('Easy',mission),enemy=s.units[1]!;enemy.cooldown=9999;s.raisedBridges.add('test');
+ for(let i=0;i<100;i++)s.tick(.05,idle);assert.ok(enemy.x<-30);
+ s.raisedBridges.delete('test');let withinDeck=false;
+ for(let i=0;i<500;i++){s.tick(.05,idle);if(Math.abs(enemy.x)<15){withinDeck=true;assert.ok(Math.abs(enemy.z)<20);}}
+ assert.ok(withinDeck);assert.ok(enemy.x>25,`${enemy.x}, ${enemy.z}`);
 });

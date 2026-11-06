@@ -285,6 +285,14 @@ test('1-1 start music waits for launch, starts immediately once, resumes and res
   audio.beginMissionMusic(MISSION);assert.equal(tracks[0].paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,0);audio.resetMissionMusic();assert.equal(tracks[1].paused,true);assert.equal(audio.music,null);
  });
 });
+test('1-5 plays the assigned combat BGM at launch and stops it when the mission ends',async()=>{
+ const {MISSION_1_5}=await import('../content/missions/mission-1-5.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_1_5);audio.updateMissionMusic(0,false);await Promise.resolve();
+  assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sentry-combat.mp3');assert.equal(tracks[0].loop,true);
+  audio.resetMissionMusic();assert.equal(tracks[0].paused,true);assert.equal(audio.music,null);
+ });
+});
 
 test('1-1 switches to combat music once when a Merc Sentry HAWC detects the player',async()=>{
  const {MISSION}=await import('../content/mission-1-1.ts');

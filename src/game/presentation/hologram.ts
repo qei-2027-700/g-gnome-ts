@@ -24,6 +24,22 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  leftLeg:'M18 18l8-7h22l9 10v18H20z M23 24h29 M30 39h14l3 33-5 17v11H28V82l5-17z M28 83h16 M27 92h17 M22 100h28v6H22z',
  rightLeg:'M103 21l9-10h22l8 7-2 21h-37z M108 24h29 M116 39h14l-3 26 5 17v18h-14V89l-5-17z M116 83h16 M116 92h17 M110 100h28v6h-28z'
  });
+ if(kind==='darken-sentry')Object.assign(paths,{
+  hull:'M69 44h22l5 20-8 9H72l-8-9z M75 72h10v8H75z',
+  cockpit:'M73 23h14l4 24H69z M77 9h6v17h-6z',
+  leftWeapon:'M20 31h43v17H20z M25 35h32v9H25z',
+  rightWeapon:'M97 31h43v17H97z M103 35h32v9h-32z',
+  leftLeg:'M67 70h10l-6 15v13H55V86z M55 98h19v6H55z',
+  rightLeg:'M83 70h10l12 16v12H89V85z M86 98h19v6H86z'
+ });
+ if(kind==='darken-tactical')Object.assign(paths,{
+  hull:'M67 40h26l5 27H62z M72 66h16v9H72z',
+  cockpit:'M67 15h26l-3 26H70z M72 9h16v7H72z',
+  leftWeapon:'M16 21h37v27H16z M19 25h31v4H19z M19 33h31v4H19z M19 41h31v4H19z',
+  rightWeapon:'M107 21h37v27h-37z M110 25h31v4h-31z M110 33h31v4h-31z M110 41h31v4h-31z',
+  leftLeg:'M56 65h16l-7 18v17H39V86l13-7z M38 99h30v7H38z',
+  rightLeg:'M88 65h16l8 14 9 7v14H95V83z M92 99h30v7H92z'
+ });
  if(kind.endsWith('-asv'))Object.assign(paths,{
  hull:'M42 42h76l9 29-10 13H43L33 71z M48 49h64v22H48z',
  cockpit:'M59 25h42l8 18H51z M65 30h30v10H65z',

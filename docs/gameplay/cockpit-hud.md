@@ -145,6 +145,12 @@ Eの最寄り敵選択、Tabの対象切り替えも遮蔽物を理由には拒�
 
 [ユーザー指定の参照画像](../reference/vehicles/union-tactical/1-3-darken軍-sentry-hawk.png)をもとに、Union Tactical専用の枠を追加した。機体種別で切り替え、既存のSentry・Merc Tactical・ASVとは分ける。左右上部に武器1・2と3・4、中央上部にIFF、中央下部に実際のレーダー、左右下部に目標と自機のホログラムを配置する。弾数・充填・シールド・エネルギーは実データに追従する。内装の参照方法と画像上の固定表示を除く処理は[カメラとコックピット](cameras-and-cockpits.md#union-tactical-defense-hawcの専用内装2026-10-24)を参照する。
 
+## Darken Sentry HAWCの機内
+
+[機内画像](../reference/vehicles/darken/README.md)にある赤褐色の枠を、Darken Sentryへの搭乗中に表示する。画像の窓外、CHUM・RUPPの残弾と充填、IFF、レーダー、左右のホログラムは元の表示を隠し、現在のゲーム状態から描く。外部視点と降機中は機内枠を表示しない。資料画像のCHUM 50発は装備例であり、ゲーム内では機体の残弾を表示する。
+
+Darken Tactical Defense HAWCも同じ参照画像の金属フレームを使う。武器欄はHOMP11とDASY、左の自機ホログラムはTactical Defense HAWCの形状を表示する。画像に写るCHUM・RUPPは固定表示として残さず、実際の武器と残弾を表示する。
+
 
 黄色の損傷状態へ変化した際は、[「ダメージ」の音声案内](../audio/mission-controls-and-audio.md#黄色の損傷状態でのダメージ確定仕様2026-10-24)を行う。色と案内は共通の耐久境界を参照し、同じ状態で繰り返し発声しない。
 

@@ -40,7 +40,7 @@ export const MISSION_2_6:MissionDefinition={
   {label:{ja:'敵飛行機の攻撃前に正面の塔へ搭乗',en:'Board your tower before the aircraft attack'},detail:{ja:'主人公は徒歩開始。正面の塔まで進んで搭乗し、Eで敵選択、Tで追尾、1でGAUS30を発射する。敵を倒すたびに選択と追尾をやり直す。',en:'Start on foot. Walk into the tower ahead. E: select, T: track, 1: GAUS30. Select and track again after each kill.'}},
  ]},
  terrain:{biome:'snow',weather:'overcast',ridgeStyle:'rocky',halfWidth:650,minZ:-500,maxZ:900,ridgeHeight:130,ridgeVariation:65,seed:26,
-  peaks:[{x:-500,z:320,width:220,depth:400,height:190},{x:500,z:500,width:250,depth:500,height:210}]},
+  peaks:[{x:-500,z:320,width:220,depth:400,height:190},{x:500,z:500,width:180,depth:500,height:210}]},
  rocks:[{x:-330,z:400,r:16},{x:320,z:550,r:14}],
  tuning:{Easy:{interval:2.6},Medium:{interval:1.9},Hard:{interval:1.35}},
 };

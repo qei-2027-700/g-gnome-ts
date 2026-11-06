@@ -1,0 +1,46 @@
+.darken-sentry-shell{display:none}
+.darken-sentry-cockpit{background:#000}
+.darken-sentry-cockpit #cockpit,.darken-sentry-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--darken-sentry-width);height:var(--darken-sentry-height);transform:translate(-50%,-50%);container-type:size;color:#55ff2a;font-family:"Courier New",monospace}
+.darken-sentry-cockpit #world{left:calc((100% - var(--darken-sentry-width))/2);top:calc((100% - 38px - var(--darken-sentry-height))/2);width:var(--darken-sentry-width);height:var(--darken-sentry-height)}
+.darken-sentry-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden}
+.darken-sentry-cockpit .darken-sentry-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.darken-sentry-cockpit .cockpit-shell,.darken-sentry-cockpit .union-tactical-shell,.darken-sentry-cockpit .merc-reference,.darken-sentry-cockpit .merc-assault-reference,.darken-sentry-cockpit .meson-reference,.darken-sentry-cockpit .scorp-meson-reference,.darken-sentry-cockpit .asv-cockpit-shell,.darken-sentry-cockpit .scorp-cockpit-shell,.darken-sentry-cockpit .cockpit-reference-metal,.darken-sentry-cockpit .cockpit-well-underlay,.darken-sentry-cockpit .cockpit-grain,.darken-sentry-cockpit .overhead-display,.darken-sentry-cockpit #cockpit>.canopy,.darken-sentry-cockpit #cockpit>.pillar,.darken-sentry-cockpit #cockpit>.dashboard,.darken-sentry-cockpit #cockpit>.dash-rim{display:none}
+.darken-sentry-cockpit .weapon-panel{left:12%;top:8%;width:24%;height:10%;min-height:0;padding:0;border:0;background:none;box-shadow:none;font:1.55cqw/1.2 "Courier New",monospace;z-index:3}
+.darken-sentry-cockpit .weapon-panel>div{position:relative;display:flex;align-items:center;gap:3%;height:50%;white-space:nowrap}
+.darken-sentry-cockpit .weapon-panel i{padding:0 .18em;margin:0;border:1px solid #50f52d;font-size:1.2cqw;line-height:1.1}
+.darken-sentry-cockpit .weapon-panel b{width:28%;font-weight:400}
+.darken-sentry-cockpit .weapon-panel #ammo{margin-left:auto;float:none;font-size:1.35cqw;color:#70fb40}
+.darken-sentry-cockpit .weapon-panel .asv-weapon-symbol{display:none}
+.darken-sentry-cockpit .weapon-panel>div:first-child:after{content:'';position:absolute;left:51%;top:16%;width:30%;height:63%;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 115 28'%3E%3Cpath d='M8 9h76l24 5-24 5H8z M25 9l9-7 14 7M25 19l9 7 14-7' stroke='%234cff24' stroke-width='2' fill='%233fdc24'/%3E%3C/svg%3E")}
+.darken-sentry-cockpit .weapon-panel .charge-meter{position:absolute;left:52%;top:24%;width:33%;height:50%;margin:0;float:none;border:2px solid #58e836;border-radius:2cqw;background:#061804}
+.darken-sentry-cockpit #laserChargeFill{height:100%;background:linear-gradient(90deg,#fa3825 0 12%,#d5df22 14% 30%,#54f527 31%);transform-origin:left}
+.darken-sentry-cockpit .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 24%,#061804 25% 29%)}
+.darken-sentry-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
+.darken-sentry-cockpit .iff-display{left:47%;top:9%;width:6%;height:3.5%;padding:0;transform:none;border:0;background:#000;display:flex;align-items:center;justify-content:center;font-size:0;z-index:3}
+.darken-sentry-cockpit .iff-display strong{margin:0;font:1.6cqw "Courier New",monospace;color:#6dff3d}
+.darken-sentry-cockpit .instrument{position:absolute;border:0;border-radius:0;background:#000;box-shadow:none;overflow:hidden;z-index:2}
+.darken-sentry-cockpit .instrument .micro,.darken-sentry-cockpit .holo-grid{display:none}
+.darken-sentry-cockpit .target-instrument{left:3.5%;bottom:0;width:22%;height:35%}
+.darken-sentry-cockpit .self-instrument{right:3.5%;bottom:0;width:22%;height:35%}
+.darken-sentry-cockpit #targetHologram,.darken-sentry-cockpit #selfHologram{left:21%;top:7%;width:58%;height:83%;filter:drop-shadow(0 0 3px #4fdf2d)}
+.darken-sentry-cockpit #targetData{left:17%;right:17%;bottom:2%;font-size:.7cqw;line-height:1.2}
+.darken-sentry-cockpit #clearTarget{right:5%;top:4%;padding:0 3px;color:#76ff40;background:#010804}
+.darken-sentry-cockpit .vertical-meter,.darken-sentry-cockpit #targetShieldMeter{position:absolute;right:5%;bottom:0;height:76%;width:5%;border:1px solid #27ad38;background:#00110a;display:flex;align-items:end}
+.darken-sentry-cockpit #targetShieldMeter{left:auto;right:5%}
+.darken-sentry-cockpit .vertical-meter>div,.darken-sentry-cockpit #targetShieldFill{width:100%;background:#4fff1c}
+.darken-sentry-cockpit .asv-energy-meter{display:block;position:absolute;left:5%;bottom:24%;height:55%;width:5%;border:1px solid #2fd59e;background:#001109}
+.darken-sentry-cockpit #asvEnergyFill{position:absolute;bottom:0;width:100%;background:#72ff27}
+.darken-sentry-cockpit .radar-instrument{left:29%;bottom:11%;width:42%;height:32%;background:#000;clip-path:polygon(15% 0,85% 0,100% 43%,90% 100%,10% 100%,0 43%)}
+.darken-sentry-cockpit #radar{inset:0;width:100%;height:100%}
+.darken-sentry-cockpit .compass{top:32%;left:50%;width:20%;font-size:.85cqw;color:#55ff2a}
+.darken-sentry-cockpit .compass .ticks{font-size:2cqw;letter-spacing:0;line-height:.8}
+.darken-sentry-cockpit .reticle{top:46%;width:4.5cqw;height:4.5cqw;border:0;border-radius:50%;outline:2px dashed #59fa39}
+.darken-sentry-cockpit .throttle-meter{left:64.5%;top:33%;width:1.2%;height:22%;border-color:#f7ed25}
+.darken-sentry-cockpit .asv-aim-ladder{display:block;position:absolute;left:35%;top:33%;width:3%;height:22%}
+.darken-sentry-cockpit #pingLight,.darken-sentry-cockpit .telemetry,.darken-sentry-cockpit .objectives,.darken-sentry-cockpit #squadOrders{display:none}
+.darken-sentry-cockpit .topbar{position:static;height:0;padding:0;border:0;background:none}
+.darken-sentry-cockpit .topbar .brand,.darken-sentry-cockpit .topbar .mission-id{display:none}
+.darken-sentry-cockpit .topbar nav{position:fixed;left:8px;bottom:7px;z-index:30;gap:5px}
+.darken-sentry-cockpit .topbar nav button,.darken-sentry-cockpit footer button{padding:4px 7px;font-size:9px;background:#161b13;border-color:#3c4c31}
+.darken-sentry-cockpit footer{height:38px;min-height:38px;justify-content:flex-end}
+.darken-sentry-cockpit footer #controls,.darken-sentry-cockpit #viewLabel{display:none}

@@ -588,7 +588,7 @@ const BASE_VEHICLES = {
 } as const satisfies Record<string,VehicleDefinition>;
 // Chassis and loadouts are provisional until the original Darken variants are measured.
 export const VEHICLES={...BASE_VEHICLES,
- 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#b08a32',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},shape:{hull:{w:2.1,h:1.3,d:2.1,y:-.45,z:0},cockpit:{w:1.9,h:1.85,d:1.75,y:1.2,z:.1},weapon:{w:1.7,h:1.55,d:1.65,x:2.2,y:1.65,z:.1},legX:1.45}},
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#b08a32',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},shape:{hull:{w:2.1,h:1.3,d:2.1,y:-.45,z:0},cockpit:{w:1.9,h:1.85,d:1.75,y:1.2,z:.1},weapon:{w:1.7,h:1.55,d:1.65,x:2.2,y:1.65,z:.1},legX:1.45,legScale:{x:1,y:1.1,z:1}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
 } as const satisfies Record<string,VehicleDefinition>;

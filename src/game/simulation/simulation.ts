@@ -90,7 +90,7 @@ export class Simulation {
   private tickMissionRadio(){
     const carrier=this.mounted??this.passenger,base=this.mission.base;if(!carrier||!base)return;
     for(const cue of this.mission.radioTriggers??[]){
-      if(cue.event==='board'||cue.event==='completion'||this.playedMissionRadio.has(cue.id)||carrier.kind!==cue.vehicleKind||distance(this.player,base)>cue.range)continue;
+      if(cue.event!=='near-base'||this.playedMissionRadio.has(cue.id)||carrier.kind!==cue.vehicleKind||distance(this.player,base)>cue.range)continue;
       const alive=this.radioSpeakerAlive(cue.speakerId);
       if(!alive)continue;this.playedMissionRadio.add(cue.id);this.emit({type:'mission-radio',radioId:cue.id});
     }
@@ -193,8 +193,12 @@ export class Simulation {
       return {...objective,current,total,done:total>0&&current===total};
     }
     const lure=this.mission.lures?.find(rule=>objective.type==='lure'&&rule.unitId===objective.unitId),unit=objective.type==='lure'?this.units.find(u=>u.id===objective.unitId):undefined;
-    const current=objective.type==='lure'?Math.min(lure?.hits??0,unit?.lureHits??0):objective.type==='reach'?Number(this.reachedWaypoints.has(objective.waypointId)):objective.unitIds.filter(id=>{const unit=this.units.find(u=>u.id===id);return !!unit&&(!unit.alive||this.soldiers.some(s=>s.sourceVehicle===id&&!s.alive));}).length;
-    const total=objective.type==='lure'?(lure?.hits??0):objective.type==='reach'?1:objective.unitIds.length;return {...objective,current,total,done:total>0&&current===total};
+    if(objective.type==='eliminate'){
+      const current=objective.unitIds.filter(id=>{const target=this.units.find(u=>u.id===id);return !!target&&(!target.alive||this.soldiers.some(s=>s.sourceVehicle===id&&!s.alive));}).length,total=objective.unitIds.length;
+      return {...objective,current,total,done:total>0&&current===total};
+    }
+    if(objective.type==='reach'){const current=Number(this.reachedWaypoints.has(objective.waypointId));return {...objective,current,total:1,done:current===1};}
+    const current=Math.min(lure?.hits??0,unit?.lureHits??0),total=lure?.hits??0;return {...objective,current,total,done:total>0&&current===total};
   });}
   get radioMembers(){return (this.mission.companions??[]).map(member=>{
     const soldier=this.soldiers.find(s=>s.personId===member.personId&&(!s.driverOf||!s.alive));

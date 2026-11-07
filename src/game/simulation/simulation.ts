@@ -90,7 +90,8 @@ export class Simulation {
   private tickMissionRadio(){
     const carrier=this.mounted??this.passenger,base=this.mission.base;if(!carrier||!base)return;
     for(const cue of this.mission.radioTriggers??[]){
-      if(cue.event!=='near-base'||this.playedMissionRadio.has(cue.id)||carrier.kind!==cue.vehicleKind||distance(this.player,base)>cue.range)continue;
+      const range='range'in cue?cue.range:undefined;
+      if(cue.event==='board'||cue.event==='completion'||this.playedMissionRadio.has(cue.id)||carrier.kind!==cue.vehicleKind||range===undefined||distance(this.player,base)>range)continue;
       const alive=this.radioSpeakerAlive(cue.speakerId);
       if(!alive)continue;this.playedMissionRadio.add(cue.id);this.emit({type:'mission-radio',radioId:cue.id});
     }

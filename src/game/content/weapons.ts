@@ -4,18 +4,18 @@ export const LASER_RECHARGE_SECONDS=.55; // Provisional until measured against t
 export const LASER_FLIGHT_SPEED=72;
 export const LASERS = {
   // Manual pp.41/57. Charge timing and the visible TAR12 bolt speed are provisional.
-  TAR12:{range:500.5,minRange:50.05,recharge:1,movingRechargeFactor:.5,interval:1,energy:0,damage:18,speed:LASER_FLIGHT_SPEED},
+  TAR12:{range:500.5,minRange:50.05,recharge:1,movingRechargeFactor:.5,interval:1,energy:0,damage:10,speed:LASER_FLIGHT_SPEED},
   // Darken Tactical Defense HAWC card and W1 weapon table. Recharge and interval are provisional; visible bolt speed follows the other lasers.
-  HOMP11:{range:635,minRange:62.5,recharge:1,movingRechargeFactor:.5,interval:.25,energy:3,damage:14,speed:LASER_FLIGHT_SPEED},
-  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:13,speed:1000},
+  HOMP11:{range:635,minRange:62.5,recharge:1,movingRechargeFactor:.5,interval:.25,energy:3,damage:10,speed:LASER_FLIGHT_SPEED},
+  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:200},
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
-  RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:18,speed:LASER_FLIGHT_SPEED},
+  RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:12,speed:LASER_FLIGHT_SPEED},
   // Manual p.57 lists 800 m range and 1000 m/s; current requested tuning widens range/hit width and slows flight.
-  GAUS30:{range:1000,minRange:80,recharge:1.6,movingRechargeFactor:1,interval:1.6,energy:5,damage:17,speed:450,hitPadding:1.5},
-  P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:18,speed:LASER_FLIGHT_SPEED},
+  GAUS30:{range:1000,minRange:80,recharge:1.6,movingRechargeFactor:1,interval:1.6,energy:5,damage:18,speed:200,hitPadding:1.5},
+  P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:11,speed:LASER_FLIGHT_SPEED},
   'FIL-30': {range:220,minRange:22,recharge:LASER_RECHARGE_SECONDS,movingRechargeFactor:.5,interval:1,energy:2,damage:9,speed:LASER_FLIGHT_SPEED},
-  CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:5,speed:LASER_FLIGHT_SPEED},
-  RAID: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:5,speed:LASER_FLIGHT_SPEED},
+  CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
+  RAID: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
 } as const;
 export type LaserWeapon = keyof typeof LASERS;
 export const INFANTRY_WEAPONS={

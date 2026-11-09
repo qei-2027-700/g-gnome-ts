@@ -23,7 +23,7 @@ function spiderBoxes(){
   }));
  }));
 }
-function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind];return [
+function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind],leg='leg' in shape?shape.leg:undefined;return [
  {part:'cockpit' as const,x:0,...shape.cockpit,y:h*.6+shape.cockpit.y,upper:!('track' in shape)},
  ...('gunHousing' in shape?[{part:'leftWeapon' as const,x:0,...shape.gunHousing,y:h*.6+shape.gunHousing.y,upper:true}]:[]),
  ...('roof' in shape?[{part:'cockpit' as const,x:0,...shape.roof,y:h*.6+shape.roof.y,upper:true}]:[]),
@@ -33,7 +33,7 @@ function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).hei
  ...('shoulder' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.shoulder,x:side*shape.shoulder.x,y:h*.6+shape.shoulder.y,upper:false})):[]),
  ...('upperLeg' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.upperLeg,x:side*shape.legX,upper:false})):[]),
  ...('brace' in shape?([-1,1] as const).map(side=>({part:'hull' as const,...shape.brace,x:side*shape.brace.x,y:h*.6+shape.brace.y,upper:true})):[]),
- ...('spider' in shape?spiderBoxes():([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,x:side*shape.legX,y:'track' in shape?shape.track.y:'support' in shape?shape.support.y:h*.25,z:'track' in shape?shape.track.z:'support' in shape?shape.support.z:.4,w:'track' in shape?shape.track.w:'support' in shape?shape.support.w:1.5,h:'track' in shape?shape.track.h:'support' in shape?shape.support.h:h*.5,d:'track' in shape?shape.track.d:'support' in shape?shape.support.d:2,upper:false})))
+ ...('spider' in shape?spiderBoxes():([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,x:side*shape.legX,y:'track' in shape?shape.track.y:'support' in shape?shape.support.y:leg?.y??h*.25,z:'track' in shape?shape.track.z:'support' in shape?shape.support.z:leg?.z??.4,w:'track' in shape?shape.track.w:'support' in shape?shape.support.w:leg?.w??1.5,h:'track' in shape?shape.track.h:'support' in shape?shape.support.h:leg?.h??h*.5,d:'track' in shape?shape.track.d:'support' in shape?shape.support.d:leg?.d??2,upper:false})))
  ];}
 // Enclose all shared part boxes, including weapons and wide legs. A rotation-safe
 // horizontal radius keeps both the body and its turning upper assembly outside walls.

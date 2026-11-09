@@ -117,9 +117,10 @@ export class World {
   }
   makeMech(u:Unit){const spec=u.spec,scorp=u.kind==='scorp-asv',tower=spec.category==='tower';const root=new TransformNode(u.id,this.scene);const torso=new TransformNode('upper',this.scene);torso.parent=root;torso.position.y=spec.height*.6;
     const shell=this.material(`${u.id}-paint`,spec.color);const dark=this.material(`${u.id}-joints`,tower?SCORP_TOWER_PALETTE.dark:scorp?SCORP_ASV_PALETTE.black:u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#090d13':'#343d39');const glow=this.material(`${u.id}-visor`,tower?SCORP_TOWER_PALETTE.panel:scorp?SCORP_ASV_PALETTE.green:u.kind==='darken-sentry'?'#3f5f9b':u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#0d1722':'#1b252b');
-    const unionTactical=u.kind==='union-tactical',union=u.kind==='union-sentry',merc=u.kind==='merc-sentry',darkenSentry=u.kind==='darken-sentry',darkenTactical=u.kind==='darken-tactical',heavy=u.kind.endsWith('-tactical'),shape=VEHICLE_SHAPES[u.kind];
+    const unionTactical=u.kind==='union-tactical',union=u.kind==='union-sentry',merc=u.kind==='merc-sentry',darkenSentry=u.kind==='darken-sentry',scorpSentry=u.kind==='scorp-sentry',darkenTactical=u.kind==='darken-tactical',heavy=u.kind.endsWith('-tactical'),shape=VEHICLE_SHAPES[u.kind];
     const accent=this.material(`${u.id}-${heavy?'blue':'red'}-panels`,tower?SCORP_TOWER_PALETTE.ochre:scorp?SCORP_ASV_PALETTE.ochre:unionTactical?'#98463e':darkenTactical?'#914536':heavy?MERC_TACTICAL_PALETTE.blue:union?'#983f3b':darkenSentry?'#b97319':'#813c3e');
     const darkenPod=darkenSentry?this.material(`${u.id}-green-weapon-pods`,'#385323'):null;
+    const scorpCanopy=scorpSentry?this.material(`${u.id}-scorp-canopy`,'#3a4570'):null,scorpChest=scorpSentry?this.material(`${u.id}-scorp-chest`,'#7d8794'):null,scorpArm=scorpSentry?this.material(`${u.id}-scorp-arm`,'#e0b15a'):null,scorpForearm=scorpSentry?this.material(`${u.id}-scorp-forearm`,'#9aab86'):null,scorpThigh=scorpSentry?this.material(`${u.id}-scorp-thigh`,'#c4893a'):null,scorpShin=scorpSentry?this.material(`${u.id}-scorp-shin`,'#7d8c78'):null,scorpFoot=scorpSentry?this.material(`${u.id}-scorp-foot`,'#e6e2d8'):null;
     if(u.kind==='union-asv'||unionTactical){shell.diffuseColor=Color3.White();shell.diffuseTexture=weatheredArmor(this.scene);}
     const trim=this.material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:darkenTactical?'#aaa9a0':heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
     const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,mat:StandardMaterial,parent:TransformNode,part?:BodyPart)=>{const b=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},this.scene);b.parent=parent;b.position.set(x,y,z);b.material=mat;if(part)b.metadata={bodyPart:part};return b;};
@@ -300,13 +301,17 @@ export class World {
         box('stalker cockpit brow',1.45,.27,.3,0,cockpit.y+.55,cockpit.z+cockpit.d/2,trim,torso,'cockpit');
         for(const side of [-1,1])box('stalker chest panel',.36,.85,.16,side*.48,.2,1.18,trim,torso,'hull');
       }
+    }else if(scorpSentry){
+      const canopy=MeshBuilder.CreateSphere('cockpit',{diameter:1,segments:8},this.scene);canopy.parent=torso;canopy.scaling.set(cockpit.w,cockpit.h,cockpit.d);canopy.position.set(0,cockpit.y,cockpit.z);canopy.material=scorpCanopy!;canopy.metadata={bodyPart:'cockpit'};
+      box('scorp chest plate',hull.w*.62,hull.h*.7,.1,0,hull.y,hull.z+hull.d/2+.04,scorpChest!,torso,'hull');
     }else box('cockpit',cockpit.w,cockpit.h,cockpit.d,0,cockpit.y,cockpit.z,shell,torso);
-    if(darkenSentry){box('darken blue dorsal fin',.48,1.34,.55,0,cockpit.y+.7,cockpit.z-.23,glow,torso,'cockpit');box('darken gray central frame',.82,.48,1.05,0,-.22,.25,trim,torso,'hull');}
-    if(!heavy){const visor=box('visor',cockpit.w*.84,cockpit.h*.61,.13,0,cockpit.y+.05,cockpit.z+cockpit.d/2+.04,glow,torso);visor.rotation.x=-.15;}
+    if(darkenSentry)box('darken blue dorsal fin',.34,.9,.4,0,cockpit.y+cockpit.h/2+.4,cockpit.z-.06,glow,torso,'cockpit');
+    if(darkenSentry)box('visor',cockpit.w*.62,cockpit.h*.38,.08,0,cockpit.y-.02,cockpit.z+cockpit.d/2+.04,dark,torso,'cockpit');
+    else if(!heavy&&!scorpSentry){const visor=box('visor',cockpit.w*.84,cockpit.h*.61,.13,0,cockpit.y+.05,cockpit.z+cockpit.d/2+.04,glow,torso);visor.rotation.x=-.15;}
     if(u.kind==='scorp-tactical'){const mount=SCORP_TACTICAL_RAID_MUZZLES;box('raid chin carriage',1.6,.35,.65,0,mount.y,mount.z-1.05,trim,torso,'hull');for(const side of [-1,1])box('scorp raid chin barrel',.18,.18,1.2,side*mount.x,mount.y,mount.z-.6,dark,torso,side<0?'leftWeapon':'rightWeapon');}
     if(u.kind==='merc-tactical'){const mount=MERC_TACTICAL_RAID_MUZZLE;box('raid chin mount',.65,.4,.6,0,mount.y,mount.z-.85,trim,torso,'hull');box('raid chin barrel',.2,.2,1.1,0,mount.y,mount.z-.55,dark,torso,'hull');}
-    if(!heavy)box('rear cabin panel',cockpit.w*.7,cockpit.h*.45,.12,0,cockpit.y,cockpit.z-cockpit.d/2-.04,dark,torso,'cockpit');
-    if(!heavy)box('cockpit brow',cockpit.w+.18,.16,cockpit.d+.12,0,cockpit.y+cockpit.h/2,cockpit.z,trim,torso,'cockpit');
+    if(!heavy&&!darkenSentry&&!scorpSentry)box('rear cabin panel',cockpit.w*.7,cockpit.h*.45,.12,0,cockpit.y,cockpit.z-cockpit.d/2-.04,dark,torso,'cockpit');
+    if(!heavy&&!darkenSentry&&!scorpSentry)box('cockpit brow',cockpit.w+.18,.16,cockpit.d+.12,0,cockpit.y+cockpit.h/2,cockpit.z,trim,torso,'cockpit');
     if(union){
       box('central lower armor',1.35,.48,1.2,0,hull.y-.3,.2,accent,torso,'hull').rotation.z=Math.PI/4;
       // Prowler: high outer shoulders descend into the low central cabin.
@@ -322,9 +327,10 @@ export class World {
     }
     for(const side of [-1,1]){
       const part:BodyPart=side<0?'leftWeapon':'rightWeapon',x=side*weapon.x;
-      const pod=unionTactical?MeshBuilder.CreateCylinder('weapon pod',{diameter:2,height:1,tessellation:8},this.scene):box('weapon pod',weapon.w,weapon.h,weapon.d,x,weapon.y,weapon.z,darkenPod??(darkenTactical?trim:shell),torso,part);
+      const pod=unionTactical?MeshBuilder.CreateCylinder('weapon pod',{diameter:2,height:1,tessellation:8},this.scene):scorpSentry?box('weapon pod',weapon.w,weapon.h*.42,weapon.d,x,weapon.y+weapon.h*.29,weapon.z,scorpArm!,torso,part):box('weapon pod',weapon.w,weapon.h,weapon.d,x,weapon.y,weapon.z,darkenPod??(darkenTactical?trim:shell),torso,part);
+      if(scorpSentry)box('scorp forearm',weapon.w*.86,weapon.h*.62,weapon.d*.9,x,weapon.y-weapon.h*.19,weapon.z,scorpForearm!,torso,part);
       if(unionTactical){pod.parent=torso;pod.position.set(x,weapon.y,weapon.z);pod.rotation.x=Math.PI/2;pod.scaling.set(weapon.w/2,weapon.d,weapon.h/2);pod.material=accent;pod.metadata={bodyPart:part};}
-      if(!heavy){
+      if(!heavy&&!darkenSentry&&!scorpSentry){
         box('pod rim',weapon.w*.8,.14,weapon.d+.1,x,weapon.y+.35,weapon.z,trim,torso,part);
         box('weapon muzzle',weapon.w*.7,weapon.h*.55,.18,x,weapon.y,weapon.z+weapon.d/2+.07,dark,torso,part);
         box('weapon face panel',.36,.3,.2,x+side*.28,weapon.y+.05,weapon.z+weapon.d/2+.12,darkenPod??accent,torso,part);
@@ -336,19 +342,21 @@ export class World {
         box('shoulder lower rail',weapon.w+.06,.16,weapon.d+.12,x,weapon.y-weapon.h/2,weapon.z,trim,torso,part);
         if(darkenTactical){for(let band=0;band<3;band++)box('stalker pod red grille',weapon.w*.77,.09,.035,x,weapon.y+.38-band*.2,weapon.z+weapon.d/2+.16,accent,torso,part);box('stalker pod lower silver face',weapon.w*.8,.33,.05,x,weapon.y-.53,weapon.z+weapon.d/2+.18,trim,torso,part);}
       }
-      box('barrel',.22,.22,heavy?1.3:1.1,x,weapon.y-.17,weapon.z+weapon.d/2+.5,dark,torso,part);
+      if(!darkenSentry&&!scorpSentry)box('barrel',.22,.22,heavy?1.3:1.1,x,weapon.y-.17,weapon.z+weapon.d/2+.5,dark,torso,part);
       const leg=new TransformNode('leg',this.scene);leg.parent=root;leg.position.set(side*shape.legX,'legHip' in shape?shape.legHip:spec.height*.5,0);if('legScale' in shape)leg.scaling.set(shape.legScale.x,shape.legScale.y,shape.legScale.z);legs.push(leg);
       if(union){const shoulder=VEHICLE_SHAPES['union-sentry'].shoulder;const cap=MeshBuilder.CreateCylinder('prowler shoulder armor',{diameter:2,height:1,tessellation:8},this.scene);cap.parent=leg;cap.position.set(0,spec.height*.6+shoulder.y-spec.height*.5,shoulder.z);cap.rotation.x=Math.PI/2;cap.scaling.set(shoulder.w/2,shoulder.d,shoulder.h/2);cap.material=accent;cap.metadata={bodyPart:side<0?'leftLeg':'rightLeg'};}
-      box('thigh',heavy?1.12:.92,spec.height*.26,.95,0,-spec.height*.13,0,shell,leg);
-      if(!heavy){
+      box('thigh',darkenSentry?.28:scorpSentry?1.02:heavy?1.12:.92,spec.height*.26,darkenSentry?.32:scorpSentry?1.02:.95,0,-spec.height*.13,0,scorpSentry?scorpThigh!:shell,leg);
+      if(darkenSentry)box('darken thigh band',.34,.1,.36,0,-spec.height*.2,0,trim,leg);
+      if(!heavy&&!darkenSentry&&!scorpSentry){
         if(union){const support=VEHICLE_SHAPES['union-sentry'].upperLeg;box('shoulder leg support',support.w,support.h,support.d,0,support.y-spec.height*.5,support.z,shell,leg);box('shoulder support inset',support.w*.55,support.h*.75,.13,0,support.y-spec.height*.5,support.z+support.d/2+.02,dark,leg);}
         box('hip armor',1.1,.65,1.22,0,-.2,.1,shell,leg);
         box('thigh inset',.68,.7,.12,0,-spec.height*.13,.52,dark,leg);
         box('leg side armor',.12,.82,.76,side*.51,-spec.height*.13,.08,accent,leg);
       }
       const knee=new TransformNode('knee',this.scene);knee.parent=leg;knee.position.y=-spec.height*.26;knees.push(knee);
-      box('shin',heavy?1.38:1.12,spec.height*.22,1.15,0,-spec.height*.11,.12,shell,knee);
-      if(!heavy){
+      box('shin',darkenSentry?.24:scorpSentry?.98:heavy?1.38:1.12,spec.height*.22,darkenSentry?.28:scorpSentry?.98:1.15,0,-spec.height*.11,darkenSentry?0:scorpSentry?.08:.12,darkenSentry?trim:scorpSentry?scorpShin!:shell,knee);
+      if(darkenSentry)box('darken shin band',.28,.12,.32,0,-spec.height*.15,0,shell,knee);
+      if(!heavy&&!darkenSentry&&!scorpSentry){
         box('knee band',1.24,.24,1.27,0,-.1,.12,trim,knee);
         box('shin red armor',.88,spec.height*.12,.16,0,-spec.height*.095,.77,accent,knee);
         box('shin rear armor',.88,spec.height*.1,.13,0,-spec.height*.095,-.49,accent,knee);
@@ -373,7 +381,10 @@ export class World {
           box('rear shin white seam',1.28,.16,.12,0,-spec.height*.065,-.81,shell,knee,side<0?'leftLeg':'rightLeg');
         }
       }
-      const foot=box('foot',heavy?1.65:1.5,.45,heavy?2.35:2,0,-spec.height*.22,.2,dark,knee);feet.push(foot);
+      let foot:Mesh;
+      if(scorpSentry){foot=MeshBuilder.CreateCylinder('foot',{height:1.55,diameterTop:.22,diameterBottom:.95,tessellation:4},this.scene);foot.parent=knee;foot.rotation.z=-side*Math.PI/2;foot.position.set(side*.62,-spec.height*.22,.2);foot.material=scorpFoot!;}
+      else foot=box('foot',darkenSentry?.42:heavy?1.65:1.5,darkenSentry?.16:.45,darkenSentry?.55:heavy?2.35:2,0,-spec.height*.22,darkenSentry?0:.2,dark,knee);
+      feet.push(foot);
       if(u.kind==='merc-tactical')for(const z of [-.75,-.25,.25,.75]){const tread=MeshBuilder.CreatePlane('merc-sole-tread',{width:1.35,height:.14,sideOrientation:Mesh.DOUBLESIDE},this.scene);tread.parent=foot;tread.rotation.x=Math.PI/2;tread.position.set(0,-.226,z);tread.material=trim;}
     }
     }
@@ -386,7 +397,7 @@ export class World {
       const original=mesh.material as StandardMaterial,material=original.clone(`${u.id}-${part}-${mesh.name}`)!;
       mesh.material=material;mesh.metadata={bodyPart:part};parts[part].meshes.push(mesh);parts[part].paint.push({material,base:original.diffuseColor.clone(),glow:original.emissiveColor.clone()});
     }
-    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();
+    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();scorpCanopy?.dispose();scorpChest?.dispose();scorpArm?.dispose();scorpForearm?.dispose();scorpThigh?.dispose();scorpShin?.dispose();scorpFoot?.dispose();
     this.rigs.set(u.id,{spiderLegs,cannon,root,torso,legs,knees,feet,phase:0,run:0,lastX:u.x,lastZ:u.z,recoil:0,parts});
   }
   get cockpitBackdropSwayPercent(){

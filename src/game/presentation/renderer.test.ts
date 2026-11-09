@@ -8,18 +8,56 @@ import {MISSION} from '../content/mission-1-1.ts';
 test('Darken Sentry keeps its narrow body, blue fin and two green weapon pods',async()=>{
  const {VEHICLE_SHAPES}=await import('../content/vehicles.ts');
  const {hologramSvg}=await import('./hologram.ts');
+ const {intersectParts}=await import('../simulation/parts.ts');
  const {darkenSentryCockpitShellSvg}=await import('./darken-sentry-cockpit.ts');
- const cockpit=darkenSentryCockpitShellSvg();assert.ok(cockpit.includes('assets/cockpits/darken-sentry-hawk.png'));assert.ok(cockpit.includes('darken-sentry-metal-mask'));
+ const cockpitShell=darkenSentryCockpitShellSvg();assert.ok(cockpitShell.includes('assets/cockpits/darken-sentry-hawk.png'));assert.ok(cockpitShell.includes('darken-sentry-metal-mask'));
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
  try{
   const sim=new Simulation(),unit=makeUnit('darken-reference','darken-sentry',0,40,true);sim.units=[unit];
   const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get(unit.id)!;
   const pods=rig.root.getChildMeshes().filter(mesh=>mesh.name==='weapon pod');
+  const head=rig.root.getChildMeshes().find(mesh=>mesh.name==='cockpit')!;
+  const shape=VEHICLE_SHAPES['darken-sentry'];
   assert.equal(pods.length,2);assert.ok(pods[0].position.x*pods[1].position.x<0);
   assert.ok(pods.every(mesh=>{const paint=(mesh.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;return paint.g>paint.r&&paint.g>paint.b;}));
+  assert.ok(pods.every(mesh=>Math.abs(mesh.position.y-head.position.y)<.2));
+  assert.ok(pods.every(mesh=>Math.abs(mesh.position.x)-mesh.getBoundingInfo().boundingBox.extendSize.x<=head.getBoundingInfo().boundingBox.extendSize.x+.08));
   assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='darken blue dorsal fin').length,1);
-  assert.ok(VEHICLE_SHAPES['darken-sentry'].legX<VEHICLE_SHAPES['union-sentry'].legX);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='pod rim'||mesh.name==='hip armor'||mesh.name==='barrel'||mesh.name==='launcher mouth').length,0);
+  const thigh=rig.root.getChildMeshes().find(mesh=>mesh.name==='thigh')!,shin=rig.root.getChildMeshes().find(mesh=>mesh.name==='shin')!,foot=rig.root.getChildMeshes().find(mesh=>mesh.name==='foot')!;
+  assert.ok(thigh.getBoundingInfo().boundingBox.extendSize.x<.2);
+  assert.ok(shin.getBoundingInfo().boundingBox.extendSize.x<.2);
+  assert.ok(foot.getBoundingInfo().boundingBox.extendSize.x<.3);
+  assert.ok(shape.legX<VEHICLE_SHAPES['union-sentry'].legX);
+  assert.ok(shape.leg&&shape.leg.w<.6);
+  const through=(x:number,y:number)=>intersectParts(unit,{x,y,z:unit.z+8},{x,y,z:unit.z-8})?.part;
+  assert.equal(through(shape.legX,1.2),'rightLeg');
+  assert.equal(through(shape.legX+.7,1.2),undefined);
+  assert.equal(through(shape.weapon.x,unit.spec.height*.6+shape.weapon.y),'rightWeapon');
+  assert.equal(through(shape.weapon.x,unit.spec.height*.6+.12),undefined);
   assert.notEqual(hologramSvg('darken-sentry'),hologramSvg('merc-sentry'));
+  world.update(.016);assert.equal(world.renderError,null);
+ }finally{engine.dispose();}
+});
+test('Scorp Sentry has a blue canopy, hanging arms and white outward feet',async()=>{
+ const {VEHICLE_SHAPES}=await import('../content/vehicles.ts');
+ const {intersectParts}=await import('../simulation/parts.ts');
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation(),unit=makeUnit('scorp-reference','scorp-sentry',0,40,true);sim.units=[unit];
+  const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get(unit.id)!,shape=VEHICLE_SHAPES['scorp-sentry'];
+  const canopy=rig.root.getChildMeshes().find(mesh=>mesh.name==='cockpit')!;
+  const paint=(canopy.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;
+  assert.ok(paint.b>paint.r&&paint.b>paint.g);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='scorp forearm').length,2);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='pod rim'||mesh.name==='barrel'||mesh.name==='visor'||mesh.name==='hip armor').length,0);
+  assert.equal(shape.weapon.x,2);assert.ok(shape.leg&&shape.leg.w>1);
+  const foot=rig.root.getChildMeshes().find(mesh=>mesh.name==='foot')!;
+  const toe=(foot.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;
+  assert.ok(toe.r>.8&&toe.g>.8&&toe.b>.8);
+  const through=(x:number,y:number)=>intersectParts(unit,{x,y,z:unit.z+8},{x,y,z:unit.z-8})?.part;
+  assert.equal(through(shape.weapon.x,unit.spec.height*.6+shape.weapon.y),'rightWeapon');
+  assert.equal(through(shape.legX,1.6),'rightLeg');
   world.update(.016);assert.equal(world.renderError,null);
  }finally{engine.dispose();}
 });

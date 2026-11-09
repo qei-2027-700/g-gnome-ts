@@ -1,10 +1,10 @@
 # Darken Sentry HAWCの観察資料
 
-ユーザー提供の[外観画像](../../../../assets/hawk-building/darken/1-2-darken-sentry01.png)と[複数機が写る画像](../../../../assets/hawk-building/darken/1-4-fsada.png)を確認した。Sentryは、狭い橙色の胴体の左右に緑色の箱形武器ポッドが張り出す。胴体上部には青い縦長の部品があり、細い2本の脚は橙色と灰色に分かれる。後方からの姿は[別画像](../../../../assets/hawk-building/darken/1-4-asdfsafsa.png)で確認できる。各画像の地形や塔は機体の一部ではない。
+ユーザー提供の[外観画像](../../../../assets/hawk-building/darken/1-2-darken-sentry01.png)と[複数機が写る画像](../../../../assets/hawk-building/darken/1-4-fsada.png)を確認した。Sentryは、狭い橙色の胴体と、その上の頭部から左右へ水平に張り出す緑色の箱形発射口を持つ。頭部の上には青い縦長の部品があり、脚は橙色と灰色に分かれた細い2本である。後方からの姿は[別画像](../../../../assets/hawk-building/darken/1-4-asdfsafsa.png)で確認できる。各画像の地形や塔は機体の一部ではない。
 
 [機内画像](../../../../assets/hawk-building/darken/1-2-darken-sentry-cocpit.png)の武器表示はCHUM 50発とRUPP。[別の機内画像](darken-sentry.png)にもCHUMとRUPPが表示される。これらは画像内の装備表示であり、全任務で同じ初期残弾になることまでは確認できない。
 
-外観モデルは上記の輪郭と配色を基にした簡略形状。機内では[保存済みの画像](../../../../assets/cockpits/darken-sentry-hawk.png)から金属フレームを表示し、窓外の地形、武器・IFF、レーダー、ホログラムは現在のゲーム状態を表示する。背面の細部、砲身内部、原作での正確な寸法は未確認。
+外観モデルは上記の輪郭と配色を基にした簡略形状で、緑色の発射口は頭部の高さで左右に接続し、脚は橙色と灰色の細い柱として描く。脚の幅、発射口の奥行き、灰色の色は画像の比率からの試作値で、原作の実寸は未計測。機内では[保存済みの画像](../../../../assets/cockpits/darken-sentry-hawk.png)から金属フレームを表示し、窓外の地形、武器・IFF、レーダー、ホログラムは現在のゲーム状態を表示する。背面の細部、砲身内部、原作での正確な寸法は未確認。
 
 ## Tactical Defense HAWC（Stalker）
 

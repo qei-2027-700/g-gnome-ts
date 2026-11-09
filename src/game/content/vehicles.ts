@@ -16,7 +16,7 @@ export type VehicleShape={
  hull:ShapeBox;cockpit:ShapeBox;weapon:ShapeBox;legX:number;
  shoulder?:ShapeBox;upperLeg?:ShapeBox;brace?:ShapeBox;
  spider?:{hipX:number;hipY:number;hipZ:number;kneeX:number;kneeY:number;kneeZ:number;footX:number;footZ:number;upperWidth:number;lowerWidth:number;step:number;lift:number;kneeLift:number;sway:number;sideStep:number};
- track?:ShapeBox;chinWeapon?:ShapeBox;support?:ShapeBox;roof?:ShapeBox;gunHousing?:ShapeBox;
+ track?:ShapeBox;chinWeapon?:ShapeBox;support?:ShapeBox;roof?:ShapeBox;gunHousing?:ShapeBox;leg?:ShapeBox;
  legScale?:{x:number;y:number;z:number};legHip?:number;
 };
 // Visual tuning, not measured original animation data.
@@ -110,7 +110,8 @@ const BASE_VEHICLES = {
       stopDistance:60,
       missileVolley:2
     },
-    shape:{hull:{w:1.55,h:1.25,d:1.55,y:-.68,z:0},cockpit:{w:.82,h:1.15,d:1.2,y:.45,z:.22},weapon:{w:1.05,h:.65,d:1.15,x:1.68,y:.12,z:.42},legX:1.08},
+    // Prototype metres from the reference views: green launchers flank the head, and the legs are thin posts.
+    shape:{hull:{w:1.05,h:1.45,d:1.1,y:-.22,z:0},cockpit:{w:.7,h:.78,d:.72,y:.85,z:.04},weapon:{w:1.1,h:.58,d:.82,x:.85,y:.85,z:.04},legX:.52,legHip:3.52,leg:{w:.4,h:3.2,d:1.35,y:1.6,z:.05}},
     gait:{stride:6.8,lift:.65,lean:.085,bounce:.10},
     drive:{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'}
   },
@@ -331,7 +332,7 @@ const BASE_VEHICLES = {
     armor:100,
     height:6.3,
     passengerCapacity:0,
-    color:'#b2a77d',
+    color:'#c8c7c0',
     weapons:[
       'CETI',
       'zWASP',
@@ -349,7 +350,8 @@ const BASE_VEHICLES = {
       stopDistance:65,
       missileVolley:1
     },
-    shape:{hull:{w:2.8,h:1.3,d:2.5,y:0,z:0},cockpit:{w:2.1,h:1.7,d:2.2,y:1,z:0},weapon:{w:1.2,h:1,d:2.6,x:2,y:.8,z:.3},legX:1.5},
+    // Card front, torso width = 1: canopy about .77 by .48 and seated on the chest, arms hang in front of the legs at x .83, legs about .48 wide. Metres are prototypes. weapon.x stays 2 so the paired CETI mounts remain 4 apart.
+    shape:{hull:{w:2.4,h:1.45,d:2.2,y:-.1,z:0},cockpit:{w:1.85,h:1.15,d:1.5,y:.72,z:.4},weapon:{w:.95,h:2.75,d:.7,x:2,y:-.2,z:.55},legX:1.62,leg:{w:1.15,h:3.2,d:1.15,y:1.6,z:.08}},
     gait:{stride:6,lift:.6,lean:.06,bounce:.1},
     drive:{idle:78,rev:60,harmonic:2,filter:320,volume:.035,wave:'sine'}
   },

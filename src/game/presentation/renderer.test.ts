@@ -40,6 +40,8 @@ test('Darken Sentry keeps its narrow body, blue fin and two green weapon pods',a
  }finally{engine.dispose();}
 });
 test('Scorp Sentry has a blue canopy, hanging arms and white outward feet',async()=>{
+ const {scorpSentryCockpitShellSvg}=await import('./scorp-sentry-cockpit.ts');
+ const cockpitShell=scorpSentryCockpitShellSvg();assert.ok(cockpitShell.includes('assets/cockpits/scope-sentry-hawk.png'));assert.ok(cockpitShell.includes('scorp-sentry-metal-mask'));assert.equal(cockpitShell.includes('5562'),false);
  const {VEHICLE_SHAPES}=await import('../content/vehicles.ts');
  const {intersectParts}=await import('../simulation/parts.ts');
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});

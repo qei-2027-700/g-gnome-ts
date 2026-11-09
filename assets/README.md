@@ -12,6 +12,7 @@
 | `cockpits/union-tactical-reference.png` | [Union Tacticalの機内参照](../docs/reference/vehicles/union-tactical/1-3-darken軍-sentry-hawk.png)。適用先はユーザー指定 |
 | [cockpits/merc-td-hawk.png](cockpits/merc-td-hawk.png) | Merc Tacticalの機内フレーム。窓とHUDを除いて使用。[機内資料](../docs/reference/vehicles/merc-tactical/2-4-merc軍-タクティカルディフェンスhawk内view.png) |
 | [cockpits/darken-sentry-hawk.png](cockpits/darken-sentry-hawk.png) | Darken Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/darken/README.md) |
+| [cockpits/scope-sentry-hawk.png](cockpits/scope-sentry-hawk.png) | Scorp Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/scope-sentry/README.md) |
 | [hawk-building/darken/darken-td-hawk.png](hawk-building/darken/darken-td-hawk.png) | Darken Tactical Defense HAWCの前面形状と性能・武装。[観察記録](../docs/reference/vehicles/darken/README.md#tactical-defense-hawcstalker) |
 | [cockpits/merc-assault.png](cockpits/merc-assault.png) | ユーザー指定のMerc Assault HAWCの機内。窓と固定計器を除いて使用。[専用コックピット](../docs/gameplay/cockpit-hud.md#merc-assault-hawcの操縦席2026-10-29) |
 | [cockpits/merc-mison-guard-tower.png](cockpits/merc-mison-guard-tower.png) | ユーザー提供のミーゾン・ガードタワーの機内とMerc AIP。窓・固定計器を除いたフレームに使用。[専用機内表示](../docs/gameplay/cockpit-hud.md#mercミーゾンガードタワーの機内2026-10-29) |

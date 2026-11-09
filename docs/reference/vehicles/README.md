@@ -13,7 +13,7 @@
 | [merc-assault/](merc-assault/README.md) | Merc Assault（Venom）の横向き画像、蜘蛛のような4本脚、黄色のRUPPレーザー |
 | [union-asv/](union-asv/README.md) | Union ASVの機内資料 |
 | [scope-asv/](scope-asv/README.md) | Scorp ASVの機内・LAB・VISOM画面、両軍ASVの共通仕様 |
-| [scope-sentry/](scope-sentry/README.md) | Scorp Sentry HAWCのカード正面に合わせた外観 |
+| [scope-sentry/](scope-sentry/README.md) | Scorp Sentry HAWCのカード正面と機内フレーム |
 | [merc-aip/](merc-aip/README.md) | Merc AIP（Razor）の緑の菱形・低空浮遊とMerc Cruiser（WidowMaker）の資料 |
 | [union-aip/](union-aip/README.md) | 4-2のUnion AIP 2機による電力プラント攻撃。外観・性能は試作値 |
 | [merc-meson-tower/](merc-meson-tower/README.md) | Mercミーゾンタワーのマニュアル・ユーザー画像による外観と周辺配置・GAUS30・共通の給電と生存脱出 |

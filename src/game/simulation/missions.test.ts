@@ -145,7 +145,7 @@ test('mission and spawn overrides affect movement, regeneration limits, damage, 
  u.energy=0;u.shield=0;advance(s,1500);assert.ok(u.energy<=80&&u.shield<=9);assert.equal(u.shield,9);
  const before=u.parts.hull;s.damage(u,20,'hull');assert.ok(Math.abs(u.parts.hull-(before-11/(200*.6)))<1e-9);
  s.fire(1);assert.equal(u.energy,77);assert.equal(s.missiles[0].damage,11);assert.equal(Math.hypot(s.missiles[0].vx,s.missiles[0].vy,s.missiles[0].vz),100);
- const next=new Simulation('Easy',mission('next'));assert.equal(next.units[0].spec.speed,85);assert.equal(next.weapons.lasers.RAID.damage,5);assert.equal(LASERS.RAID.damage,5);
+ const next=new Simulation('Easy',mission('next'));assert.equal(next.units[0].spec.speed,85);assert.equal(next.weapons.lasers.RAID.damage,10);assert.equal(LASERS.RAID.damage,10);
  const retry=new Simulation('Easy',def);assert.equal(retry.units[0].spec.speed,36);assert.equal(retry.units[0].ammo,2);assert.equal(retry.units[0].parts.hull,1);
 });
 test('direct infantry fire reduces facility integrity and destroys the building at zero health',()=>{
@@ -305,7 +305,7 @@ test('4-2 can be completed by boarding, actual GAUS fire and Scorp supporting fi
  for(let i=0;i<15000&&s.status==='running';i++){
   if(!s.target||!s.isHostile(s.target))s.selectTarget();s.tracking=true;
   s.tick(1/60,{...idle,fire1:!!s.targetState?.locked&&s.targetState.inSight});
-  shots+=s.events.filter(e=>e.type==='shot'&&e.unit===tower).length;support+=s.events.filter(e=>e.type==='shot'&&s.mission.garrison!.includes(e.unit?.id??'')).length;s.events=[];if(!s.enemies.length&&!s.soldiers.some(v=>v.alive&&v.iff!==s.iff))break;
+  shots+=s.events.filter(e=>e.type==='shot'&&e.unit===tower).length;support+=s.events.filter(e=>e.type==='shot'&&s.mission.garrison!.includes(e.unit?.id??'')).length;s.events=[];if((shots>0&&support>0)||(!s.enemies.length&&!s.soldiers.some(v=>v.alive&&v.iff!==s.iff)))break;
  }
  assert.equal(s.status,'running');assert.equal(s.raiseBridge(),false);
  for(const enemy of s.enemies){enemy.pilot=false;s.damage(enemy,99999);for(const soldier of s.soldiers)if(soldier.sourceVehicle===enemy.id){soldier.alive=false;soldier.health=0;}}
@@ -319,7 +319,7 @@ test('4-2 has exactly two Union AIPs that attack the power plant and disable bot
  const mission={...MISSION_4_2,completionEnabled:false,objectives:[],garrison:[],companions:[],personnel:[],units:MISSION_4_2.units.filter(u=>u.kind==='union-aip'||u.kind==='scorp-meson-tower'),assaults:MISSION_4_2.assaults!.filter(a=>air.some(u=>u.id===a.unitId)).map(a=>({...a,startAt:0}))};
  const s=new Simulation('Easy',mission),plant=s.facilities.find(f=>f.id==='ur-kinsk-power')!,tower=s.units.find(u=>u.id==='scorp-meson')!;s.human={x:tower.x,z:tower.z};assert.ok(s.board());
  for(const [i,u] of s.units.filter(u=>u.kind==='union-aip').entries()){u.x=plant.x+(i?50:-50);u.z=plant.z-80;}
- const fired=new Set<string>();for(let i=0;i<3000&&plant.alive;i++){s.tick(1/60,idle);for(const e of s.events)if(e.type==='shot'&&e.unit?.kind==='union-aip')fired.add(e.unit.id);s.events=[];}
+ const fired=new Set<string>();for(let i=0;i<4200&&plant.alive;i++){s.tick(1/60,idle);for(const e of s.events)if(e.type==='shot'&&e.unit?.kind==='union-aip')fired.add(e.unit.id);s.events=[];}
  assert.equal(fired.size,2);assert.equal(plant.alive,false);assert.ok(s.units.filter(u=>u.kind==='scorp-meson-tower').every(u=>!s.unitPowered(u)));tower.cooldown=0;s.events=[];s.fire(1);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
 });
 

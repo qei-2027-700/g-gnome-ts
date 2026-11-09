@@ -19,16 +19,23 @@ export const LASERS = {
 } as const;
 export type LaserWeapon = keyof typeof LASERS;
 export const INFANTRY_WEAPONS={
-  PRIF44:{range:150,damage:7,vehicleDamage:.3,cooldown:.7,tracerSpeed:160},
-  GASHR:{range:100,speed:60,cooldown:.8,ammo:5},
+  PRIF44:{range:80,damage:7,vehicleDamage:1,cooldown:.7,tracerSpeed:160},
+  GASHR:{range:80,speed:60,cooldown:.8,ammo:5},
   // EGGER ballistics and capacity are provisional, pending original-game measurements.
-  EGGER:{range:100,speed:60,cooldown:.8,ammo:5},
+  EGGER:{range:100,speed:60,cooldown:10,ammo:5},
 } as const;
 // VISOM flight speed in m/s; lifetime below preserves the 1000 m range.
-export const VISOM_SPEED=90;
+export const VISOM_SPEED=96;
 // Manual p.46: PUG range/velocity/armor damage; radius and homing remain provisional.
-export const MISSILES={PUG:{speed:700,damage:38,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},HSSO:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},CHUM:{speed:94,damage:5,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},SAG5T:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},TCROCK:{speed:94,damage:5,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},SREM:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},UNKPA:{speed:110,damage:4.5,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
- VISOM:{speed:VISOM_SPEED,damage:2,radius:.45,lifetime:1000/VISOM_SPEED}
+export const MISSILES={
+  PUG:{speed:100,damage:24,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},
+  HSSO:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  CHUM:{speed:94,damage:20,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
+  SAG5T:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  TCROCK:{speed:94,damage:20,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
+  SREM:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  UNKPA:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  VISOM:{speed:VISOM_SPEED,damage:4,radius:.45,lifetime:1000/VISOM_SPEED}
 };
 
 export const MACHINE_GUNS={FLECH:{range:150,interval:.11,damage:3,infantryDamage:4.5},DASY:{range:180,interval:.11,damage:4,infantryDamage:6},TCREAP:{range:160,interval:.11,damage:3,infantryDamage:4.5,projectileSpeed:60},zWASP:{range:180,interval:.11,damage:3,infantryDamage:4.5}};
@@ -58,6 +65,9 @@ export const AI_MISSILE_ACCURACY={
  ground:{yawSpread:.035,pitchSpread:.018,turnRate:.18,updateInterval:.35},
  airborne:{yawSpread:.14,pitchSpread:.09,turnRate:.045,updateInterval:.75},
 };
+// Scorp rocket tower guides SREM and UNKPA onto a target at or below this horizontal speed.
+// Provisional threshold for "stopped"; moving targets keep the scattered aim above.
+export const ROCKET_TOWER_STILL_SPEED=.75;
 
 // User-confirmed laser-only hold-fire exceptions; some chassis still await content/models.
 export const LASER_HOLD_FIRE_HAWCS=['scorp-assault','darken-tactical','merc-assault','union-assault'] as const;

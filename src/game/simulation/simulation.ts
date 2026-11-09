@@ -13,7 +13,7 @@ import {PARTS,PART_DAMAGE_THRESHOLDS,freshParts,applyPartDamage,intersectParts,m
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import type {River} from '../content/missions/types.ts';
 import {resolveVehicle,type Faction,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
-import {resolveWeapons,allowsLaserHoldFire,HELD_TRIGGER_INTERVAL,MISSILE_INTERVAL,MISSILE_HOMING,AI_MISSILE_ACCURACY,weaponMountCount,type VehicleWeapon,type LaserWeapon,type MachineGun,type MissileWeapon,VISOM_GUIDANCE} from '../content/weapons.ts';
+import {resolveWeapons,allowsLaserHoldFire,HELD_TRIGGER_INTERVAL,MISSILE_INTERVAL,MISSILE_HOMING,AI_MISSILE_ACCURACY,ROCKET_TOWER_STILL_SPEED,weaponMountCount,type VehicleWeapon,type LaserWeapon,type MachineGun,type MissileWeapon,VISOM_GUIDANCE} from '../content/weapons.ts';
 import {steerMissile,homeMissile} from './guided-flight.ts';
 import {isLaser,isMissile,laserRange} from './weapons.ts';
 import {type Difficulty} from '../settings.ts';
@@ -368,7 +368,7 @@ export class Simulation {
         const accuracy=airborne?AI_MISSILE_ACCURACY.airborne:AI_MISSILE_ACCURACY.ground;
         const seed=[...unit.id].reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))|0,this.nextMissileId);
         const sample=(salt:number)=>{const n=Math.sin(seed+salt)*43758.5453;return (n-Math.floor(n))*2-1;};
-        const bearing=Math.atan2(point.x-from.x,point.z-from.z),range=distance(from,point),lateral=Math.tan(accuracy.yawSpread)*range*sample(1),vertical=Math.tan(accuracy.pitchSpread)*range*sample(2);
+        const stillTower=unit.kind==='scorp-rocket-tower'&&this.targetIsStill(target,!target),bearing=Math.atan2(point.x-from.x,point.z-from.z),range=distance(from,point),lateral=Math.tan(stillTower?0:accuracy.yawSpread)*range*sample(1),vertical=Math.tan(stillTower?0:accuracy.pitchSpread)*range*sample(2);
         const offset={x:Math.cos(bearing)*lateral,y:vertical,z:-Math.sin(bearing)*lateral},aimPoint={x:point.x+offset.x,y:point.y+offset.y,z:point.z+offset.z};
         unit.slotAmmo[slot]!--;const missile=this.fireMissile(unit,weapon,side,aimPoint,target);
         missile.aiGuidance={point:aimPoint,offset,refreshAt:this.time+accuracy.updateInterval};fired=true;
@@ -894,6 +894,13 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     this.emit({type:'shot',unit,from,to:target??{...this.player},weapon,projectileId:missile.id,position:{...from}});
     return missile;
   }
+  private targetIsStill(target:SelectionTarget|null,player:boolean){
+    const stopped=(x:number,z:number)=>Math.hypot(x,z)<ROCKET_TOWER_STILL_SPEED;
+    if(target&&isFacility(target))return true;
+    if(target&&isVehicle(target))return Math.abs(target.speed)<ROCKET_TOWER_STILL_SPEED;
+    if(target)return target.flight?stopped(target.flight.vx,target.flight.vz):stopped(target.velocity?.x??0,target.velocity?.z??0);
+    return player&&(this.flight?stopped(this.flight.vx,this.flight.vz):stopped(this.humanVelocity.x,this.humanVelocity.z));
+  }
   private advanceMissiles(dt:number){
     const survivors:Missile[]=[];
     for(const p of this.missiles){
@@ -908,7 +915,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
           const airborne=target?!isVehicle(target)&&!isFacility(target)&&!!target.flight:p.homingTargetId==='player'&&!!this.flight;
           const accuracy=airborne?AI_MISSILE_ACCURACY.airborne:AI_MISSILE_ACCURACY.ground,guidance=p.aiGuidance;
           if(this.time>=guidance.refreshAt){guidance.point={x:point.x+guidance.offset.x,y:point.y+guidance.offset.y,z:point.z+guidance.offset.z};guidance.refreshAt=this.time+accuracy.updateInterval;}
-          aimPoint=guidance.point;turnRate=accuracy.turnRate;
+          const towerStill=this.units.find(u=>u.id===p.owner)?.kind==='scorp-rocket-tower'&&this.targetIsStill(target??null,!target&&p.homingTargetId==='player');
+          aimPoint=towerStill?point:guidance.point;turnRate=accuracy.turnRate;
         }
         if(!aimPoint||!homeMissile(p,aimPoint,turnRate*(p.homingScale??1),MISSILE_HOMING.trackingCone,step))p.homingTargetId=undefined;
       }

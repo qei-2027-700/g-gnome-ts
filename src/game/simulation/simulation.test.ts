@@ -307,6 +307,21 @@ test('Scorp rocket tower UNKPA turns 20 percent faster while tower SREM and Scor
  const ordinary=turn('scorp-asv','UNKPA'),stronger=turn('scorp-rocket-tower','UNKPA');assert.ok(Math.abs(stronger/ordinary-1.2)<1e-6);assert.ok(Math.abs(ordinary-MISSILE_HOMING.turnRate*.05)<1e-6);assert.ok(Math.abs(turn('scorp-rocket-tower','SREM')-ordinary)<1e-6);
 });
 
+test('a stopped vehicle is hit by both Scorp rocket tower missiles, while a moving one keeps the scattered aim',()=>{
+ const fire=(moving:boolean,slot:number,place:[number,number])=>{
+  const mission=structuredClone(DEFAULT_MISSION);mission.completionEnabled=false;mission.rocks=[];mission.base=undefined;mission.terrain={...mission.terrain,cliffs:[],peaks:[]};mission.units=[{id:'own',kind:'union-sentry',x:0,z:0,pilot:true}];mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.companions=[];mission.personnel=[];mission.objectives=[];mission.assaults=[];
+  const s=new Simulation('Easy',mission),own=s.mounted!;if(moving){s.throttle=1;s.speed=own.speed=16;}
+  const tower=makeUnit(`tower-${slot}-${place[0]}`,'scorp-rocket-tower',place[0],place[1],true);tower.iff='enemy';tower.attackCycle=slot;tower.yaw=tower.aim=Math.atan2(own.x-tower.x,own.z-tower.z);s.units.push(tower);
+  s.tick(1/60,idle);tower.cooldown=999;const shots=s.missiles.filter(m=>m.owner===tower.id);assert.equal(shots.length,2);assert.ok(shots.every(m=>m.weapon===(slot===1?'SREM':'UNKPA')));
+  if(moving)assert.ok(shots.every(m=>Math.hypot(m.aiGuidance!.offset.x,m.aiGuidance!.offset.y,m.aiGuidance!.offset.z)>0));
+  else assert.ok(shots.every(m=>m.aiGuidance!.offset.x===0&&m.aiGuidance!.offset.y===0&&m.aiGuidance!.offset.z===0));
+  for(let i=0;i<400&&s.missiles.some(m=>m.owner===tower.id);i++){if(moving){s.throttle=1;s.speed=own.speed=16;}s.tick(1/60,idle);}
+  return s.events.filter(e=>e.type==='hit'&&e.unit===own).length;
+ };
+ for(const place of [[0,240],[70,210],[-90,160]] as [number,number][])for(const slot of [1,0])assert.equal(fire(false,slot,place),2,`stopped ${slot} at ${place}`);
+ const moving=fire(true,0,[0,240]);assert.ok(moving<2,`moving volley hits ${moving}`);
+});
+
 test('Merc AIP AI makes a slow bounded turn toward a side target while Union AIP keeps its original response',()=>{
  const run=(kind:'merc-aip'|'union-aip',fps:number)=>{
   const mission=structuredClone(DEFAULT_MISSION);mission.units=[{id:'handling-aip',kind,x:0,z:0,pilot:true,iff:'hostile',overrides:{weapons:[]}}];mission.player={x:150,z:0};mission.assignedUnitId='handling-aip';mission.startMountedUnitId=undefined;mission.companions=[];mission.personnel=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];

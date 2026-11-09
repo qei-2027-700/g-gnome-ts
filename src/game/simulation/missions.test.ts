@@ -4,19 +4,44 @@ import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
-import {riverFrameAtZ,riverDistance} from '../content/missions/river.ts';
+import {riverFrameAtZ,riverDistance,riverSamples} from '../content/missions/river.ts';
 import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
 import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
+function riverBank(path:readonly {x:number;z:number}[],x:number,z:number){
+ let best=Infinity,side=0;
+ for(let i=1;i<path.length;i++){
+  const a=path[i-1]!,b=path[i]!,dx=b.x-a.x,dz=b.z-a.z,len2=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a.x)*dx+(z-a.z)*dz)/len2));
+  const cx=a.x+dx*t,cz=a.z+dz*t,dist=Math.hypot(x-cx,z-cz),len=Math.hypot(dx,dz)||1;
+  if(dist<best){best=dist;side=(dx/len)*(z-cz)-(dz/len)*(x-cx);}
+ }
+ return side;
+}
 const advance=(s:Simulation,n=60)=>{for(let i=0;i<n;i++)s.tick(1/60,idle);};
 function driveRoute(s:Simulation,points:readonly (readonly [number,number])[]){for(const [x,z] of points){for(let i=0;i<1500&&s.status==='running'&&Math.hypot(s.player.x-x,s.player.z-z)>8;i++){const unit=s.mounted;assert.ok(unit,'route vehicle remains occupied');unit.yaw=Math.atan2(x-unit.x,z-unit.z);unit.aim=unit.yaw;s.tick(.05,{...idle,forward:true});}assert.ok(s.status!=='running'||Math.hypot(s.player.x-x,s.player.z-z)<=8,`route blocked before ${x}, ${z}`);}}
 test('1-5 starts in a Darken TD, requires generator destruction and bridge lowering, then waits for Kylie',()=>{
  const s=new Simulation('Easy',MISSION_1_5),player=s.mounted!,control=s.facilities.find(f=>f.id==='bridge-control')!,generator=s.facilities.find(f=>f.id==='shield-generator')!;
  assert.equal(player.kind,'darken-tactical');assert.equal(s.iff,'0024');assert.ok(s.raisedBridges.has('chambers-bridge'));
- const river=s.mission.terrain.river!,bridge=riverFrameAtZ(river,river.bridgeZ);
- assert.ok(player.x>control.x&&player.yaw<0,'start east of the northwest control, facing west');
- assert.ok(Math.abs(river.path![0]!.x-river.path!.at(-1)!.x)>800,'river runs east to west');
- assert.ok(control.x<bridge.x&&control.z<bridge.z,'control lies west and south of the bridge on the approach bank');
+ const river=s.mission.terrain.river!,bridge=riverFrameAtZ(river,river.bridgeZ),path=river.path!;
+ const ahead=(point:{x:number;z:number})=>(point.x-player.x)*Math.sin(player.yaw)+(point.z-player.z)*Math.cos(player.yaw);
+ const right=(point:{x:number;z:number})=>(point.x-player.x)*Math.cos(player.yaw)-(point.z-player.z)*Math.sin(player.yaw);
+ const bank=(point:{x:number;z:number})=>riverBank(path,point.x,point.z),playerBank=bank(player);
+ const rocket=s.units.find(u=>u.id==='rocket-tower')!,meson=s.units.find(u=>u.id==='meson-tower')!,power=s.facilities.find(f=>f.id==='darken-power')!;
+ const cliff=s.mission.terrain.cliffs!.find(c=>c.id==='ahead-cliff')!;
+ const nearestRiver=riverSamples(river,8).reduce((best,point)=>Math.hypot(point.x-player.x,point.z-player.z)<Math.hypot(best.x-player.x,best.z-player.z)?point:best);
+ assert.ok(player.x>control.x&&player.yaw<0,'start on the east side, facing west');
+ assert.ok(Math.abs(path[0]!.x-path.at(-1)!.x)>800,'river runs east to west');
+ assert.ok(right(nearestRiver)<-40&&riverDistance(river,player.x,player.z)>river.width/2+30,'the river lies on the left of the opening view');
+ assert.ok(ahead(cliff)>0&&right(cliff)>0,'the opening cliff is ahead and to the right');
+ assert.ok(playerBank*bank(rocket)<0&&riverDistance(river,rocket.x,rocket.z)>river.width/2,'rocket tower stands across the river');
+ assert.ok(Math.hypot(meson.x-player.x,meson.z-player.z)>Math.hypot(rocket.x-player.x,rocket.z-player.z),'meson tower is farther along the far bank');
+ for(const place of [meson,power,control])assert.ok(playerBank*bank(place)<0&&riverDistance(river,place.x,place.z)>river.width/2,`far-bank place ${place.id}`);
+ for(const place of [power,control,bridge])assert.ok(Math.hypot(place.x-meson.x,place.z-meson.z)<180,'power, bridge control and the bridge stay near the meson tower');
+ for(const hawk of s.units.filter(u=>u.id!=='player-td'&&/sentry|tactical|asv/.test(u.kind)))assert.ok(playerBank*bank(hawk)>0&&riverDistance(river,hawk.x,hawk.z)>river.width/2,`${hawk.id} stays on the player's bank`);
+ assert.ok(playerBank*bank(s.soldiers.find(p=>p.personId==='kylie')!)<0,'Kylie waits on the far bank');
+ const scale=Math.min(540/(s.mission.terrain.halfWidth*2),500/(s.mission.terrain.maxZ-s.mission.terrain.minZ));
+ assert.ok(Math.abs((control.z-s.mission.base!.z)*scale)>36,'Chambers Pass and BRIDGE labels stay apart on the mission map');
+ assert.ok(control.x<bridge.x&&control.z<bridge.z,'control lies west and south of the bridge');
  assert.ok(riverDistance(river,control.x,control.z)>river.width/2,'control is outside the river');
  assert.equal(s.mission.terrain.skyPalette,'amber');
  assert.equal(s.mission.bgm?.start.trackId,'bgm-mission-1-1-sentry-combat');
@@ -27,7 +52,7 @@ test('1-5 starts in a Darken TD, requires generator destruction and bridge lower
  s.eject('ground');s.human={x:player.x,z:player.z+3};assert.ok(s.board());
  for(const enemy of s.units.filter(u=>u!==player)){enemy.alive=false;enemy.pilot=false;}
  assert.ok(s.changeIff('1234'));
- driveRoute(s,[[180,-190],[0,-185],[-175,-160],[-325,-100],[-395,50],[-300,200],[-300,300],[-300,430],[-350,490]]);
+ driveRoute(s,[[300,40],[120,40],[0,35],[-100,40],[-190,-20],[-190,-230],[-190,-330],[-390,-310]]);
  assert.equal(s.status,'running');assert.equal(s.objectiveStates.find(o=>o.id==='contact')?.done,true);
  assert.equal(s.objectiveStates.find(o=>o.id==='iff')?.done,false);
  assert.ok(s.changeIff('0024'));s.tick(.05,idle);

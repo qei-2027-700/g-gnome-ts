@@ -51,7 +51,7 @@ export const SCORP_TOWER_PALETTE={
   ochre:'#b18138'
 } as const;
 
-export const VEHICLES = {
+const BASE_VEHICLES = {
   'union-sentry': {
     name:'Union Sentry HAWC',
     jp:'ユニオン セントリー ホーク',
@@ -83,7 +83,7 @@ export const VEHICLES = {
     drive:{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'}
   },
   'darken-sentry': {
-    ejectionSeat:false,
+    ejectionSeat:true,
     name:'Darken Sentry HAWC',
     jp:'ダーケン軍 セントリー ホーク',
     faction:'darken',
@@ -93,24 +93,24 @@ export const VEHICLES = {
     armor:84,
     height:6.9,
     passengerCapacity:0,
-    color:'orange',
+    color:'#c68122',
     weapons:[
-      'TAR12',
       'CHUM',
+      'RUPP',
     ],
     torsoLimit:Math.PI/3,
     voice:'solemn',
     initialAmmo:{
-      CHUM:45
+      CHUM:50
     },
     ai:{
       detection:125,
       strafe:1.1,
       keepMoving:true,
       stopDistance:60,
-      missileVolley:1
+      missileVolley:2
     },
-    shape:{hull:{w:2.45,h:1.05,d:2.1,y:-.85,z:0},cockpit:{w:1.5,h:1.1,d:1.7,y:-.12,z:.5},weapon:{w:.5,h:.42,d:1.1,x:.65,y:-1.02,z:1.05},shoulder:{w:1.45,h:1.3,d:2.4,x:2.35,y:2.05,z:.05},legX:2.35,upperLeg:{w:.85,h:2.65,d:1.1,y:4.72,z:-.1},brace:{x:1.5,y:.9,z:-.15,w:1.7,h:2.2,d:.7}},
+    shape:{hull:{w:1.55,h:1.25,d:1.55,y:-.68,z:0},cockpit:{w:.82,h:1.15,d:1.2,y:.45,z:.22},weapon:{w:1.05,h:.65,d:1.15,x:1.68,y:.12,z:.42},legX:1.08},
     gait:{stride:6.8,lift:.65,lean:.085,bounce:.10},
     drive:{idle:82,rev:65,harmonic:2.1,filter:360,volume:.035,wave:'sine'}
   },
@@ -585,6 +585,12 @@ export const VEHICLES = {
     gait:{stride:1,lift:0,lean:0,bounce:0},
     drive:{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'}
   },
+} as const satisfies Record<string,VehicleDefinition>;
+// Chassis and loadouts are provisional until the original Darken variants are measured.
+export const VEHICLES={...BASE_VEHICLES,
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#b08a32',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},shape:{hull:{w:2.1,h:1.3,d:2.1,y:-.45,z:0},cockpit:{w:1.9,h:1.85,d:1.75,y:1.2,z:.1},weapon:{w:1.7,h:1.55,d:1.65,x:2.2,y:1.65,z:.1},legX:1.45,legScale:{x:1,y:1.1,z:1}}},
+ 'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
+ 'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
 } as const satisfies Record<string,VehicleDefinition>;
 export type VehicleKind=keyof typeof VEHICLES;
 type VehicleDataKey='shape'|'gait'|'drive';

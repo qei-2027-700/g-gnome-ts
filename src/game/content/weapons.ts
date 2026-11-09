@@ -5,6 +5,8 @@ export const LASER_FLIGHT_SPEED=72;
 export const LASERS = {
   // Manual pp.41/57. Charge timing and the visible TAR12 bolt speed are provisional.
   TAR12:{range:500.5,minRange:50.05,recharge:1,movingRechargeFactor:.5,interval:1,energy:0,damage:18,speed:LASER_FLIGHT_SPEED},
+  // Darken Tactical Defense HAWC card and W1 weapon table. Recharge and interval are provisional; visible bolt speed follows the other lasers.
+  HOMP11:{range:635,minRange:62.5,recharge:1,movingRechargeFactor:.5,interval:.25,energy:3,damage:14,speed:LASER_FLIGHT_SPEED},
   GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:13,speed:1000},
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
   RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:18,speed:LASER_FLIGHT_SPEED},
@@ -57,7 +59,7 @@ export const AI_MISSILE_ACCURACY={
  airborne:{yawSpread:.14,pitchSpread:.09,turnRate:.045,updateInterval:.75},
 };
 
-// User-confirmed laser-only hold-fire exceptions; chassis await content/models.
+// User-confirmed laser-only hold-fire exceptions; some chassis still await content/models.
 export const LASER_HOLD_FIRE_HAWCS=['scorp-assault','darken-tactical','merc-assault','union-assault'] as const;
 export function allowsLaserHoldFire(chassis:string,weapon:VehicleWeapon){return weapon in LASERS&&(LASER_HOLD_FIRE_HAWCS as readonly string[]).includes(chassis);}
 
@@ -69,6 +71,8 @@ export function weaponMountCount(chassis:string,weapon:string){
  if(chassis==='scorp-asv'&&weapon==='zWASP')return 1; // Duplicate slots already denote the ASV's left and right guns.
  if(chassis==='merc-assault'&&weapon==='RUPP')return 2;
  if(chassis==='union-sentry'&&weapon==='FIL-30')return 2;
+ if(chassis==='darken-sentry'&&(weapon==='RUPP'||weapon==='CHUM'))return 2;
+ if(chassis==='darken-tactical'&&(weapon==='HOMP11'||weapon==='DASY'))return 2;
  return (weapon in MACHINE_GUNS||chassis==='union-tactical'&&weapon==='P2MEC'||chassis==='scorp-sentry'&&weapon==='CETI'||chassis==='scorp-tactical'&&weapon==='RAID')?2:1;
 }
 export function weaponDisplayName(_chassis:string,weapon:string){return weapon;}

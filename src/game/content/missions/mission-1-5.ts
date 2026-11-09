@@ -1,0 +1,48 @@
+import type {MissionDefinition} from './types.ts';
+
+// The briefing goals are visible in the supplied original screenshot. Coordinates,
+// force sizes, IFF of the defenders and attack timings are provisional.
+export const MISSION_1_5:MissionDefinition={
+ id:'1-5',title:'Rescue!',subtitle:{ja:'キリーとの合流',en:'Contact Kylie at Chambers Pass'},
+ playerFaction:'darken',initialIff:'0024',factionCodes:{darken:'6707'},
+ bgm:{start:{trackId:'bgm-mission-1-1-sentry-combat',delay:0}},
+ briefing:{ja:'チャンバーズ峠の橋を渡り、キリーと連絡を取る。ミーゾン・ガードタワーと警備部隊を倒し、IFFを0024に設定せよ。橋制御棟へ入る前にシールドジェネレーターを破壊する。',en:'Cross the bridge at Chambers Pass and contact Kylie. Defeat the Meson Tower and security forces, and set IFF to 0024. Destroy the shield generator before entering the bridge control building.'},
+ startHint:{ja:'Darken TD HAWCに搭乗済み。左手のロケットタワーはしばらく後に攻撃する。進路のASVを抜け、シールドジェネレーターを破壊して橋制御棟へ。',en:'You start in a Darken TD HAWC. The rocket tower on your left attacks after a delay. Pass the ASV, destroy the shield generator and enter bridge control.'},
+ success:{ja:'キリーと連絡を取り、チャンバーズ峠を通過した。',en:'Contacted Kylie and crossed Chambers Pass.'},
+ radio:{ja:'橋を渡り、キリーと合流せよ。',en:'Cross the bridge and contact Kylie.'},
+ player:{x:350,z:-190},initialYaw:-Math.PI/2,assignedUnitId:'player-td',startMountedUnitId:'player-td',initialView:'first-person',
+ units:[
+  {id:'player-td',kind:'darken-tactical',x:350,z:-190,yaw:-Math.PI/2,pilot:false},
+  {id:'rocket-tower',kind:'scorp-rocket-tower',x:350,z:-335,yaw:0,pilot:true,overrides:{name:'Darken Rocket Tower',jp:'ダーケン軍 ロケットタワー',faction:'darken',color:'#a6522b',missileHomingScale:{UNKPA:0}}},
+  {id:'approach-asv',kind:'darken-asv',x:130,z:-125,yaw:0,pilot:true},
+  {id:'control-sentry',kind:'darken-sentry',x:-185,z:105,yaw:0,pilot:true},
+  {id:'bridge-td',kind:'darken-tactical',x:-130,z:20,yaw:0,pilot:true},
+  {id:'bridge-sentry',kind:'darken-sentry',x:-330,z:440,yaw:Math.PI,pilot:true},
+  {id:'meson-tower',kind:'merc-meson-tower',x:-225,z:205,yaw:0,pilot:true,powerSourceId:'darken-power',overrides:{name:'Darken Meson Guard Tower',jp:'ダーケン軍 ミーゾン・ガードタワー',faction:'darken',color:'#a6522b'}},
+ ],
+ assaults:[{unitId:'rocket-tower',targetId:'player-td',startAt:7}],
+ personnel:[{personId:'kylie',x:-350,z:490}],
+ radioTriggers:[{id:'kylie-contact',event:'completion',speakerId:'kylie',vehicleKind:'darken-tactical',line:{ja:'ガンツ、聞こえる？　橋を渡れたのね。こちらへ来て。',en:'Gantz, do you read? You made it across the bridge. Come to my position.'}}],
+ completionSequence:{delay:3,radioId:'kylie-contact'},
+ base:{name:'Chambers Pass',faction:'darken',x:-305,z:245,width:245,depth:440,buildings:[
+  {id:'bridge-control',kind:'bridge-control',bridgeId:'chambers-bridge',name:'Bridge Control Building',x:-395,z:245,width:28,depth:24,height:12,health:600,boardable:true},
+  {id:'shield-generator',kind:'shield-generator',name:'Darken Shield Generator',x:-330,z:165,width:30,depth:25,height:14,health:120,boardable:false},
+  {id:'darken-power',kind:'power-plant',name:'Darken Power Plant',x:-165,z:170,width:45,depth:36,height:18,health:400,boardable:false},
+ ]},
+ waypoints:[{id:1,x:-350,z:490,radius:30}],
+ objectives:[
+  {id:'meson',type:'eliminate',unitIds:['meson-tower'],label:{ja:'ミーゾン・ガードタワーを倒す',en:'Defeat Meson Tower'}},
+  {id:'security',type:'eliminate',unitIds:['approach-asv','control-sentry','bridge-td','bridge-sentry'],label:{ja:'警備部隊を倒す',en:'Defeat security forces'}},
+  {id:'generator',type:'destroy-facility',facilityIds:['shield-generator'],label:{ja:'シールドジェネレーターを破壊',en:'Destroy the shield generator'}},
+  {id:'lower-bridge',type:'lower-bridge',bridgeId:'chambers-bridge',label:{ja:'橋制御棟で橋を下げる',en:'Lower the bridge at bridge control'}},
+  {id:'iff',type:'set-iff',iff:'0024',label:{ja:'IFFを0024に設定',en:'Set IFF to 0024'}},
+  {id:'contact',type:'reach',waypointId:1,label:{ja:'チャンバーズ峠の橋を渡り、キリーと連絡を取る',en:'Cross the bridge at Chambers Pass and contact Kylie'}},
+ ],
+ initialRaisedBridges:['chambers-bridge'],
+ terrain:{biome:'desert',weather:'clear',skyPalette:'amber',ridgeStyle:'rocky',halfWidth:500,minZ:-420,maxZ:600,ridgeHeight:75,ridgeVariation:40,seed:15,
+  river:{bridgeId:'chambers-bridge',x:0,z:280,width:80,length:1050,bridgeZ:355,bridgeWidth:34,path:[{x:-500,z:390},{x:-300,z:355},{x:-160,z:325},{x:50,z:275},{x:270,z:245},{x:500,z:215}]},
+  cliffs:[{id:'approach-cliff',x:-85,z:-35,width:110,depth:150,height:95},{id:'south-cliff',x:-445,z:-90,width:105,depth:180,height:115}],
+  peaks:[{x:465,z:-310,width:55,depth:110,height:130},{x:110,z:490,width:110,depth:110,height:140},{x:-450,z:-325,width:100,depth:100,height:160},{x:-460,z:540,width:90,depth:100,height:125}]},
+ rocks:[{x:210,z:-90,r:9},{x:-45,z:-320,r:11},{x:-230,z:-40,r:8}],
+ tuning:{Easy:{interval:2.6},Medium:{interval:2},Hard:{interval:1.35}},
+};

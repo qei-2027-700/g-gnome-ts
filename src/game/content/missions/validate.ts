@@ -20,15 +20,20 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   for(const unit of mission.units)if(unit.powerSourceId){const source=mission.base?.buildings.find(b=>b.id===unit.powerSourceId);if(!source||source.kind!=='power-plant')fail(`unit ${unit.id} references missing power plant: ${unit.powerSourceId}`);}
   for(const person of mission.personnel??[]){if(person.facilityId){if(!mission.base?.buildings.some(b=>b.id===person.facilityId))fail(`person ${person.personId} references missing facility: ${person.facilityId}`);}if(person.boardingTargetId)unitRef(person.boardingTargetId,`person ${person.personId}`);if(person.facilityId&&person.boardingTargetId)fail(`person ${person.personId} has conflicting locations`);}
   for(const assault of mission.assaults??[]){unitRef(assault.unitId,'assault');targetRef(assault.targetId,'assault');if(!Number.isFinite(assault.startAt)||assault.startAt<0)fail('assault startAt must be nonnegative');}
+  for(const supply of mission.supplies??[]){if(!waypoints.has(supply.waypointId))fail(`supply references missing waypoint: ${supply.waypointId}`);if(supply.kind==='shield-doubler'&&(!Number.isFinite(supply.duration)||supply.duration<=0))fail('shield doubler duration must be positive');}
+  unique((mission.supplies??[]).map(s=>s.waypointId),'supply waypoint ID');
+  if(mission.airSupport){unitRef(mission.airSupport.unitId,'air support');if(mission.units.find(u=>u.id===mission.airSupport?.unitId)?.pilot!==false)fail('air support unit must start unoccupied');}
   unique((mission.assaults??[]).map(a=>a.unitId),'assault unit ID');
   for(const objective of mission.objectives){
-   if(objective.type==='raise-bridge'&&mission.terrain.river?.bridgeId!==objective.bridgeId)fail(`objective ${objective.id} references missing bridge: ${objective.bridgeId}`);
+   if((objective.type==='raise-bridge'||objective.type==='lower-bridge')&&![mission.terrain.river,...mission.terrain.rivers??[]].some(r=>r?.bridgeId===objective.bridgeId))fail(`objective ${objective.id} references missing bridge: ${objective.bridgeId}`);
    if(objective.type==='defend'&&objective.untilBridgeId&&mission.terrain.river?.bridgeId!==objective.untilBridgeId)fail(`objective ${objective.id} references missing bridge: ${objective.untilBridgeId}`);
    if(objective.type==='board-unit')unitRef(objective.unitId,`objective ${objective.id}`);
    if(objective.type==='board-player'&&!people.has(objective.personId))fail(`objective ${objective.id} references missing person: ${objective.personId}`);
    if(objective.type==='defend'){if(objective.requiredKills!==undefined&&(!Number.isInteger(objective.requiredKills)||objective.requiredKills<1||objective.requiredKills>objective.attackerIds.length))fail(`objective ${objective.id} has invalid requiredKills`);if(!objective.targetIds.length||!objective.attackerIds.length)fail(`objective ${objective.id} has no defense targets or attackers`);for(const id of objective.targetIds)targetRef(id,`objective ${objective.id}`);for(const id of objective.attackerIds)unitRef(id,`objective ${objective.id}`);}
    if(objective.type==='reach'&&!waypoints.has(objective.waypointId))fail(`objective ${objective.id} references missing waypoint: ${objective.waypointId}`);
    if(objective.type==='eliminate'){if(!objective.unitIds.length)fail(`objective ${objective.id} has no targets`);for(const id of objective.unitIds)unitRef(id,`objective ${objective.id}`);}
+   if(objective.type==='destroy-facility'){if(!objective.facilityIds.length)fail(`objective ${objective.id} has no facilities`);for(const id of objective.facilityIds)if(!mission.base?.buildings.some(b=>b.id===id))fail(`objective ${objective.id} references missing facility: ${id}`);}
+   if(objective.type==='set-iff'&&!/^[0-7]{4}$/.test(objective.iff))fail(`objective ${objective.id} has invalid IFF`);
    if(objective.type==='lure'){
     unitRef(objective.unitId,`objective ${objective.id}`);
     if(!mission.lures?.some(l=>l.unitId===objective.unitId))fail(`objective ${objective.id} has no lure definition`);
@@ -40,7 +45,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   }
   for(const pickup of mission.pickups??[]){if(!people.has(pickup.personId))fail(`pickup references missing person: ${pickup.personId}`);targetRef(pickup.facilityId,'pickup');for(const id of pickup.attackerIds)unitRef(id,'pickup');if(!Number.isInteger(pickup.requiredKills)||pickup.requiredKills<1||pickup.requiredKills>pickup.attackerIds.length)fail('pickup has invalid requiredKills');}
   for(const id of mission.garrison??[])unitRef(id,'garrison');
-  for(const b of mission.base?.buildings??[])if(b.bridgeId&&(b.kind!=='bridge-control'||mission.terrain.river?.bridgeId!==b.bridgeId))fail(`facility ${b.id} references missing bridge: ${b.bridgeId}`);
+  for(const b of mission.base?.buildings??[])if(b.bridgeId&&(b.kind!=='bridge-control'||![mission.terrain.river,...mission.terrain.rivers??[]].some(r=>r?.bridgeId===b.bridgeId)))fail(`facility ${b.id} references missing bridge: ${b.bridgeId}`);
   const companions=mission.companions??[];
   unique(companions.map(c=>c.personId),'companion person ID');unique(companions.map(c=>c.key),'companion key');
   for(const companion of companions){
@@ -53,6 +58,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   for(const sortie of mission.infantrySorties??[]){if(!mission.base?.buildings.some(b=>b.id===sortie.facilityId))fail(`infantry sortie ${sortie.id} references missing facility: ${sortie.facilityId}`);if(!Number.isInteger(sortie.count)||sortie.count<1||!Number.isFinite(sortie.delay)||sortie.delay<0||!Number.isFinite(sortie.interval)||sortie.interval<=0||!Number.isFinite(sortie.range)||sortie.range<=0)fail(`infantry sortie ${sortie.id} has invalid count or timing`);}
   unique((mission.radioTriggers??[]).map(r=>r.id),'radio trigger ID');
   for(const trigger of mission.radioTriggers??[])if(!people.has(trigger.speakerId))fail(`radio trigger ${trigger.id} references missing speaker: ${trigger.speakerId}`);
+  if(mission.completionSequence){if(!mission.radioTriggers?.some(r=>r.id===mission.completionSequence?.radioId&&r.event==='completion'))fail('completion sequence references missing radio trigger');if(!Number.isFinite(mission.completionSequence.delay)||mission.completionSequence.delay<0)fail('completion sequence has invalid delay');}
   unique([...mission.units.map(u=>u.id),...(mission.base?.buildings??[]).flatMap(b=>b.id?[b.id]:[])],'selection ID');
   unique((mission.minefields??[]).map(f=>f.id),'minefield ID');
   unique((mission.minefields??[]).flatMap(f=>f.mines.map(m=>m.id)),'mine ID');
@@ -62,7 +68,9 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   const finitePoint=(point:{x:number;z:number},label:string)=>{if(!Number.isFinite(point.x)||!Number.isFinite(point.z))fail(`${label} has non-finite coordinates`);};
   finitePoint(mission.player,'player');for(const unit of mission.units)finitePoint(unit,`unit ${unit.id}`);
   if(mission.initialYaw!==undefined&&!Number.isFinite(mission.initialYaw))fail('initialYaw must be finite');
-  const river=mission.terrain.river;if(river?.path){if(river.path.length<2)fail('river path needs at least two points');for(const [i,point] of river.path.entries()){finitePoint(point,`river path point ${i+1}`);if(Math.abs(point.x)>mission.terrain.halfWidth||point.z<mission.terrain.minZ||point.z>mission.terrain.maxZ)fail(`river path point ${i+1} is outside terrain bounds`);}}
+  const rivers=[...(mission.terrain.river?[mission.terrain.river]:[]),...(mission.terrain.rivers??[])];unique(rivers.map(r=>r.bridgeId),'bridge ID');
+  for(const id of mission.initialRaisedBridges??[])if(!rivers.some(r=>r.bridgeId===id))fail(`initial raised bridge is missing: ${id}`);
+  for(const river of rivers)if(river.path){if(river.path.length<2)fail('river path needs at least two points');for(const [i,point] of river.path.entries()){finitePoint(point,`river path point ${i+1}`);if(Math.abs(point.x)>mission.terrain.halfWidth||point.z<mission.terrain.minZ||point.z>mission.terrain.maxZ)fail(`river path point ${i+1} is outside terrain bounds`);}}
   for(const waypoint of mission.waypoints){finitePoint(waypoint,`waypoint ${waypoint.id}`);if(!(waypoint.radius>0))fail(`waypoint ${waypoint.id} needs a positive radius`);}
   for(const image of [mission.briefingPresentation?.mapPreview,mission.briefingPresentation?.vehiclePreview])if(image&&(!image.src||!(image.width>0)||!(image.height>0)||!/^[-\d.]+\s+[-\d.]+\s+[\d.]+\s+[\d.]+$/.test(image.viewBox)))fail('invalid briefing preview image');
  }

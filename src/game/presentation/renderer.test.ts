@@ -5,6 +5,38 @@ import {World} from './renderer.ts';
 import {Simulation,makeUnit} from '../simulation/simulation.ts';
 import type {FacilityType} from '../simulation/facilities.ts';
 import {MISSION} from '../content/mission-1-1.ts';
+test('Darken Sentry keeps its narrow body, blue fin and two green weapon pods',async()=>{
+ const {VEHICLE_SHAPES}=await import('../content/vehicles.ts');
+ const {hologramSvg}=await import('./hologram.ts');
+ const {darkenSentryCockpitShellSvg}=await import('./darken-sentry-cockpit.ts');
+ const cockpit=darkenSentryCockpitShellSvg();assert.ok(cockpit.includes('assets/cockpits/darken-sentry-hawk.png'));assert.ok(cockpit.includes('darken-sentry-metal-mask'));
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation(),unit=makeUnit('darken-reference','darken-sentry',0,40,true);sim.units=[unit];
+  const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get(unit.id)!;
+  const pods=rig.root.getChildMeshes().filter(mesh=>mesh.name==='weapon pod');
+  assert.equal(pods.length,2);assert.ok(pods[0].position.x*pods[1].position.x<0);
+  assert.ok(pods.every(mesh=>{const paint=(mesh.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;return paint.g>paint.r&&paint.g>paint.b;}));
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='darken blue dorsal fin').length,1);
+  assert.ok(VEHICLE_SHAPES['darken-sentry'].legX<VEHICLE_SHAPES['union-sentry'].legX);
+  assert.notEqual(hologramSvg('darken-sentry'),hologramSvg('merc-sentry'));
+  world.update(.016);assert.equal(world.renderError,null);
+ }finally{engine.dispose();}
+});
+test('Darken Tactical Defense has gold legs, silver shoulder pods and its own hologram',async()=>{
+ const {hologramSvg}=await import('./hologram.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{const sim=new Simulation(),unit=makeUnit('stalker','darken-tactical',0,40,false);sim.units=[unit];sim.human={x:0,z:40};assert.ok(sim.board());const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get(unit.id)!;
+  const pods=rig.root.getChildMeshes().filter(mesh=>mesh.name==='weapon pod');assert.equal(pods.length,2);assert.ok(pods[0].position.x*pods[1].position.x<0);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker pod red grille').length,6);assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker broad gold foot').length,2);
+  assert.notEqual(hologramSvg('darken-tactical'),hologramSvg('merc-tactical'));assert.ok(hologramSvg('darken-tactical').includes('M16 21h37v27H16z'));
+  world.mode=2;sim.fire(1);for(const event of sim.events)world.event(event);world.update(.016);
+  const bolt=world.scene.meshes.find(mesh=>mesh.metadata?.weapon==='HOMP11'&&mesh.metadata.visual==='yellow-laser')!;assert.ok(bolt);
+  const paint=bolt.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.emissiveColor.r>.9&&paint.emissiveColor.g>.7&&paint.emissiveColor.b<.25);
+  const flash=world.scene.getMeshByName('muzzle-flash')!;const muzzle=flash.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(muzzle.emissiveColor.r>.9&&muzzle.emissiveColor.g>.7);
+  world.event({type:'impact',weapon:'HOMP11',position:{x:0,y:3,z:20}});assert.ok(world.scene.getMeshByName('homp11-yellow-flash'));
+  assert.equal(world.renderError,null);
+ }finally{engine.dispose();}
+});
 test('Merc Assault has four raised spider legs, grounded alternating feet, shared leg hit zones and yellow RUPP beams',async()=>{
  const {intersectParts,buildingClearance}=await import('../simulation/parts.ts');
  const engine=new NullEngine({renderWidth:1000,renderHeight:800,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
@@ -724,6 +756,16 @@ test('curved 4-2 river has a recessed bed and oriented bridge leaves',async()=>{
  const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());world.update(0);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),false);
  assert.ok(s.raiseBridge());world.completionTime=0;world.update(0);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z)>1.4);assert.ok(world.scene.getTransformNodeByName('bridge-hinge--1')!.rotation.z>1.4);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),true);
  const {bridgeControlMarkup}=await import('./bridge-control.ts');assert.ok(bridgeControlMarkup().includes('id="bridgeSwitch"'));assert.ok(bridgeControlMarkup().includes('bridge-control-building'));
+ }finally{engine.dispose();}
+});
+
+test('4-3 renders four lava channels and four bridge decks',async()=>{
+ const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_4_3),engine);world.update(0);
+  assert.equal(MISSION_4_3.terrain.biome,'volcanic');assert.equal(world.scene.getMaterialByName('volcanic-ground')?.getActiveTextures()[0]?.name,'mottled-volcanic-ground');assert.ok(world.scene.getMaterialByName('basalt-mountain'));assert.equal(world.scene.meshes.some(mesh=>mesh.name==='scrub'),false);
+  const lava=world.scene.meshes.filter(mesh=>mesh.name==='river-water');assert.equal(lava.length,4);
+  for(const mesh of lava){const color=(mesh.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;assert.ok(color.r>color.b);}
+  for(const river of MISSION_4_3.terrain.rivers!)for(const side of [-1,1])assert.ok(world.scene.getTransformNodeByName(`bridge-hinge-${river.bridgeId}-${side}`));
  }finally{engine.dispose();}
 });
 

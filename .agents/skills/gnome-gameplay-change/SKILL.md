@@ -15,7 +15,7 @@ description: G-Nomeの操作、乗降、無人化、戦闘、接触判定、操�
 | --- | --- |
 | 移動・乗降・無人化・接触 | `src/game/simulation/simulation.ts`、`infantry.ts`、`parts.ts`、[歩兵仕様](../../../docs/gameplay/infantry.md) |
 | 入力・停止・センター・全開 | `src/game/input.ts`、`settings.ts`、[キー仕様](../../../docs/technical/keybindings.md) |
-| 武器性能・任務による差 | `src/game/content/weapons.ts`、`vehicles.ts`、`missions/` と対応する仕様 |
+| 武器の威力・弾の形・色・音・速さ | [gnome-weapon-tuning](../gnome-weapon-tuning/SKILL.md)。この表の操作・接触とは分けて扱う |
 | 操作音声 | `src/main.ts` のイベント接続、`src/game/presentation/audio.ts`、[音声方針](../../../docs/audio/mission-controls-and-audio.md) |
 
 パス表記はルートからの相対パス。対象の関数と、その状態を変更する呼び出し元を必要な範囲で追う。

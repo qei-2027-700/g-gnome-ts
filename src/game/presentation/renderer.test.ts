@@ -530,7 +530,7 @@ test('Union Tactical slender legs leave a narrower hit region with higher hips w
 test('FIL-30 is a slender red projectile like RAID, with no diamond or billboard for player and AI units',()=>{
  const sim=new Simulation(),own=sim.units[0],enemy=makeUnit('fil-enemy','union-sentry',30,60,true);sim.units=[own,enemy];sim.human={x:own.x,z:own.z};sim.board();
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);
- for(const unit of [own,enemy]){sim.mounted=unit;unit.cooldown=0;sim.fire(2);world.update(0);const bolt=world.scene.meshes.filter(m=>m.metadata?.weapon==='FIL-30').at(-1)!;assert.ok(bolt);assert.equal(bolt.metadata.visual,'slender-laser');assert.equal(bolt.billboardMode,0);const bounds=bolt.getBoundingInfo().boundingBox.extendSize;assert.ok(bounds.y>bounds.x*10);assert.ok(world.scene.getMeshByName('fil30-white-core'));}
+ for(const unit of [own,enemy]){sim.mounted=unit;unit.cooldown=0;sim.fire(2);world.update(0);const bolt=world.scene.meshes.filter(m=>m.metadata?.weapon==='FIL-30').at(-1)!;assert.ok(bolt);assert.equal(bolt.metadata.visual,'slender-laser');assert.equal(bolt.billboardMode,0);const bounds=bolt.getBoundingInfo().boundingBox.extendSize;assert.ok(bounds.y>bounds.x*10);assert.ok(world.scene.getMeshByName('slender-laser-core'));}
  assert.equal(world.scene.getMeshByName('laser-white-core'),null);engine.dispose();
 });
 

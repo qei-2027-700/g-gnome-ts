@@ -1,6 +1,6 @@
 export const LASER_RECHARGE_SECONDS=.55; // Provisional until measured against the original.
 // Charge/range curves, movement penalty and firing intervals still need measurement.
-// Slow visible bolts, per user reference. Provisional speed in m/s.
+// Provisional visible speed in m/s. RAID and FIL-30 share it. TAR12 and HOMP11 share it.
 export const LASER_FLIGHT_SPEED=72;
 export const LASERS = {
   // Manual pp.41/57. Charge timing and the visible TAR12 bolt speed are provisional.
@@ -15,7 +15,7 @@ export const LASERS = {
   P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:18,speed:LASER_FLIGHT_SPEED},
   'FIL-30': {range:220,minRange:22,recharge:LASER_RECHARGE_SECONDS,movingRechargeFactor:.5,interval:1,energy:2,damage:9,speed:LASER_FLIGHT_SPEED},
   CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:5,speed:LASER_FLIGHT_SPEED},
-  RAID: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:5,speed:60},
+  RAID: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:5,speed:LASER_FLIGHT_SPEED},
 } as const;
 export type LaserWeapon = keyof typeof LASERS;
 export const INFANTRY_WEAPONS={

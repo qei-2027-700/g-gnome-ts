@@ -32,7 +32,30 @@ import {Simulation,isVehicle,isFacility,targetHeight,type SelectionTarget,type C
 import {riverDistance,riverFrameAtZ,riverSamples,terrainRivers} from '../content/missions/river.ts';
 const GAUS30_BEAM_WIDTH=1.5;
 const GAUS30_BEAM_THICKNESS=.035;
+const RED_LASER='#ff2413';
+const YELLOW_LASER='#ffe529';
+const GREEN_LASER='#25ff43';
+const LASER_CORE='#fff3df';
+// RAID and FIL-30 share this slender red bolt. Provisional visible size.
+const SLENDER_LASER={length:1.8,diameter:.1,tessellation:8,coreLength:1.65,coreDiameter:.035,coreTessellation:6,color:RED_LASER,coreColor:LASER_CORE} as const;
+// TAR12 and HOMP11 share this diamond bolt. Only the shell color differs.
+const DIAMOND_LASER={radius:.55,tessellation:4,coreRadius:.23,coreOffset:-.015,coreColor:LASER_CORE} as const;
+const TAR12_LASER_COLOR=YELLOW_LASER;
+const HOMP11_LASER_COLOR=YELLOW_LASER;
 const isYellowLaser=(weapon?:string)=>weapon==='RUPP'||weapon==='TAR12'||weapon==='HOMP11';
+function diamondLaserColor(weapon?:string){
+  if(weapon==='TAR12')return TAR12_LASER_COLOR;
+  if(weapon==='HOMP11')return HOMP11_LASER_COLOR;
+  if(weapon==='RUPP')return YELLOW_LASER;
+  if(weapon==='CETI')return GREEN_LASER;
+  return RED_LASER;
+}
+function laserMaterialName(hex:string){
+  if(hex===RED_LASER)return 'laser-red';
+  if(hex===YELLOW_LASER)return 'laser-yellow';
+  if(hex===GREEN_LASER)return 'laser-green';
+  return `laser-${hex}`;
+}
 const color=(hex:string)=>Color3.FromHexString(hex);
 type Effect={mesh:Mesh;life:number;duration:number;kind:'beam'|'tracer'|'flash'|'smoke'|'blast'|'blood';velocity?:Vector3};
 type PartVisual={meshes:Mesh[];paint:{material:StandardMaterial;base:Color3;glow:Color3}[];flash:number;smoke:number};
@@ -542,16 +565,16 @@ export class World {
     }
     if(weapon==='GAUS20'){const bolt=MeshBuilder.CreateCylinder(name,{height:6,diameter:.12,tessellation:8},this.scene);bolt.rotation.x=Math.PI/2;bolt.material=this.fxMaterial('gaus-blue','#388bff',true);bolt.isPickable=false;bolt.metadata={weapon,visual:'blue-laser'};return bolt;}
     if(weapon==='TCREAP')return this.dashedGunTrace(new Vector3(0,0,-4),new Vector3(0,0,.8),'TCREAP',name);
-    if(weapon==='RAID'||weapon==='FIL-30'){const bolt=MeshBuilder.CreateCylinder(name,{height:1.8,diameter:.1,tessellation:8},this.scene);bolt.rotation.x=Math.PI/2;bolt.material=this.fxMaterial('laser-red','#ff2413',true);bolt.isPickable=false;bolt.metadata={weapon,visual:'slender-laser'};const core=MeshBuilder.CreateCylinder(weapon==='RAID'?'raid-white-core':'fil30-white-core',{height:1.65,diameter:.035,tessellation:6},this.scene);core.parent=bolt;core.material=this.fxMaterial('laser-core','#fff3df',true);core.isPickable=false;return bolt;}
-    const bolt=MeshBuilder.CreateDisc(name,{radius:.55,tessellation:4,sideOrientation:Mesh.DOUBLESIDE},this.scene);bolt.billboardMode=Mesh.BILLBOARDMODE_ALL;
-    const yellow=isYellowLaser(weapon);bolt.material=this.fxMaterial(yellow?'laser-yellow':weapon==='CETI'?'laser-green':'laser-red',yellow?'#ffe529':weapon==='CETI'?'#25ff43':'#ff2413',true);bolt.isPickable=false;bolt.metadata={weapon,visual:yellow?'yellow-laser':weapon==='CETI'?'green-laser':'red-laser'};
-    const core=MeshBuilder.CreateDisc('laser-white-core',{radius:.23,tessellation:4,sideOrientation:Mesh.DOUBLESIDE},this.scene);core.parent=bolt;core.position.z=-.015;core.material=this.fxMaterial('laser-core','#fff3df',true);core.isPickable=false;
+    if(weapon==='RAID'||weapon==='FIL-30'){const bolt=MeshBuilder.CreateCylinder(name,{height:SLENDER_LASER.length,diameter:SLENDER_LASER.diameter,tessellation:SLENDER_LASER.tessellation},this.scene);bolt.rotation.x=Math.PI/2;bolt.material=this.fxMaterial(laserMaterialName(SLENDER_LASER.color),SLENDER_LASER.color,true);bolt.isPickable=false;bolt.metadata={weapon,visual:'slender-laser'};const core=MeshBuilder.CreateCylinder('slender-laser-core',{height:SLENDER_LASER.coreLength,diameter:SLENDER_LASER.coreDiameter,tessellation:SLENDER_LASER.coreTessellation},this.scene);core.parent=bolt;core.material=this.fxMaterial('laser-core',SLENDER_LASER.coreColor,true);core.isPickable=false;return bolt;}
+    const bolt=MeshBuilder.CreateDisc(name,{radius:DIAMOND_LASER.radius,tessellation:DIAMOND_LASER.tessellation,sideOrientation:Mesh.DOUBLESIDE},this.scene);bolt.billboardMode=Mesh.BILLBOARDMODE_ALL;
+    const paint=diamondLaserColor(weapon),yellow=paint===YELLOW_LASER;bolt.material=this.fxMaterial(laserMaterialName(paint),paint,true);bolt.isPickable=false;bolt.metadata={weapon,visual:yellow?'yellow-laser':weapon==='CETI'?'green-laser':'red-laser'};
+    const core=MeshBuilder.CreateDisc('laser-white-core',{radius:DIAMOND_LASER.coreRadius,tessellation:DIAMOND_LASER.tessellation,sideOrientation:Mesh.DOUBLESIDE},this.scene);core.parent=bolt;core.position.z=DIAMOND_LASER.coreOffset;core.material=this.fxMaterial('laser-core',DIAMOND_LASER.coreColor,true);core.isPickable=false;
     return bolt;
   }
   private addEffect(mesh:Mesh,duration:number,kind:Effect['kind'],velocity?:Vector3){
     this.effects.push({mesh,duration,life:duration,kind,velocity});
   }
-  private yellowLaserFlash(position:Point3,weapon:string){const flash=MeshBuilder.CreateSphere(`${weapon.toLowerCase()}-yellow-flash`,{diameter:.45,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.fxMaterial('laser-yellow','#ffe529',true);this.addEffect(flash,.12,'flash');}
+  private yellowLaserFlash(position:Point3,weapon:string){const tint=diamondLaserColor(weapon),flash=MeshBuilder.CreateSphere(`${weapon.toLowerCase()}-yellow-flash`,{diameter:.45,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.fxMaterial(laserMaterialName(tint),tint,true);this.addEffect(flash,.12,'flash');}
   private gausFlash(position:Point3,weapon?:string){const flash=MeshBuilder.CreateSphere('gaus-blue-flash',{diameter:.55,segments:6},this.scene);flash.position.set(position.x,position.y,position.z);flash.material=this.gausMaterial(weapon);this.addEffect(flash,.12,'flash');}
   private gausImpactSmoke(position:Point3){
     for(let i=0;i<5;i++){
@@ -594,7 +617,8 @@ export class World {
       if(machineGun&&rig&&!e.position){const index=unit!.spec.weapons.indexOf(e.weapon as import('../content/weapons.ts').VehicleWeapon),part=index%2===0?'leftWeapon':'rightWeapon',barrel=rig.parts[part].meshes.find(mesh=>mesh.name==='barrel');if(barrel){barrel.computeWorldMatrix(true);const tip=barrel.getBoundingInfo().boundingBox.maximum;from=Vector3.TransformCoordinates(new Vector3(0,0,tip.z),barrel.getWorldMatrix());}}
       const flash=MeshBuilder.CreateSphere('muzzle-flash',{diameter:e.weapon==='GAUS30'?.6:e.weapon==='GAUS20'?.25:infantryRifle?(e.soldier?.18:.055):e.projectileId!==undefined?1.2:.7,segments:5},this.scene);
       if(e.weapon==='GAUS30'&&unit?.kind==='merc-meson-tower')flash.metadata={mesonMuzzleOwner:unit.id};
-      flash.position.copyFrom(from);flash.material=(e.weapon==='GAUS30'||e.weapon==='GAUS20')?this.gausMaterial(e.weapon):this.fxMaterial(isYellowLaser(e.weapon)?'rupp-muzzle':dasy?'dasy-muzzle':infantryRifle?'rifle-muzzle':'muzzle',isYellowLaser(e.weapon)?'#ffe529':dasy?'#ff2413':infantryRifle?'#ff3020':'#ffda83',true);this.addEffect(flash,e.weapon==='GAUS30'?.14:.09,'flash');
+      const muzzleTint=isYellowLaser(e.weapon)?diamondLaserColor(e.weapon):dasy?RED_LASER:infantryRifle?'#ff3020':'#ffda83';
+      flash.position.copyFrom(from);flash.material=(e.weapon==='GAUS30'||e.weapon==='GAUS20')?this.gausMaterial(e.weapon):this.fxMaterial(isYellowLaser(e.weapon)?laserMaterialName(muzzleTint):dasy?'dasy-muzzle':infantryRifle?'rifle-muzzle':'muzzle',muzzleTint,true);this.addEffect(flash,e.weapon==='GAUS30'?.14:.09,'flash');
       if(e.projectileId===undefined){
         const to=new Vector3(e.to.x,e.to.y??(e.unit===this.sim.mounted?4:(this.sim.mounted?4:1.1)),e.to.z),direction=to.subtract(from),length=direction.length();direction.normalize();
         const laser=isLaser(e.weapon??'');

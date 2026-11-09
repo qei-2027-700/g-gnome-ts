@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,type Input} from './simulation.ts';
-import {LASERS,weaponDisplayName,weaponMountCount} from '../content/weapons.ts';
+import {LASER_FLIGHT_SPEED,LASERS,weaponDisplayName,weaponMountCount} from '../content/weapons.ts';
 import {laserRange} from './weapons.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {type VehicleKind} from '../content/vehicles.ts';
@@ -77,9 +77,10 @@ test('laser hits on dismounted players use laser damage rather than missile inst
 });
 
 
-test('diamond laser travels at 72 m/s while slender RAID keeps 60 m/s; both hit after flight',()=>{
+test('RAID and FIL-30 share the slender laser speed, and TAR12 and HOMP11 share theirs; both still hit after flight',()=>{
+ assert.equal(LASERS.RAID.speed,LASERS['FIL-30'].speed);assert.equal(LASERS.TAR12.speed,LASERS.HOMP11.speed);assert.equal(LASERS.RAID.speed,LASER_FLIGHT_SPEED);
  for(const kind of ['union-sentry','merc-sentry'] as const){const s=mounted(kind),own=s.mounted!,slot=kind==='union-sentry'?2:1,target=makeUnit('dummy','merc-sentry',0,118,false);s.units.push(target);s.fire(slot);const bolt=s.missiles[0],profile=s.weapons.lasers[bolt.weapon as 'FIL-30'|'RAID'];
- const speed=kind==='union-sentry'?72:60;assert.equal(profile.speed,speed);assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-speed)<1e-8);assert.equal(bolt.life,profile.range/speed);step(s,50);assert.equal(target.shield,target.spec.shield);assert.ok(s.missiles.includes(bolt));assert.ok(Math.abs(Math.hypot(bolt.x-own.x,bolt.z-own.z)-speed)<3);step(s,40);assert.ok(target.shield<target.spec.shield);
+ const speed=LASER_FLIGHT_SPEED;assert.equal(profile.speed,speed);assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-speed)<1e-8);assert.equal(bolt.life,profile.range/speed);step(s,50);assert.equal(target.shield,target.spec.shield);assert.ok(s.missiles.includes(bolt));assert.ok(Math.abs(Math.hypot(bolt.x-own.x,bolt.z-own.z)-speed)<3);step(s,40);assert.ok(target.shield<target.spec.shield);
  }
 });
 

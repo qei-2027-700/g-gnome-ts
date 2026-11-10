@@ -383,7 +383,7 @@ export class World {
       }
       let foot:TransformNode;
       if(darkenTactical){const ankle=new TransformNode('stalker ankle',this.scene);ankle.parent=knee;ankle.position.y=-DARKEN_TACTICAL_SHIN;foot=ankle;box('stalker broad gold foot',.72,.16,1.7,0,-.02,.42,shell,ankle,side<0?'leftLeg':'rightLeg');box('stalker dark sole',.86,.12,2.15,0,-.12,.62,dark,ankle,side<0?'leftLeg':'rightLeg');}
-      else if(scorpSentry){foot=MeshBuilder.CreateCylinder('foot',{height:1.55,diameterTop:.22,diameterBottom:.95,tessellation:4},this.scene);foot.parent=knee;foot.rotation.z=-side*Math.PI/2;foot.position.set(side*.62,-spec.height*.22,.2);foot.material=scorpFoot!;}
+      else if(scorpSentry){const plate=MeshBuilder.CreateCylinder('foot',{height:1.55,diameterTop:.22,diameterBottom:.95,tessellation:4},this.scene);plate.parent=knee;plate.rotation.z=-side*Math.PI/2;plate.position.set(side*.62,-spec.height*.22,.2);plate.material=scorpFoot!;foot=plate;}
       else foot=box('foot',darkenSentry?.42:heavy?1.65:1.5,darkenSentry?.16:.45,darkenSentry?.55:heavy?2.35:2,0,-spec.height*.22,darkenSentry?0:.2,dark,knee);
       feet.push(foot);
       if(u.kind==='merc-tactical')for(const z of [-.75,-.25,.25,.75]){const tread=MeshBuilder.CreatePlane('merc-sole-tread',{width:1.35,height:.14,sideOrientation:Mesh.DOUBLESIDE},this.scene);tread.parent=foot;tread.rotation.x=Math.PI/2;tread.position.set(0,-.226,z);tread.material=trim;}

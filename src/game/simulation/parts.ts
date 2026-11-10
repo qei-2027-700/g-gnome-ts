@@ -1,4 +1,4 @@
-import {VEHICLES,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
+import {DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_TORSO_Y,pitchDarkenTactical,VEHICLES,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
 import {VEHICLE_SHAPES,mercAssaultLegPose} from '../content/vehicle-shapes.ts';
 export const PART_DAMAGE_THRESHOLDS={yellow:.6,critical:.25} as const;
 export const PARTS=['hull','cockpit','leftWeapon','rightWeapon','leftLeg','rightLeg'] as const;
@@ -23,16 +23,16 @@ function spiderBoxes(){
   }));
  }));
 }
-function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind],leg='leg' in shape?shape.leg:undefined;return [
- {part:'cockpit' as const,x:0,...shape.cockpit,y:h*.6+shape.cockpit.y,upper:!('track' in shape)},
- ...('gunHousing' in shape?[{part:'leftWeapon' as const,x:0,...shape.gunHousing,y:h*.6+shape.gunHousing.y,upper:true}]:[]),
- ...('roof' in shape?[{part:'cockpit' as const,x:0,...shape.roof,y:h*.6+shape.roof.y,upper:true}]:[]),
- {part:'hull' as const,x:0,...shape.hull,y:h*.6+shape.hull.y,upper:!('track' in shape)&&body.kind!=='merc-meson-tower'&&body.kind!=='scorp-meson-tower'},
- ...([-1,1] as const).map(side=>({part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.weapon,x:side*shape.weapon.x,y:h*.6+shape.weapon.y,upper:true})),
- ...('chinWeapon' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.chinWeapon,x:side*shape.chinWeapon.x,y:h*.6+shape.chinWeapon.y,upper:true})):[]),
- ...('shoulder' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.shoulder,x:side*shape.shoulder.x,y:h*.6+shape.shoulder.y,upper:false})):[]),
+function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind],leg='leg' in shape?shape.leg:undefined,torsoY=body.kind==='darken-tactical'?DARKEN_TACTICAL_TORSO_Y:h*.6;return [
+ {part:'cockpit' as const,x:0,...shape.cockpit,y:torsoY+shape.cockpit.y,upper:!('track' in shape)},
+ ...('gunHousing' in shape?[{part:'leftWeapon' as const,x:0,...shape.gunHousing,y:torsoY+shape.gunHousing.y,upper:true}]:[]),
+ ...('roof' in shape?[{part:'cockpit' as const,x:0,...shape.roof,y:torsoY+shape.roof.y,upper:true}]:[]),
+ {part:'hull' as const,x:0,...shape.hull,y:torsoY+shape.hull.y,upper:!('track' in shape)&&body.kind!=='merc-meson-tower'&&body.kind!=='scorp-meson-tower'},
+ ...([-1,1] as const).map(side=>{const upright=body.kind==='darken-tactical'?pitchDarkenTactical(shape.weapon.y,shape.weapon.z):null;return {part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.weapon,x:side*shape.weapon.x,y:upright?upright.y:torsoY+shape.weapon.y,z:upright?upright.z:shape.weapon.z,upper:!upright};}),
+ ...('chinWeapon' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.chinWeapon,x:side*shape.chinWeapon.x,y:torsoY+shape.chinWeapon.y,upper:true})):[]),
+ ...('shoulder' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.shoulder,x:side*shape.shoulder.x,y:torsoY+shape.shoulder.y,upper:false})):[]),
  ...('upperLeg' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.upperLeg,x:side*shape.legX,upper:false})):[]),
- ...('brace' in shape?([-1,1] as const).map(side=>({part:'hull' as const,...shape.brace,x:side*shape.brace.x,y:h*.6+shape.brace.y,upper:true})):[]),
+ ...('brace' in shape?([-1,1] as const).map(side=>({part:'hull' as const,...shape.brace,x:side*shape.brace.x,y:torsoY+shape.brace.y,upper:true})):[]),
  ...('spider' in shape?spiderBoxes():([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,x:side*shape.legX,y:'track' in shape?shape.track.y:'support' in shape?shape.support.y:leg?.y??h*.25,z:'track' in shape?shape.track.z:'support' in shape?shape.support.z:leg?.z??.4,w:'track' in shape?shape.track.w:'support' in shape?shape.support.w:leg?.w??1.5,h:'track' in shape?shape.track.h:'support' in shape?shape.support.h:leg?.h??h*.5,d:'track' in shape?shape.track.d:'support' in shape?shape.support.d:leg?.d??2,upper:false})))
  ];}
 // Enclose all shared part boxes, including weapons and wide legs. A rotation-safe
@@ -44,7 +44,7 @@ export function intersectParts(body:Body,from:Point,to:Point,padding=0){
  let best:{part:BodyPart;t:number;point:Point}|null=null;
  for(const box of boxes(body)){
   const yaw=body.kind==='scorp-rocket-tower'?0:box.upper&&(body.spec??VEHICLES[body.kind]).torsoLimit!==0?body.aim:body.yaw,c=Math.cos(yaw),s=Math.sin(yaw);
-  const local=(p:Point)=>{let y=p.y,z=(p.x-body.x)*s+(p.z-body.z)*c;if((body.kind==='merc-meson-tower'||body.kind==='scorp-meson-tower')&&(box.part==='leftWeapon'||box.part==='rightWeapon')){const pivot=(body.spec??VEHICLES[body.kind]).height*.6+VEHICLE_SHAPES[body.kind].weapon.y,pitch=body.aimPitch??0,relative=y-pivot;y=pivot+relative*Math.cos(pitch)-z*Math.sin(pitch);z=relative*Math.sin(pitch)+z*Math.cos(pitch);}const point={x:(p.x-body.x)*c-(p.z-body.z)*s-box.x,y:y-box.y,z:z-box.z};
+  const local=(p:Point)=>{let y=p.y,z=(p.x-body.x)*s+(p.z-body.z)*c;if((body.kind==='merc-meson-tower'||body.kind==='scorp-meson-tower')&&(box.part==='leftWeapon'||box.part==='rightWeapon')){const pivot=(body.spec??VEHICLES[body.kind]).height*.6+VEHICLE_SHAPES[body.kind].weapon.y,pitch=body.aimPitch??0,relative=y-pivot;y=pivot+relative*Math.cos(pitch)-z*Math.sin(pitch);z=relative*Math.sin(pitch)+z*Math.cos(pitch);}if(body.kind==='darken-tactical'&&box.upper){const dy=y-DARKEN_TACTICAL_TORSO_Y,c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH),ly=dy*c+z*s,lz=-dy*s+z*c;y=DARKEN_TACTICAL_TORSO_Y+ly;z=lz;}const point={x:(p.x-body.x)*c-(p.z-body.z)*s-box.x,y:y-box.y,z:z-box.z};
     if(box.segment){const a=box.segment.from,b=box.segment.to,dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,length=Math.hypot(dx,dy,dz),flat=Math.hypot(dx,dz),ux=dz/flat,uz=-dx/flat,vx=dy*uz/length,vy=(dz*ux-dx*uz)/length,vz=-dy*ux/length;return {x:point.x*ux+point.z*uz,y:(point.x*dx+point.y*dy+point.z*dz)/length,z:point.x*vx+point.y*vy+point.z*vz};}
     return point;};
   const altitude=body.hoverHeight??((body.spec??VEHICLES[body.kind]) as VehicleSpec).hoverHeight??0;const a=local({...from,y:from.y-altitude}),b=local({...to,y:to.y-altitude});let near=0,far=1;

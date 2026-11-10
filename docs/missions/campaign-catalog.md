@@ -23,7 +23,7 @@
 | 1-2 | Drawbridge／渡河 | Darkenの機体を奪取し、橋制御施設で橋を下ろしてAngada川を渡る。対岸の防衛部隊への対処が続く | [1-2](https://www.youtube.com/watch?v=wg9YCQxUqSE) | 原作の達成分岐は未検証 |
 | 1-3 | Convoy／輸送部隊 | 駐機場でIFFを取得し、Darkenの輸送部隊へ識別信号を送って合流。Chansk司令部へ潜入し、キリーの情報を回収する | [1-3](https://www.youtube.com/watch?v=y0q9DCsQBw8) | 原作のIFF変更条件は要画面照合 |
 | 1-4 | LATLON／ラットロン通信基地 | Darkenの通信施設を無力化し、後続のキリーとの合流に備える。FAQの目標には防衛部隊・シールドジェネレーターの排除、施設破壊と退避がある | [1-4](https://www.youtube.com/watch?v=0OiVKh6pmJM) | 潜入後の破壊判定は未検証 |
-| 1-5 | Rescue!／救出！ | Darken領域の最後の任務。Merc領域との境界付近で待つキリーとの合流へ向かう | [1-5](https://www.youtube.com/watch?v=eYHjjhCqb1c) | [任務資料](mission-1-5.md)。原作画面の4目標と、東側スタート・左手の川・対岸の塔と橋という相対配置を確認。メートル座標と時刻は仮値 |
+| 1-5 | Rescue!／救出！ | Darken領域の最後の任務。Merc領域との境界付近で待つキリーとの合流へ向かう | [1-5](https://www.youtube.com/watch?v=eYHjjhCqb1c) | [任務資料](mission-1-5.md)。原作画面の4目標と、東側スタート・左手の川・対岸のロケットタワー・橋の北のメソンタワーと施設を確認。川と尾根の形は選択画面から写し、メートル換算と時刻は仮値 |
 
 ## 第2章：Merc領域
 

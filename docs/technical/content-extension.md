@@ -24,6 +24,8 @@
 - すべてのunit・building・person・waypoint参照が実在し、重複IDがない。
 - 橋の `bridgeZ` と河川の範囲（中心線`path`を使う場合はその曲がり方）、幅、施設の進入位置が噛み合っている。
 - 敵の移動・射線・攻撃対象・武器射程を含めて、目標へ到達でき、任務が意図した状態で完了する。
+- 崖・川・建物を密に置くときは[密集した障害物と更新コスト](./simulation-cost.md)に従い、警戒が始まる前後で1ティックが止まらないことを確認する。
+- 配置・地形を変えるときは[任務地図とウェイポイント](../gameplay/mission-map-and-waypoints.md)の「原作地図との対応」に従う。すでに入っているずれを後から直すときは [gnome-mission-map-match](../../.agents/skills/gnome-mission-map-match/SKILL.md) に従う。
 - `validateMissions` は作者データと参照の整合性を検査するもので、地形を横断できるかなどのプレイ成立性までは保証しない。
 
 ## 新しいVehicle／HAWK

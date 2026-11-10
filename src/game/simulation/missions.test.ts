@@ -34,14 +34,20 @@ test('1-5 starts in a Darken TD, requires generator destruction and bridge lower
  assert.ok(right(nearestRiver)<-40&&riverDistance(river,player.x,player.z)>river.width/2+30,'the river lies on the left of the opening view');
  assert.ok(ahead(cliff)>0&&right(cliff)>0,'the opening cliff is ahead and to the right');
  assert.ok(playerBank*bank(rocket)<0&&riverDistance(river,rocket.x,rocket.z)>river.width/2,'rocket tower stands across the river');
- assert.ok(Math.hypot(meson.x-player.x,meson.z-player.z)>Math.hypot(rocket.x-player.x,rocket.z-player.z),'meson tower is farther along the far bank');
- for(const place of [meson,power,control])assert.ok(playerBank*bank(place)<0&&riverDistance(river,place.x,place.z)>river.width/2,`far-bank place ${place.id}`);
- for(const place of [power,control,bridge])assert.ok(Math.hypot(place.x-meson.x,place.z-meson.z)<180,'power, bridge control and the bridge stay near the meson tower');
+ assert.ok(Math.max(...path.map(point=>point.z))>path[0]!.z+180,'the traced river bows north');
+ assert.ok(path.at(-1)!.z<path[0]!.z-300,'the traced river leaves through the south');
+ assert.ok(bridge.x<-400&&bridge.z<path[0]!.z,'the bridge lies on the western run');
+ for(const place of [meson,power,control,generator])assert.ok(playerBank*bank(place)>0&&place.z>bridge.z&&riverDistance(river,place.x,place.z)>river.width/2,`${place.id} stands north of the bridge`);
+ assert.ok(Math.hypot(power.x-meson.x,power.z-meson.z)<80,'the power plant stands beside the meson tower');
+ assert.ok(Math.hypot(control.x-bridge.x,control.z-bridge.z)<160&&Math.hypot(generator.x-control.x,generator.z-control.z)<140,'bridge control and the shield generator sit together north of the bridge');
+ const bridgeTd=s.units.find(u=>u.id==='bridge-td')!,controlSentry=s.units.find(u=>u.id==='control-sentry')!;
+ assert.ok(playerBank*bank(bridgeTd)>0&&bridgeTd.z>bridge.z&&Math.hypot(bridgeTd.x-bridge.x,bridgeTd.z-bridge.z)<150,'the Darken TD waits north of the bridge');
+ assert.ok(playerBank*bank(controlSentry)>0&&Math.hypot(controlSentry.x-control.x,controlSentry.z-control.z)<90,'one Darken sentry stands with the bridge control');
+ assert.ok((s.mission.terrain.cliffs?.length??0)>40,'the white ridges are impassable cliffs');
  for(const hawk of s.units.filter(u=>u.id!=='player-td'&&/sentry|tactical|asv/.test(u.kind)))assert.ok(playerBank*bank(hawk)>0&&riverDistance(river,hawk.x,hawk.z)>river.width/2,`${hawk.id} stays on the player's bank`);
  assert.ok(playerBank*bank(s.soldiers.find(p=>p.personId==='kylie')!)<0,'Kylie waits on the far bank');
  const scale=Math.min(540/(s.mission.terrain.halfWidth*2),500/(s.mission.terrain.maxZ-s.mission.terrain.minZ));
  assert.ok(Math.abs((control.z-s.mission.base!.z)*scale)>36,'Chambers Pass and BRIDGE labels stay apart on the mission map');
- assert.ok(control.x<bridge.x&&control.z<bridge.z,'control lies west and south of the bridge');
  assert.ok(riverDistance(river,control.x,control.z)>river.width/2,'control is outside the river');
  assert.equal(s.mission.terrain.skyPalette,'amber');
  assert.equal(s.mission.bgm?.start.trackId,'bgm-mission-1-1-sentry-combat');
@@ -52,7 +58,7 @@ test('1-5 starts in a Darken TD, requires generator destruction and bridge lower
  s.eject('ground');s.human={x:player.x,z:player.z+3};assert.ok(s.board());
  for(const enemy of s.units.filter(u=>u!==player)){enemy.alive=false;enemy.pilot=false;}
  assert.ok(s.changeIff('1234'));
- driveRoute(s,[[300,40],[120,40],[0,35],[-100,40],[-190,-20],[-190,-230],[-190,-330],[-390,-310]]);
+ driveRoute(s,[[352,128],[528,128],[528,240],[512,240],[512,256],[496,256],[496,336],[480,336],[480,384],[144,384],[144,448],[-544,448],[-544,352],[-560,352],[-560,176],[-544,176],[-544,-80],[-512,-80],[-512,-96],[-464,-96],[-464,-160],[-272,-160],[-272,-224],[-288,-224]]);
  assert.equal(s.status,'running');assert.equal(s.objectiveStates.find(o=>o.id==='contact')?.done,true);
  assert.equal(s.objectiveStates.find(o=>o.id==='iff')?.done,false);
  assert.ok(s.changeIff('0024'));s.tick(.05,idle);
@@ -61,6 +67,19 @@ test('1-5 starts in a Darken TD, requires generator destruction and bridge lower
 });
 test('1-5 player death fails the mission before rendezvous',()=>{
  const s=new Simulation('Easy',MISSION_1_5);s.damage(null,s.humanHealth);assert.equal(s.status,'lost');
+});
+test('1-5 rocket tower holds its ground and fires after the assault delay',()=>{
+ const s=new Simulation('Easy',MISSION_1_5),tower=s.units.find(u=>u.id==='rocket-tower')!,origin={x:tower.x,z:tower.z};
+ advance(s,400);assert.equal(tower.alert,false);assert.equal(s.missiles.length,0);
+ advance(s,200);assert.equal(tower.x,origin.x);assert.equal(tower.z,origin.z);assert.equal(tower.speed,0);
+ assert.ok(s.missiles.some(missile=>missile.owner===tower.id)||s.events.some(event=>event.type==='shot'&&event.unit===tower));
+});
+test('1-5 ticks stay short while the rocket tower engages',()=>{
+ const s=new Simulation('Easy',MISSION_1_5);
+ advance(s,360);
+ let worst=0;
+ for(let i=0;i<360;i++){const t=performance.now();s.tick(1/60,idle);worst=Math.max(worst,performance.now()-t);}
+ assert.ok(worst<250,`tick took ${worst.toFixed(0)}ms`);
 });
 test('1-5 rocket tower missiles keep their original course when the player moves',()=>{
  const s=new Simulation('Easy',MISSION_1_5),tower=s.units.find(u=>u.id==='rocket-tower')!,player=s.mounted!;
@@ -284,6 +303,11 @@ test('4-2 starts on foot, boards a dedicated Scorp Meson tower and records occup
  const hq=s.facilities.find(f=>f.id==='ur-kinsk-hq')!,backCliff=s.mission.terrain.cliffs!.find(c=>c.id==='urkinsk-back-left-cliff')!;
  const screenRight=(point:{x:number;z:number})=>(point.x-s.player.x)*Math.cos(s.humanYaw)-(point.z-s.player.z)*Math.sin(s.humanYaw);
  assert.equal(s.mounted,null);assert.equal(s.mission.terrain.biome,'grassland');assert.equal(s.mission.terrain.skyPalette,'amber');assert.equal(s.human.z,840);assert.equal(s.humanYaw,Math.PI);assert.ok(screenRight(s.units.find(u=>u.id==='scorp-rocket')!)>0);assert.ok(screenRight(tower)<0);assert.ok(tower.z>hq.z&&hq.z>backCliff.z);assert.equal(s.mission.terrain.cliffs!.length,7);assert.equal(s.mission.terrain.peaks!.length,7);assert.ok(s.terrainObstacles.includes(backCliff));assert.ok(!s.objectiveStates[0].done);
+ const river=s.mission.terrain.river!,path=river.path!,bank=(point:{x:number;z:number})=>riverBank(path,point.x,point.z),playerBank=bank(s.player);
+ assert.ok(path[0]!.z>s.player.z&&path[0]!.x>s.player.x,'the river enters above and to the right of the start');
+ assert.ok(path.at(-1)!.z<s.player.z&&path.at(-1)!.x>s.player.x&&path.at(-1)!.x>0,'the river leaves below the start and stays on the right');
+ for(const cliff of s.mission.terrain.cliffs!)assert.ok(playerBank*bank(cliff)>0&&riverDistance(river,cliff.x,cliff.z)>river.width/2,`${cliff.id} stays on the start side of the river`);
+ assert.ok(Math.min(...s.mission.terrain.cliffs!.map(cliff=>Math.hypot(cliff.x-s.player.x,cliff.z-s.player.z)))<riverDistance(river,s.player.x,s.player.z),'the start sits nearer the ridge field than the river');
  for(let i=0;i<800&&!s.mounted;i++){s.humanYaw=Math.atan2(tower.x-s.human.x,tower.z-s.human.z);s.tick(1/60,{...idle,forward:true});}
  assert.equal(s.units.find(u=>u.id==='scorp-rocket')!.personId,'kylie');assert.equal(s.units.find(u=>u.id==='thane-meson')!.personId,'thane');assert.equal(s.mounted?.id,tower.id);assert.equal(tower.kind,'scorp-meson-tower');assert.ok(s.objectiveStates[0].done);s.fire(1);assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='GAUS30'&&e.unit===tower));
  const start={x:tower.x,z:tower.z};for(let i=0;i<30;i++)s.tick(1/60,{...idle,forward:true,boost:true});assert.deepEqual({x:tower.x,z:tower.z},start);assert.equal(s.throttle,0);

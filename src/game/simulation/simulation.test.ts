@@ -2,6 +2,7 @@ import {LASERS,weaponMountCount} from '../content/weapons.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,angle,type Input} from './simulation.ts';
+import {KEYBOARD_AIM_RAMP} from './movement.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {DEFAULT_MISSION} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
@@ -327,9 +328,9 @@ test('mounted Merc AIP accelerates and brakes with more inertia without lowering
 
 test('all tested ASVs and HAWCs share horizontal key and mouse turning without starting movement',()=>{
  const turn=(kind:'scorp-asv'|'union-asv'|'union-sentry')=>{
-  const s=new Simulation(),unit=makeUnit('scorp-asv-controls',kind,0,0,false);s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());for(let i=0;i<60;i++)s.tick(1/60,{...idle,right:true});const key=unit.yaw,before=unit.aim;s.aimMouseBy(100,0);assert.equal(unit.x,0);assert.equal(unit.z,0);assert.equal(s.speed,0);return {key,mouse:angle(unit.aim-before)};
+  const s=new Simulation(),unit=makeUnit('scorp-asv-controls',kind,0,0,false);s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());const tapFrames=Math.round(KEYBOARD_AIM_RAMP.rise*60);s.tick(1/60,{...idle,right:true});const tap=unit.yaw;for(let i=1;i<tapFrames;i++)s.tick(1/60,{...idle,right:true});const cruising=unit.yaw;for(let i=0;i<60;i++)s.tick(1/60,{...idle,right:true});const key=unit.yaw-cruising,before=unit.aim;s.aimMouseBy(100,0);assert.equal(unit.x,0);assert.equal(unit.z,0);assert.equal(s.speed,0);return {tap,key,mouse:angle(unit.aim-before)};
  };
- const scorp=turn('scorp-asv'),hawc=turn('union-sentry'),union=turn('union-asv');assert.deepEqual(scorp,hawc);assert.deepEqual(union,hawc);assert.ok(Math.abs(scorp.key-1.5)<1e-8);assert.ok(Math.abs(scorp.mouse-.5)<1e-8);
+ const scorp=turn('scorp-asv'),hawc=turn('union-sentry'),union=turn('union-asv');assert.deepEqual(scorp,hawc);assert.deepEqual(union,hawc);assert.ok(Math.abs(scorp.tap-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8);assert.ok(Math.abs(scorp.key-1.5)<1e-8);assert.ok(Math.abs(scorp.mouse-.5)<1e-8);
 });
 
 test('selecting allied infantry resolves each person name in the active mission and locale',async()=>{

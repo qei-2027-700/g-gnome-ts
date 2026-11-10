@@ -8,6 +8,11 @@ export const isHawc=(kind:VehicleKind)=>HAWC_KINDS.has(kind);
 const HAWC_MANUAL_AIM={...MANUAL_AIM,vehicleYaw:1.5,mouseYawPerPixel:.005} as const;
 const ASSAULT_MANUAL_AIM={...HAWC_MANUAL_AIM,pitch:.825,mousePerPixel:.00375} as const;
 export const manualAimFor=(kind?:VehicleKind)=>kind==='merc-assault'?ASSAULT_MANUAL_AIM:kind&&COMMON_HORIZONTAL_AIM_KINDS.has(kind)?HAWC_MANUAL_AIM:MANUAL_AIM;
+// A tap stays at `start`. After `rise` seconds the held key uses the full cruise rate above.
+export const KEYBOARD_AIM_RAMP={rise:.1,start:.18} as const;
+export function keyboardAimScale(heldSeconds:number){
+ return heldSeconds+1e-8>=KEYBOARD_AIM_RAMP.rise?1:KEYBOARD_AIM_RAMP.start;
+}
 // User-tuned prototype response; maximum speeds remain vehicle/infantry data.
 export const MOVEMENT_RESPONSE={vehicleAcceleration:1.8,vehicleBraking:1.4,footAcceleration:10,footBraking:6,restSpeed:.035} as const;
 // Heavy low-hover handling, tuned from the user's Merc AIP agility feedback.

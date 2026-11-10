@@ -81,26 +81,26 @@ export const MISSION_4_2:MissionDefinition={
     bridgeZ:560,
     bridgeWidth:24,
     path:[
-      {x:450,z:1000},{x:410,z:900},{x:350,z:760},{x:280,z:610},{x:210,z:490},
-      {x:250,z:390},{x:180,z:270},{x:225,z:145},{x:145,z:35},
-      {x:115,z:-55},{x:80,z:-140},{x:40,z:-250},{x:31,z:-280}
+      {x:460,z:1000},{x:420,z:860},{x:370,z:720},{x:340,z:620},{x:290,z:560},
+      {x:250,z:480},{x:240,z:400},{x:300,z:280},{x:350,z:160},{x:320,z:40},
+      {x:370,z:-90},{x:340,z:-190},{x:380,z:-280}
     ]
   },
   biome:'grassland',weather:'overcast',skyPalette:'amber',ridgeStyle:'rocky',halfWidth:620,minZ:-280,maxZ:1000,ridgeHeight:34,ridgeVariation:22,seed:42,
   peaks:[
-    {x:-470,z:680,width:230,depth:250,height:125},{x:-470,z:210,width:220,depth:230,height:120},
-    {x:-190,z:500,width:230,depth:210,height:140},{x:-175,z:45,width:220,depth:210,height:120},
-    {x:455,z:510,width:210,depth:230,height:135},{x:295,z:180,width:200,depth:210,height:120},
-    {x:300,z:865,width:170,depth:170,height:105}
+    {x:-240,z:780,width:150,depth:110,height:125},{x:-420,z:300,width:160,depth:130,height:120},
+    {x:-200,z:460,width:160,depth:110,height:140},{x:-160,z:80,width:150,depth:120,height:120},
+    {x:160,z:450,width:130,depth:100,height:135},{x:40,z:180,width:130,depth:110,height:120},
+    {x:190,z:800,width:130,depth:100,height:105}
   ],
   cliffs:[
-    {id:'urkinsk-west-north-cliff',x:-480,z:660,width:125,depth:95,height:130},
-    {id:'urkinsk-west-south-cliff',x:-475,z:220,width:130,depth:110,height:125},
-    {id:'urkinsk-back-left-cliff',x:-185,z:500,width:125,depth:90,height:130},
-    {id:'urkinsk-center-south-cliff',x:-175,z:55,width:120,depth:95,height:120},
-    {id:'urkinsk-east-north-cliff',x:300,z:850,width:90,depth:85,height:115},
-    {id:'urkinsk-east-center-cliff',x:465,z:510,width:120,depth:95,height:135},
-    {id:'urkinsk-east-south-cliff',x:305,z:185,width:105,depth:95,height:120}
+    {id:'urkinsk-west-north-cliff',x:-240,z:780,width:120,depth:90,height:130},
+    {id:'urkinsk-west-south-cliff',x:-420,z:300,width:120,depth:100,height:125},
+    {id:'urkinsk-back-left-cliff',x:-200,z:460,width:120,depth:90,height:130},
+    {id:'urkinsk-center-south-cliff',x:-160,z:80,width:110,depth:90,height:120},
+    {id:'urkinsk-east-north-cliff',x:190,z:800,width:100,depth:80,height:115},
+    {id:'urkinsk-east-center-cliff',x:160,z:450,width:90,depth:80,height:135},
+    {id:'urkinsk-east-south-cliff',x:40,z:180,width:100,depth:80,height:120}
   ]
  },
  rocks:[{x:-220,z:220,r:10},{x:220,z:250,r:13},{x:-300,z:440,r:15}],

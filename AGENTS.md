@@ -14,7 +14,8 @@
 ## 作業別スキル
 
 - 新規ミッションの作成、既存ミッションの配置・地形・目標の変更は [gnome-mission-authoring](.agents/skills/gnome-mission-authoring/SKILL.md) を使う。
-- 操作・乗降・無人化・接触・操作音声の変更は [gnome-gameplay-change](.agents/skills/gnome-gameplay-change/SKILL.md) を使う。
+- 既存任務の地図を原作の地図と突き合わせて、残っているずれだけを直すときは [gnome-mission-map-match](.agents/skills/gnome-mission-map-match/SKILL.md) を使う。
+- 操作・乗降・無人化・接触・経路探索・操作音声の変更は [gnome-gameplay-change](.agents/skills/gnome-gameplay-change/SKILL.md) を使う。
 - 武器の威力・射程・充填・弾速・弾の形と色・発射音の変更は [gnome-weapon-tuning](.agents/skills/gnome-weapon-tuning/SKILL.md) を使う。
 - BGMの取得・MP3変換・配置・任務への接続は [gnome-bgm-import](.agents/skills/gnome-bgm-import/SKILL.md) を使う。
 - 既存の3Dモデルを原作画像と突き合わせて、見えた外観の差だけを直すときは [gnome-model-match](.agents/skills/gnome-model-match/SKILL.md) を使う。

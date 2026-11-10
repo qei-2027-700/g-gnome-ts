@@ -589,8 +589,20 @@ const BASE_VEHICLES = {
   },
 } as const satisfies Record<string,VehicleDefinition>;
 // Chassis and loadouts are provisional until the original Darken variants are measured.
+// Resting nose-down pitch from the close side view. Positive rotation.x matches gait lean.
+// The torso pivot meets the lowered hip, and the feet stay ahead of that hip. Prototype values.
+export const DARKEN_TACTICAL_HUNCH=1.3;
+export const DARKEN_TACTICAL_TORSO_Y=3.69;
+export const DARKEN_TACTICAL_HIP_Y=3.45;
+export const DARKEN_TACTICAL_HIP_Z=-.55;
+export const DARKEN_TACTICAL_REST_STEP=.65;
+export function pitchDarkenTactical(localY:number,localZ:number){
+ const c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH);
+ return {y:DARKEN_TACTICAL_TORSO_Y+localY*c-localZ*s,z:localY*s+localZ*c};
+}
 export const VEHICLES={...BASE_VEHICLES,
- 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#b08a32',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},shape:{hull:{w:2.1,h:1.3,d:2.1,y:-.45,z:0},cockpit:{w:1.9,h:1.85,d:1.75,y:1.2,z:.1},weapon:{w:1.7,h:1.55,d:1.65,x:2.2,y:1.65,z:.1},legX:1.45,legScale:{x:1,y:1.1,z:1}}},
+ // Rear view, torso width = 1. Pods are 1.15 wide at x 2.05, so the inner gap is about 2.95. The head sits on the rear top of the dark center. Metres use the 7.9 m card height as a prototype scale.
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#b08a32',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1,h:2.2,d:1,y:.4,z:.05},cockpit:{w:.42,h:.36,d:.42,y:1.44,z:-.37},weapon:{w:1.15,h:2.5,d:1.65,x:2.05,y:.45,z:.35},legX:1.95,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:.46,h:3.6,d:.5,y:1.9,z:DARKEN_TACTICAL_HIP_Z}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
 } as const satisfies Record<string,VehicleDefinition>;

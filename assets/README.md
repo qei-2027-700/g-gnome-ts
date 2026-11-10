@@ -4,7 +4,7 @@
 
 | 使用素材 | 元の資料 |
 | --- | --- |
-| [4-2-scope.png](4-2-scope.png) | 4-2 Scorp Defenseの開始画面。地図・防衛とタワー搭乗の項目・Scorpミーゾンタワーの外観。[実装準備](../docs/missions/mission-4-2.md) |
+| [mission-map/4-2-scope.png](mission-map/4-2-scope.png) | 4-2 Scorp Defenseの開始画面。地図・防衛とタワー搭乗の項目・Scorpミーゾンタワーの外観。[実装準備](../docs/missions/mission-4-2.md) |
 | [4-2-開始時-右手にscopeロケットタワー.png](4-2-開始時-右手にscopeロケットタワー.png) | 4-2出撃直後の徒歩一人称。右手はScorpロケットタワー。迎撃時に搭乗するScorpミーゾンタワーとは区別。[開始状態の仕様](../docs/missions/mission-4-2.md#出撃直後の視点と迎撃任務ユーザー指定2026-10-30) |
 | [merc-mison.png](merc-mison.png) | Mercミーゾン・ガードタワーの外観基準。濃紺の先広がりの頭部、灰色の台座、赤い塗装片。[専用外観](../docs/reference/vehicles/merc-meson-tower/README.md#merc-misonpngに基づく専用外観2026-10-30) |
 | [merc-assult-hawk-yoko.png](merc-assult-hawk-yoko.png) | ユーザー提供のMerc Assault横向き画像。[4本脚と配色の参照](../docs/reference/vehicles/merc-assault/README.md)。ゲーム画面の背景には使用しない |

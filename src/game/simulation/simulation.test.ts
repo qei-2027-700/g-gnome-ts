@@ -2,6 +2,7 @@ import {LASERS,weaponMountCount} from '../content/weapons.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,angle,type Input} from './simulation.ts';
+import {KEYBOARD_AIM_RAMP} from './movement.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {DEFAULT_MISSION} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
@@ -28,8 +29,8 @@ test('player gun and laser stop at a mountain before a target behind it',()=>{
 test('IFF controls AI launch; missile damage stays identical across difficulty while aim can miss',()=>{
  for(const difficulty of ['Easy','Medium','Hard'] as const){
   const s=new Simulation(difficulty);s.units[0].z=100;s.human={x:0,z:100};s.board();s.units[1].x=0;s.units[1].yaw=Math.PI;s.units[1].aim=Math.PI;s.tick(.05,idle);
-  assert.ok(s.enemies[0].alert);assert.equal(s.humanHealth,100);assert.equal(s.missiles.length,1);assert.equal(s.missiles[0].damage,5);assert.equal(s.mounted!.shield,35);
-  step(s,1.3);assert.ok([35,30].includes(s.mounted!.shield));
+  assert.ok(s.enemies[0].alert);assert.equal(s.humanHealth,100);assert.equal(s.missiles.length,1);assert.equal(s.missiles[0].damage,20);assert.equal(s.mounted!.shield,35);
+  step(s,1.3);assert.ok([35,15].includes(s.mounted!.shield));
   s.iff='6707';const health=s.humanHealth;step(s,5);assert.equal(s.units[1].alert,false);assert.equal(s.enemies.length,0);assert.equal(s.missiles.length,0);assert.equal(s.humanHealth,health);
  }
 });
@@ -45,12 +46,12 @@ test('rocks hide nearby player; firing at an enemy alerts it beyond detection ra
 });
 test('missiles have travel time, can be dodged and hit rocks before the player',()=>{
  const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=110;enemy.cooldown=999;
- const shield=s.mounted!.shield;s.fireMissile(enemy,'CHUM');step(s,.2);assert.equal(s.mounted!.shield,shield);step(s,1.3);assert.equal(s.mounted!.shield,shield-5);assert.ok(s.events.some(e=>e.type==='impact'));
+ const shield=s.mounted!.shield;s.fireMissile(enemy,'CHUM');step(s,.2);assert.equal(s.mounted!.shield,shield);step(s,1.3);assert.equal(s.mounted!.shield,shield-20);assert.ok(s.events.some(e=>e.type==='impact'));
  const dodge=mounted();const shooter=dodge.units[1];shooter.x=0;shooter.z=110;shooter.cooldown=999;dodge.fireMissile(shooter,'CHUM');dodge.mounted!.x=120;step(dodge,2);assert.equal(dodge.mounted!.shield,35);
  const cover=mounted();const attacker=cover.units[1];attacker.x=-40;attacker.z=120;attacker.cooldown=999;cover.mounted!.x=-40;cover.mounted!.z=30;cover.fireMissile(attacker,'CHUM');step(cover,1.4);assert.equal(cover.mounted!.shield,35);assert.equal(cover.missiles.length,0);assert.ok(cover.events.some(e=>e.type==='impact'));
 });
 test('swept collision catches fast rockets; tactical defense fires two missiles',()=>{
- const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=60;enemy.cooldown=999;const p=s.fireMissile(enemy,'CHUM');p.vx=0;p.vy=0;p.vz=-4000;p.x=0;p.y=4;s.tick(.05,idle);assert.equal(s.mounted!.shield,30);assert.equal(s.missiles.length,0);
+ const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=60;enemy.cooldown=999;const p=s.fireMissile(enemy,'CHUM');p.vx=0;p.vy=0;p.vz=-4000;p.x=0;p.y=4;s.tick(.05,idle);assert.equal(s.mounted!.shield,15);assert.equal(s.missiles.length,0);
  const tactical=mounted();tactical.units[1].alive=false;tactical.units[2].x=0;tactical.units[2].z=130;tactical.units[2].yaw=Math.PI;tactical.units[2].aim=Math.PI;tactical.tick(.05,idle);assert.equal(tactical.missiles.length,2);assert.ok(tactical.missiles.every(m=>m.weapon==='SAG5T'));
 });
 test('waypoint and all enemies are both required; death cannot produce a win',()=>{const s=mounted();for(const u of s.enemies)s.damage(u,1000);s.tick(.05,idle);assert.equal(s.status,'running');s.mounted!.z=MISSION.waypoint.z;s.tick(.05,idle);assert.equal(s.status,'won');const lost=mounted();lost.waypoint=true;for(const u of lost.enemies)lost.damage(u,1000);lost.damage(lost.mounted,1000);lost.damage(null,1000);lost.tick(.05,idle);assert.equal(lost.status,'lost');});
@@ -342,9 +343,9 @@ test('mounted Merc AIP accelerates and brakes with more inertia without lowering
 
 test('all tested ASVs and HAWCs share horizontal key and mouse turning without starting movement',()=>{
  const turn=(kind:'scorp-asv'|'union-asv'|'union-sentry')=>{
-  const s=new Simulation(),unit=makeUnit('scorp-asv-controls',kind,0,0,false);s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());for(let i=0;i<60;i++)s.tick(1/60,{...idle,right:true});const key=unit.yaw,before=unit.aim;s.aimMouseBy(100,0);assert.equal(unit.x,0);assert.equal(unit.z,0);assert.equal(s.speed,0);return {key,mouse:angle(unit.aim-before)};
+  const s=new Simulation(),unit=makeUnit('scorp-asv-controls',kind,0,0,false);s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());const tapFrames=Math.round(KEYBOARD_AIM_RAMP.rise*60);s.tick(1/60,{...idle,right:true});const tap=unit.yaw;for(let i=1;i<tapFrames;i++)s.tick(1/60,{...idle,right:true});const cruising=unit.yaw;for(let i=0;i<60;i++)s.tick(1/60,{...idle,right:true});const key=unit.yaw-cruising,before=unit.aim;s.aimMouseBy(100,0);assert.equal(unit.x,0);assert.equal(unit.z,0);assert.equal(s.speed,0);return {tap,key,mouse:angle(unit.aim-before)};
  };
- const scorp=turn('scorp-asv'),hawc=turn('union-sentry'),union=turn('union-asv');assert.deepEqual(scorp,hawc);assert.deepEqual(union,hawc);assert.ok(Math.abs(scorp.key-1.5)<1e-8);assert.ok(Math.abs(scorp.mouse-.5)<1e-8);
+ const scorp=turn('scorp-asv'),hawc=turn('union-sentry'),union=turn('union-asv');assert.deepEqual(scorp,hawc);assert.deepEqual(union,hawc);assert.ok(Math.abs(scorp.tap-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8);assert.ok(Math.abs(scorp.key-1.5)<1e-8);assert.ok(Math.abs(scorp.mouse-.5)<1e-8);
 });
 
 test('selecting allied infantry resolves each person name in the active mission and locale',async()=>{

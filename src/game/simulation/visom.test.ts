@@ -19,7 +19,7 @@ test('launch, keyboard and mouse steering consume one missile and leave the carr
  const paused={x:missile.x,y:missile.y,z:missile.z,life:missile.life};assert.equal(advanceSimulation(s,'pause',.05,{...idle,right:true}),0);assert.deepEqual({x:missile.x,y:missile.y,z:missile.z,life:missile.life},paused);
 });
 test('two physical VISOM impacts on the same ASV lure it once and it approaches the player',()=>{
- const {s,enemy}=setup(),origin={x:enemy.x,z:enemy.z};shoot(s);assert.equal(enemy.lureHits,1);assert.equal(enemy.lured,false);assert.equal(enemy.alert,true);assert.equal(enemy.shield,22);assert.deepEqual({x:enemy.x,z:enemy.z},origin);
+ const {s,enemy}=setup(),origin={x:enemy.x,z:enemy.z};shoot(s);assert.equal(enemy.lureHits,1);assert.equal(enemy.lured,false);assert.equal(enemy.alert,true);assert.equal(enemy.shield,enemy.spec.shield-MISSILES.VISOM.damage);assert.deepEqual({x:enemy.x,z:enemy.z},origin);
  tick(s,20);assert.equal(enemy.lureHits,1);shoot(s);assert.equal(enemy.lureHits,2);assert.equal(enemy.lured,true);assert.equal(enemy.alert,true);assert.equal(enemy.alive,true);assert.equal(s.status,'running');assert.equal(s.objectiveStates[0].done,false);assert.equal(s.events.filter(e=>e.type==='lured').length,1);
  tick(s,180);assert.ok(enemy.z<origin.z-5);assert.equal(s.events.filter(e=>e.type==='lured').length,1);
 });

@@ -2,17 +2,21 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readInput} from './input.ts';
 import {Simulation,makeUnit} from './simulation/simulation.ts';
+import {KEYBOARD_AIM_RAMP,MANUAL_AIM,manualAimFor} from './simulation/movement.ts';
 import {defaults,validateSettings} from './settings.ts';
 import {MISSION} from './content/mission-1-1.ts';
-test('short arrow taps use common HAWC horizontal speed and stop when released',()=>{
+test('short arrow taps start at the keyboard ramp and stop when released',()=>{
  for(const kind of [null,'union-sentry','merc-assault','merc-meson-tower'] as const){
   const s=new Simulation();s.units=[];s.human={x:0,z:0};
   if(kind){const unit=makeUnit('manual',kind,0,0,false);s.units=[unit];assert.ok(s.board());}
-  const before={yaw:s.yaw,aim:s.aim,pitch:s.pitch},settings=defaults();
+  const before={yaw:s.yaw,aim:s.aim,pitch:s.pitch},settings=defaults(),profile=manualAimFor(kind??undefined);
+  const yawRate=!kind?MANUAL_AIM.infantryYaw:kind==='merc-meson-tower'?MANUAL_AIM.towerYaw:profile.vehicleYaw,step=KEYBOARD_AIM_RAMP.start/60;
   s.tick(1/60,readInput(settings,new Set(['ArrowRight','ArrowUp'])));const tapped={yaw:s.yaw,aim:s.aim,pitch:s.pitch};
-  assert.ok(tapped.aim-before.aim>0&&tapped.aim-before.aim<=.031);assert.ok(tapped.pitch-before.pitch>0&&tapped.pitch-before.pitch<(kind==='merc-assault'?.014:.01));
+  assert.ok(Math.abs(tapped.aim-before.aim-yawRate*step)<1e-8);assert.ok(Math.abs(tapped.pitch-before.pitch-profile.pitch*step)<1e-8);
   s.tick(1/60,readInput(settings,new Set()));assert.equal(s.yaw,tapped.yaw);assert.equal(s.aim,tapped.aim);assert.equal(s.pitch,tapped.pitch);
   s.tick(1/60,readInput(settings,new Set(['ArrowLeft','ArrowDown'])));assert.ok(Math.abs(s.yaw-before.yaw)<1e-8);assert.ok(Math.abs(s.aim-before.aim)<1e-8);assert.ok(Math.abs(s.pitch-before.pitch)<1e-8);
+  s.tick(1/60,readInput(settings,new Set()));s.tick(1/60,readInput(settings,new Set(['ArrowRight','ArrowUp'])));
+  assert.ok(Math.abs(s.aim-before.aim-yawRate*step)<1e-8);assert.ok(Math.abs(s.pitch-before.pitch-profile.pitch*step)<1e-8);
   if(kind==='merc-meson-tower'){assert.equal(tapped.yaw,before.yaw);assert.equal(s.speed,0);}
  }
 });
@@ -121,8 +125,13 @@ test('ordinary held lasers wait for full moving recharge while the confirmed exc
 test('HAWC horizontal look is shared across all chassis and preserves sensitivity, vertical tuning and release',()=>{
  for(const kind of ['union-sentry','union-tactical','merc-sentry','merc-tactical','merc-assault','scorp-sentry','scorp-tactical','merc-cruiser','darken-sentry','darken-tactical','merc-meson-tower'] as const){
   const s=new Simulation(),u=makeUnit('own',kind,0,0,false);s.units=[u];s.human={x:0,z:0};assert.ok(s.board());const settings=defaults();
+  const tapFrames=Math.round(KEYBOARD_AIM_RAMP.rise*60),pitchRate=kind==='merc-assault'?.825:.55;
+  s.tick(1/60,readInput(settings,new Set(['ArrowRight','ArrowUp'])));
+  assert.ok(Math.abs(u.aim-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8);assert.ok(Math.abs(s.pitch-pitchRate/60*KEYBOARD_AIM_RAMP.start)<1e-8);
+  for(let i=1;i<tapFrames;i++){const aim=u.aim,pitch=s.pitch;s.tick(1/60,readInput(settings,new Set(['ArrowRight','ArrowUp'])));assert.ok(Math.abs(u.aim-aim-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8);assert.ok(Math.abs(s.pitch-pitch-pitchRate/60*KEYBOARD_AIM_RAMP.start)<1e-8);}
+  const cruisingAim=u.aim,cruisingPitch=s.pitch;
   for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set(['ArrowRight','ArrowUp'])));
-  assert.ok(Math.abs(u.aim-.75)<1e-8);assert.ok(Math.abs(s.pitch-(kind==='merc-assault'?.4125:.275))<1e-8);
+  assert.ok(Math.abs(u.aim-cruisingAim-.75)<1e-8);assert.ok(Math.abs(s.pitch-cruisingPitch-(kind==='merc-assault'?.4125:.275))<1e-8);
   const aim=s.aim,pitch=s.pitch;s.tick(1/60,readInput(settings,new Set()));assert.equal(s.aim,aim);assert.equal(s.pitch,pitch);
   s.aimMouseBy(40,20,2);const yawScale=kind==='merc-meson-tower'?.0025:.005,pitchScale=kind==='merc-assault'?.00375:.0025;assert.ok(Math.abs(s.aim-aim-40*yawScale*2)<1e-8);assert.ok(Math.abs(s.pitch-pitch+20*pitchScale*2)<1e-8);assert.equal(s.speed,0);
  }
@@ -140,13 +149,21 @@ test('HAWC mouse look carries past upper-body limits without slowing or moving f
 test('all mobile chassis share horizontal keyboard and mouse look speed while infantry remains unchanged',()=>{
  for(const kind of ['darken-sentry','union-asv','scorp-asv','darken-asv','union-aip','merc-aip','darken-aip'] as const){
   const s=new Simulation();s.units=[makeUnit('own',kind,0,0,false)];s.human={x:0,z:0};assert.ok(s.board());const settings=defaults();
+  const tapFrames=Math.round(KEYBOARD_AIM_RAMP.rise*60);
+  s.tick(1/60,readInput(settings,new Set(['ArrowRight'])));assert.ok(Math.abs(s.aim-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8,`${kind} keyboard tap`);
+  for(let i=1;i<tapFrames;i++){const aim=s.aim;s.tick(1/60,readInput(settings,new Set(['ArrowRight'])));assert.ok(Math.abs(s.aim-aim-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8,`${kind} keyboard tap`);}
+  const cruising=s.aim;
   for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set(['ArrowRight'])));
-  assert.ok(Math.abs(s.aim-.75)<1e-8,`${kind} keyboard horizontal look`);const aim=s.aim;
+  assert.ok(Math.abs(s.aim-cruising-.75)<1e-8,`${kind} keyboard cruise`);const aim=s.aim;
   s.aimMouseBy(40,0);assert.ok(Math.abs(s.aim-aim-.2)<1e-8,`${kind} mouse horizontal look`);assert.equal(s.speed,0);
  }
  const infantry=new Simulation();infantry.units=[];infantry.human={x:0,z:0};
+ const tapFrames=Math.round(KEYBOARD_AIM_RAMP.rise*60);
+ infantry.tick(1/60,readInput(defaults(),new Set(['ArrowRight'])));assert.ok(Math.abs(infantry.aim-MANUAL_AIM.infantryYaw/60*KEYBOARD_AIM_RAMP.start)<1e-8);
+ for(let i=1;i<tapFrames;i++){const aim=infantry.aim;infantry.tick(1/60,readInput(defaults(),new Set(['ArrowRight'])));assert.ok(Math.abs(infantry.aim-aim-MANUAL_AIM.infantryYaw/60*KEYBOARD_AIM_RAMP.start)<1e-8);}
+ const cruising=infantry.aim;
  for(let i=0;i<30;i++)infantry.tick(1/60,readInput(defaults(),new Set(['ArrowRight'])));
- assert.ok(Math.abs(infantry.aim-.9)<1e-8);const aim=infantry.aim;infantry.aimMouseBy(40,0);assert.ok(Math.abs(infantry.aim-aim-.1)<1e-8);
+ assert.ok(Math.abs(infantry.aim-cruising-.9)<1e-8);const aim=infantry.aim;infantry.aimMouseBy(40,0);assert.ok(Math.abs(infantry.aim-aim-.1)<1e-8);
 });
 
 test('actual Merc Assault RUPP keeps firing both barrels while key or mouse is held, even before moving recharge completes',()=>{

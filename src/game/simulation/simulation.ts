@@ -1,4 +1,4 @@
-import {MANUAL_AIM,manualAimFor,isHawc,canFlyAcrossRiver,aiTurnStep,aiAimTurnStep,accelerateSpeed,infantryVelocity} from './movement.ts';
+import {MANUAL_AIM,manualAimFor,keyboardAimScale,isHawc,canFlyAcrossRiver,aiTurnStep,aiAimTurnStep,accelerateSpeed,infantryVelocity} from './movement.ts';
 export {accelerateSpeed} from './movement.ts';
 import {makeFacilities,isFacility,facilityDistance,facilityExit,entryAllowed,type Facility} from './facilities.ts';
 export {isFacility} from './facilities.ts';
@@ -12,7 +12,7 @@ import {INFANTRY_MOVEMENT,INFANTRY_HIT_RADIUS,INFANTRY_AI_AIM_TOLERANCE,INFANTRY
 import {PARTS,PART_DAMAGE_THRESHOLDS,freshParts,applyPartDamage,intersectParts,mobilityMultiplier,sweptVehicleContact,vehicleContactFraction,vehicleRadius,buildingClearance,type BodyPart,type PartState} from './parts.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import type {River} from '../content/missions/types.ts';
-import {resolveVehicle,type Faction,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
+import {pitchDarkenTactical,resolveVehicle,type Faction,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
 import {resolveWeapons,allowsLaserHoldFire,HELD_TRIGGER_INTERVAL,MISSILE_INTERVAL,MISSILE_HOMING,AI_MISSILE_ACCURACY,ROCKET_TOWER_STILL_SPEED,weaponMountCount,type VehicleWeapon,type LaserWeapon,type MachineGun,type MissileWeapon,VISOM_GUIDANCE} from '../content/weapons.ts';
 import {steerMissile,homeMissile} from './guided-flight.ts';
 import {isLaser,isMissile,laserRange} from './weapons.ts';
@@ -66,7 +66,7 @@ export class Simulation {
   set iff(value:string){this.playerIff=value;if(this.mounted)this.mounted.iff=value;} throttle=0;speed=0; waypoint=false;
   changeIff(value:string){if(this.passenger)return false;if(!/^[0-7]{4}$/.test(value))return false;this.iff=value;return true;}
   resetIff(){if(this.passenger)return;this.iff=this.mission.initialIff;}
-  selectedWaypoint:number|null=null;selected:string|null=null; tracking=false; events:GameEvent[]=[]; private playerDetectionAnnounced=new Set<string>();private occupiedContacts=new Map<string,number>();private warningLevel=0;private pendingDamageWarning:Unit|null=null;private stopHeld=false;private centerHeld=false;private fireHeld=[false,false,false,false];private fireRepeatAt=[0,0,0,0];private fireReleaseRequired=[false,false,false,false];private fireActor:string|undefined;
+  selectedWaypoint:number|null=null;selected:string|null=null; tracking=false; events:GameEvent[]=[]; private playerDetectionAnnounced=new Set<string>();private occupiedContacts=new Map<string,number>();private warningLevel=0;private pendingDamageWarning:Unit|null=null;private stopHeld=false;private centerHeld=false;private yawKeyHeld=0;private pitchKeyHeld=0;private yawKeySign=0;private pitchKeySign=0;private fireHeld=[false,false,false,false];private fireRepeatAt=[0,0,0,0];private fireReleaseRequired=[false,false,false,false];private fireActor:string|undefined;
   mines:{id:string;x:number;z:number;radius:number;spent:boolean}[]=[];
   facilities:Facility[];readonly mission:MissionDefinition;readonly weapons:ReturnType<typeof resolveWeapons>;reachedWaypoints=new Set<number>();
   usedSupplies=new Set<number>();airSupportUsed=0;private shieldDoublerUntil=new Map<string,number>();
@@ -285,6 +285,7 @@ export class Simulation {
     });
   }
   private navigateEnemy(unit:Unit,goal:Vec,target:SelectionTarget|null,dt:number){
+    if(unit.spec.speed<=0)return false;
     const crossing=this.crossingBridge(unit,goal);
     if(distance(unit,goal)<=unit.spec.ai.stopDistance&&!crossing)return false;
     const targetId=target?.id??'player';let plan=this.enemyRoutes.get(unit.id);
@@ -293,7 +294,7 @@ export class Simulation {
       const circles=[...this.mission.rocks.map(r=>({...r,r:r.r+3})),...this.units.filter(other=>other!==unit&&other!==target&&other.alive).map(other=>({...other,r:vehicleRadius(unit.kind)+vehicleRadius(other.kind)+.6}))];
       const boxes=this.navigationObstacles(unit).map(b=>({...b,width:b.width+clearance*2,depth:b.depth+clearance*2}));
       const radius=Math.max(unit.spec.ai.stopDistance,target&&isFacility(target)?Math.hypot(target.width,target.depth)/2+clearance+3:0);
-      const candidates=[goal,...Array.from({length:12},(_,i)=>({x:goal.x+Math.sin(i*Math.PI/6)*radius,z:goal.z+Math.cos(i*Math.PI/6)*radius}))];
+      const candidates:Vec[]=[goal];if(radius>0)for(let i=0;i<12;i++)candidates.push({x:goal.x+Math.sin(i*Math.PI/6)*radius,z:goal.z+Math.cos(i*Math.PI/6)*radius});
       let route:Vec[]=[];
       for(const candidate of candidates){const path=allyRoute(unit,candidate,area,circles,boxes);if(path){route=path;break;}}
       plan={targetId,goal:{...goal},until:this.time+.9,route};this.enemyRoutes.set(unit.id,plan);
@@ -803,7 +804,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     const assault=unit.kind==='merc-assault',tactical=unit.kind==='union-tactical'&&(weapon==='P2MEC'||weapon==='TCREAP'),ceti=unit.kind==='scorp-sentry'&&weapon==='CETI';
     if(!tactical&&!ceti&&weaponMountCount(unit.kind,weapon)!==2)return [fallback];
     const mount=VEHICLE_SHAPES[unit.kind].weapon,forward=mount.z+mount.d/2+(ceti?1.05:.16);
-    const unionMuzzle=unit.kind==='union-sentry',darkenMuzzle=unit.kind==='darken-sentry',muzzleForward=assault||tactical||ceti||darkenMuzzle?forward:unionMuzzle?Math.sin(unit.aim)*(fallback.x-unit.x)+Math.cos(unit.aim)*(fallback.z-unit.z):mount.z+2.4,muzzleY=assault||tactical||ceti||darkenMuzzle?unit.spec.height*.6+mount.y-(ceti?.17:0):unionMuzzle?fallback.y:unit.spec.height*.6+mount.y;
+    const unionMuzzle=unit.kind==='union-sentry',darkenMuzzle=unit.kind==='darken-sentry',stalker=unit.kind==='darken-tactical'?pitchDarkenTactical(mount.y,mount.z):null,muzzleForward=stalker?stalker.z+mount.d/2:assault||tactical||ceti||darkenMuzzle?forward:unionMuzzle?Math.sin(unit.aim)*(fallback.x-unit.x)+Math.cos(unit.aim)*(fallback.z-unit.z):mount.z+2.4,muzzleY=stalker?stalker.y:assault||tactical||ceti||darkenMuzzle?unit.spec.height*.6+mount.y-(ceti?.17:0):unionMuzzle?fallback.y:unit.spec.height*.6+mount.y;
     return [-1,1].map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*muzzleForward,y:muzzleY,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*muzzleForward}));
   }
   private fireReapTracer(unit:Unit,from:Point3,to:Point3){
@@ -1049,10 +1050,17 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(this.checkCrush(previousHuman,previousUnits))return;
     if(this.guidedMissileId!==null&&!this.guidedMissile)this.releaseGuidance('unavailable');
     const guiding=!!this.guidedMissile,manualAim=manualAimFor(this.mounted?.kind);
-    if(guiding){if(centerPressed)this.releaseGuidance();else steerMissile(this.guidedMissile!, (Number(input.right)-Number(input.left))*dt*VISOM_GUIDANCE.turnRate,(Number(!!input.lookUp||input.forward)-Number(!!input.lookDown||input.back))*dt*VISOM_GUIDANCE.turnRate);}
-    else{this.pitch=Math.max(-1.2,Math.min(.8,this.pitch+(Number(!!input.lookUp)-Number(!!input.lookDown))*dt*manualAim.pitch));
+    const yawAxis=Number(input.right)-Number(input.left),pitchAxis=Number(!!input.lookUp)-Number(!!input.lookDown);
+    let viewYawScale=0;
+    if(guiding){this.yawKeyHeld=this.pitchKeyHeld=0;this.yawKeySign=this.pitchKeySign=0;if(centerPressed)this.releaseGuidance();else steerMissile(this.guidedMissile!, yawAxis*dt*VISOM_GUIDANCE.turnRate,(Number(!!input.lookUp||input.forward)-Number(!!input.lookDown||input.back))*dt*VISOM_GUIDANCE.turnRate);}
+    else{const yawSign=Math.sign(yawAxis),pitchSign=Math.sign(pitchAxis);
+      if(yawSign!==this.yawKeySign)this.yawKeyHeld=0;if(pitchSign!==this.pitchKeySign)this.pitchKeyHeld=0;
+      this.yawKeySign=yawSign;this.pitchKeySign=pitchSign;
+      viewYawScale=keyboardAimScale(this.yawKeyHeld);const pitchScale=keyboardAimScale(this.pitchKeyHeld);
+      if(yawSign)this.yawKeyHeld+=dt;if(pitchSign)this.pitchKeyHeld+=dt;
+      this.pitch=Math.max(-1.2,Math.min(.8,this.pitch+pitchAxis*dt*manualAim.pitch*pitchScale));
     if(centerPressed){this.pitch=0;this.tracking=false;this.emit({type:'center',unit:this.mounted??undefined});}}
-    let u=this.mounted;const turn=guiding?0:(Number(input.right)-Number(input.left))*dt*(u?(u.spec.category==='tower'?MANUAL_AIM.towerYaw:manualAim.vehicleYaw):MANUAL_AIM.infantryYaw);
+    let u=this.mounted;const turn=yawAxis*dt*(u?(u.spec.category==='tower'?MANUAL_AIM.towerYaw:manualAim.vehicleYaw):MANUAL_AIM.infantryYaw)*viewYawScale;
     if(u){const fixed=u.spec.category==='tower'||u.spec.speed<=0;if(!guiding){u.aimPitch=this.pitch;if(u.spec.category!=='tower')u.yaw+=turn;u.aim+=turn;if(centerPressed||u.spec.torsoLimit===0)u.aim=u.yaw;
       if(fixed)this.throttle=0;
       else if(input.stop){this.throttle=0;if(stopPressed)this.emit({type:'stop'});}

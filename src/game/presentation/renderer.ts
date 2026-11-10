@@ -4,7 +4,7 @@ import {initialCameraMode,REAR_CAMERA_DISTANCE_SCALE} from './camera-mode.ts';
 import {isEmbarked} from '../simulation/infantry.ts';
 import {makeBase} from './base.ts';
 import {grassTexture,snowTexture,volcanicTexture,overcastSky,rockyMountains} from './landscape.ts';
-import {MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
+import {DARKEN_TACTICAL_HIP_Z,DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_TORSO_Y,MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
 // Register rendering extensions and shaders before the first frame, including dev reloads.
 import '@babylonjs/core';
 import '@babylonjs/core/Shaders/default.vertex.js';
@@ -118,11 +118,12 @@ export class World {
   makeMech(u:Unit){const spec=u.spec,scorp=u.kind==='scorp-asv',tower=spec.category==='tower';const root=new TransformNode(u.id,this.scene);const torso=new TransformNode('upper',this.scene);torso.parent=root;torso.position.y=spec.height*.6;
     const shell=this.material(`${u.id}-paint`,spec.color);const dark=this.material(`${u.id}-joints`,tower?SCORP_TOWER_PALETTE.dark:scorp?SCORP_ASV_PALETTE.black:u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#090d13':'#343d39');const glow=this.material(`${u.id}-visor`,tower?SCORP_TOWER_PALETTE.panel:scorp?SCORP_ASV_PALETTE.green:u.kind==='darken-sentry'?'#3f5f9b':u.kind==='merc-tactical'?MERC_TACTICAL_PALETTE.black:u.kind==='merc-sentry'?'#0d1722':'#1b252b');
     const unionTactical=u.kind==='union-tactical',union=u.kind==='union-sentry',merc=u.kind==='merc-sentry',darkenSentry=u.kind==='darken-sentry',scorpSentry=u.kind==='scorp-sentry',darkenTactical=u.kind==='darken-tactical',heavy=u.kind.endsWith('-tactical'),shape=VEHICLE_SHAPES[u.kind];
-    const accent=this.material(`${u.id}-${heavy?'blue':'red'}-panels`,tower?SCORP_TOWER_PALETTE.ochre:scorp?SCORP_ASV_PALETTE.ochre:unionTactical?'#98463e':darkenTactical?'#914536':heavy?MERC_TACTICAL_PALETTE.blue:union?'#983f3b':darkenSentry?'#b97319':'#813c3e');
+    if(darkenTactical)torso.position.y=DARKEN_TACTICAL_TORSO_Y;
+    const accent=this.material(`${u.id}-${heavy?'blue':'red'}-panels`,tower?SCORP_TOWER_PALETTE.ochre:scorp?SCORP_ASV_PALETTE.ochre:unionTactical?'#98463e':darkenTactical?'#b4231c':heavy?MERC_TACTICAL_PALETTE.blue:union?'#983f3b':darkenSentry?'#b97319':'#813c3e');
     const darkenPod=darkenSentry?this.material(`${u.id}-green-weapon-pods`,'#385323'):null;
     const scorpCanopy=scorpSentry?this.material(`${u.id}-scorp-canopy`,'#3a4570'):null,scorpChest=scorpSentry?this.material(`${u.id}-scorp-chest`,'#7d8794'):null,scorpArm=scorpSentry?this.material(`${u.id}-scorp-arm`,'#e0b15a'):null,scorpForearm=scorpSentry?this.material(`${u.id}-scorp-forearm`,'#9aab86'):null,scorpThigh=scorpSentry?this.material(`${u.id}-scorp-thigh`,'#c4893a'):null,scorpShin=scorpSentry?this.material(`${u.id}-scorp-shin`,'#7d8c78'):null,scorpFoot=scorpSentry?this.material(`${u.id}-scorp-foot`,'#e6e2d8'):null;
     if(u.kind==='union-asv'||unionTactical){shell.diffuseColor=Color3.White();shell.diffuseTexture=weatheredArmor(this.scene);}
-    const trim=this.material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:darkenTactical?'#aaa9a0':heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
+    const trim=this.material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:darkenTactical?'#5e635c':heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
     const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,mat:StandardMaterial,parent:TransformNode,part?:BodyPart)=>{const b=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},this.scene);b.parent=parent;b.position.set(x,y,z);b.material=mat;if(part)b.metadata={bodyPart:part};return b;};
     let cannon:TransformNode|undefined;
     const legs:TransformNode[]=[],knees:TransformNode[]=[],feet:Mesh[]=[],spiderLegs:SpiderLeg[]=[];
@@ -270,8 +271,8 @@ export class World {
       }
     }else{
     const {hull,cockpit,weapon}=shape;
-    box('hull',hull.w,hull.h,hull.d,0,hull.y,hull.z,shell,torso);
-    if(heavy){
+    box('hull',hull.w,hull.h,hull.d,0,hull.y,hull.z,darkenTactical?dark:shell,torso);
+    if(heavy&&!darkenTactical){
       const cabin=MeshBuilder.CreateCylinder('cockpit',{height:cockpit.h,diameterTop:1,diameterBottom:.68,tessellation:4},this.scene);
       cabin.parent=torso;cabin.position.set(0,cockpit.y,cockpit.z);cabin.rotation.y=Math.PI/4;cabin.scaling.set(cockpit.w*Math.SQRT2,1,cockpit.d*Math.SQRT2);cabin.material=dark;cabin.metadata={bodyPart:'cockpit'};
       box('cab roof edge',cockpit.w+.16,.18,cockpit.d+.12,0,cockpit.y+cockpit.h/2,cockpit.z,shell,torso,'cockpit');
@@ -296,11 +297,10 @@ export class World {
         }
       }
       if(unionTactical){box('rampage armored brow',3.3,.45,1.3,0,1.92,.7,shell,torso,'cockpit');box('rampage central window',1.55,.65,.14,0,1.3,1.35,dark,torso,'cockpit');}
-      if(darkenTactical){
-        box('stalker gold front spine',.52,1.65,.18,0,.3,1.13,shell,torso,'hull');
-        box('stalker cockpit brow',1.45,.27,.3,0,cockpit.y+.55,cockpit.z+cockpit.d/2,trim,torso,'cockpit');
-        for(const side of [-1,1])box('stalker chest panel',.36,.85,.16,side*.48,.2,1.18,trim,torso,'hull');
-      }
+    }else if(darkenTactical){
+      const head=new TransformNode('stalker head',this.scene);head.parent=torso;head.position.set(0,cockpit.y,cockpit.z);head.rotation.x=-DARKEN_TACTICAL_HUNCH;
+      box('cockpit',cockpit.w,cockpit.h,cockpit.d,0,0,0,dark,head,'cockpit');
+      box('stalker cockpit brow',cockpit.w*1.15,.1,cockpit.d,0,cockpit.h/2+.02,0,shell,head,'cockpit');
     }else if(scorpSentry){
       const canopy=MeshBuilder.CreateSphere('cockpit',{diameter:1,segments:8},this.scene);canopy.parent=torso;canopy.scaling.set(cockpit.w,cockpit.h,cockpit.d);canopy.position.set(0,cockpit.y,cockpit.z);canopy.material=scorpCanopy!;canopy.metadata={bodyPart:'cockpit'};
       box('scorp chest plate',hull.w*.62,hull.h*.7,.1,0,hull.y,hull.z+hull.d/2+.04,scorpChest!,torso,'hull');
@@ -328,6 +328,7 @@ export class World {
     for(const side of [-1,1]){
       const part:BodyPart=side<0?'leftWeapon':'rightWeapon',x=side*weapon.x;
       const pod=unionTactical?MeshBuilder.CreateCylinder('weapon pod',{diameter:2,height:1,tessellation:8},this.scene):scorpSentry?box('weapon pod',weapon.w,weapon.h*.42,weapon.d,x,weapon.y+weapon.h*.29,weapon.z,scorpArm!,torso,part):box('weapon pod',weapon.w,weapon.h,weapon.d,x,weapon.y,weapon.z,darkenPod??(darkenTactical?trim:shell),torso,part);
+      if(darkenTactical)pod.rotation.x=-DARKEN_TACTICAL_HUNCH;
       if(scorpSentry)box('scorp forearm',weapon.w*.86,weapon.h*.62,weapon.d*.9,x,weapon.y-weapon.h*.19,weapon.z,scorpForearm!,torso,part);
       if(unionTactical){pod.parent=torso;pod.position.set(x,weapon.y,weapon.z);pod.rotation.x=Math.PI/2;pod.scaling.set(weapon.w/2,weapon.d,weapon.h/2);pod.material=accent;pod.metadata={bodyPart:part};}
       if(!heavy&&!darkenSentry&&!scorpSentry){
@@ -335,17 +336,17 @@ export class World {
         box('weapon muzzle',weapon.w*.7,weapon.h*.55,.18,x,weapon.y,weapon.z+weapon.d/2+.07,dark,torso,part);
         box('weapon face panel',.36,.3,.2,x+side*.28,weapon.y+.05,weapon.z+weapon.d/2+.12,darkenPod??accent,torso,part);
       }
-      if(heavy){
+      if(heavy&&!darkenTactical){
         box('shoulder blue cap',weapon.w+.12,.27,weapon.d+.1,x,weapon.y+weapon.h/2+.05,weapon.z,accent,torso,part);
         box('shoulder black face',weapon.w*.75,weapon.h*.63,.16,x,weapon.y,weapon.z+weapon.d/2+.06,dark,torso,part);
         box('shoulder white divider',weapon.w*.88,.16,.2,x,weapon.y-.24,weapon.z+weapon.d/2+.12,shell,torso,part);
         box('shoulder lower rail',weapon.w+.06,.16,weapon.d+.12,x,weapon.y-weapon.h/2,weapon.z,trim,torso,part);
-        if(darkenTactical){for(let band=0;band<3;band++)box('stalker pod red grille',weapon.w*.77,.09,.035,x,weapon.y+.38-band*.2,weapon.z+weapon.d/2+.16,accent,torso,part);box('stalker pod lower silver face',weapon.w*.8,.33,.05,x,weapon.y-.53,weapon.z+weapon.d/2+.18,trim,torso,part);}
       }
-      if(!darkenSentry&&!scorpSentry)box('barrel',.22,.22,heavy?1.3:1.1,x,weapon.y-.17,weapon.z+weapon.d/2+.5,dark,torso,part);
-      const leg=new TransformNode('leg',this.scene);leg.parent=root;leg.position.set(side*shape.legX,'legHip' in shape?shape.legHip:spec.height*.5,0);if('legScale' in shape)leg.scaling.set(shape.legScale.x,shape.legScale.y,shape.legScale.z);legs.push(leg);
+      if(darkenTactical)for(let band=0;band<3;band++)box('stalker pod red grille',weapon.w*.82,weapon.h*.055,.04,0,weapon.h*.28-band*weapon.h*.22,weapon.d/2+.02,accent,pod,part);
+      if(!darkenSentry&&!scorpSentry&&!darkenTactical)box('barrel',.22,.22,heavy?1.3:1.1,x,weapon.y-.17,weapon.z+weapon.d/2+.5,dark,torso,part);
+      const leg=new TransformNode('leg',this.scene);leg.parent=root;leg.position.set(side*shape.legX,'legHip' in shape?shape.legHip:spec.height*.5,darkenTactical?DARKEN_TACTICAL_HIP_Z:0);if('legScale' in shape)leg.scaling.set(shape.legScale.x,shape.legScale.y,shape.legScale.z);legs.push(leg);
       if(union){const shoulder=VEHICLE_SHAPES['union-sentry'].shoulder;const cap=MeshBuilder.CreateCylinder('prowler shoulder armor',{diameter:2,height:1,tessellation:8},this.scene);cap.parent=leg;cap.position.set(0,spec.height*.6+shoulder.y-spec.height*.5,shoulder.z);cap.rotation.x=Math.PI/2;cap.scaling.set(shoulder.w/2,shoulder.d,shoulder.h/2);cap.material=accent;cap.metadata={bodyPart:side<0?'leftLeg':'rightLeg'};}
-      box('thigh',darkenSentry?.28:scorpSentry?1.02:heavy?1.12:.92,spec.height*.26,darkenSentry?.32:scorpSentry?1.02:.95,0,-spec.height*.13,0,scorpSentry?scorpThigh!:shell,leg);
+      box('thigh',darkenTactical?.46:darkenSentry?.28:scorpSentry?1.02:heavy?1.12:.92,darkenTactical?spec.height*.2:spec.height*.26,darkenTactical?.42:darkenSentry?.32:scorpSentry?1.02:.95,0,darkenTactical?-spec.height*.18:-spec.height*.13,0,scorpSentry?scorpThigh!:shell,leg);
       if(darkenSentry)box('darken thigh band',.34,.1,.36,0,-spec.height*.2,0,trim,leg);
       if(!heavy&&!darkenSentry&&!scorpSentry){
         if(union){const support=VEHICLE_SHAPES['union-sentry'].upperLeg;box('shoulder leg support',support.w,support.h,support.d,0,support.y-spec.height*.5,support.z,shell,leg);box('shoulder support inset',support.w*.55,support.h*.75,.13,0,support.y-spec.height*.5,support.z+support.d/2+.02,dark,leg);}
@@ -354,7 +355,7 @@ export class World {
         box('leg side armor',.12,.82,.76,side*.51,-spec.height*.13,.08,accent,leg);
       }
       const knee=new TransformNode('knee',this.scene);knee.parent=leg;knee.position.y=-spec.height*.26;knees.push(knee);
-      box('shin',darkenSentry?.24:scorpSentry?.98:heavy?1.38:1.12,spec.height*.22,darkenSentry?.28:scorpSentry?.98:1.15,0,-spec.height*.11,darkenSentry?0:scorpSentry?.08:.12,darkenSentry?trim:scorpSentry?scorpShin!:shell,knee);
+      box('shin',darkenTactical?.4:darkenSentry?.24:scorpSentry?.98:heavy?1.38:1.12,darkenTactical?spec.height*.21:spec.height*.22,darkenTactical?.36:darkenSentry?.28:scorpSentry?.98:1.15,0,darkenTactical?-spec.height*.105:-spec.height*.11,darkenTactical?.04:darkenSentry?0:scorpSentry?.08:.12,darkenTactical||darkenSentry?trim:scorpSentry?scorpShin!:shell,knee);
       if(darkenSentry)box('darken shin band',.28,.12,.32,0,-spec.height*.15,0,shell,knee);
       if(!heavy&&!darkenSentry&&!scorpSentry){
         box('knee band',1.24,.24,1.27,0,-.1,.12,trim,knee);
@@ -362,7 +363,7 @@ export class World {
         box('shin rear armor',.88,spec.height*.1,.13,0,-spec.height*.095,-.49,accent,knee);
         box('ankle band',1.15,.2,1.28,0,-spec.height*.19,.12,trim,knee);
       }
-      if(heavy){
+      if(heavy&&!darkenTactical){
         box('thigh black inset',.85,spec.height*.13,.12,0,-spec.height*.13,.54,dark,leg);
         box('upper leg white cuff',1.3,.3,1.12,0,-.22,.05,shell,leg);
         if(u.kind==='merc-tactical'){
@@ -374,7 +375,6 @@ export class World {
         box('shin black vent',.9,.32,.2,0,-spec.height*.12,.89,dark,knee);
         box('shin white seam',1.4,.18,.22,0,-spec.height*.065,.9,shell,knee);
         box('shin lower white cuff',1.5,.27,1.35,0,-spec.height*.2,.12,shell,knee);
-        if(darkenTactical){box('stalker shin gold column',.55,spec.height*.18,.18,0,-spec.height*.11,.91,shell,knee,side<0?'leftLeg':'rightLeg');box('stalker broad gold foot',1.75,.35,1.8,0,-spec.height*.24,.35,shell,knee,side<0?'leftLeg':'rightLeg');}
         if(u.kind==='merc-tactical'){
           box('rear shin blue armor',1.25,spec.height*.14,.18,0,-spec.height*.115,-.66,accent,knee,side<0?'leftLeg':'rightLeg');
           box('rear shin dark vent',.78,.34,.12,0,-spec.height*.12,-.78,dark,knee,side<0?'leftLeg':'rightLeg');
@@ -382,7 +382,8 @@ export class World {
         }
       }
       let foot:Mesh;
-      if(scorpSentry){foot=MeshBuilder.CreateCylinder('foot',{height:1.55,diameterTop:.22,diameterBottom:.95,tessellation:4},this.scene);foot.parent=knee;foot.rotation.z=-side*Math.PI/2;foot.position.set(side*.62,-spec.height*.22,.2);foot.material=scorpFoot!;}
+      if(darkenTactical){const footY=-spec.height*.22;foot=box('stalker broad gold foot',.74,.14,1.05,0,footY,.28,shell,knee,side<0?'leftLeg':'rightLeg');box('stalker dark sole',.82,.12,1.2,0,-.14,0,dark,foot,side<0?'leftLeg':'rightLeg');}
+      else if(scorpSentry){foot=MeshBuilder.CreateCylinder('foot',{height:1.55,diameterTop:.22,diameterBottom:.95,tessellation:4},this.scene);foot.parent=knee;foot.rotation.z=-side*Math.PI/2;foot.position.set(side*.62,-spec.height*.22,.2);foot.material=scorpFoot!;}
       else foot=box('foot',darkenSentry?.42:heavy?1.65:1.5,darkenSentry?.16:.45,darkenSentry?.55:heavy?2.35:2,0,-spec.height*.22,darkenSentry?0:.2,dark,knee);
       feet.push(foot);
       if(u.kind==='merc-tactical')for(const z of [-.75,-.25,.25,.75]){const tread=MeshBuilder.CreatePlane('merc-sole-tread',{width:1.35,height:.14,sideOrientation:Mesh.DOUBLESIDE},this.scene);tread.parent=foot;tread.rotation.x=Math.PI/2;tread.position.set(0,-.226,z);tread.material=trim;}
@@ -686,7 +687,7 @@ export class World {
       if(missile.weapon!=='EGGER'&&rig.smokeTimer>=.035){rig.smokeTimer%=.035;const smoke=MeshBuilder.CreateSphere('rocket-smoke',{diameter:missile.weapon==='GASHR'?.5:.9,segments:4},this.scene);smoke.position.copyFrom(rig.root.position);smoke.material=missile.weapon==='GASHR'?this.fxMaterial('gas-cloud','#a5bb76'):this.fxMaterial('smoke','#6d6a60');this.addEffect(smoke,.65,'smoke',new Vector3(0,.7,0));}
     }
   }
-  update(dt:number){const sim=this.sim;for(const river of terrainRivers(sim.mission.terrain))for(const side of [-1,1]){const hinge=this.scene.getTransformNodeByName(river===sim.mission.terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`);if(hinge)hinge.rotation.z=sim.raisedBridges.has(river.bridgeId)?-side*Math.PI*.48:0;}for(const facility of sim.facilities){const root=this.scene.getTransformNodeByName(`facility-${facility.id}`);root?.setEnabled(facility.alive&&!(sim.insideFacility===facility&&this.mode===0&&this.completionTime===null));}const detected=new Set(sim.detectedMines.map(m=>m.id));for(const [id,mesh] of this.mineRigs)mesh.isVisible=detected.has(id);this.updateDestructions(dt);for(const u of sim.units){const rig=this.rigs.get(u.id);if(!rig)continue;if(!u.alive&&!this.destructions.has(u.id)){this.retireVehicle(u);continue;}rig.recoil=Math.max(0,rig.recoil-dt*9);rig.torso.position.z=u.spec.category==='tower'||u.kind==='merc-assault'?0:-rig.recoil*.35;rig.torso.rotation.x=u.spec.category==='tower'||u.kind==='merc-assault'?0:(u.kind.endsWith('-asv')?-(u===sim.mounted?sim.pitch:u.aimPitch):0)-rig.recoil*.045;this.updateGait(u,rig,dt);rig.torso.rotation.y=(u.kind==='merc-meson-tower'||u.kind==='scorp-meson-tower')?u.aim:u.spec.category==='tower'||u.spec.torsoLimit===0?0:u.aim-u.yaw;if(u.kind!=='merc-assault')rig.torso.rotation.z=-rig.root.rotation.z*.65;rig.root.setEnabled(!((u===sim.mounted||u===sim.passenger)&&this.mode===0&&!sim.guidedMissile&&this.completionTime===null));if(rig.cannon)rig.cannon.rotation.x=-(u===sim.mounted?sim.pitch:u.aimPitch);this.updateDamage(u,rig,dt);}
+  update(dt:number){const sim=this.sim;for(const river of terrainRivers(sim.mission.terrain))for(const side of [-1,1]){const hinge=this.scene.getTransformNodeByName(river===sim.mission.terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`);if(hinge)hinge.rotation.z=sim.raisedBridges.has(river.bridgeId)?-side*Math.PI*.48:0;}for(const facility of sim.facilities){const root=this.scene.getTransformNodeByName(`facility-${facility.id}`);root?.setEnabled(facility.alive&&!(sim.insideFacility===facility&&this.mode===0&&this.completionTime===null));}const detected=new Set(sim.detectedMines.map(m=>m.id));for(const [id,mesh] of this.mineRigs)mesh.isVisible=detected.has(id);this.updateDestructions(dt);for(const u of sim.units){const rig=this.rigs.get(u.id);if(!rig)continue;if(!u.alive&&!this.destructions.has(u.id)){this.retireVehicle(u);continue;}rig.recoil=Math.max(0,rig.recoil-dt*9);rig.torso.position.z=u.spec.category==='tower'||u.kind==='merc-assault'?0:-rig.recoil*.35;rig.torso.rotation.x=u.spec.category==='tower'||u.kind==='merc-assault'?0:(u.kind.endsWith('-asv')?-(u===sim.mounted?sim.pitch:u.aimPitch):u.kind==='darken-tactical'&&u.alive?DARKEN_TACTICAL_HUNCH:0)-rig.recoil*.045;this.updateGait(u,rig,dt);rig.torso.rotation.y=(u.kind==='merc-meson-tower'||u.kind==='scorp-meson-tower')?u.aim:u.spec.category==='tower'||u.spec.torsoLimit===0?0:u.aim-u.yaw;if(u.kind!=='merc-assault')rig.torso.rotation.z=-rig.root.rotation.z*.65;rig.root.setEnabled(!((u===sim.mounted||u===sim.passenger)&&this.mode===0&&!sim.guidedMissile&&this.completionTime===null));if(rig.cannon)rig.cannon.rotation.x=-(u===sim.mounted?sim.pitch:u.aimPitch);this.updateDamage(u,rig,dt);}
     this.updateSoldiers(dt);
     const p=sim.player;const yaw=sim.aim;const height=sim.eyeHeight;
     const guided=sim.guidedMissile;

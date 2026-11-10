@@ -31,7 +31,7 @@
 - [設定画面・難易度](gameplay/settings.md)：Easy・Medium・Hard、初期値Easy、パラメータと設定保存
 - [カメラとコックピット](gameplay/cameras-and-cockpits.md)：機体別の機内表示、外部斜め・真後ろビュー
 - [コックピット内の表示](gameplay/cockpit-hud.md)：武器・照準・Holo・レーダー・指令速度と実速度、機体別画面の確認範囲
-- [任務地図とウェイポイント](gameplay/mission-map-and-waypoints.md)：Bの任務表示、Sの選択、現在位置、目標と到達
+- [任務地図とウェイポイント](gameplay/mission-map-and-waypoints.md)：Bの任務表示、Sの選択、現在位置、目標と到達、原作地図との対応
 - [IFF・通信・仲間への命令](gameplay/iff-and-communications.md)：識別と敵行動・レーダー、Fキーの宛先・命令選択、任務進行
 - [敵の行動と追加調査](gameplay/enemy-behavior.md)：1-1の敵AI、攻略資料の観察、未確定の索敵・移動・射撃・難易度差
 - [機体・上半身・砲塔の旋回](gameplay/vehicle-articulation.md)：360度回転・角度制限・固定、車体・武器・視点の分離
@@ -49,6 +49,7 @@
 ## 技術設計
 
 - [ミッションの追加と共通仕様](technical/mission-definitions.md)：任務定義、機体・武器の再利用、任務限定の例外、再挑戦
+- [密集した障害物と更新コスト](technical/simulation-cost.md)：経路探索を1ティックに収める制約。動かない砲塔は探索せず照準と射撃を続ける
 - [Mission・Vehicle・Facilityの拡張手順](technical/content-extension.md)：追加時の変更箇所、共通／固有データ、型・挙動検証
 - [Codex向け追記ルール](technical/codex-rules.md)：機体・ミッション追加と既存マップ拡張の手順・プロンプトテンプレート
 - [1-1試作版の起動と実装範囲](technical/playable-1-1.md)：起動・操作、仮設定、実装箇所、検証結果
@@ -57,6 +58,7 @@
 - [判断モデルの利用検討](technical/decision-models-for-ai.md)：Clef・Jevによる敵味方AIの比較実験、実行方式、採用基準
 - [Windows・macOSの操作](technical/keybindings.md)：原作キーと共通プリセット案、キー変更、全速出力の女性音声
 - [ビルド・配布・プレイ環境](technical/build-and-distribution.md)：開発サーバー、配布用ビルド、静的配信、PCブラウザ
+- [assets ディレクトリ整理計画](technical/assets-directory-plan.md)：原作画像を機体ごとの `assets/reference/` へまとめる手順。未実施
 
 ## 参考資料
 

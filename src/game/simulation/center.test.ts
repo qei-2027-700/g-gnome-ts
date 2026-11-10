@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,type Input} from './simulation.ts';
+import {KEYBOARD_AIM_RAMP} from './movement.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 
 test('fixed tower exit places the player beside it on the ground and accepts walking on the next frame',()=>{
@@ -84,13 +85,16 @@ test('AI Union Sentry turns its whole chassis toward an enemy and never swivels 
 });
 
 
-test('tower keyboard aiming keeps its base fixed while using the common HAWC horizontal key speed',()=>{
+test('tower keyboard aiming keeps its base fixed and eases into the common HAWC horizontal key speed',()=>{
  for(const kind of ['merc-meson-tower','scorp-rocket-tower','merc-tactical'] as const){
   const s=new Simulation(),u=makeUnit('own',kind,0,20,false);s.units=[u];s.human={x:0,z:20};assert.ok(s.board());const yaw=u.yaw;
+  const tapFrames=Math.round(KEYBOARD_AIM_RAMP.rise*60);
+  s.tick(1/60,{...idle,right:true});assert.ok(Math.abs(u.aim-yaw-1.5/60*KEYBOARD_AIM_RAMP.start)<1e-8);
+  for(let i=1;i<tapFrames;i++)s.tick(1/60,{...idle,right:true});const cruising=u.aim;
   for(let i=0;i<60;i++)s.tick(1/60,{...idle,right:true});
-  const tower=kind!=='merc-tactical';assert.ok(Math.abs(u.aim-yaw-1.5)<1e-8);
+  const tower=kind!=='merc-tactical';assert.ok(Math.abs(u.aim-cruising-1.5)<1e-8);
   if(tower){assert.equal(u.yaw,yaw);assert.equal(u.x,0);assert.equal(u.z,20);}
-  for(let i=0;i<60;i++)s.tick(1/60,{...idle,left:true});assert.ok(Math.abs(u.aim-yaw)<1e-8);
+  for(let i=0;i<tapFrames+60;i++)s.tick(1/60,{...idle,left:true});assert.ok(Math.abs(u.aim-yaw)<1e-8);
  }
 });
 test('tower tracking catches and follows a close AIP moving sideways at its defined maximum speed',()=>{
@@ -107,6 +111,6 @@ test('manual tower turn cancels tracking without dropping the selected target or
  const s=new Simulation(),tower=makeUnit('own','merc-meson-tower',0,20,false),enemy=makeUnit('target','merc-aip',30,100,true,{speed:0,ai:{detection:0}});
  s.units=[tower,enemy];s.human={x:0,z:20};assert.ok(s.board());enemy.iff='enemy';s.selected=enemy.id;s.tracking=true;
  for(let i=0;i<10;i++)s.tick(1/60,{...idle,left:true});
- assert.equal(s.tracking,false);assert.equal(s.selected,enemy.id);assert.ok(tower.aim<-.1);assert.equal(tower.yaw,0);
+ assert.equal(s.tracking,false);assert.equal(s.selected,enemy.id);assert.ok(tower.aim<-.05);assert.equal(tower.yaw,0);
  const aim=tower.aim;s.tick(1/60,idle);assert.equal(tower.aim,aim);
 });

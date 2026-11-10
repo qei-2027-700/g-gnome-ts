@@ -65,14 +65,17 @@ test('Scorp Sentry has a blue canopy, hanging arms and white outward feet',async
 });
 test('Darken Tactical Defense has gold legs, silver shoulder pods and its own hologram',async()=>{
  const {hologramSvg}=await import('./hologram.ts');
- const {DARKEN_TACTICAL_HUNCH,pitchDarkenTactical,VEHICLE_SHAPES}=await import('../content/vehicles.ts');
+ const {DARKEN_TACTICAL_HIP_Z,DARKEN_TACTICAL_HUNCH,pitchDarkenTactical,VEHICLE_SHAPES}=await import('../content/vehicles.ts');
  const {intersectParts}=await import('../simulation/parts.ts');
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
  try{const sim=new Simulation(),unit=makeUnit('stalker','darken-tactical',0,40,false);sim.units=[unit];sim.human={x:0,z:40};assert.ok(sim.board());const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get(unit.id)!;
   const pods=rig.root.getChildMeshes().filter(mesh=>mesh.name==='weapon pod');assert.equal(pods.length,2);assert.ok(pods[0].position.x*pods[1].position.x<0);
-  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker pod red grille').length,6);assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker broad gold foot').length,2);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker pod red grille').length,6);assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker broad gold foot').length,2);assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker dark sole').length,2);
+  assert.equal(unit.spec.speed,67.5);assert.equal(unit.spec.shield,50);assert.equal(unit.spec.energy,1500);assert.equal(unit.spec.height,7.9);
   assert.notEqual(hologramSvg('darken-tactical'),hologramSvg('merc-tactical'));assert.ok(hologramSvg('darken-tactical').includes('M14 18h36v46H14z'));assert.equal(rig.root.getChildMeshes().some(mesh=>mesh.name==='shoulder crossbar'),false);
-  world.update(.016);assert.ok(Math.abs(rig.torso.rotation.x-DARKEN_TACTICAL_HUNCH)<1e-8);assert.equal(rig.root.rotation.x,0);assert.ok(rig.knees.every(knee=>knee.rotation.x>.5));assert.ok(Math.abs(rig.legs[0].rotation.x+rig.knees[0].rotation.x+rig.feet[0].rotation.x)<1e-8);
+  world.update(.016);assert.ok(Math.abs(rig.torso.rotation.x-DARKEN_TACTICAL_HUNCH)<1e-8);assert.equal(rig.root.rotation.x,0);assert.ok(rig.knees.every(knee=>knee.rotation.x>1.4));assert.ok(Math.abs(rig.knees[0].rotation.x-rig.knees[1].rotation.x)<1e-6);assert.ok(rig.legs[0].rotation.x<-.7);assert.ok(Math.abs(rig.legs[0].rotation.x+rig.knees[0].rotation.x+rig.feet[0].rotation.x)<1e-8);
+  for(const foot of rig.feet){foot.computeWorldMatrix(true);const at=foot.getAbsolutePosition();assert.ok(at.z>unit.z+DARKEN_TACTICAL_HIP_Z+.8);assert.ok(Math.abs(at.y-.225)<.05);assert.ok(Math.abs(at.z-rig.feet[0].getAbsolutePosition().z)<1e-4);}
+  const shape=VEHICLE_SHAPES['darken-tactical'];assert.equal(intersectParts(unit,{x:shape.legX,y:.4,z:unit.z+2.2},{x:shape.legX,y:.4,z:unit.z-.8})?.part,'rightLeg');
   const cockpit=VEHICLE_SHAPES['darken-tactical'].cockpit,head=pitchDarkenTactical(cockpit.y,cockpit.z);assert.equal(intersectParts(unit,{x:0,y:head.y,z:unit.z+head.z+6},{x:0,y:head.y,z:unit.z+head.z-2})?.part,'cockpit');
   world.mode=2;sim.fire(1);for(const event of sim.events)world.event(event);world.update(.016);
   const bolt=world.scene.meshes.find(mesh=>mesh.metadata?.weapon==='HOMP11'&&mesh.metadata.visual==='yellow-laser')!;assert.ok(bolt);

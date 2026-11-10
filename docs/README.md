@@ -58,7 +58,7 @@
 - [判断モデルの利用検討](technical/decision-models-for-ai.md)：Clef・Jevによる敵味方AIの比較実験、実行方式、採用基準
 - [Windows・macOSの操作](technical/keybindings.md)：原作キーと共通プリセット案、キー変更、全速出力の女性音声
 - [ビルド・配布・プレイ環境](technical/build-and-distribution.md)：開発サーバー、配布用ビルド、静的配信、PCブラウザ
-- [assets ディレクトリ整理計画](technical/assets-directory-plan.md)：原作画像を機体ごとの `assets/reference/` へまとめる手順。未実施
+- [assets ディレクトリ整理計画](technical/assets-directory-plan.md)：原作画像は機体・施設ごとの `assets/reference/` にある。ゲームが読む画像は `assets/cockpits/` と `assets/ui/`
 
 ## 参考資料
 

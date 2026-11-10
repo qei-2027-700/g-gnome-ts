@@ -1,6 +1,14 @@
 # assets ディレクトリ整理計画
 
-状態：未実施。ファイルは動かしていない。この文書は移動の手順であり、現在の配置ではない。
+状態：実施済み（2026-11-10、#59）。原作スクリーンショットは `assets/reference/` にある。以下は移動前の配置と、そのとき使った手順である。
+
+実施で手順と違えた点：
+
+- `assets/cockpits/scope-sentry-hawk.png` は Scorp Sentry の機内が読むので、`assets/cockpits/` に残した。
+- `assets/cockpits/scope-assault-hawk.png` と `assets/hawk-building/scope/scope-assault-hawk.png` は同じ内容だったので、`assets/reference/scope-assault/scope-assault-hawk.png` の1枚にした。
+- `assets/cockpits/union-td-hawk.png` は機内、`assets/hawk-building/union/union-td-hawk.png` は性能カードで、ファイル名が同じだった。カードは `assets/reference/union-tactical/union-td-hawk.png`、機内は `assets/reference/union-tactical/cockpit.png` にした。
+- 一つの機体や施設に定められない任務中の風景は、ファイル名を変えず `assets/reference/missions/` に置いた。
+- `assets/ui-system/ui-system-end.png` は追跡される `assets/ui/ui-system-end.png` へ移した。
 
 原作の参照画像を、視点別・勢力別のフォルダではなく、機体または施設ごとに1ディレクトリへまとめる。ゲームが読み込む素材と、原作スクリーンショットは分ける。
 

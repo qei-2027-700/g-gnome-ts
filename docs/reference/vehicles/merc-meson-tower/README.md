@@ -40,7 +40,7 @@ Issue #16の要望に合わせ、GAUS30の射程を1000m、飛翔速度を450m/s
 
 ## 徒歩視点からの外観追加資料（2026-10-30）
 
-出典はユーザー提供の[merc-mison-guard-tower3.png](../../../../assets/cockpits/merc-mison-guard-tower3.png)。ユーザーが窓外の対象をMercミーゾン・ガードタワーと指定した。PRIF44・GASHRと徒歩用の枠が表示されており、塔の外観を地上から見た資料として扱う。塔の機内フレームの参照画像とは分ける。
+出典はユーザー提供の[merc-mison-guard-tower3.png](../../../../assets/reference/merc-meson-tower/2-6-merc-mison-guard-tower3.png)。ユーザーが窓外の対象をMercミーゾン・ガードタワーと指定した。PRIF44・GASHRと徒歩用の枠が表示されており、塔の外観を地上から見た資料として扱う。塔の機内フレームの参照画像とは分ける。
 
 画像で確認できる外観は次のとおり。
 
@@ -58,7 +58,7 @@ Issue #16の要望に合わせ、GAUS30の射程を1000m、飛翔速度を450m/s
 
 ## merc-mison.pngに基づく専用外観（2026-10-30）
 
-ユーザー指定の[merc-mison.png](../../../../assets/merc-mison.png)をMercミーゾン・ガードタワーの外観の基準にする。Scorp側の[緑・青緑のミーゾンタワー](../scorp-meson-tower/README.md)とは別のモデルにする。
+ユーザー指定の[merc-mison.png](../../../../assets/reference/merc-meson-tower/merc-mison.png)をMercミーゾン・ガードタワーの外観の基準にする。Scorp側の[緑・青緑のミーゾンタワー](../scorp-meson-tower/README.md)とは別のモデルにする。
 
 頭部は上が広く、下へ絞られた濃紺の多面体。灰色の上縁、上端の暗い縦の切り込み、小さな金属の留め具、灰色の屋根部品を加える。屋根上には単装砲と黒い砲口を置く。下部は細い腰から地面へ広がる風化した灰色の台座とし、正面に赤い縦の塗装片と暗い小窓・継ぎ目を付ける。Scorp側の斜めに張り出す支持材を流用しない。
 

@@ -28,7 +28,7 @@
 
 `npm test`は`tools/run-tests.mjs`で`src/`以下の`.test.ts`を再帰的に収集する。任務の検査は定義と同じディレクトリに置き、今後階層を増やしても実行対象から漏れないようにする。
 
-ゲームが読み込む画像は`assets/cockpits/`と`assets/ui/`へ置き、音声は既存の`assets/audio/`を使う。原作画像と観察記録は引き続き`docs/reference/`へ置く。使用中の素材と元資料の対応は[素材の説明](../../assets/README.md)を参照する。
+ゲームが読み込む画像は`assets/cockpits/`と`assets/ui/`へ置き、音声は既存の`assets/audio/`を使う。原作のスクリーンショットは`assets/reference/`へ置き、実行時コードから読まない。観察の文章は`docs/reference/`へ置く。使用中の素材と元資料の対応は[素材の説明](../../assets/README.md)を参照する。
 
 ## 機体と武器の共通仕様
 

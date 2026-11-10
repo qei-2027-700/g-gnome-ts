@@ -8,7 +8,7 @@
 
 基地内での配置は[3-3の観察記録](../../observations/mission-3-3/observations.md)と[基地突入画面](../scope-asv/3-3-司令部左側-ul-urit基地突入.png)を参照する。実装仕様は[機体・武器資料](../../vehicles-and-weapons.md)へ記録する。
 
-[4-2-開始時-右手にscopeロケットタワー.png](../../../../assets/4-2-開始時-右手にscopeロケットタワー.png)は、4-2出撃直後の徒歩視点。画面右手の塔をユーザーがScorpロケットタワーと指定した。4-2で搭乗して迎撃する[Scorpミーゾン・ガードタワー](../scorp-meson-tower/README.md)とは区別する。画面上の右を地理上の東とは決めない。
+[4-2-開始時-右手にscopeロケットタワー.png](../../../../assets/reference/scorp-rocket-tower/4-2-開始時-右手にscopeロケットタワー.png)は、4-2出撃直後の徒歩視点。画面右手の塔をユーザーがScorpロケットタワーと指定した。4-2で搭乗して迎撃する[Scorpミーゾン・ガードタワー](../scorp-meson-tower/README.md)とは区別する。画面上の右を地理上の東とは決めない。
 
 ## 武器枠（2026-10-30）
 

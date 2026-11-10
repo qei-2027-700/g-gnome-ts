@@ -4,7 +4,7 @@
 
 - [原作の任務画面](../reference/mission-1-5-rescue-screen.png)。画面には「Cross bridge at Chambers Pass. Contact Kylie」「Defeat Meson Tower」「Defeat Security forces」「Set IFF to 0024」の4項目と、川・橋・山地の地図が表示される。
 - ユーザー指定：Darken Tactical Defense HAWCに搭乗して開始する。Rocket Towerはしばらくして攻撃を始め、この任務のミサイルは追尾しない。敵を倒してShield Generatorを破壊し、施設に入って橋を下げる。橋を渡るとキリーから通信が入り、数秒後に成功する。
-- ユーザー指定（2026-11-10、#54、同日訂正）：東側から開始し、初期の向きでは左手に川が見える。参照の景色は[assets/hawk-building/darken/1-5-.png](../../assets/hawk-building/darken/1-5-.png)。正面から右手は崖。最初に対峙するロケットタワーは川の反対側にいる。橋の北側にMeson Guard Towerと電力プラント、さらに橋制御棟とシールドジェネレーターがあり、その設備のそばにDarken Sentryが1機、橋の近くの川より北にDarken TDがいる。川の向こう側にHAWCは置かない。警備部隊はプレイヤー側に残す。キリーは橋を渡った対岸の人物とする。この訂正が、同日いったん置いた「メソンタワーと電力プラントと橋制御棟は対岸」という配置に代わる。
+- ユーザー指定（2026-11-10、#54、同日訂正）：東側から開始し、初期の向きでは左手に川が見える。参照の景色は[assets/reference/darken-tactical/1-5-.png](../../assets/reference/darken-tactical/1-5-.png)。正面から右手は崖。最初に対峙するロケットタワーは川の反対側にいる。橋の北側にMeson Guard Towerと電力プラント、さらに橋制御棟とシールドジェネレーターがあり、その設備のそばにDarken Sentryが1機、橋の近くの川より北にDarken TDがいる。川の向こう側にHAWCは置かない。警備部隊はプレイヤー側に残す。キリーは橋を渡った対岸の人物とする。この訂正が、同日いったん置いた「メソンタワーと電力プラントと橋制御棟は対岸」という配置に代わる。
 - ユーザー指定により、開始時のIFFは`0024`とする。原作画面にIFF設定目標が表示されるが、原作の開始IFF値は確認していない。
 - ユーザー指定：川は東西方向に流れ、プレイヤーは東側から西側へ進む。空は夕焼けとする。任務選択画面の川の屈曲と白い尾根の形は2026-11-10に画素から写した。地図に縮尺がないため、メートルへの換算は仮の縮尺である。
 - [原作プレイ動画](https://www.youtube.com/watch?v=eYHjjhCqb1c)は索引済み。動画内の出撃位置、敵の正確な数、座標、攻撃時刻、通信の台詞、失敗条件は未確認。[EASY攻略記事](https://ameblo.jp/g-nome/entry-12450789427.html)の別経路は今回の成功条件へ採用していない。

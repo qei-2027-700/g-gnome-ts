@@ -2,7 +2,7 @@ export type MissionResult='complete'|'failed'|'aborted';
 const RESULT_LABELS:Record<Exclude<MissionResult,'aborted'>,string>={complete:'MISSION COMPLETE',failed:'MISSION FAILED'};
 // Provisional presentation timings; mission simulation stays frozen throughout.
 export const COMPLETION_TIMING={completeView:1,failedView:3.5,closing:.6,closed:1} as const;
-const doorImage=new URL('../../../assets/ui-system/ui-system-end.png',import.meta.url).href;
+const doorImage=new URL('../../../assets/ui/ui-system-end.png',import.meta.url).href;
 export class MissionCompletion {
  elapsed=0;active=false;result:MissionResult='complete';
  private doorImpactPending=false;

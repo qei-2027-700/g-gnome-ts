@@ -21,6 +21,8 @@
   ai には少なくとも detection, strafe, keepMoving, stopDistance, missileVolley を指定する。
 - cockpit view用の画像が必要な場合は assets/cockpits/<vehicle-kind>-cockpit.png に置き、
   assets/README.md に用途と参照元を記録する。既存の画像形式・利用方法も確認する。
+- 原作スクリーンショットは assets/reference/ の機体・施設ごとのディレクトリに置く。
+  実行時コードから import しない。任務の地図コンソールは assets/reference/missions/ に置く。
 - 原作で未確認の性能値は仮値と明記し、対応する資料に確認状態と出典を記録する。
 - 対応するテストを実行し、型チェックで全必須レジストリの登録を確認する。
 ```

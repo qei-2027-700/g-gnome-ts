@@ -43,7 +43,7 @@
 - 武器定義と搭載数：`src/game/content/weapons.ts`
 - 命中領域・衝突外形・脚・砲口：`src/game/simulation/parts.ts` と必要に応じて `vehicle-shapes.ts`
 - 描画と機種固有の外観・更新：`src/game/presentation/renderer.ts`
-- コックピット、HUD、任務プレビュー：対応する `*-cockpit.ts`、CSS、`src/main.ts`。専用画像が要る場合は `assets/cockpits/` と `assets/README.md`
+- コックピット、HUD、任務プレビュー：対応する `*-cockpit.ts`、CSS、`src/main.ts`。専用画像が要る場合は `assets/cockpits/` と `assets/README.md`。原作スクリーンショットは `assets/reference/` の機体・施設ごとのディレクトリに置き、実行時コードから import しない
 
 `renderer.ts`と`parts.ts`の汎用形状で不足しない機体と、特殊な脚・砲塔・履帯・ホバー・照準などを持つ機体では必要な変更範囲が異なる。機体データは集約できるが、新しい振る舞いや描画まで定義データだけで表現できるとは限らない。
 

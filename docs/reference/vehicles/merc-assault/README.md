@@ -3,7 +3,7 @@
 - 作品・媒体：G-Nome再現／ブラウザゲーム
 - 対象：Merc Assault HAWCの外観、4本脚、RUPPレーザー
 - 状態：4本脚と黄色のレーザーはユーザー指定の確定仕様。側面画像をもとにモデルを更新。寸法・歩行周期・細部は試作
-- 参照：[横向きの提供画像](../../../../assets/merc-assult-hawk-yoko.png)、[専用コックピット](../../../gameplay/cockpit-hud.md#merc-assault-hawcの操縦席2026-10-29)、[2-6の配置](../../../missions/mission-2-6.md#無人merc-assaultへの搭乗2026-10-29)
+- 参照：[横向きの提供画像](../../../../assets/reference/merc-assault/merc-assult-hawk-yoko.png)、[専用コックピット](../../../gameplay/cockpit-hud.md#merc-assault-hawcの操縦席2026-10-29)、[2-6の配置](../../../missions/mission-2-6.md#無人merc-assaultへの搭乗2026-10-29)
 
 ## 側面画像から反映した特徴（2026-10-29）
 

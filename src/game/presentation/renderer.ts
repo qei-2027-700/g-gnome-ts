@@ -4,7 +4,7 @@ import {initialCameraMode,REAR_CAMERA_DISTANCE_SCALE} from './camera-mode.ts';
 import {isEmbarked} from '../simulation/infantry.ts';
 import {makeBase} from './base.ts';
 import {grassTexture,snowTexture,volcanicTexture,overcastSky,rockyMountains} from './landscape.ts';
-import {DARKEN_TACTICAL_HIP_Z,DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_TORSO_Y,MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
+import {DARKEN_TACTICAL_HIP_Z,DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_SHIN,DARKEN_TACTICAL_THIGH,DARKEN_TACTICAL_TORSO_Y,MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
 // Register rendering extensions and shaders before the first frame, including dev reloads.
 import '@babylonjs/core';
 import '@babylonjs/core/Shaders/default.vertex.js';
@@ -60,7 +60,7 @@ const color=(hex:string)=>Color3.FromHexString(hex);
 type Effect={mesh:Mesh;life:number;duration:number;kind:'beam'|'tracer'|'flash'|'smoke'|'blast'|'blood';velocity?:Vector3};
 type PartVisual={meshes:Mesh[];paint:{material:StandardMaterial;base:Color3;glow:Color3}[];flash:number;smoke:number};
 type SpiderLeg={side:number;front:number;upper:Mesh;lower:Mesh;foot:Mesh};
-type Rig={spiderLegs?:SpiderLeg[];cannon?:TransformNode;root:TransformNode;torso:TransformNode;legs:TransformNode[];knees:TransformNode[];feet:Mesh[];phase:number;run:number;lastX:number;lastZ:number;recoil:number;parts:Record<BodyPart,PartVisual>};
+type Rig={spiderLegs?:SpiderLeg[];cannon?:TransformNode;root:TransformNode;torso:TransformNode;legs:TransformNode[];knees:TransformNode[];feet:TransformNode[];phase:number;run:number;lastX:number;lastZ:number;recoil:number;parts:Record<BodyPart,PartVisual>};
 export const SOLDIER_PROPORTIONS={height:1.9,headHeight:1.9/8,hipHeight:INFANTRY_GAIT.upper+INFANTRY_GAIT.lower+INFANTRY_GAIT.sole} as const;
 export const VEHICLE_DESTRUCTION={engulf:.85,burn:12,smokeEnd:15,clear:18} as const;
 type SoldierRig={root:TransformNode;upper:TransformNode;legs:TransformNode[];knees:TransformNode[];ankles:TransformNode[];arms:TransformNode[];lastX:number;lastZ:number;phase:number;run:number;direction:number};
@@ -126,7 +126,7 @@ export class World {
     const trim=this.material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:darkenTactical?'#5e635c':heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
     const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,mat:StandardMaterial,parent:TransformNode,part?:BodyPart)=>{const b=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},this.scene);b.parent=parent;b.position.set(x,y,z);b.material=mat;if(part)b.metadata={bodyPart:part};return b;};
     let cannon:TransformNode|undefined;
-    const legs:TransformNode[]=[],knees:TransformNode[]=[],feet:Mesh[]=[],spiderLegs:SpiderLeg[]=[];
+    const legs:TransformNode[]=[],knees:TransformNode[]=[],feet:TransformNode[]=[],spiderLegs:SpiderLeg[]=[];
     if(spec.category==='hovercraft'){
       const {hull,cockpit}=shape;
       // A low faceted diamond: the supplied tower view shows pointed shoulders, not a square platform.
@@ -346,7 +346,7 @@ export class World {
       if(!darkenSentry&&!scorpSentry&&!darkenTactical)box('barrel',.22,.22,heavy?1.3:1.1,x,weapon.y-.17,weapon.z+weapon.d/2+.5,dark,torso,part);
       const leg=new TransformNode('leg',this.scene);leg.parent=root;leg.position.set(side*shape.legX,'legHip' in shape?shape.legHip:spec.height*.5,darkenTactical?DARKEN_TACTICAL_HIP_Z:0);if('legScale' in shape)leg.scaling.set(shape.legScale.x,shape.legScale.y,shape.legScale.z);legs.push(leg);
       if(union){const shoulder=VEHICLE_SHAPES['union-sentry'].shoulder;const cap=MeshBuilder.CreateCylinder('prowler shoulder armor',{diameter:2,height:1,tessellation:8},this.scene);cap.parent=leg;cap.position.set(0,spec.height*.6+shoulder.y-spec.height*.5,shoulder.z);cap.rotation.x=Math.PI/2;cap.scaling.set(shoulder.w/2,shoulder.d,shoulder.h/2);cap.material=accent;cap.metadata={bodyPart:side<0?'leftLeg':'rightLeg'};}
-      box('thigh',darkenTactical?.46:darkenSentry?.28:scorpSentry?1.02:heavy?1.12:.92,darkenTactical?spec.height*.2:spec.height*.26,darkenTactical?.42:darkenSentry?.32:scorpSentry?1.02:.95,0,darkenTactical?-spec.height*.18:-spec.height*.13,0,scorpSentry?scorpThigh!:shell,leg);
+      box('thigh',darkenTactical?.5:darkenSentry?.28:scorpSentry?1.02:heavy?1.12:.92,darkenTactical?DARKEN_TACTICAL_THIGH*.92:spec.height*.26,darkenTactical?.46:darkenSentry?.32:scorpSentry?1.02:.95,0,darkenTactical?-DARKEN_TACTICAL_THIGH*.5:-spec.height*.13,0,scorpSentry?scorpThigh!:shell,leg);
       if(darkenSentry)box('darken thigh band',.34,.1,.36,0,-spec.height*.2,0,trim,leg);
       if(!heavy&&!darkenSentry&&!scorpSentry){
         if(union){const support=VEHICLE_SHAPES['union-sentry'].upperLeg;box('shoulder leg support',support.w,support.h,support.d,0,support.y-spec.height*.5,support.z,shell,leg);box('shoulder support inset',support.w*.55,support.h*.75,.13,0,support.y-spec.height*.5,support.z+support.d/2+.02,dark,leg);}
@@ -354,8 +354,8 @@ export class World {
         box('thigh inset',.68,.7,.12,0,-spec.height*.13,.52,dark,leg);
         box('leg side armor',.12,.82,.76,side*.51,-spec.height*.13,.08,accent,leg);
       }
-      const knee=new TransformNode('knee',this.scene);knee.parent=leg;knee.position.y=-spec.height*.26;knees.push(knee);
-      box('shin',darkenTactical?.4:darkenSentry?.24:scorpSentry?.98:heavy?1.38:1.12,darkenTactical?spec.height*.21:spec.height*.22,darkenTactical?.36:darkenSentry?.28:scorpSentry?.98:1.15,0,darkenTactical?-spec.height*.105:-spec.height*.11,darkenTactical?.04:darkenSentry?0:scorpSentry?.08:.12,darkenTactical||darkenSentry?trim:scorpSentry?scorpShin!:shell,knee);
+      const knee=new TransformNode('knee',this.scene);knee.parent=leg;knee.position.y=darkenTactical?-DARKEN_TACTICAL_THIGH:-spec.height*.26;knees.push(knee);
+      box('shin',darkenTactical?.42:darkenSentry?.24:scorpSentry?.98:heavy?1.38:1.12,darkenTactical?DARKEN_TACTICAL_SHIN*.9:spec.height*.22,darkenTactical?.38:darkenSentry?.28:scorpSentry?.98:1.15,0,darkenTactical?-DARKEN_TACTICAL_SHIN*.5:-spec.height*.11,darkenTactical?0:darkenSentry?0:scorpSentry?.08:.12,darkenTactical||darkenSentry?trim:scorpSentry?scorpShin!:shell,knee);
       if(darkenSentry)box('darken shin band',.28,.12,.32,0,-spec.height*.15,0,shell,knee);
       if(!heavy&&!darkenSentry&&!scorpSentry){
         box('knee band',1.24,.24,1.27,0,-.1,.12,trim,knee);
@@ -381,8 +381,8 @@ export class World {
           box('rear shin white seam',1.28,.16,.12,0,-spec.height*.065,-.81,shell,knee,side<0?'leftLeg':'rightLeg');
         }
       }
-      let foot:Mesh;
-      if(darkenTactical){const footY=-spec.height*.22;foot=box('stalker broad gold foot',.74,.14,1.05,0,footY,.28,shell,knee,side<0?'leftLeg':'rightLeg');box('stalker dark sole',.82,.12,1.2,0,-.14,0,dark,foot,side<0?'leftLeg':'rightLeg');}
+      let foot:TransformNode;
+      if(darkenTactical){const ankle=new TransformNode('stalker ankle',this.scene);ankle.parent=knee;ankle.position.y=-DARKEN_TACTICAL_SHIN;foot=ankle;box('stalker broad gold foot',.72,.16,1.7,0,-.02,.42,shell,ankle,side<0?'leftLeg':'rightLeg');box('stalker dark sole',.86,.12,2.15,0,-.12,.62,dark,ankle,side<0?'leftLeg':'rightLeg');}
       else if(scorpSentry){foot=MeshBuilder.CreateCylinder('foot',{height:1.55,diameterTop:.22,diameterBottom:.95,tessellation:4},this.scene);foot.parent=knee;foot.rotation.z=-side*Math.PI/2;foot.position.set(side*.62,-spec.height*.22,.2);foot.material=scorpFoot!;}
       else foot=box('foot',darkenSentry?.42:heavy?1.65:1.5,darkenSentry?.16:.45,darkenSentry?.55:heavy?2.35:2,0,-spec.height*.22,darkenSentry?0:.2,dark,knee);
       feet.push(foot);

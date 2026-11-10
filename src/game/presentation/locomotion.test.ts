@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GAITS,legPose} from './locomotion.ts';
 import {DRIVE_PROFILES} from './audio.ts';
-import {resolveVehicle,VEHICLE_DRIVE_PROFILES,VEHICLE_GAITS,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
+import {DARKEN_TACTICAL_HIP_Y,DARKEN_TACTICAL_SHIN,DARKEN_TACTICAL_THIGH,resolveVehicle,VEHICLE_DRIVE_PROFILES,VEHICLE_GAITS,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
 const kinds=Object.keys(GAITS).filter(kind=>!kind.endsWith('-asv')) as VehicleKind[];
 test('every vehicle kind has shape, gait and drive profile data',()=>{
  const kinds=Object.keys(VEHICLES).sort();
@@ -20,12 +20,14 @@ test('every vehicle kind has shape, gait and drive profile data',()=>{
 });
 test('articulated feet land on the ground and lift during recovery on every biped chassis',()=>{
  for(const kind of kinds)for(const run of [.2,.5,1])for(let i=0;i<32;i++){
-  const phase=i/32*Math.PI*2,height=VEHICLES[kind].height,shape=VEHICLE_SHAPES[kind],scale='legScale' in shape?shape.legScale.y:1,hipHeight=('legHip' in shape?shape.legHip:height*.5)-.55*run+Math.abs(Math.sin(phase))*GAITS[kind].bounce*(kind==='merc-tactical'?run:Math.sqrt(run)),pose=legPose(kind,phase,run,hipHeight);
-  const footY=hipHeight-height*.26*scale*Math.cos(pose.hip)-height*.22*scale*Math.cos(pose.hip+pose.knee);
+  const phase=i/32*Math.PI*2,height=VEHICLES[kind].height,shape=VEHICLE_SHAPES[kind],scale='legScale' in shape?shape.legScale.y:1,hipHeight=('legHip' in shape?shape.legHip:height*.5)-.55*run+Math.abs(Math.sin(phase))*GAITS[kind].bounce*(kind==='merc-tactical'?run:Math.sqrt(run)),pose=legPose(kind,phase,run,hipHeight),upper=kind==='darken-tactical'?DARKEN_TACTICAL_THIGH:height*.26,lower=kind==='darken-tactical'?DARKEN_TACTICAL_SHIN:height*.22;
+  const footY=hipHeight-upper*scale*Math.cos(pose.hip)-lower*scale*Math.cos(pose.hip+pose.knee);
   assert.ok(Math.abs(footY-(.225*scale+pose.lift))<.005,`${kind}: ground contact`);assert.ok(pose.lift>=0);assert.ok(Math.abs(pose.hip+pose.knee+pose.ankle-pose.solePitch)<1e-8);if(kind!=='merc-tactical'||i<=16)assert.equal(pose.solePitch,0);
   if(i<16||GAITS[kind].lift===0)assert.equal(pose.lift,0);else if(i>16)assert.ok(pose.lift>0);
  }
  assert.ok(GAITS['merc-sentry'].lift>GAITS['union-sentry'].lift);
+ const stalker=legPose('darken-tactical',0,0,DARKEN_TACTICAL_HIP_Y);
+ assert.ok(stalker.hip<-.7&&stalker.knee>1.5);assert.ok(Math.abs(stalker.hip+stalker.knee+stalker.ankle)<1e-8);
 });
 
 test('Merc Tactical running raises its sole toward the rear while the supporting foot stays flat',()=>{

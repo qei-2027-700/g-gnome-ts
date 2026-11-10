@@ -1,4 +1,4 @@
-import {DARKEN_TACTICAL_REST_STEP,VEHICLE_GAITS,VEHICLE_SHAPES,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
+import {DARKEN_TACTICAL_REST_STEP,DARKEN_TACTICAL_SHIN,DARKEN_TACTICAL_THIGH,VEHICLE_GAITS,VEHICLE_SHAPES,VEHICLES,type VehicleKind} from '../content/vehicles.ts';
 export const GAITS=VEHICLE_GAITS satisfies Record<VehicleKind,{stride:number;lift:number;lean:number;bounce:number}>;
 export function legPose(kind:VehicleKind,phase:number,run:number,hipHeight:number,height?:number){
  const h=height??VEHICLES[kind].height,profile=GAITS[kind],strength=Math.max(0,Math.min(1,run));
@@ -7,7 +7,7 @@ export function legPose(kind:VehicleKind,phase:number,run:number,hipHeight:numbe
  const z=stance?stride*(1-cycle*4):stride*(-1+(cycle-.5)*4);
  const lift=stance?0:Math.sin((cycle-.5)*Math.PI*2)*profile.lift*strength;
  const shape=VEHICLE_SHAPES[kind],scale='legScale' in shape?shape.legScale:{x:1,y:1,z:1};
- const y=.225+(lift-hipHeight)/scale.y,localZ=z/scale.z+(kind==='darken-tactical'?DARKEN_TACTICAL_REST_STEP:0),upper=h*.26,lower=h*.22;
+ const darken=kind==='darken-tactical',y=.225+(lift-hipHeight)/scale.y,localZ=z/scale.z+(darken?DARKEN_TACTICAL_REST_STEP:0),upper=darken?DARKEN_TACTICAL_THIGH:h*.26,lower=darken?DARKEN_TACTICAL_SHIN:h*.22;
  const reach=Math.max(.01,Math.min(upper+lower-.001,Math.hypot(y,localZ)));
  const clamp=(v:number)=>Math.max(-1,Math.min(1,v));
  const hip=Math.atan2(-localZ,-y)-Math.acos(clamp((upper*upper+reach*reach-lower*lower)/(2*upper*reach)));

@@ -1,7 +1,7 @@
 .scorp-cockpit-shell{display:none}
 .scorp-cockpit #cockpit,.scorp-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--scorp-width);height:var(--scorp-height);transform:translate(-50%,-50%);container-type:size}
 .scorp-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden}
-.scorp-cockpit .asv-cockpit-shell{display:none}
+.scorp-cockpit .asv-cockpit-shell,.scorp-cockpit .scorp-sentry-shell{display:none}
 .scorp-cockpit .scorp-cockpit-shell{display:block;position:absolute;inset:0;width:100%;height:100%}
 .scorp-cockpit .weapon-panel{inset:0;width:100%;height:100%;transform:none;font:1.65cqw/1.1 "Courier New",monospace}
 .scorp-cockpit .weapon-panel>div{position:absolute;left:.6%;top:3.4%;width:24%;height:4.4%;gap:3%}

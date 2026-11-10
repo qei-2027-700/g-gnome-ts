@@ -19,7 +19,8 @@
 - 武器の威力・射程・充填・弾速・弾の形と色・発射音の変更は [gnome-weapon-tuning](.agents/skills/gnome-weapon-tuning/SKILL.md) を使う。
 - BGMの取得・MP3変換・配置・任務への接続は [gnome-bgm-import](.agents/skills/gnome-bgm-import/SKILL.md) を使う。
 - 既存の3Dモデルを原作画像と突き合わせて、見えた外観の差だけを直すときは [gnome-model-match](.agents/skills/gnome-model-match/SKILL.md) を使う。
-- 機内ビュー・HUD・新規の外観素材と動きの再現は [gnome-vehicle-visuals](.agents/skills/gnome-vehicle-visuals/SKILL.md) を使う。
+- 機内ビュー・HUDの再現は [gnome-cockpit](.agents/skills/gnome-cockpit/SKILL.md) を使う。
+- 新規の外観素材と動きの再現は [gnome-vehicle-visuals](.agents/skills/gnome-vehicle-visuals/SKILL.md) を使う。
 
 今回の作業に関係するスキルだけを読む。詳細仕様の正本は `docs/` とし、スキルへ性能値や会話履歴を複製しない。
 

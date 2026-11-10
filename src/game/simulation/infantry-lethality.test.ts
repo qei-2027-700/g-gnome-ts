@@ -59,7 +59,7 @@ function aiMissileVolley(airborne:boolean,index:number){
  const shooter=makeUnit(`tower-${index}`,'scorp-rocket-tower',0,110,true);shooter.iff='enemy';shooter.aim=shooter.yaw=Math.atan2(s.human.x-shooter.x,s.human.z-shooter.z);s.units=[shooter];s.tick(1/60,idle);shooter.cooldown=999;
  return s;
 }
-test('AI volleys can miss stationary infantry and hit ejected players substantially less often',()=>{
+test('rocket tower volleys hit stopped infantry and hit ejected players less often',()=>{
  const hits:number[]=[],spread:number[]=[],delay:number[]=[];
  for(const airborne of [false,true]){let landed=0,totalSpread=0,totalDelay=0;
   for(let index=0;index<32;index++){
@@ -69,7 +69,7 @@ test('AI volleys can miss stationary infantry and hit ejected players substantia
   }
   hits.push(landed);spread.push(totalSpread);delay.push(totalDelay);
  }
- assert.ok(hits[0]>0&&hits[0]<32,`grounded trials hit: ${hits[0]}/32`);assert.ok(hits[1]<hits[0],`ejection trials hit: ${hits[1]}/32; grounded: ${hits[0]}/32`);assert.ok(spread[1]>spread[0]*2);assert.ok(delay[1]>delay[0]);
+ assert.equal(hits[0],32,`grounded trials hit: ${hits[0]}/32`);assert.ok(hits[1]<hits[0],`ejection trials hit: ${hits[1]}/32; grounded: ${hits[0]}/32`);assert.ok(spread[1]>spread[0]*2);assert.ok(delay[1]>delay[0]);
 });
 test('ejecting changes aiming accuracy but gives no immunity to a physical missile hit',()=>{
  const s=aiMissileVolley(true,0),p=s.missiles[0];assert.ok(s.flight);s.missiles=[p];p.homingTargetId=undefined;p.aiGuidance=undefined;p.x=s.human.x;p.z=s.human.z+1;p.y=s.flight.altitude+1;p.vx=0;p.vy=0;p.vz=-110;

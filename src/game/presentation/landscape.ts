@@ -25,17 +25,21 @@ export function overcastSky(scene:Scene,seed:number,snow=false,amber=false){
 }
 export function rockyMountains(scene:Scene,terrain:Terrain){
  const snow=terrain.biome==='snow',volcanic=terrain.biome==='volcanic';const paint=new StandardMaterial(snow?'snow-mountain':volcanic?'basalt-mountain':'ochre-mountain',scene);paint.diffuseColor=Color3.FromHexString(snow?'#e8f0f4':volcanic?'#85827c':'#b8a16b');paint.specularColor=Color3.Black();
- const rockTexture=texture(scene,'mountain-strata',128,(x,y)=>{const v=noise(x*(snow?7:42),y*(snow?5:9),terrain.seed)*.55+noise(x*(snow?18:90),y*(snow?15:70),terrain.seed+3)*.45;return snow?(v>.43?[205+v*45,218+v*35,229+v*25]:[40+v*60,57+v*70,76+v*80]):volcanic?[48+v*95,47+v*91,43+v*78]:[105+v*85,86+v*73,55+v*58];});rockTexture.uScale=snow?2:6;rockTexture.vScale=snow?2:6;paint.diffuseTexture=rockTexture;
+ const rockTexture=texture(scene,'mountain-strata',128,(x,y)=>{const v=noise(x*(snow?7:42),y*(snow?5:9),terrain.seed)*.55+noise(x*(snow?18:90),y*(snow?15:70),terrain.seed+3)*.45;return snow?(v>.43?[205+v*45,218+v*35,229+v*25]:[40+v*60,57+v*70,76+v*80]):volcanic?[48+v*95,47+v*91,43+v*78]:[105+v*85,86+v*73,55+v*58];});rockTexture.uScale=snow?2:6;rockTexture.vScale=snow?2:6;paint.diffuseTexture=rockTexture;paint.backFaceCulling=false;
  const mountain=(x:number,z:number,i:number,peak?:{width:number;depth:number;height:number})=>{const width=peak?.width??220+(i%3)*65,depth=peak?.depth??230+(i%4)*35,h=peak?.height??terrain.ridgeHeight+(i%4)*terrain.ridgeVariation;
  const mesh=MeshBuilder.CreateGround('rocky-mountain',{width,height:depth,subdivisions:24,updatable:true},scene),v=mesh.getVerticesData('position')!,colors:number[]=[];
  for(let j=0;j<v.length;j+=3){const nx=v[j]/(width*.5),nz=v[j+2]/(depth*.5),edge=Math.max(0,1-Math.sqrt(nx*nx+nz*nz)),crag=.77+.23*noise(nx*8+i,nz*8,terrain.seed);v[j+1]=Math.pow(edge,.8)*h*crag-3;const c=.72+.28*noise(nx*21,nz*24,terrain.seed+i);colors.push(c,snow?c:c*.94,snow?c:c*.8,1);}mesh.updateVerticesData('position',v);mesh.createNormals(true);mesh.setVerticesData('color',colors);mesh.position.set(x,0,z);mesh.material=paint;mesh.isPickable=false;};
  for(let i=0;i<9;i++){const z=terrain.minZ-40+i*155;mountain(-terrain.halfWidth-90-(i%2)*70,z,i);mountain(terrain.halfWidth+90+(i%2)*70,z,i+11);}
  for(let i=0;i<6;i++)mountain(-550+i*220,terrain.maxZ+30+(i%2)*100,i+22);
  for(const [i,peak] of (terrain.peaks??[]).entries())mountain(peak.x,peak.z,i+60,peak);
- for(const cliff of terrain.cliffs??[]){
-  const wall=MeshBuilder.CreateGround(cliff.id,{width:cliff.width,height:cliff.depth,subdivisions:16,updatable:true},scene),positions=wall.getVerticesData('position')!,colors:number[]=[];
-  for(let i=0;i<positions.length;i+=3){const nx=positions[i]/cliff.width+.5,nz=positions[i+2]/cliff.depth+.5,rim=Math.pow(Math.min(1,nz*5,(1-nz)*5),.45),crag=.87+.13*noise(nx*12,nz*12,terrain.seed);positions[i+1]=cliff.height*Math.pow(1-nx,.35)*rim*crag;const shade=.82+.18*noise(nx*20,nz*20,terrain.seed);colors.push(shade,snow?shade:shade*.96,snow?shade:shade*.82,1);}
-  wall.updateVerticesData('position',positions);wall.createNormals(true);wall.setVerticesData('color',colors);wall.position.set(cliff.x,0,cliff.z);const cliffPaint=paint.clone(cliff.id+'-strata');cliffPaint.diffuseColor=Color3.White();cliffPaint.diffuseTexture?.dispose();cliffPaint.diffuseTexture=texture(scene,cliff.id+'-moss',128,(x,y)=>{const n=noise(x*32,y*24,terrain.seed),moss=y<.35&&n>.3;return snow?(n>.46?[225+n*25,232+n*20,239+n*15]:[29+n*60,44+n*65,65+n*70]):volcanic?[48+n*87,47+n*83,44+n*72]:moss?[38+n*40,90+n*65,20+n*25]:[123+n*62,103+n*50,60+n*36];});wall.material=cliffPaint;wall.isPickable=false;wall.metadata={terrainObstacle:cliff.id};
+ const cliffs=terrain.cliffs??[];
+ if(cliffs.length){
+  const cliffPaint=new StandardMaterial('cliff-strata',scene);cliffPaint.diffuseColor=Color3.White();cliffPaint.specularColor=Color3.Black();
+  cliffPaint.diffuseTexture=texture(scene,'cliff-strata',128,(x,y)=>{const n=noise(x*32,y*24,terrain.seed),moss=y<.35&&n>.3;return snow?(n>.46?[225+n*25,232+n*20,239+n*15]:[29+n*60,44+n*65,65+n*70]):volcanic?[48+n*87,47+n*83,44+n*72]:moss?[38+n*40,90+n*65,20+n*25]:[123+n*62,103+n*50,60+n*36];});
+  for(const cliff of cliffs){
+   const wall=MeshBuilder.CreateBox(cliff.id,{width:cliff.width,height:cliff.height,depth:cliff.depth},scene);
+   wall.position.set(cliff.x,cliff.height/2,cliff.z);wall.material=cliffPaint;wall.isPickable=false;wall.metadata={terrainObstacle:cliff.id};
+  }
  }
  // Small distant trees suggest scale without changing battlefield collision geometry.
  const leaves=new StandardMaterial('valley-shrub',scene);leaves.diffuseColor=Color3.FromHexString('#344a25');for(let i=0;i<(snow||volcanic?0:18);i++){const x=Math.sin(i*17.3)*240,z=90+i*42;if(Math.abs(x)<45)continue;const bush=MeshBuilder.CreateSphere('valley-shrub',{diameter:4+(i%3),segments:4},scene);bush.position.set(x,2,z);bush.scaling.y=1.2;bush.material=leaves;bush.isPickable=false;}

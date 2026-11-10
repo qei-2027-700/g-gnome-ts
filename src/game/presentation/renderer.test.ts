@@ -754,6 +754,28 @@ test('4-2 renders grassland under amber skies, a dedicated rotating Scorp Meson 
  }finally{engine.dispose();}
 });
 
+test('a thin cliff is the same box from both width edges and shares one texture',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation();sim.units=[];sim.mission.base=undefined;sim.mission.rocks=[];
+  sim.mission.terrain={...sim.mission.terrain,ridgeStyle:'rocky',biome:'desert',peaks:[],cliffs:[{id:'thin-cliff',x:40,z:30,width:21,depth:80,height:100},{id:'second-cliff',x:-80,z:30,width:21,depth:40,height:60}]};
+  const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);
+  const mesh=world.scene.getMeshByName('thin-cliff')!,other=world.scene.getMeshByName('second-cliff')!;
+  assert.equal(mesh.metadata.terrainObstacle,'thin-cliff');assert.equal(mesh.material,other.material);
+  mesh.computeWorldMatrix(true);const bounds=mesh.getBoundingInfo().boundingBox,min=bounds.minimumWorld,max=bounds.maximumWorld;
+  assert.ok(Math.abs(min.x-(40-10.5))<1e-3&&Math.abs(max.x-(40+10.5))<1e-3);
+  assert.ok(Math.abs(min.y)<1e-3&&Math.abs(max.y-100)<1e-3);
+  assert.ok(Math.abs(min.z-(30-40))<1e-3&&Math.abs(max.z-(30+40))<1e-3);
+  const positions=mesh.getVerticesData('position')!;let minX=Infinity,maxX=-Infinity;
+  for(let i=0;i<positions.length;i+=3){minX=Math.min(minX,positions[i]);maxX=Math.max(maxX,positions[i]);}
+  const span=(edge:number)=>{let lo=Infinity,hi=-Infinity;for(let i=0;i<positions.length;i+=3)if(Math.abs(positions[i]-edge)<.05){lo=Math.min(lo,positions[i+1]);hi=Math.max(hi,positions[i+1]);}return hi-lo;};
+  assert.ok(Math.abs(span(minX)-100)<1e-3);assert.ok(Math.abs(span(maxX)-100)<1e-3);
+  const ridge=world.scene.meshes.find(item=>item.name==='rocky-mountain')! as import('@babylonjs/core/Meshes/mesh.js').Mesh;
+  const ridgePaint=ridge.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
+  assert.equal(ridgePaint.backFaceCulling,false);
+ }finally{engine.dispose();}
+});
+
 test('Merc Meson GAUS emits an ultramarine viewmodel jet from the lower left toward the reticle without changing its projectile',async()=>{
  const {Vector3}=await import('@babylonjs/core/Maths/math.vector.js');const s=new Simulation(),u=makeUnit('own','merc-meson-tower',0,0,false);s.units=[u];s.human={x:0,z:0};assert.ok(s.board());const engine=new NullEngine({renderWidth:1000,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{

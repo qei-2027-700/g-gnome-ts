@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
-import {vehicleRadius} from './parts.ts';
+import {buildingClearance,vehicleRadius} from './parts.ts';
 import {riverDistance,riverFrameAtZ} from '../content/missions/river.ts';
 import {peakHeight,peakSegmentContact} from './battlefield.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
@@ -90,6 +90,26 @@ for(const obstacle of ['rock','building','cliff','peak'] as const)test(`frontal 
  else s.mission.terrain.peaks=[{x:0,z:35,width:40,depth:40,height:50}];
  s.speed=15;own.speed=15;s.throttle=1;for(let i=0;i<150;i++)s.tick(.02,idle);
  const contacts=s.events.filter(e=>e.type==='vehicle-contact');assert.equal(contacts.length,1);assert.equal(contacts[0].unit,own);assert.equal(contacts[0].otherUnitId,undefined);assert.equal(s.speed,0);assert.ok(own.z<20);
+});
+test('a thin cliff stops infantry and a HAWC at each face and leaves the lane beside it open',()=>{
+ const cliff={id:'thin-cliff',x:0,z:0,width:21,depth:80,height:100},pad=2;
+ const approach=(axis:'x'|'z',sign:number)=>{
+  const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[cliff];s.mission.terrain.peaks=[];
+  const half=(axis==='x'?cliff.width:cliff.depth)/2,start={x:0,z:0};start[axis]=sign*(half+pad+8);s.human={...start};
+  s.move(s.human,axis==='x'?-sign*Math.PI/2:sign>0?Math.PI:0,40);
+  const gap=sign*(s.human[axis]-cliff[axis]);
+  assert.ok(gap>=half+pad-1e-6,`${axis}/${sign} crossed the face`);
+  assert.ok(gap<half+pad+.2,`${axis}/${sign} stopped short of the face`);
+ };
+ for(const axis of ['x','z'] as const)for(const sign of [1,-1])approach(axis,sign);
+ const beside=new Simulation();beside.units=[];beside.mission.base=undefined;beside.mission.rocks=[];beside.mission.terrain.cliffs=[cliff];beside.mission.terrain.peaks=[];
+ beside.human={x:cliff.width/2+pad+.6,z:-30};beside.move(beside.human,0,70);assert.ok(beside.human.z>39);assert.ok(beside.human.x>cliff.width/2+pad);
+ const gapLane=new Simulation();gapLane.units=[];gapLane.mission.base=undefined;gapLane.mission.rocks=[];gapLane.mission.terrain.cliffs=[cliff];gapLane.mission.terrain.peaks=[];
+ gapLane.human={x:-30,z:cliff.depth/2+pad+1};gapLane.move(gapLane.human,Math.PI/2,60);assert.ok(gapLane.human.x>29);
+ const sentry=new Simulation(),unit=makeUnit('own','union-sentry',0,0,false);sentry.units=[unit];sentry.mission.base=undefined;sentry.mission.rocks=[];sentry.mission.terrain.cliffs=[cliff];sentry.mission.terrain.peaks=[];
+ const clearance=buildingClearance(unit);unit.x=cliff.width/2+clearance+8;sentry.human={x:unit.x,z:0};assert.ok(sentry.board());
+ sentry.move(unit,-Math.PI/2,40);const gap=unit.x-cliff.width/2;
+ assert.ok(gap>=clearance-1e-6);assert.ok(gap<clearance+.2);
 });
 test('mountain peaks stop ground infantry and fast AI vehicles but allow clear side routes and shots over the summit',()=>{
  const peak={x:0,z:50,width:60,depth:60,height:80},s=new Simulation();s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[peak];s.units=[];s.human={x:0,z:0};

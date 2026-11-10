@@ -482,3 +482,70 @@ test('4-2 switches BGM after the last ejected enemy pilot is shot even though th
   audio.updateMissionMusic(sim.time,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].src,'snow-maze.mp3');assert.equal(tracks[1].paused,false);assert.equal(sim.status,'running');
  });
 });
+
+test('the ten auditory fire classes are distinct and only the named weapons use them',async()=>{
+ const {LASERS,MACHINE_GUNS,MISSILES}=await import('../content/weapons.ts');
+ const {GUN_FIRE_VOICES,LASER_FIRE_VOICES,MISSILE_FIRE_VOICES,WEAPON_FIRE_DURATION,WEAPON_FIRE_GAIN,weaponFireSamples}=await import('./weapon-fire-audio.ts');
+ const voices=['highWhee','pppBowWhee','bowWheeGggo','djon','denDen','djan','hataHata','durrrrn','kakaka','garara'] as const;
+ assert.deepEqual(Object.keys(WEAPON_FIRE_DURATION).sort(),[...voices].sort());
+ assert.equal(new Set(Object.values(WEAPON_FIRE_DURATION)).size,voices.length);
+ for(const id of Object.keys(MISSILE_FIRE_VOICES))assert.ok(id in MISSILES);
+ for(const id of Object.keys(LASER_FIRE_VOICES))assert.ok(id in LASERS);
+ for(const id of Object.keys(GUN_FIRE_VOICES))assert.ok(id in MACHINE_GUNS);
+ for(const id of ['UNKPA','PUG','HSSO','VISOM'])assert.equal(MISSILE_FIRE_VOICES[id],undefined);
+ for(const id of ['GAUS20','GAUS30','RUPP'])assert.equal(LASER_FIRE_VOICES[id],undefined);
+ assert.equal(MISSILE_FIRE_VOICES.SREM,MISSILE_FIRE_VOICES.CHUM);assert.equal(MISSILE_FIRE_VOICES.SREM,'highWhee');
+ assert.equal(MISSILE_FIRE_VOICES.SAG5T,'pppBowWhee');assert.equal(MISSILE_FIRE_VOICES.TCROCK,'bowWheeGggo');
+ assert.equal(LASER_FIRE_VOICES.P2MEC,LASER_FIRE_VOICES.CETI);assert.equal(LASER_FIRE_VOICES.TAR12,LASER_FIRE_VOICES.HOMP11);assert.equal(LASER_FIRE_VOICES.RAID,LASER_FIRE_VOICES['FIL-30']);
+ assert.notEqual(LASER_FIRE_VOICES.P2MEC,LASER_FIRE_VOICES.TAR12);assert.notEqual(LASER_FIRE_VOICES.TAR12,LASER_FIRE_VOICES.RAID);
+ assert.deepEqual([GUN_FIRE_VOICES.FLECH,GUN_FIRE_VOICES.TCREAP,GUN_FIRE_VOICES.zWASP,GUN_FIRE_VOICES.DASY],['hataHata','durrrrn','kakaka','garara']);
+ for(const voice of voices)assert.equal(WEAPON_FIRE_GAIN[voice]>0,true);
+ const rate=44100;
+ const zcr=(samples:Float32Array,from=Math.floor(rate*.01),to=samples.length-1)=>{let c=0;for(let i=from+1;i<to;i++)if((samples[i-1]<0)!==(samples[i]<0)&&samples[i-1]!==0)c++;return c/((to-from)/rate);};
+ const lobes=(samples:Float32Array)=>{const win=Math.round(rate*.008),env:number[]=[];for(let i=0;i<samples.length;i+=win){let e=0;const n=Math.min(samples.length,i+win)-i;for(let j=i;j<i+n;j++)e+=samples[j]**2;env.push(Math.sqrt(e/n));}const peak=Math.max(...env,0);let count=0,on=false;for(const v of env){const hot=v>peak*.25;if(hot&&!on)count++;on=hot;}return count;};
+ const lowRatio=(samples:Float32Array)=>{const blend=1-Math.exp(-2*Math.PI*200/rate);let low=0,energy=0,le=0;for(const v of samples){low+=blend*(v-low);energy+=v*v;le+=low*low;}return le/(energy||1);};
+ const clips=Object.fromEntries(voices.map(voice=>[voice,weaponFireSamples(voice,rate)])) as Record<typeof voices[number],Float32Array>;
+ for(const voice of voices){const samples=clips[voice];let peak=0;for(const v of samples){assert.ok(Number.isFinite(v));peak=Math.max(peak,Math.abs(v));}assert.ok(Math.abs(peak-.8)<1e-5);assert.equal(samples[0],0);assert.equal(samples.at(-1),0);assert.equal(samples.length,Math.ceil(rate*WEAPON_FIRE_DURATION[voice]));assert.deepEqual(weaponFireSamples(voice,rate),samples);}
+ assert.equal(new Set(voices.map(voice=>clips[voice].length)).size,voices.length);
+ const whee=clips.highWhee;assert.equal(lobes(whee),1);assert.ok(lowRatio(whee)<.05);assert.ok(zcr(whee,Math.floor(rate*.28),Math.floor(rate*.4))/zcr(whee,Math.floor(rate*.02),Math.floor(rate*.14))>1.45);
+ const ppp=clips.pppBowWhee;assert.equal(lobes(ppp.subarray(0,Math.floor(rate*.14))),3);let late=0;for(let i=Math.floor(rate*.2);i<ppp.length;i++)late+=ppp[i]**2;assert.ok(late>100);
+ const gggo=clips.bowWheeGggo;assert.ok(lowRatio(gggo)>.3);assert.ok(zcr(gggo,Math.max(0,gggo.length-Math.floor(rate*.22)),gggo.length-1)<zcr(gggo,Math.floor(rate*.02),Math.floor(rate*.16))*.5);
+ assert.equal(lobes(clips.djon),1);assert.equal(lobes(clips.denDen),2);assert.equal(lobes(clips.djan),1);assert.ok(clips.djan.length<clips.djon.length);assert.ok(zcr(clips.djan)>zcr(clips.djon)*2);
+ assert.equal(lobes(clips.hataHata),2);assert.ok(zcr(clips.hataHata)>4000);
+ assert.equal(lobes(clips.durrrrn),1);assert.ok(zcr(clips.durrrrn)<400);assert.ok(lowRatio(clips.durrrrn)>.4);
+ assert.ok(lobes(clips.garara)>=5);
+ const low=weaponFireSamples('kakaka',rate,0),high=weaponFireSamples('kakaka',rate,6);assert.ok(zcr(high)>zcr(low)*1.6);assert.deepEqual(weaponFireSamples('kakaka',rate,8),weaponFireSamples('kakaka',rate,99));assert.deepEqual(low,weaponFireSamples('kakaka',rate,-2));assert.deepEqual(clips.djon,weaponFireSamples('djon',rate,4));
+});
+
+test('classified fire sounds share a voice, and weapons outside the table keep their previous sound',async()=>{
+ const {WEAPON_FIRE_GAIN}=await import('./weapon-fire-audio.ts');
+ const copied:Float32Array[]=[],sources:any[]=[],gains:number[]=[],oscillators:any[]=[];let fetches=0;
+ const ctx={currentTime:5,sampleRate:44100,state:'running',destination:{},decodeAudioData:async()=>({duration:1.2}),createBuffer:()=>({copyToChannel(samples:Float32Array){copied.push(samples);}}),createBufferSource:()=>{const source={buffer:null as any,stopped:false,connect(){},disconnect(){},start(){},stop(){this.stopped=true;},onended:null as null|(()=>void)};sources.push(source);return source;},createGain:()=>({gain:{set value(v:number){gains.push(v);},get value(){return gains.at(-1)??0;},setValueAtTime(){},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}}),createOscillator:()=>{const o={type:'',frequency:{events:[] as number[],setValueAtTime(v:number){this.events.push(v);},exponentialRampToValueAtTime(){}},connect(){},start(){},stop(){}};oscillators.push(o);return o;}};
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'fetch');
+ const previousWindow=Object.getOwnPropertyDescriptor(globalThis,'window');
+ try{
+  Object.defineProperty(globalThis,'fetch',{configurable:true,value:async()=>{fetches++;return {ok:true,arrayBuffer:async()=>new ArrayBuffer(8)};}});
+  Object.defineProperty(globalThis,'window',{configurable:true,value:{}});
+  const settings=defaults(),audio=new GameAudio(settings);audio.ctx=ctx as unknown as AudioContext;
+  audio.sound('missile',false,'CHUM');audio.sound('missile',false,'SREM');assert.equal(fetches,0);assert.equal(copied.length,1);assert.equal(sources[0].buffer,sources[1].buffer);assert.equal(gains[0],settings.sfx*WEAPON_FIRE_GAIN.highWhee);
+  audio.sound('missile',false,'SAG5T');audio.sound('missile',false,'TCROCK',{source:{x:0,z:0},listener:{x:300,z:0}});assert.notEqual(sources[2].buffer,sources[0].buffer);assert.equal(gains.at(-1),settings.sfx*WEAPON_FIRE_GAIN.bowWheeGggo*.5);
+  const beforeDistant=sources.length;audio.sound('missile',false,'CHUM',{source:{x:0,z:0},listener:{x:601,z:0}});assert.equal(sources.length,beforeDistant);
+  await audio.sound('missile',false,'UNKPA');await audio.sound('missile',false,'PUG');await audio.sound('missile',false,'VISOM');await audio.sound('missile');assert.equal(fetches,1);assert.equal(copied.length,3);assert.ok(sources.slice(beforeDistant).every(source=>source.buffer.duration===1.2));
+  audio.sound('shot',true,'P2MEC');audio.sound('shot',true,'CETI');assert.equal(sources.at(-1).buffer,sources.at(-2).buffer);assert.equal(gains.at(-1),settings.sfx*WEAPON_FIRE_GAIN.djon);
+  audio.sound('shot',true,'TAR12');audio.sound('shot',true,'HOMP11');assert.equal(sources.at(-1).buffer,sources.at(-2).buffer);assert.notEqual(sources.at(-1).buffer,sources.at(-3).buffer);
+  audio.sound('shot',true,'RAID');audio.sound('shot',true,'FIL-30');assert.equal(sources.at(-1).buffer,sources.at(-2).buffer);assert.notEqual(sources.at(-1).buffer,sources.at(-3).buffer);
+  audio.sound('shot',true,'RUPP');assert.equal(oscillators.at(-1).type,'sine');assert.equal(oscillators.at(-1).frequency.events[0],1100);
+  audio.sound('shot',false,'PRIF44');assert.equal(oscillators.at(-1).type,'sawtooth');assert.equal(oscillators.at(-1).frequency.events[0],160);
+  audio.sound('impact',false,'RAID');assert.equal(oscillators.at(-1).frequency.events[0],65);assert.equal(copied.length,6);
+  for(const weapon of ['FLECH','TCREAP','DASY'] as const)audio.sound('shot',false,weapon);assert.equal(copied.length,9);assert.equal(new Set(sources.slice(-3).map(source=>source.buffer)).size,3);
+  audio.sound('shot',false,'zWASP');audio.sound('shot',false,'zWASP');assert.equal(sources.at(-1).buffer,sources.at(-2).buffer);const bottom=sources.at(-1).buffer;
+  ctx.currentTime=5.11;audio.sound('shot',false,'zWASP');assert.notEqual(sources.at(-1).buffer,bottom);
+  ctx.currentTime=5.4;audio.sound('shot',false,'zWASP');assert.equal(sources.at(-1).buffer,bottom);
+  audio.sound('shot',false,'FLECH');const flech=sources.at(-1);audio.pause();assert.equal(flech.stopped,true);
+  ctx.currentTime=5.51;audio.sound('shot',false,'zWASP');assert.equal(sources.at(-1).buffer,bottom);
+  settings.sfx=0;const held=sources.length;audio.sound('shot',false,'FLECH');audio.sound('missile',false,'CHUM');await audio.sound('missile',false,'HSSO');assert.equal(sources.length,held);assert.equal(fetches,1);
+ }finally{
+  if(descriptor)Object.defineProperty(globalThis,'fetch',descriptor);else Reflect.deleteProperty(globalThis,'fetch');
+  if(previousWindow)Object.defineProperty(globalThis,'window',previousWindow);else Reflect.deleteProperty(globalThis,'window');
+ }
+});

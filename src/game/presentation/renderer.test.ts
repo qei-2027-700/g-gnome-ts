@@ -643,6 +643,14 @@ test('Scorp Tactical has low paired arms, a small head and a connected rear shel
  engine.dispose();
 });
 
+test('Scorp Tactical cockpit uses its photographed frame with live IFF and radar openings',async()=>{
+ const {scorpTacticalCockpitShellSvg}=await import('./scorp-tactical-cockpit.ts');
+ const shell=scorpTacticalCockpitShellSvg();
+ assert.ok(shell.includes('assets/cockpits/scorp-td-hawk.png'));
+ assert.ok(shell.includes('scorp-tactical-metal-mask'));
+ assert.ok(!shell.includes('4033'));
+});
+
 test('Merc Meson tower has a fixed pedestal, rotating head and one cannon; reset restores the defense scene',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const sim=new Simulation('Easy',MISSION_2_6),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);
  sim.human={x:-80,z:210};sim.board();world.mode=1;sim.aimBy(.6);world.update(.016);const rig=world.rigs.get('defense-tower')!;assert.equal(rig.root.rotation.y,0);assert.ok(Math.abs(rig.torso.rotation.y-.6)<1e-8);assert.equal(rig.torso.getChildMeshes().filter(m=>m.name==='meson-cannon').length,1);assert.ok(world.scene.getMeshByName('meson-pedestal'));

@@ -6,6 +6,8 @@
 
 [3-3-scopeロケットタワー.png](3-3-scopeロケットタワー.png)はタワーの接写。青緑の多角形の胴体、黄土色の帯、灰色の屋根と外へ開く支柱を確認する。
 
+[3-4機内ホログラムの拡大画像](../scorp-tactical/3-4-cockpit-holograms.png)では、左側の目標像をユーザー指定によりScorpロケットタワーとして扱う。幅広く平たい上部、細い中央胴体、左右の張り出しと外へ開く支柱が見える。この輪郭を機種ID `scorp-rocket-tower` のホログラムに反映し、任務ごとの専用表示は作らない。緑はホログラムの状態表示色で、外装の塗装色ではない。
+
 基地内での配置は[3-3の観察記録](../../observations/mission-3-3/observations.md)と[基地突入画面](../scope-asv/3-3-司令部左側-ul-urit基地突入.png)を参照する。実装仕様は[機体・武器資料](../../vehicles-and-weapons.md)へ記録する。
 
 [4-2-開始時-右手にscopeロケットタワー.png](../../../../assets/reference/scorp-rocket-tower/4-2-開始時-右手にscopeロケットタワー.png)は、4-2出撃直後の徒歩視点。画面右手の塔をユーザーがScorpロケットタワーと指定した。4-2で搭乗して迎撃する[Scorpミーゾン・ガードタワー](../scorp-meson-tower/README.md)とは区別する。画面上の右を地理上の東とは決めない。

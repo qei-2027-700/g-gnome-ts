@@ -343,7 +343,7 @@ const BASE_VEHICLES = {
       'zWASP',
       'SREM'
     ],
-    torsoLimit:Math.PI/3,
+    torsoLimit:0,
     voice:'young',
     initialAmmo:{
       zWASP:400,
@@ -371,13 +371,13 @@ const BASE_VEHICLES = {
     armor:140,
     height:8.9,
     passengerCapacity:0,
-    color:'#a8ac86',
+    color:'#b18a42',
     weapons:[
       'RAID',
       'zWASP',
       'HSSO',
     ],
-    torsoLimit:Math.PI/3,
+    torsoLimit:0,
     voice:'solemn',
     initialAmmo:{
       zWASP:1000,
@@ -390,7 +390,8 @@ const BASE_VEHICLES = {
       stopDistance:70,
       missileVolley:1
     },
-    shape:{hull:{w:3,h:1.4,d:2.6,y:-.4,z:0},cockpit:{w:2.6,h:1.8,d:2.1,y:1.2,z:.1},weapon:{w:1.4,h:1.3,d:2.3,x:2.5,y:1.8,z:0},legX:1.7,chinWeapon:{x:.55,y:-.05,z:1.7,w:.28,h:.28,d:1.2}},
+    // 3-4 front and rear views: a narrow ochre center, small silver head, low hanging arms and slim separated legs. Metre dimensions remain prototypes.
+    shape:{hull:{w:1.55,h:1.55,d:1.15,y:-.15,z:0},cockpit:{w:.92,h:.72,d:.85,y:1.23,z:.08},weapon:{w:.8,h:2.05,d:.85,x:1.52,y:.04,z:.12},legX:1.17,chinWeapon:{x:.55,y:-.05,z:1.7,w:.28,h:.28,d:1.2}},
     gait:{stride:7,lift:.65,lean:.05,bounce:.15},
     drive:{idle:64,rev:50,harmonic:2.5,filter:300,volume:.035,wave:'triangle'}
   },
@@ -606,6 +607,9 @@ export const DARKEN_TACTICAL_HIP_Z=-.55;
 export const DARKEN_TACTICAL_THIGH=2.3;
 export const DARKEN_TACTICAL_SHIN=2.4;
 export const DARKEN_TACTICAL_REST_STEP=.65;
+export const SCORP_TACTICAL_THIGH=2.75;
+export const SCORP_TACTICAL_SHIN=2.55;
+export const SCORP_TACTICAL_REST_STEP=.75;
 export function pitchDarkenTactical(localY:number,localZ:number){
  const c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH);
  return {y:DARKEN_TACTICAL_TORSO_Y+localY*c-localZ*s,z:localY*s+localZ*c};

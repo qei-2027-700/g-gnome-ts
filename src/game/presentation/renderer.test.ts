@@ -634,6 +634,15 @@ test('Scorp Tactical twin RAID models share the simulated under-cockpit muzzle l
  const barrels=world.scene.meshes.filter(m=>m.name==='scorp raid chin barrel');assert.equal(barrels.length,2);for(const barrel of barrels){barrel.computeWorldMatrix(true);const bounds=barrel.getBoundingInfo().boundingBox;assert.ok(sim.missiles.some(bolt=>Math.abs(bolt.x-bounds.centerWorld.x)<1e-5&&Math.abs(bolt.y-bounds.centerWorld.y)<1e-5&&Math.abs(bolt.z-bounds.maximumWorld.z)<1e-5));}engine.dispose();
 });
 
+test('Scorp Tactical has low paired arms, a small head and a connected rear shell',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),sim=new Simulation(),u=makeUnit('td','scorp-tactical',0,18,false);sim.units=[u];const world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get('td')!,meshes=rig.root.getChildMeshes();
+ const head=meshes.find(m=>m.name==='td silver head')!,arms=meshes.filter(m=>m.name==='td upper arm'),backs=meshes.filter(m=>m.name==='td rear ochre plate');
+ assert.ok(head&&head.metadata.bodyPart==='cockpit');assert.equal(arms.length,2);assert.equal(backs.length,1);assert.ok(arms.every(m=>m.metadata.bodyPart==='leftWeapon'||m.metadata.bodyPart==='rightWeapon'));assert.ok(arms.every(m=>m.position.y<head.position.y));assert.equal(meshes.filter(m=>m.name==='shoulder blue cap').length,0);
+ assert.equal(meshes.filter(m=>m.name==='td blue chest').length,1);assert.equal(meshes.filter(m=>m.name==='td white claw').length,4);
+ world.update(.016);assert.ok(rig.knees.every(knee=>knee.rotation.x<-.5));assert.equal(u.spec.torsoLimit,0);assert.equal(rig.torso.rotation.y,0);
+ engine.dispose();
+});
+
 test('Merc Meson tower has a fixed pedestal, rotating head and one cannon; reset restores the defense scene',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const sim=new Simulation('Easy',MISSION_2_6),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);
  sim.human={x:-80,z:210};sim.board();world.mode=1;sim.aimBy(.6);world.update(.016);const rig=world.rigs.get('defense-tower')!;assert.equal(rig.root.rotation.y,0);assert.ok(Math.abs(rig.torso.rotation.y-.6)<1e-8);assert.equal(rig.torso.getChildMeshes().filter(m=>m.name==='meson-cannon').length,1);assert.ok(world.scene.getMeshByName('meson-pedestal'));

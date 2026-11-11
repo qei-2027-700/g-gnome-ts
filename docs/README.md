@@ -35,6 +35,7 @@
 - [IFF・通信・仲間への命令](gameplay/iff-and-communications.md)：識別と敵行動・レーダー、Fキーの宛先・命令選択、任務進行
 - [敵の行動と追加調査](gameplay/enemy-behavior.md)：1-1の敵AI、攻略資料の観察、未確定の索敵・移動・射撃・難易度差
 - [機体・上半身・砲塔の旋回](gameplay/vehicle-articulation.md)：360度回転・角度制限・固定、車体・武器・視点の分離
+- [HAWCの機種別仕様](gameplay/hawc-spec.md)：Scorp Tactical Defense、Scorp Sentry、Union Sentryの上半身固定指定と設定値
 - [武器の分類とミサイルカメラ](gameplay/weapons-and-missile-camera.md)：武器の表示・誘導、VISOM専用ビュー
 
 ## 登場人物

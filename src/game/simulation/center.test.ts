@@ -84,6 +84,17 @@ test('AI Union Sentry turns its whole chassis toward an enemy and never swivels 
  assert.ok(Math.abs(u.yaw)>.1);
 });
 
+test('Scorp Tactical and Sentry turn the whole chassis under mouse, keyboard and AI aim',()=>{
+ for(const kind of ['scorp-tactical','scorp-sentry'] as const){
+  const s=new Simulation(),u=makeUnit('scorp',kind,0,20,false);s.units=[u];s.human={x:0,z:20};assert.ok(s.board());
+  s.aimBy(.6);assert.equal(u.aim,u.yaw);assert.equal(u.yaw,0);
+  s.aimMouseBy(40,0);assert.ok(u.yaw>0);assert.equal(u.aim,u.yaw);
+  const before=u.yaw;s.tick(.05,{...idle,right:true});assert.ok(u.yaw>before);assert.equal(u.aim,u.yaw);
+  s.lookBy(.2);assert.ok(s.pitch>0);
+  const ai=new Simulation(),enemy=makeUnit('enemy',kind,0,60,true,{faction:'scorp'});enemy.iff='scorp';ai.units=[enemy];ai.human={x:30,z:0};for(let i=0;i<40;i++){ai.tick(.02,idle);assert.ok(Math.abs(enemy.aim-enemy.yaw)<1e-10);}assert.ok(Math.abs(enemy.yaw)>.1);
+ }
+});
+
 
 test('tower keyboard aiming keeps its base fixed and eases into the common HAWC horizontal key speed',()=>{
  for(const kind of ['merc-meson-tower','scorp-rocket-tower','merc-tactical'] as const){

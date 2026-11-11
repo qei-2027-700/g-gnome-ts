@@ -15,6 +15,8 @@
 3. 配置や目標を変えた場合は、既存の責務別シミュレーションテストへ任務の挙動を追加する。
 4. 原作仕様を更新する場合は `docs/missions/` と必要な gameplay・technical 文書に、確認済み事実と仮設定を分けて記録する。
 
+原作画像から地図とフィールドを作る任務では、[画像からフィールドまでの対応手順](../gameplay/mission-map-and-waypoints.md#原作画像からフィールドまでの対応手順)を先に適用する。元画像の画素上の目印、色領域と通行可否の根拠、座標への変換、近似箇所、照合結果を任務資料へ残してから配置を完了とする。
+
 `units`、`base.buildings`、`terrain`、`waypoints`、`objectives` は任務定義に置く。`assaults`、`radioTriggers`、`infantrySorties`、`bgm`、`completionSequence` は、依頼がその振る舞いを名指ししたときだけ置く。`assaults` の意味は[ミッションの追加と共通仕様](./mission-definitions.md)の時間差進軍で、機体の出現時刻ではない。複数任務で同じ機体を使う場合、性能・形状は共通定義を再利用し、任務だけの例外は `vehicleOverrides` または配置の `overrides` に置く。これらの適用順は同文書を参照する。
 
 用意されていない機体を、実行時に別の機種へ置き換える処理はない。配置の `kind` は `vehicles.ts` の既存の `VehicleKind` にする。名前・勢力・色の違いは、その配置の `overrides` に書く。任務の追加で `vehicles.ts` へ機種を足さない。建物は `kind` を省くと司令部（`command`）になる。橋の操作、シールドによる進入禁止、給電のように、種類に結び付いた動きが要る建物は、`types.ts` の `Base` にある既存の `kind` を指定する。未知の `kind` は定義が通らない。代用した対応は任務資料に残す。

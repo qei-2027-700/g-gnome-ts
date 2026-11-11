@@ -5,6 +5,7 @@
 機体・ミッションの追加や既存マップの拡張を依頼されたAIエージェント向けの追記規約です。型付きコンテンツを正本とし、任務固有の配置や目標を共通のゲーム処理へ埋め込まないでください。原作で確認した内容、ユーザー指定、試作上の仮値を区別し、作業後は `validateMissions` と影響範囲のテストで確認してください。
 
 共通手順の詳細は[Mission・Vehicle・Facilityの拡張手順](./content-extension.md)を参照してください。
+原作画像を根拠にするミッションの追加・マップ変更では、[原作画像からフィールドまでの対応手順](../gameplay/mission-map-and-waypoints.md#原作画像からフィールドまでの対応手順)も適用してください。
 
 ## 機体追加のプロンプトテンプレート
 
@@ -42,6 +43,7 @@
 - 目標・配置・地形はミッション定義に置き、共通処理へミッション固有条件を追加しない。
 - validateMissions(MISSIONS) が成功することを確認し、完了条件が成立する挙動テストを追加する。
 - 原作未確認の値や進行は仮設定と記録する。
+- 原作地図がある場合は、画素上の目印・色領域の通行可否と任務座標の対応、近似箇所、地図と3Dフィールドの照合結果を任務資料に残す。
 ```
 
 最小定義に必要なフィールドは `id`、`title`、`subtitle`、`briefing`、`startHint`、`success`、`radio`、`player`、`playerFaction`、`initialIff`、`factionCodes`、`assignedUnitId`、`units`（最低1機）、`waypoints`、`objectives`（最低1つ）、`terrain`、`rocks`、`tuning` です。`assignedUnitId`、目標の参照先などは実在するIDにしてください。`completionEnabled` を省略した場合は完了条件が有効です。
@@ -82,6 +84,7 @@ export const MISSION_X: MissionDefinition = {
 - validateMissions に加えて、地形通過や目標達成を扱う既存simulationテストを更新・実行する。
 - 任務固有の数値や配置を simulation または presentation の共通処理へ埋め込まない。
 - 原作で未確認の配置・進行は仮設定と記録する。
+- 原作地図がある場合は、画素上の目印と色領域の通行境界を任務座標へ対応させ、地図表示と3Dフィールドを同じ目印で照合する。
 ```
 
 ## 変更禁止ファイル一覧

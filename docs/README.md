@@ -51,6 +51,7 @@
 - [ミッションの追加と共通仕様](technical/mission-definitions.md)：任務定義、機体・武器の再利用、任務限定の例外、再挑戦
 - [密集した障害物と更新コスト](technical/simulation-cost.md)：経路探索を1ティックに収める制約。動かない砲塔は探索せず照準と射撃を続ける
 - [Mission・Vehicle・Facilityの拡張手順](technical/content-extension.md)：追加時の変更箇所、共通／固有データ、型・挙動検証
+- [原作画像からの機体外観再現](technical/model-reconstruction.md)：画像の方向と姿勢、部位の接続、輪郭から細部への照合手順
 - [Codex向け追記ルール](technical/codex-rules.md)：機体・ミッション追加と既存マップ拡張の手順・プロンプトテンプレート
 - [1-1試作版の起動と実装範囲](technical/playable-1-1.md)：起動・操作、仮設定、実装箇所、検証結果
 
@@ -70,6 +71,7 @@
 
 - [製品版1-1の映像観察](reference/observations/mission-1-1/observations.md)：YouTubeの時刻、提供画像、敵の反応、未確認事項
 - [3-3の調査・観察記録](reference/observations/mission-3-3/observations.md)：出典の確認範囲と、原作映像で確認する項目
+- [3-4の地図と通行範囲](reference/observations/mission-3-4/observations.md)：黒地の平地、黄緑の斜面、深緑の高台についてのユーザー説明
 - [機体性能・武器仕様の調査](reference/vehicles-and-weapons.md)：原作資料に掲載された値と未確認事項
 - [参考資料とmacOSでの原作プレイ](reference/sources-and-macos.md)：参考ブログ、PDFの取得元、原作の動作環境
 - [英語マニュアルPDF](reference/manuals/G-Nome_Manual_Win_EN.pdf)

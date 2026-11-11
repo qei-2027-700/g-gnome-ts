@@ -5,12 +5,31 @@ import {dirname, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
-const views = {
+const defaultViews = {
   front: {pos: [0, 4.6, 13], target: [0, 3.1, 0], fov: 0.62},
   rear: {pos: [0, 4.6, -13], target: [0, 3.1, 0], fov: 0.62},
   side: {pos: [12, 4.2, 2], target: [0, 3.2, 0], fov: 0.7},
   top: {pos: [1.2, 11, 7], target: [0, 2.2, 0], fov: 0.85}
 };
+const cameraFile = process.env.GNOME_MODEL_CAMERA_FILE;
+let views = defaultViews;
+if (cameraFile) {
+  try {
+    const overrides = JSON.parse(readFileSync(resolve(cameraFile), 'utf8'));
+    if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) throw new Error('expected an object keyed by view');
+    for (const [name, camera] of Object.entries(overrides)) {
+      if (!(name in defaultViews) || !camera || typeof camera !== 'object' || Array.isArray(camera) ||
+        !['pos', 'target'].every(key => Array.isArray(camera[key]) && camera[key].length === 3 && camera[key].every(Number.isFinite)) ||
+        !Number.isFinite(camera.fov) || camera.fov <= 0 || camera.fov >= Math.PI) {
+        throw new Error(`invalid camera for ${name}`);
+      }
+    }
+    views = {...defaultViews, ...overrides};
+  } catch (error) {
+    console.error(`invalid GNOME_MODEL_CAMERA_FILE: ${error.message}`);
+    process.exit(2);
+  }
+}
 const kind = process.argv[2];
 const requestedPort = process.env.GNOME_MODEL_PORT === undefined ? undefined : Number(process.env.GNOME_MODEL_PORT);
 const label = process.env.GNOME_MODEL_LABEL || '';
@@ -18,7 +37,7 @@ const requested = process.argv.slice(3);
 const selected = requested.length ? requested : ['front'];
 if (!kind || selected.some(view => !views[view]) || !/^[a-z0-9-]*$/.test(label) || (requestedPort !== undefined && (!Number.isInteger(requestedPort) || requestedPort < 1024 || requestedPort > 65535))) {
   console.error('usage: render-views.mjs <vehicle-kind> [front|side|rear|top ...]');
-  console.error('optional: GNOME_MODEL_LABEL=before GNOME_MODEL_PORT=5175');
+  console.error('optional: GNOME_MODEL_LABEL=before GNOME_MODEL_PORT=5175 GNOME_MODEL_CAMERA_FILE=cameras.json');
   process.exit(2);
 }
 const vehicles = readFileSync(resolve(root, 'src/game/content/vehicles.ts'), 'utf8');
@@ -105,6 +124,11 @@ document.body.dataset.ready='yes';
       process.exitCode = 1;
       break;
     }
+    writeFileSync(file.replace(/\.png$/, '.json'), JSON.stringify({
+      kind, view, camera: views[view], cameraSource: cameraFile || 'built-in',
+      viewport: {width: 960, height: 720},
+      pose: {unitX: 0, unitZ: 0, yaw: 0, aim: 0, aimPitch: 0, pilot: false, updateSeconds: 0.016}
+    }, null, 2) + '\n');
     console.log(file);
   }
 } finally {

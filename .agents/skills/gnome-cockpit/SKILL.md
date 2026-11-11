@@ -1,12 +1,12 @@
 ---
 name: gnome-cockpit
 description: >
-  G-Nomeの機内ビューを、保存済みの操縦席画像から1回の画素計測と1回の画面確認で接続する。
+  G-Nomeの機内ビューを、保存済みの操縦席画像から画素計測し、原作と画面を照合して接続する。
   「コックピットを再現」「機内を切り抜く」「機内フレーム」「HUDを原作画像に合わせる」
   「/gnome-cockpit」のときに使う。外観モデル、機体性能、武器の調整には使わない。
 ---
 
-# 機内フレームを1回で接続する
+# 機内フレームを原作画像と照合する
 
 このフォルダから `../../..` がリポジトリのルート。機種の寸法・残弾・IFF・マスク座標は書かない。`renderer.ts`、`vehicles.ts`、`weapons.ts`、他機種の機内ファイル全体は開かない。
 
@@ -25,7 +25,7 @@ description: >
 
 ## 窓を数値で決める
 
-参照画像を開き、窓・計器・残す金属を見分ける。座標は次の出力だけを使い、画像の説明から画素を推測しない。計測は1回。
+参照画像を開き、窓・計器・残す金属を見分ける。座標は次の出力を使い、画像の説明から画素を推測しない。計測結果と画面が食い違う場合は、該当箇所を再計測する。
 
 ```sh
 node .agents/skills/gnome-cockpit/scripts/measure-frame.mjs assets/cockpits/<file>.png
@@ -42,7 +42,7 @@ node .agents/skills/gnome-cockpit/scripts/measure-frame.mjs assets/cockpits/<fil
 - `#cockpit` は `pointer-events:none`。押せる制御だけ `pointer-events:auto`。
 - 照準とコンパスは `#flightHud` にあり、窓の穴から見える。`#world` は機内と同じ矩形にする。
 
-## 1回撮って止める
+## 原作と同じ画面比率で照合する
 
 開発サーバーが5173にあればそれを使う。無ければスクリプトが起動し、自分で起動したものだけ止める。
 
@@ -50,10 +50,10 @@ node .agents/skills/gnome-cockpit/scripts/measure-frame.mjs assets/cockpits/<fil
 node .agents/skills/gnome-cockpit/scripts/preview-shot.mjs <previewVehicle>
 ```
 
-出力は `.artifacts/cockpit/<previewVehicle>/preview.png`。駅のクラスが `<previewVehicle>-cockpit` と違うときだけ、第2引数でクラス名を渡す。
+出力は `.artifacts/cockpit/<previewVehicle>/preview.png`。機種のクラスが `<previewVehicle>-cockpit` と違うときだけ、第2引数でクラス名を渡す。
 
-窓の中に参照画像の地形が残っていれば、その窓だけ1回広げる。ガラスと計器の境に残る細い線は残し、報告して止める。3周目の座標調整はしない。
+原作画像とプレビューを同じ表示比率で並べ、窓の外形、支柱、ダッシュボード、計器の位置と大きさを順に比べる。画面比率が違う場合は位置ずれと切り抜きずれを混同しない。写真の地形が窓に残る、必要な枠が欠ける、計器が金属部分に重なるなど、主要な差があれば該当箇所を直して撮り直す。修正前後の画像を別名で残し、回数だけを理由に照合を打ち切らない。原作画像で判別できない境界は推測で確定せず、残る差として記録する。
 
 確認するのは、搭乗で枠が出ること、窓に今の戦場が出ること、写真の残弾とIFFが残っていないこと、レーダーが写真の画素ではなく `.radar-instrument` で出ていること、降機と外部視点で枠が消えること、他機種にスタイルが残らないこと。出力の `radar` が `none` または `missing` のときは未完了で、皿が見えないことを理由に終わらない。射撃で弾道をずらさない。
 
-関連する既存テストだけ実行する。全体テストと `tsc` はCIに任せる。
+関連する既存テストだけ実行する。テストの成功だけで枠と計器の位置が合ったとは判断しない。全体テストと `tsc` はCIに任せる。

@@ -218,8 +218,8 @@ test('Meson held fire uses the slower cadence and slower flight while external p
  const s=new Simulation(),tower=makeUnit('cadence','merc-meson-tower',0,20,false);s.units=[tower];s.human={x:0,z:20};assert.ok(s.board());s.events=[];
  const times:number[]=[];let flightSpeed=0;
  for(let i=0;i<600;i++){s.tick(1/60,{...idle,fire1:true});if(s.events.some(e=>e.type==='shot'&&e.unit===tower)){times.push(s.time);const beam=s.missiles.find(m=>m.owner===tower.id);if(beam)flightSpeed=Math.hypot(beam.vx,beam.vy,beam.vz);}s.events=[];}
- assert.ok(times.length>=5&&times.length<=7);for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=1.59&&times[i]-times[i-1]<1.75);
- assert.ok(flightSpeed>0&&flightSpeed<1000);assert.equal(tower.energy,tower.spec.energy);assert.deepEqual(tower.ammunition,{});
+ assert.equal(times.length,3);for(let i=1;i<times.length;i++)assert.ok(Math.abs(times[i]-times[i-1]-LASERS.GAUS30.recharge)<1e-9);
+ assert.ok(LASERS.GAUS30.recharge>LASERS.GAUS30.interval);assert.equal(flightSpeed,LASERS.GAUS30.speed);assert.ok(flightSpeed<1000);assert.equal(tower.energy,tower.spec.energy);assert.deepEqual(tower.ammunition,{});
 });
 
 test('Meson external power supports unlimited player, friendly and enemy firing until its linked plant is destroyed',()=>{

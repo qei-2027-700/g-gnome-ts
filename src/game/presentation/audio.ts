@@ -9,8 +9,9 @@ import {ExternalWind} from './wind-audio.ts';
 import {RADIO_VOICE_CLIPS,radioVoiceKey} from '../content/radio-voice-assets.ts';
 import type {Settings} from '../settings.ts';
 import {VEHICLE_DRIVE_PROFILES,type Faction,type VehicleKind} from '../content/vehicles.ts';
+import {GUN_FIRE_VOICES,LASER_FIRE_VOICES,MISSILE_FIRE_VOICES,WEAPON_FIRE_GAIN,ZWASP_BURST_GAP,ZWASP_PITCH_STEPS,ZWASP_TWIN_GAP,weaponFireSamples,type WeaponFireVoice} from './weapon-fire-audio.ts';
 const MISSILE_LAUNCH_URL=new URL('../../../assets/audio/sfx/missile-launch.wav',import.meta.url).href;
-// Shot tone shared by RAID and FIL-30, and by TAR12 and HOMP11. Other non-GAUS lasers use it too.
+// Fallback for non-GAUS lasers that do not have an auditory class yet, including RUPP.
 const LASER_SHOT={wave:'sine' as OscillatorType,frequency:1100,duration:.12,gain:.1};
 const MISSILE_AUDIO_MAX_DISTANCE=600;
 type HorizontalPosition={x:number;z:number};
@@ -76,6 +77,10 @@ export class GameAudio {
   private buildingHumBuffer:AudioBuffer|null=null;
   private gausShots=new Set<OscillatorNode>();
   private missileBuffer:AudioBuffer|null=null;private missileLoading:Promise<AudioBuffer|null>|null=null;
+  private fireBuffers=new Map<string,AudioBuffer>();
+  private fireSources=new Set<AudioBufferSourceNode>();
+  private zWaspStep=0;
+  private zWaspLast=-1;
   private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;track:string|null;missingReported:boolean}|null=null;
   private musicOwner:'manual'|'mission'|null=null;
   private musicPaused=true;private musicPending=false;private musicFailed=false;private musicGeneration=0;
@@ -179,7 +184,42 @@ export class GameAudio {
       oscillator.connect(gain);gain.connect(ctx.destination);oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};oscillator.start(time);oscillator.stop(time+duration);
     }
   }
-  sound(kind:'shot'|'hit'|'destroy'|'board'|'missile'|'impact'|'gas'|'collision',laser=false,weapon?:string,missilePositions?:{source:HorizontalPosition;listener:HorizontalPosition}){if(!this.ctx||this.settings.sfx===0)return;if(kind==='missile'){const distanceGain=missilePositions?missileDistanceGain(missilePositions.source,missilePositions.listener):1;if(distanceGain===0)return;return this.playMissileLaunch(distanceGain);}if(kind==='shot'&&(weapon==='GAUS30'||weapon==='GAUS20'))return this.playGausSweep();const gaus=(weapon==='GAUS30'||weapon==='GAUS20')&&(kind==='shot'||kind==='impact'),laserShot=kind==='shot'&&laser,ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain();o.type=gaus?'sine':kind==='collision'||laserShot?LASER_SHOT.wave:'sawtooth';const t=ctx.currentTime,duration=gaus?.09:kind==='collision'?.18:kind==='gas'?.3:kind==='impact'?.25:kind==='destroy'?.65:kind==='board'?.2:laserShot?LASER_SHOT.duration:.12;o.frequency.setValueAtTime(gaus?420:kind==='collision'?70:kind==='impact'?65:kind==='shot'?(laserShot?LASER_SHOT.frequency:160):kind==='hit'?90:60,t);o.frequency.exponentialRampToValueAtTime(25,t+duration);g.gain.setValueAtTime(this.settings.sfx*(gaus?.008:laserShot?LASER_SHOT.gain:.1),t);g.gain.exponentialRampToValueAtTime(gaus?.00001:.001,t+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(t+duration);}
+  sound(kind:'shot'|'hit'|'destroy'|'board'|'missile'|'impact'|'gas'|'collision',laser=false,weapon?:string,missilePositions?:{source:HorizontalPosition;listener:HorizontalPosition}){
+    if(!this.ctx||this.settings.sfx===0)return;
+    if(kind==='missile'){
+      const distanceGain=missilePositions?missileDistanceGain(missilePositions.source,missilePositions.listener):1;
+      if(distanceGain===0)return;
+      const voice=weapon?MISSILE_FIRE_VOICES[weapon]:undefined;
+      if(voice)return this.playWeaponFire(voice,distanceGain);
+      return this.playMissileLaunch(distanceGain);
+    }
+    if(kind==='shot'&&(weapon==='GAUS30'||weapon==='GAUS20'))return this.playGausSweep();
+    if(kind==='shot'){
+      const laserVoice=weapon?LASER_FIRE_VOICES[weapon]:undefined;
+      if(laserVoice)return this.playWeaponFire(laserVoice,1);
+      if(weapon&&GUN_FIRE_VOICES[weapon])return this.playGunFire(weapon);
+    }
+    const gaus=(weapon==='GAUS30'||weapon==='GAUS20')&&(kind==='shot'||kind==='impact'),laserShot=kind==='shot'&&laser,ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain();o.type=gaus?'sine':kind==='collision'||laserShot?LASER_SHOT.wave:'sawtooth';const t=ctx.currentTime,duration=gaus?.09:kind==='collision'?.18:kind==='gas'?.3:kind==='impact'?.25:kind==='destroy'?.65:kind==='board'?.2:laserShot?LASER_SHOT.duration:.12;o.frequency.setValueAtTime(gaus?420:kind==='collision'?70:kind==='impact'?65:kind==='shot'?(laserShot?LASER_SHOT.frequency:160):kind==='hit'?90:60,t);o.frequency.exponentialRampToValueAtTime(25,t+duration);g.gain.setValueAtTime(this.settings.sfx*(gaus?.008:laserShot?LASER_SHOT.gain:.1),t);g.gain.exponentialRampToValueAtTime(gaus?.00001:.001,t+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(t+duration);
+  }
+  private playGunFire(weapon:string){
+    const voice=GUN_FIRE_VOICES[weapon];if(!voice||!this.ctx)return;
+    let step=0;
+    if(weapon==='zWASP'){
+      const now=this.ctx.currentTime,gap=now-this.zWaspLast;
+      if(gap>ZWASP_BURST_GAP)this.zWaspStep=0;else if(gap>=ZWASP_TWIN_GAP)this.zWaspStep=Math.min(this.zWaspStep+1,ZWASP_PITCH_STEPS);
+      this.zWaspLast=now;step=this.zWaspStep;
+    }
+    this.playWeaponFire(voice,1,step);
+  }
+  private playWeaponFire(voice:WeaponFireVoice,distanceGain:number,pitchStep=0){
+    const ctx=this.ctx;if(!ctx||distanceGain===0)return;
+    const key=`${voice}:${pitchStep}:${ctx.sampleRate}`;
+    let buffer=this.fireBuffers.get(key);
+    if(!buffer){const samples=weaponFireSamples(voice,ctx.sampleRate,pitchStep);buffer=ctx.createBuffer(1,samples.length,ctx.sampleRate);buffer.copyToChannel(samples,0);this.fireBuffers.set(key,buffer);}
+    const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.sfx*WEAPON_FIRE_GAIN[voice]*distanceGain;
+    source.connect(gain);gain.connect(ctx.destination);this.fireSources.add(source);
+    source.onended=()=>{this.fireSources.delete(source);source.disconnect();gain.disconnect();};source.start();
+  }
   private loadMissileSound():Promise<AudioBuffer|null>{
     const ctx=this.ctx;if(!ctx)return Promise.resolve(null);
     if(this.missileBuffer)return Promise.resolve(this.missileBuffer);
@@ -298,6 +338,6 @@ export class GameAudio {
     u.pitch=japanese?.82:.68;u.rate=.88;speechSynthesis.speak(u);
   }
   loadMusic(file:File){this.stopMusic();this.missionMusic=null;this.musicOwner='manual';this.musicError=null;this.url=URL.createObjectURL(file);this.music=new Audio(this.url);this.music.loop=true;this.music.volume=this.settings.music;return this.musicPaused?Promise.resolve():this.music.play();}
-  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.guidanceGeneration++;this.guidanceSource?.stop();this.guidanceSource=null;this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
+  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.guidanceGeneration++;this.guidanceSource?.stop();this.guidanceSource=null;this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();for(const source of this.fireSources)source.stop();this.fireSources.clear();this.zWaspStep=0;this.zWaspLast=-1;this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
   resume(){this.musicPaused=false;this.musicFailed=false;if(this.music)this.music.volume=this.musicVolume;this.playCurrentMusic();}
 }

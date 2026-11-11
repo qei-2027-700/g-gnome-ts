@@ -27,7 +27,7 @@ test('articulated feet land on the ground and lift during recovery on every bipe
  }
  assert.ok(GAITS['merc-sentry'].lift>GAITS['union-sentry'].lift);
  const stalker=legPose('darken-tactical',0,0,DARKEN_TACTICAL_HIP_Y);
- assert.ok(stalker.hip<-.7&&stalker.knee>1.5);assert.ok(Math.abs(stalker.hip+stalker.knee+stalker.ankle)<1e-8);
+ assert.ok(stalker.hip>.5&&stalker.knee< -1.5);assert.ok(Math.abs(stalker.hip+stalker.knee+stalker.ankle)<1e-8);
 });
 
 test('Merc Tactical running raises its sole toward the rear while the supporting foot stays flat',()=>{

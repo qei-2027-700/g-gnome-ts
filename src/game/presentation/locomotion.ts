@@ -10,8 +10,9 @@ export function legPose(kind:VehicleKind,phase:number,run:number,hipHeight:numbe
  const darken=kind==='darken-tactical',y=.225+(lift-hipHeight)/scale.y,localZ=z/scale.z+(darken?DARKEN_TACTICAL_REST_STEP:0),upper=darken?DARKEN_TACTICAL_THIGH:h*.26,lower=darken?DARKEN_TACTICAL_SHIN:h*.22;
  const reach=Math.max(.01,Math.min(upper+lower-.001,Math.hypot(y,localZ)));
  const clamp=(v:number)=>Math.max(-1,Math.min(1,v));
- const hip=Math.atan2(-localZ,-y)-Math.acos(clamp((upper*upper+reach*reach-lower*lower)/(2*upper*reach)));
- const knee=Math.PI-Math.acos(clamp((upper*upper+lower*lower-reach*reach)/(2*upper*lower)));
+ const bend=Math.acos(clamp((upper*upper+reach*reach-lower*lower)/(2*upper*reach)));
+ const hip=Math.atan2(-localZ,-y)+(darken?bend:-bend);
+ const knee=(darken?-1:1)*(Math.PI-Math.acos(clamp((upper*upper+lower*lower-reach*reach)/(2*upper*lower))));
  const solePitch=kind==='merc-tactical'&&!stance?Math.sin((cycle-.5)*Math.PI*2)*1.4*strength:0;
  return {hip,knee,ankle:-hip-knee+solePitch,lift,z,solePitch};
 }

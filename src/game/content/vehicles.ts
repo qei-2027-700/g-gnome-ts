@@ -131,7 +131,8 @@ const BASE_VEHICLES = {
       'P2MEC',
       'TCREAP',
       'TCROCK',
-      'SAG5T'],
+      'SAG5T',
+    ],
     torsoLimit:Math.PI/3,
     voice:'young',
     initialAmmo:{
@@ -197,12 +198,13 @@ const BASE_VEHICLES = {
     color:MERC_TACTICAL_PALETTE.white,
     weapons:[
       'DASY',
-      'SAG5T'],
+      'SAG5T',
+    ],
     torsoLimit:0,
     voice:'solemn',
     initialAmmo:{
       DASY:400,
-      SAG5T:400
+      SAG5T:400,
     },
     ai:{
       detection:145,
@@ -232,13 +234,14 @@ const BASE_VEHICLES = {
       'RUPP',
       'zWASP',
       'PUG',
-      'VISOM'],
+      'VISOM'
+    ],
     torsoLimit:Math.PI/3,
     voice:'solemn',
     initialAmmo:{
       zWASP:1000,
       PUG:20,
-      VISOM:10
+      VISOM:10,
     },
     ai:{
       detection:200,
@@ -267,19 +270,20 @@ const BASE_VEHICLES = {
     color:'#85898c',
     weapons:[
       'TCREAP',
-      'TCROCK'],
+      'TCROCK',
+    ],
     torsoLimit:Math.PI,
     voice:'young',
     initialAmmo:{
       TCREAP:300,
-      TCROCK:60
+      TCROCK:60,
     },
     ai:{
       detection:200,
       strafe:0,
       keepMoving:false,
       stopDistance:60,
-      missileVolley:1
+      missileVolley:1,
     },
     shape:{hull:{w:3.2,h:1.1,d:4.5,y:-.25,z:0},cockpit:{w:1.8,h:.85,d:2.2,y:.45,z:.1},weapon:{w:.6,h:.6,d:2.2,x:1.05,y:.65,z:.8},legX:1.85,track:{w:1.05,h:1.1,d:5.1,y:.65,z:0}},
     gait:{stride:5,lift:0,lean:0,bounce:0},
@@ -301,7 +305,8 @@ const BASE_VEHICLES = {
       'zWASP',
       'zWASP',
       'SREM',
-      'UNKPA'],
+      'UNKPA',
+    ],
     torsoLimit:Math.PI,
     voice:'solemn',
     initialAmmo:{
@@ -336,12 +341,13 @@ const BASE_VEHICLES = {
     weapons:[
       'CETI',
       'zWASP',
-      'SREM'],
+      'SREM'
+    ],
     torsoLimit:Math.PI/3,
     voice:'young',
     initialAmmo:{
       zWASP:400,
-      SREM:20
+      SREM:20,
     },
     ai:{
       detection:140,
@@ -369,12 +375,13 @@ const BASE_VEHICLES = {
     weapons:[
       'RAID',
       'zWASP',
-      'HSSO'],
+      'HSSO',
+    ],
     torsoLimit:Math.PI/3,
     voice:'solemn',
     initialAmmo:{
       zWASP:1000,
-      HSSO:15
+      HSSO:15,
     },
     ai:{
       detection:170,
@@ -596,16 +603,16 @@ export const DARKEN_TACTICAL_HUNCH=1.3;
 export const DARKEN_TACTICAL_TORSO_Y=3.69;
 export const DARKEN_TACTICAL_HIP_Y=3.45;
 export const DARKEN_TACTICAL_HIP_Z=-.55;
-export const DARKEN_TACTICAL_THIGH=3.15;
-export const DARKEN_TACTICAL_SHIN=1.7;
-export const DARKEN_TACTICAL_REST_STEP=1.75;
+export const DARKEN_TACTICAL_THIGH=2.3;
+export const DARKEN_TACTICAL_SHIN=2.4;
+export const DARKEN_TACTICAL_REST_STEP=.65;
 export function pitchDarkenTactical(localY:number,localZ:number){
  const c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH);
  return {y:DARKEN_TACTICAL_TORSO_Y+localY*c-localZ*s,z:localY*s+localZ*c};
 }
 export const VEHICLES={...BASE_VEHICLES,
  // Rear view, torso width = 1. Pods are 1.15 wide at x 2.05, so the inner gap is about 2.95. The head sits on the rear top of the dark center. Metres use the 7.9 m card height as a prototype scale.
- 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#b08a32',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1,h:2.2,d:1,y:.4,z:.05},cockpit:{w:.42,h:.36,d:.42,y:1.44,z:-.37},weapon:{w:1.15,h:2.5,d:1.65,x:2.05,y:.45,z:.35},legX:1.95,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:.9,h:3.5,d:3.4,y:1.75,z:.85}}},
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:.72,h:1.8,d:.85,y:.4,z:.05},cockpit:{w:.5,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:2.05,y:.7,z:.35},legX:1.95,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:.9,h:3.5,d:3.4,y:1.75,z:.85}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
 } as const satisfies Record<string,VehicleDefinition>;

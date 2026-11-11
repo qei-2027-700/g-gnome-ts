@@ -11,7 +11,7 @@ export const LASERS = {
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
   RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:12,speed:LASER_FLIGHT_SPEED},
   // Manual p.57 lists 800 m range and 1000 m/s; current requested tuning widens range/hit width and slows flight.
-  GAUS30:{range:1000,minRange:90,recharge:3.6,movingRechargeFactor:1,interval:2.4,energy:5,damage:28,speed:200,hitPadding:1.5},
+  GAUS30:{range:1000,minRange:90,recharge:3.6,movingRechargeFactor:1,interval:2.8,energy:5,damage:28,speed:200,hitPadding:1.5},
   P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:11,speed:LASER_FLIGHT_SPEED},
   'FIL-30': {range:220,minRange:22,recharge:LASER_RECHARGE_SECONDS,movingRechargeFactor:.5,interval:1,energy:2,damage:9,speed:LASER_FLIGHT_SPEED},
   CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
@@ -28,13 +28,13 @@ export const INFANTRY_WEAPONS={
 export const VISOM_SPEED=96;
 // Manual p.46: PUG range/velocity/armor damage; radius and homing remain provisional.
 export const MISSILES={
-  PUG:{speed:100,damage:24,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},
-  HSSO:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  CHUM:{speed:94,damage:20,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
-  SAG5T:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  TCROCK:{speed:94,damage:20,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
-  SREM:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  UNKPA:{speed:110,damage:20,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  PUG:{speed:100,damage:20,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},
+  HSSO:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  CHUM:{speed:94,damage:18,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
+  SAG5T:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  TCROCK:{speed:94,damage:18,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
+  SREM:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  UNKPA:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
   VISOM:{speed:VISOM_SPEED,damage:4,radius:.45,lifetime:1000/VISOM_SPEED}
 };
 

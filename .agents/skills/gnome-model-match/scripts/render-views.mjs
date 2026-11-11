@@ -12,10 +12,13 @@ const views = {
   top: {pos: [1.2, 11, 7], target: [0, 2.2, 0], fov: 0.85}
 };
 const kind = process.argv[2];
+const requestedPort = process.env.GNOME_MODEL_PORT === undefined ? undefined : Number(process.env.GNOME_MODEL_PORT);
+const label = process.env.GNOME_MODEL_LABEL || '';
 const requested = process.argv.slice(3);
 const selected = requested.length ? requested : ['front'];
-if (!kind || selected.some(view => !views[view])) {
+if (!kind || selected.some(view => !views[view]) || !/^[a-z0-9-]*$/.test(label) || (requestedPort !== undefined && (!Number.isInteger(requestedPort) || requestedPort < 1024 || requestedPort > 65535))) {
   console.error('usage: render-views.mjs <vehicle-kind> [front|side|rear|top ...]');
+  console.error('optional: GNOME_MODEL_LABEL=before GNOME_MODEL_PORT=5175');
   process.exit(2);
 }
 const vehicles = readFileSync(resolve(root, 'src/game/content/vehicles.ts'), 'utf8');
@@ -33,7 +36,7 @@ if (!chrome) {
   process.exit(3);
 }
 
-const previewName = `model-match-preview.html`;
+const previewName = `model-match-preview-${process.pid}.html`;
 const previewPath = resolve(root, previewName);
 const outDir = resolve(root, '.artifacts/model-match', kind);
 mkdirSync(outDir, {recursive: true});
@@ -55,9 +58,11 @@ async function waitFor(url) {
 
 let server;
 try {
-  if (!listening(5173)) {
-    server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', '5173'], {cwd: root, stdio: 'ignore'});
-  }
+  const port = requestedPort || Array.from({length: 20}, (_, i) => 5173 + i).find(candidate => !listening(candidate));
+  if (!port || listening(port)) throw new Error(`port ${port || '5173-5192'} is occupied; choose a free GNOME_MODEL_PORT`);
+  let serverError = '';
+  server = spawn(process.execPath, ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {cwd: root, stdio: ['ignore', 'ignore', 'pipe']});
+  server.stderr.on('data', chunk => { serverError += chunk; });
   writeFileSync(previewPath, `<!doctype html>
 <html><head><meta charset="utf-8"></head><body style="margin:0">
 <canvas id="c" width="960" height="720"></canvas>
@@ -80,17 +85,18 @@ await new Promise(resolve=>setTimeout(resolve,500));
 for(let i=0;i<8;i++){world.scene.render();await new Promise(resolve=>requestAnimationFrame(resolve));}
 document.body.dataset.ready='yes';
 </script></body></html>`);
-  await waitFor(`http://127.0.0.1:5173/${previewName}`);
+  try { await waitFor(`http://127.0.0.1:${port}/${previewName}`); }
+  catch (error) { throw new Error(`${error.message}${serverError ? `\n${serverError}` : ''}`); }
   for (const view of selected) {
     const stamp = Date.now();
-    const file = resolve(outDir, `${view}.png`);
+    const file = resolve(outDir, `${label ? `${label}-` : ''}${view}.png`);
     // A fresh profile avoids Chrome reusing a screenshot of the previous model.
     const profile = resolve(tmpdir(), `gnome-model-match-${stamp}`);
     const shot = spawnSync(chrome, [
       '--headless=new', '--disable-background-networking', '--hide-scrollbars',
       `--user-data-dir=${profile}`, '--window-size=960,720', '--virtual-time-budget=12000',
       `--screenshot=${file}`,
-      `http://127.0.0.1:5173/${previewName}?view=${view}&r=${stamp}`
+      `http://127.0.0.1:${port}/${previewName}?view=${view}&r=${stamp}`
     ], {encoding: 'utf8'});
     rmSync(profile, {recursive: true, force: true});
     const bytes = existsSync(file) ? statSync(file).size : 0;

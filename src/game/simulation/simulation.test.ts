@@ -29,8 +29,8 @@ test('player gun and laser stop at a mountain before a target behind it',()=>{
 test('IFF controls AI launch; missile damage stays identical across difficulty while aim can miss',()=>{
  for(const difficulty of ['Easy','Medium','Hard'] as const){
   const s=new Simulation(difficulty);s.units[0].z=100;s.human={x:0,z:100};s.board();s.units[1].x=0;s.units[1].yaw=Math.PI;s.units[1].aim=Math.PI;s.tick(.05,idle);
-  assert.ok(s.enemies[0].alert);assert.equal(s.humanHealth,100);assert.equal(s.missiles.length,1);assert.equal(s.missiles[0].damage,20);assert.equal(s.mounted!.shield,35);
-  step(s,1.3);assert.ok([35,15].includes(s.mounted!.shield));
+  assert.ok(s.enemies[0].alert);assert.equal(s.humanHealth,100);assert.equal(s.missiles.length,1);assert.equal(s.missiles[0].damage,18);assert.equal(s.mounted!.shield,35);
+  step(s,1.3);assert.ok([35,17].includes(s.mounted!.shield));
   s.iff='6707';const health=s.humanHealth;step(s,5);assert.equal(s.units[1].alert,false);assert.equal(s.enemies.length,0);assert.equal(s.missiles.length,0);assert.equal(s.humanHealth,health);
  }
 });
@@ -46,12 +46,12 @@ test('rocks hide nearby player; firing at an enemy alerts it beyond detection ra
 });
 test('missiles have travel time, can be dodged and hit rocks before the player',()=>{
  const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=110;enemy.cooldown=999;
- const shield=s.mounted!.shield;s.fireMissile(enemy,'CHUM');step(s,.2);assert.equal(s.mounted!.shield,shield);step(s,1.3);assert.equal(s.mounted!.shield,shield-20);assert.ok(s.events.some(e=>e.type==='impact'));
+ const shield=s.mounted!.shield;s.fireMissile(enemy,'CHUM');step(s,.2);assert.equal(s.mounted!.shield,shield);step(s,1.3);assert.equal(s.mounted!.shield,shield-18);assert.ok(s.events.some(e=>e.type==='impact'));
  const dodge=mounted();const shooter=dodge.units[1];shooter.x=0;shooter.z=110;shooter.cooldown=999;dodge.fireMissile(shooter,'CHUM');dodge.mounted!.x=120;step(dodge,2);assert.equal(dodge.mounted!.shield,35);
  const cover=mounted();const attacker=cover.units[1];attacker.x=-40;attacker.z=120;attacker.cooldown=999;cover.mounted!.x=-40;cover.mounted!.z=30;cover.fireMissile(attacker,'CHUM');step(cover,1.4);assert.equal(cover.mounted!.shield,35);assert.equal(cover.missiles.length,0);assert.ok(cover.events.some(e=>e.type==='impact'));
 });
 test('swept collision catches fast rockets; tactical defense fires two missiles',()=>{
- const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=60;enemy.cooldown=999;const p=s.fireMissile(enemy,'CHUM');p.vx=0;p.vy=0;p.vz=-4000;p.x=0;p.y=4;s.tick(.05,idle);assert.equal(s.mounted!.shield,15);assert.equal(s.missiles.length,0);
+ const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=60;enemy.cooldown=999;const p=s.fireMissile(enemy,'CHUM');p.vx=0;p.vy=0;p.vz=-4000;p.x=0;p.y=4;s.tick(.05,idle);assert.equal(s.mounted!.shield,17);assert.equal(s.missiles.length,0);
  const tactical=mounted();tactical.units[1].alive=false;tactical.units[2].x=0;tactical.units[2].z=130;tactical.units[2].yaw=Math.PI;tactical.units[2].aim=Math.PI;tactical.tick(.05,idle);assert.equal(tactical.missiles.length,2);assert.ok(tactical.missiles.every(m=>m.weapon==='SAG5T'));
 });
 test('waypoint and all enemies are both required; death cannot produce a win',()=>{const s=mounted();for(const u of s.enemies)s.damage(u,1000);s.tick(.05,idle);assert.equal(s.status,'running');s.mounted!.z=MISSION.waypoint.z;s.tick(.05,idle);assert.equal(s.status,'won');const lost=mounted();lost.waypoint=true;for(const u of lost.enemies)lost.damage(u,1000);lost.damage(lost.mounted,1000);lost.damage(null,1000);lost.tick(.05,idle);assert.equal(lost.status,'lost');});

@@ -23,7 +23,7 @@ test('mission briefing and its settings keep the selected mission untouched unti
   const sim=new Simulation('Medium',mission);
   const before=JSON.stringify({player:sim.player,units:sim.units,objectives:sim.objectiveStates});
   const heldInput={...idle,forward:true,fire1:true,fire2:true};
-  for(const panel of ['briefing','settings','briefing'])for(let i=0;i<120;i++)assert.equal(advanceSimulation(sim,panel,1/60,heldInput),0);
+ for(const panel of ['briefing','lab','settings','briefing'])for(let i=0;i<120;i++)assert.equal(advanceSimulation(sim,panel,1/60,heldInput),0);
   assert.equal(sim.time,0);
   assert.equal(JSON.stringify({player:sim.player,units:sim.units,objectives:sim.objectiveStates}),before);
   advanceSimulation(sim,null,1/60,idle);
@@ -35,6 +35,8 @@ test('mission briefing and its settings keep the selected mission untouched unti
 test('active missions cannot return to the launch console; results can return to mission selection',()=>{
  assert.equal(resolveMissionPanel(null,false,false),'briefing');
  assert.equal(resolveMissionPanel('settings',false,false),'settings');
+ assert.equal(resolveMissionPanel('lab',false,false),'lab');
+ assert.equal(resolveMissionPanel('lab',true,false),'map');
  assert.equal(resolveMissionPanel('briefing',true,false),'map');
  assert.equal(resolveMissionPanel('map',true,false),'map');
  assert.equal(resolveMissionPanel('settings',true,false),'settings');

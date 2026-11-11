@@ -63,8 +63,14 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  rightLeg:'M112 42h31v51h-31z M116 48h23 M116 55h23 M116 62h23 M116 69h23 M116 76h23 M116 83h23'
  });
  if(kind==='merc-cruiser')Object.assign(paths,{hull:'M69 35h22l4 20H65z',cockpit:'M67 10h26l-5 27H72z',leftWeapon:'M61 27h8v18h-8z',rightWeapon:'M91 27h8v18h-8z',leftLeg:'M68 45L25 27l-9 67h5l10-59 36 21M70 50L53 72l-3 34h5l4-31 15-17',rightLeg:'M92 45l43-18 9 67h-5l-10-59-36 21M90 50l17 22 3 34h-5l-4-31-15-17'});
- if(kind==='merc-aip'||kind==='union-aip')Object.assign(paths,{hull:'M12 77L80 44 148 77 80 89Z',cockpit:'M61 61L72 43H88L99 61 80 70Z',leftWeapon:'M35 69h10v12H35Z',rightWeapon:'M115 69h10v12h-10Z',leftLeg:'',rightLeg:''});
- if(kind==='merc-assault')Object.assign(paths,{
+ if(kind==='merc-aip'||kind==='union-aip'||kind==='scorp-aip')Object.assign(paths,{hull:'M12 77L80 44 148 77 80 89Z',cockpit:'M61 61L72 43H88L99 61 80 70Z',leftWeapon:'M35 69h10v12H35Z',rightWeapon:'M115 69h10v12h-10Z',leftLeg:'',rightLeg:''});
+ if(kind==='union-aip')Object.assign(paths,{
+  hull:'M8 77L28 68 51 65 63 57H97L109 65 132 68 152 77 143 82 111 79 96 91H64L49 79 17 82Z M54 71H106V81H54Z',
+  cockpit:'M64 56L72 46H88L96 56 92 71H68Z M72 49H88V64H72Z',
+  leftWeapon:'M28 68L45 65 57 70 53 85 36 83Z M45 80h13v8H45Z',
+  rightWeapon:'M132 68L115 65 103 70 107 85 124 83Z M102 80h13v8h-13Z',
+ });
+ if(kind==='merc-assault'||kind==='scorp-assault')Object.assign(paths,{
  hull:'M42 57l38-9 38 9-12 15H54z M54 57h52v9H54z',
  cockpit:'M64 39h32l8 14H56z M69 43h22v7H69z',
  leftWeapon:'M32 33h22v9H32z M29 37H16v6h24',rightWeapon:'M106 33h22v9h-22z M120 37h24v6h-13',

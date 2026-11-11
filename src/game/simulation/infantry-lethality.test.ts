@@ -7,12 +7,15 @@ import {type Difficulty} from '../settings.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 const step=(s:Simulation,seconds:number)=>{for(let i=0;i<seconds*60;i++)s.tick(1/60,idle);};
 function foot(difficulty:Difficulty='Easy'){const s=new Simulation(difficulty);s.units[0].x=100;s.units[0].z=-50;s.units[1].x=0;s.units[1].z=100;s.units[1].cooldown=999;s.iff='6707';return s;}
-test('different IFF contact is fatal standing or prone; matching IFF protects across factions',()=>{
+test('original enemy contact is fatal standing or prone even with matching IFF',()=>{
  for(const kind of ['merc-sentry','merc-tactical'] as const)for(const prone of [false,true])for(const same of [false,true]){
   const s=foot(),enemy=s.units[1];enemy.kind=kind;s.prone=prone;if(!same)s.iff='2620';s.human={x:enemy.x,z:enemy.z};s.tick(.016,idle);
-  if(same){assert.equal(s.status,'running');assert.equal(s.humanHealth,100);continue;}
   assert.equal(s.status,'lost');assert.equal(s.humanHealth,0);assert.equal(s.events.filter(e=>e.type==='lose').length,1);s.tick(.016,idle);assert.equal(s.events.filter(e=>e.type==='lose').length,1);
  }
+});
+test('friendly vehicle contact does not kill friendly infantry when IFF differs',()=>{
+ const s=foot(),friendly=s.units[0];friendly.pilot=true;friendly.x=0;friendly.z=100;friendly.iff='7777';s.units[1].pilot=false;s.human={x:friendly.x,z:friendly.z};s.tick(.016,idle);
+ assert.equal(s.status,'running');assert.equal(s.humanHealth,100);
 });
 test('empty and destroyed vehicles do not crush infantry, and empty vehicles remain boardable',()=>{
  const s=foot(),enemy=s.units[1];enemy.pilot=false;s.human={x:enemy.x,z:enemy.z};s.tick(.016,idle);assert.equal(s.mounted,enemy);assert.equal(s.status,'running');assert.equal(enemy.alert,false);assert.equal(s.humanHealth,100);

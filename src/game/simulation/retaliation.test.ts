@@ -31,11 +31,18 @@ test('retaliation keeps its attacker for three seconds despite alternating incom
  s.time+=.51;s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,second.id);
  s.damage(enemy,.1,'hull',undefined,s.mounted,'FLECH');assert.equal(enemy.aggressorId,second.id);
 });
-test('a dead, unoccupied or matching-IFF attacker releases retaliation before the timer expires',()=>{
- for(const invalid of ['dead','unoccupied','iff'] as const){const {s,enemy}=setup(),first=s.units[1],second=s.units[2];
- s.damage(enemy,1,'hull',undefined,first,'FLECH');if(invalid==='dead')first.alive=false;if(invalid==='unoccupied')first.pilot=false;if(invalid==='iff')first.iff=enemy.iff;
+test('a dead or unoccupied attacker releases retaliation, while matching IFF retains the attacker',()=>{
+ for(const invalid of ['dead','unoccupied'] as const){const {s,enemy}=setup(),first=s.units[1],second=s.units[2];
+ s.damage(enemy,1,'hull',undefined,first,'FLECH');if(invalid==='dead')first.alive=false;if(invalid==='unoccupied')first.pilot=false;
  s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,second.id);assert.ok(s.time<3);
  }
+ const {s,enemy}=setup(),first=s.units[1],second=s.units[2];s.damage(enemy,1,'hull',undefined,first,'FLECH');first.iff=enemy.iff;s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,first.id);
+});
+test('a disguised player can provoke weapon fire from the original enemy',()=>{
+ const {s,enemy}=setup();s.mounted!.x=0;s.mounted!.z=245;enemy.z=300;enemy.yaw=enemy.aim=Math.PI;enemy.iff='1234';
+ assert.ok(s.changeIff(enemy.iff));tick(s,.1);assert.equal(enemy.alert,false);
+ s.damage(enemy,2,'hull',undefined,s.mounted,'RAID');assert.equal(enemy.aggressorId,'player');tick(s,3);
+ assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy));
 });
 
 test('IFF editing preserves leading zeroes and reset restores mission IFF without changing allies or vehicle resources',()=>{

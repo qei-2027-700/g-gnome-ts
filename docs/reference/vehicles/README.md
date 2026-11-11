@@ -11,12 +11,13 @@
 | [union-tactical/](union-tactical/README.md) | Union Tactical（Rampage）の機内資料 |
 | [merc-tactical/](merc-tactical/README.md) | Merc Tacticalの正面識別と2-4の機内資料 |
 | [merc-assault/](merc-assault/README.md) | Merc Assault（Venom）の横向き画像、蜘蛛のような4本脚、黄色のRUPPレーザー |
+| [scorp-assault/](scorp-assault/README.md) | Scorp Assaultの機内画像に写る装備と、ユーザー指定の脱出装置・緑色LRIP |
 | [union-asv/](union-asv/README.md) | Union ASVの機内資料 |
 | [scope-asv/](scope-asv/README.md) | Scorp ASVの機内・LAB・VISOM画面、両軍ASVの共通仕様 |
 | [scope-sentry/](scope-sentry/README.md) | Scorp Sentry HAWCのカード正面と機内フレーム |
 | [scorp-tactical/](scorp-tactical/README.md) | Scorp Tactical Defense HAWCの3-4における正面・背面資料 |
 | [merc-aip/](merc-aip/README.md) | Merc AIP（Razor）の緑の菱形・低空浮遊とMerc Cruiser（WidowMaker）の資料 |
-| [union-aip/](union-aip/README.md) | 4-2のUnion AIP 2機による電力プラント攻撃。外観・性能は試作値 |
+| [union-aip/](union-aip/README.md) | 3-2の機内・背面画像と4-2の電力プラント攻撃。性能は試作値 |
 | [merc-meson-tower/](merc-meson-tower/README.md) | Mercミーゾンタワーのマニュアル・ユーザー画像による外観と周辺配置・GAUS30・共通の給電と生存脱出 |
 | [scorp-meson-tower/](scorp-meson-tower/README.md) | 4-2開始画面のScorpミーゾン・ガードタワー。緑・青緑の胴体と斜めの支持材。Merc側とは別外観 |
 | [scorp-rocket-tower/](scorp-rocket-tower/README.md) | Scorpロケットタワーの接写 |

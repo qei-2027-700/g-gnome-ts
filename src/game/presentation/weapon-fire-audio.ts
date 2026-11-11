@@ -5,10 +5,10 @@ export const MISSILE_FIRE_VOICES:Record<string,WeaponFireVoice|undefined>={
  SREM:'highWhee',CHUM:'highWhee',PUG:'highWhee',SAG5T:'pppBowWhee',UNKPA:'pppBowWhee',VISOM:'pppBowWhee',TCROCK:'bowWheeGggo',
 };
 export const LASER_FIRE_VOICES:Record<string,WeaponFireVoice|undefined>={
- P2MEC:'djon',CETI:'djon',TAR12:'denDen',HOMP11:'denDen',RAID:'djan','FIL-30':'djan',
+ P2MEC:'djon','ARC-M':'djon',CETI:'djon',LRIP:'djon',TAR12:'denDen',HOMP11:'denDen',RAID:'djan','FIL-30':'djan',
 };
 export const GUN_FIRE_VOICES:Record<string,WeaponFireVoice|undefined>={
- FLECH:'hataHata',TCREAP:'durrrrn',zWASP:'kakaka',DASY:'garara',
+ FLECH:'hataHata',TCREAP:'durrrrn','3cREAP':'durrrrn',zWASP:'kakaka',DASY:'garara',
 };
 // Missile classes match the legacy launch level. The others sit near the old oscillator shot.
 export const WEAPON_FIRE_GAIN:Record<WeaponFireVoice,number>={

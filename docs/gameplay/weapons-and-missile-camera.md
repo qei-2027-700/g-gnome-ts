@@ -58,6 +58,8 @@
 
 ScorpロケットタワーのSREMとUNKPAは例外とする。目標の水平速度が`ROCKET_TOWER_STILL_SPEED`（0.75m/s、試作値）以下のとき、発射のばらつきを付けず、追尾も目標の実位置へ向ける。停止した相手には両弾とも命中する。動いている相手には従来のばらつきと旋回上限を残す。弾速・威力・寿命・残弾は変えない。1-5でUNKPAの追尾倍率を0にした塔は、この補正でも旋回せず直進する。
 
+Merc・Scorpのミーゾン・ガードタワーは、ロケットタワーと同じく、目標が塔から40m未満ならAIが射撃しない。40m以上で再び射撃対象にできる。距離は`TOWER_MINIMUM_ATTACK_RANGE`の共通設定で、原作の実測値ではなく試作値。GAUS30の充填量による射程とは別の判定で、武器の射程・威力・弾速は変えない。
+
 脱出して空中にいる人物に対しては、水平±0.14rad・垂直±0.09rad、追尾旋回0.045rad/s、位置更新0.75秒とし、上下・横移動へ追いつきにくくする。敵AI・味方AIに同じ制約を使い、プレイヤーとNPCの脱出兵を同じ基準で扱う。ばらつきは発射ごとに変わり、検証時には同じ条件から再現できる。値はユーザーの精度調整依頼に合わせた試作値で、`AI_MISSILE_ACCURACY`に置く。プレイヤーの射撃入力による照準・追尾、弾速・威力・寿命・弾数は維持する。無敵時間や命中の取り消しは加えず、実際に直撃した弾は通常どおり処理する。
 
 VISOMは以下の手動誘導を維持し、自動追尾を適用しない。GASHRやTCREAPなど、ミサイル以外の飛翔弾にも適用しない。
@@ -150,7 +152,11 @@ Merc Tactical Defense HAWCのRAIDは、コックピット直下の中央銃口�
 
 カスタムキーにも適用し、VISOM誘導中は従来どおり別の射撃を行わない。射撃キーを押したまま搭乗・降機した場合は、一度離してから新しい武器で発射する。0.5秒は長押し入力の繰り返し間隔であり、武器定義の速度・威力・射程を書き換えるものではない。設定元は`HELD_TRIGGER_INTERVAL`。
 
-Darken Tactical DefenseとMerc Assaultは機体一覧に登録済み。Scorp AssaultとUnion Assaultは未登録だが、`LASER_HOLD_FIRE_HAWCS`に機種IDを予約している。Assaultを既存のSentryやScorp Tacticalへ読み替えず、Merc Tactical Defenseにも例外を適用しない。Darken Tactical DefenseのHOMP11は黄色で描画し、飛翔速度をRUPPなどの黄色レーザーと同じ72 m/sにする。READY表示を待たずに発射でき、長押しでは現在の仮値である0.25秒間隔で連射する。
+Darken Tactical Defense、Merc Assault、Scorp Assaultは機体一覧に登録済み。Union Assaultは未登録だが、`LASER_HOLD_FIRE_HAWCS`に機種IDを予約している。Assaultを既存のSentryやScorp Tacticalへ読み替えず、Merc Tactical Defenseにも例外を適用しない。Darken Tactical DefenseのHOMP11は黄色で描画し、飛翔速度をRUPPなどの黄色レーザーと同じ72 m/sにする。READY表示を待たずに発射でき、長押しでは現在の仮値である0.25秒間隔で連射する。
+
+Scorp Assault HAWCの[機内画像](<../../assets/map/3-5/sc- 2026-11-12 0.43.29.png>)に合わせ、装備をzWASP、LRIP、VISOM、SREMの順にした。LRIPの発射体と発射光は緑色。LRIPの威力・射程・充填速度は画像から確定できないため、現在は試作値。脱出装置があることはユーザー指定。
+
+3-2のUnion AIPは[開始画像](../../assets/map/3-2/3-2-union-aip.png)に合わせ、ARC-Mと3cREAPを搭載し、3cREAPの初期弾数を220とした。両武器の性能値は未確認の仮値で、ARC-MにはP2MEC、3cREAPにはTCREAPの値を一時的に使う。
 
 ## 遮蔽物・機体による防護（2026-10-24）
 

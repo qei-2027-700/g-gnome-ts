@@ -1,4 +1,5 @@
 import {MACHINE_GUNS,weaponMountCount} from '../content/weapons.ts';
+import {TOWER_MINIMUM_ATTACK_RANGE} from '../content/vehicles.ts';
 import {test} from 'node:test';import assert from 'node:assert/strict';import {Simulation,makeUnit,distance,type Input} from './simulation.ts';import {MISSION_3_3} from '../content/missions/mission-3-3.ts';import {crossesBuilding,buildingContact} from './battlefield.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};const step=(s:Simulation,n:number,input=idle)=>{for(let i=0;i<n;i++)s.tick(1/60,input);};
 test('3-3 base lies beyond red minefield, with two functional towers and three empty Scorp HAWCs',()=>{const s=new Simulation('Easy',MISSION_3_3);assert.ok(s.mission.base!.x<s.mission.minefields![0].x-s.mission.minefields![0].width/2);assert.equal(s.units.filter(u=>u.kind==='scorp-rocket-tower').length,2);assert.deepEqual(s.mission.base!.buildings.map(b=>b.kind),['command','mine-control']);assert.ok(s.units.filter(u=>u.kind==='scorp-rocket-tower').every(u=>u.x>Math.max(...s.mission.base!.buildings.map(b=>b.x))));assert.equal(s.units.filter(u=>u.kind==='scorp-sentry'&&!u.pilot).length,1);assert.equal(s.units.filter(u=>u.kind==='scorp-tactical'&&!u.pilot).length,2);assert.ok(s.mines.length>70);assert.equal(new Simulation().mines.length,0);assert.equal(new Simulation().mission.base,undefined);
@@ -36,6 +37,19 @@ test('rocket tower cannot fire or consume ammo inside minimum range, and resumes
 });
 test('rocket tower minimum range includes its boundary and applies to infantry targets',()=>{
  for(const range of [39.9,40]){const def=structuredClone(MISSION_3_3);delete def.startMountedUnitId;def.player={x:0,z:0};def.units=[{id:'tower',kind:'scorp-rocket-tower',x:0,z:range,pilot:true}];def.minefields=[];def.base=undefined;def.rocks=[];const s=new Simulation('Easy',def),tower=s.units[0];tower.yaw=Math.PI;tower.aim=Math.PI;s.tick(1/60,idle);assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===tower),range===40);}
+});
+test('Merc and Scorp Meson towers stop firing inside their shared minimum range and resume beyond it',()=>{
+ for(const kind of ['merc-meson-tower','scorp-meson-tower'] as const){
+  for(const mounted of [false,true])for(const range of [TOWER_MINIMUM_ATTACK_RANGE-.1,TOWER_MINIMUM_ATTACK_RANGE]){
+   const def=structuredClone(MISSION_3_3);def.player={x:0,z:0};def.units=[...(mounted?[{id:'own',kind:'union-asv' as const,x:0,z:0,pilot:false}]:[]),{id:'tower',kind,x:0,z:range,pilot:true}];if(mounted)def.startMountedUnitId='own';else delete def.startMountedUnitId;def.minefields=[];def.base=undefined;def.rocks=[];
+   const s=new Simulation('Easy',def),tower=s.units.find(u=>u.id==='tower')!;tower.yaw=Math.PI;tower.aim=Math.PI;s.tick(1/60,idle);
+   assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===tower),range===TOWER_MINIMUM_ATTACK_RANGE,`${kind} at ${range}m, mounted=${mounted}`);
+  }
+  const def=structuredClone(MISSION_3_3);delete def.startMountedUnitId;def.player={x:0,z:0};def.units=[{id:'tower',kind,x:0,z:30,pilot:true}];def.minefields=[];def.base=undefined;def.rocks=[];
+  const s=new Simulation('Easy',def),tower=s.units[0]!;tower.yaw=Math.PI;tower.aim=Math.PI;step(s,180);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
+  s.human.z=-30;s.events=[];s.tick(1/60,idle);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower));
+  s.human.z=0;tower.cooldown=0;s.missiles=[];s.events=[];s.tick(1/60,idle);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
+ }
 });
 
 test('lethal missile impact ejects a living tower operator once; empty towers eject nobody',()=>{

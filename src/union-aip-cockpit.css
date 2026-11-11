@@ -1,0 +1,44 @@
+.union-aip-shell{display:none}
+.union-aip-cockpit #cockpit,.union-aip-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--union-aip-width);height:var(--union-aip-height);transform:translate(-50%,-50%);container-type:size}
+.union-aip-cockpit #world{left:calc((100% - var(--union-aip-width))/2);top:calc((100% - 38px - var(--union-aip-height))/2);width:var(--union-aip-width);height:var(--union-aip-height)}
+.union-aip-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden;color:#59ff26;font-family:"Courier New",monospace}
+.union-aip-cockpit .union-aip-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.union-aip-cockpit .cockpit-shell,.union-aip-cockpit .union-tactical-shell,.union-aip-cockpit .darken-sentry-shell,.union-aip-cockpit .scorp-sentry-shell,.union-aip-cockpit .scorp-tactical-shell,.union-aip-cockpit .merc-reference,.union-aip-cockpit .merc-assault-reference,.union-aip-cockpit .meson-reference,.union-aip-cockpit .scorp-meson-reference,.union-aip-cockpit .asv-cockpit-shell,.union-aip-cockpit .scorp-cockpit-shell,.union-aip-cockpit .cockpit-reference-metal,.union-aip-cockpit .cockpit-well-underlay,.union-aip-cockpit .cockpit-grain,.union-aip-cockpit .overhead-display,.union-aip-cockpit #cockpit>.canopy,.union-aip-cockpit #cockpit>.pillar,.union-aip-cockpit #cockpit>.dashboard,.union-aip-cockpit #cockpit>.dash-rim{display:none}
+.union-aip-cockpit .instrument{position:absolute;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;z-index:2}
+.union-aip-cockpit .instrument .micro,.union-aip-cockpit .holo-grid,.union-aip-cockpit #pingLight{display:none}
+.union-aip-cockpit .weapon-panel{left:8%;top:7.3%;width:28%;height:11%;min-height:0;padding:0;border:0;background:none;box-shadow:none;color:#60ff2f;font:2.1cqw/1.2 "Courier New",monospace;z-index:3}
+.union-aip-cockpit .weapon-panel>div{display:flex;align-items:center;gap:3%;height:50%;white-space:nowrap}
+.union-aip-cockpit .weapon-panel>div[hidden]{display:none}
+.union-aip-cockpit .weapon-panel i{order:0;padding:0 .15em;margin:0;border:1px solid #54ff20;font-size:1.7cqw}
+.union-aip-cockpit .weapon-panel b{order:1;min-width:37%;font-weight:400}
+.union-aip-cockpit .weapon-panel span[id^=ammo]{order:3;margin-left:auto;float:none;font-size:1.7cqw}
+.union-aip-cockpit .weapon-panel .asv-weapon-symbol{display:none}
+.union-aip-cockpit .weapon-panel .charge-meter{order:2;display:block;position:relative;float:none;flex:1;height:1.5cqw;min-width:26%;padding:0;margin:0;border:2px solid #39f820;border-radius:1cqw;background:#001600}
+.union-aip-cockpit #laserChargeFill{display:block;height:100%;background:#48ff20;transform-origin:left}
+.union-aip-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
+.union-aip-cockpit .iff-display{left:45.5%;top:8.8%;width:8.5%;height:4.4%;right:auto;padding:0;transform:none;display:flex;align-items:center;justify-content:center;font-size:0;border:0;border-radius:0;background:#000;box-shadow:none;z-index:3}
+.union-aip-cockpit .iff-display strong{margin:0;color:#55ff2c;font:2.3cqw "Courier New",monospace}
+.union-aip-cockpit .target-instrument{left:0;bottom:0;width:25%;height:34%}
+.union-aip-cockpit .self-instrument{right:0;bottom:0;width:25%;height:34%}
+.union-aip-cockpit #targetHologram,.union-aip-cockpit #selfHologram{left:18%;top:20%;width:68%;height:64%;filter:drop-shadow(0 0 2px #32cd25)}
+.union-aip-cockpit #targetData{left:18%;right:12%;bottom:5%;font-size:.8cqw;line-height:1.2}
+.union-aip-cockpit #clearTarget{top:5%;right:5%;font-size:1cqw;color:#a3ff67;background:#071509}
+.union-aip-cockpit .vertical-meter,.union-aip-cockpit #targetShieldMeter{position:absolute;right:8%;left:auto;bottom:6%;height:74%;width:5%;border:1px solid #2cb934;background:#00100c;display:flex;align-items:flex-end;transform:none}
+.union-aip-cockpit #targetShieldMeter{left:8%;right:auto}
+.union-aip-cockpit .vertical-meter>div,.union-aip-cockpit #targetShieldFill{width:100%;background:#51ff1d}
+.union-aip-cockpit .asv-energy-meter{display:block;position:absolute;left:8%;bottom:30%;width:5%;height:48%;border:1px solid #32b63b;background:#00100c}
+.union-aip-cockpit #asvEnergyFill{position:absolute;bottom:0;left:0;width:100%;background:#55ff22}
+.union-aip-cockpit .radar-instrument{left:33%;bottom:1%;width:34%;height:20%;overflow:hidden;background:#000;clip-path:ellipse(49% 49% at 50% 50%)}
+.union-aip-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.union-aip-cockpit .asv-aim-ladder{display:block;position:absolute;left:37%;top:39%;width:3%;height:23%;z-index:3}
+.union-aip-cockpit .throttle-meter{left:60%;top:39%;width:1.5%;height:22%;border:2px solid #f4ee2a;background:#030500}
+.union-aip-cockpit .throttle-meter>span{display:none}
+.union-aip-cockpit #throttleFill{background:#f4eb22}
+.union-aip-cockpit .compass{left:50%;top:58%;width:19%;color:#4eff25;font:1.1cqw monospace}
+.union-aip-cockpit .compass .ticks{display:block;width:100%;overflow:hidden;white-space:nowrap;font-size:1.7cqw;letter-spacing:0}
+.union-aip-cockpit .reticle{width:4cqw;height:4cqw;border:0;background:none}
+.union-aip-cockpit .telemetry,.union-aip-cockpit .objectives,.union-aip-cockpit #squadOrders,.union-aip-cockpit #controls,.union-aip-cockpit #viewLabel{display:none}
+.union-aip-cockpit .topbar{position:static;height:0;padding:0;border:0;background:none}
+.union-aip-cockpit .topbar .brand,.union-aip-cockpit .topbar .mission-id{display:none}
+.union-aip-cockpit .topbar nav{position:fixed;left:8px;bottom:7px;display:flex;gap:5px;z-index:30}
+.union-aip-cockpit .topbar nav button{padding:4px 7px;font-size:9px;background:#10170d;border-color:#394731}

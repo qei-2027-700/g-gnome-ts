@@ -42,7 +42,29 @@ export function makeBase(scene:Scene,mission:MissionDefinition){const material=(
    const root=new TransformNode(`facility-${id}`,scene);root.metadata={facilityId:id};for(const mesh of scene.meshes)if(!before.has(mesh))mesh.parent=root;
   }
  }
+ if(mission.vehicleElevator){
+  const e=mission.vehicleElevator,metal=material('vehicle-elevator-deck','#737977'),rim=material('vehicle-elevator-rim','#b9a76a'),shaft=material('vehicle-elevator-shaft','#303a37');
+  const root=new TransformNode('vehicle-elevator',scene);
+  const deck=MeshBuilder.CreateBox('vehicle-elevator-deck',{width:e.width,height:.8,depth:e.depth},scene);deck.position.set(e.x,.4,e.z);deck.material=metal;deck.parent=root;
+  for(const side of [-1,1]){
+   const rail=MeshBuilder.CreateBox('vehicle-elevator-rail',{width:.8,height:1.2,depth:e.depth},scene);rail.position.set(e.x+side*e.width/2,.7,e.z);rail.material=rim;rail.parent=root;
+   const track=MeshBuilder.CreateBox('vehicle-elevator-track',{width:1.4,height:.12,depth:e.depth*.8},scene);track.position.set(e.x+side*e.width*.28,.87,e.z);track.material=shaft;track.parent=root;
+  }
+ }
  if(mission.minefields?.length){const red=material('mine-area-red','#de1717');red.alpha=.65;red.disableLighting=true;red.emissiveColor=Color3.FromHexString('#e52720');const edge=material('mine-area-border','#fb3028');edge.emissiveColor=Color3.FromHexString('#9d1912');
- for(const field of mission.minefields){const area=MeshBuilder.CreateGround('red-minefield',{width:field.width,height:field.depth},scene);area.position.set(field.x,.32,field.z);area.material=red;for(const side of [-1,1]){for(const [w,d,x,z] of [[field.width,.5,field.x,field.z+side*field.depth/2],[.5,field.depth,field.x+side*field.width/2,field.z]]){const border=MeshBuilder.CreateGround('minefield-border',{width:w,height:d},scene);border.position.set(x,.36,z);border.material=edge;}for(let i=0;i<9;i++){const post=MeshBuilder.CreateCylinder('minefield-warning-post',{height:1.4,diameter:.16,tessellation:4},scene);post.position.set(field.x-field.width/2+i*field.width/8,.7,field.z+side*field.depth/2);post.material=edge;}}}
+ for(const field of mission.minefields){
+  const before=new Set(scene.meshes);
+  if(field.visual==='markers')for(const mine of field.mines){
+   const mark=MeshBuilder.CreateGround('minefield-red-mark',{width:3.5,height:2.2},scene);
+   mark.position.set(mine.x,.34,mine.z);mark.material=red;
+  }else{
+   const area=MeshBuilder.CreateGround('red-minefield',{width:field.width,height:field.depth},scene);area.position.set(field.x,.32,field.z);area.material=red;
+   for(const side of [-1,1]){
+    for(const [w,d,x,z] of [[field.width,.5,field.x,field.z+side*field.depth/2],[.5,field.depth,field.x+side*field.width/2,field.z]]){const border=MeshBuilder.CreateGround('minefield-border',{width:w,height:d},scene);border.position.set(x,.36,z);border.material=edge;}
+    for(let i=0;i<9;i++){const post=MeshBuilder.CreateCylinder('minefield-warning-post',{height:1.4,diameter:.16,tessellation:4},scene);post.position.set(field.x-field.width/2+i*field.width/8,.7,field.z+side*field.depth/2);post.material=edge;}
+   }
+  }
+  const root=new TransformNode(`minefield-${field.id}`,scene);for(const mesh of scene.meshes)if(!before.has(mesh))mesh.parent=root;
+ }
  }
 }

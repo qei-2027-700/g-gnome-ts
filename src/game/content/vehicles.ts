@@ -2,6 +2,8 @@ import type {
   VehicleWeapon
 } from './weapons.ts';
 export type Faction = 'union' | 'merc' | 'darken' | 'scorp';
+// Fixed towers do not fire at targets inside this provisional close range.
+export const TOWER_MINIMUM_ATTACK_RANGE=40;
 export type VehicleSpec={
   missileHomingScale?:Partial<Record<VehicleWeapon,
   number>>;powerSupply?:'external';boardable?:boolean;ejectionSeat?:boolean;category?:'vehicle'|'tower'|'hovercraft';hoverHeight?:number;mineDetectorRange?:number;name:string;jp:string;faction:Faction;speed:number;shield:number;energy:number;armor:number;height:number;passengerCapacity:number;color:string;weapons:readonly VehicleWeapon[
@@ -518,6 +520,7 @@ const BASE_VEHICLES = {
     initialAmmo:{
     },
     ai:{
+      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
       detection:1000,
       strafe:0,
       keepMoving:false,
@@ -549,6 +552,7 @@ const BASE_VEHICLES = {
     initialAmmo:{
     },
     ai:{
+      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
       detection:1000,
       strafe:0,
       keepMoving:false,
@@ -584,7 +588,7 @@ const BASE_VEHICLES = {
       UNKPA:1.2
     },
     ai:{
-      minimumRange:40,
+      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
       detection:280,
       strafe:0,
       keepMoving:false,
@@ -616,9 +620,11 @@ export function pitchDarkenTactical(localY:number,localZ:number){
 }
 export const VEHICLES={...BASE_VEHICLES,
  // Rear view, torso width = 1. Pods are 1.15 wide at x 2.05, so the inner gap is about 2.95. The head sits on the rear top of the dark center. Metres use the 7.9 m card height as a prototype scale.
- 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:.72,h:1.8,d:.85,y:.4,z:.05},cockpit:{w:.5,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:2.05,y:.7,z:.35},legX:1.95,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:.9,h:3.5,d:3.4,y:1.75,z:.85}}},
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1.05,h:1.8,d:1.05,y:.4,z:.05},cockpit:{w:.58,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:1.5,y:.7,z:.35},legX:1.5,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:1.15,h:3.5,d:3.4,y:1.75,z:.85}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
+ 'scorp-aip':{...BASE_VEHICLES['merc-aip'],name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
+ 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80}},
 } as const satisfies Record<string,VehicleDefinition>;
 export type VehicleKind=keyof typeof VEHICLES;
 type VehicleDataKey='shape'|'gait'|'drive';

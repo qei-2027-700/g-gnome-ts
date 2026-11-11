@@ -5,6 +5,50 @@ import {World} from './renderer.ts';
 import {Simulation,makeUnit} from '../simulation/simulation.ts';
 import type {FacilityType} from '../simulation/facilities.ts';
 import {MISSION} from '../content/mission-1-1.ts';
+import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
+import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
+test('3-2 ground shield display shares its collision footprint and disappears with the power plant',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_2),world=new World({} as HTMLCanvasElement,sim,engine),shield=MISSION_3_2.groundShields![0]!;
+  const mesh=world.scene.getMeshByName(`ground-shield-${shield.id}`)!;
+  assert.ok(mesh);
+  assert.deepEqual([mesh.position.x,mesh.position.z],[shield.x,shield.z]);
+  const bounds=mesh.getBoundingInfo().boundingBox;
+  assert.ok(Math.abs(bounds.maximum.x-bounds.minimum.x-shield.width)<.01);
+  assert.ok(Math.abs(bounds.maximum.z-bounds.minimum.z-shield.depth)<.01);
+  assert.equal(world.scene.meshes.filter(item=>item.name==='red-minefield'||item.name==='minefield-red-mark'||item.name==='minefield-border'||item.name==='minefield-warning-post'||item.name==='detected-mine').length,0);
+  assert.equal(world.scene.transformNodes.filter(node=>node.name.startsWith('minefield-')).length,0);
+  const plant=sim.facilities.find(f=>f.id===shield.powerPlantId)!;
+  sim.damageFacility(plant,plant.health,{x:plant.x,y:1,z:plant.z});world.update(0);
+  assert.equal(mesh.isEnabled(),false);
+ }finally{engine.dispose();}
+});
+test('3-4 elevator appears and mine control destruction hides the minefield and emits smoke',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_4),world=new World({} as HTMLCanvasElement,sim,engine);
+  const elevator=world.scene.getTransformNodeByName('vehicle-elevator');
+  const minefield=world.scene.getTransformNodeByName('minefield-ur-alr-approach');
+  assert.ok(elevator?.getChildMeshes().some(mesh=>mesh.name==='vehicle-elevator-deck'));
+  assert.equal(minefield?.isEnabled(),true);
+  assert.equal(minefield?.getChildMeshes().filter(mesh=>mesh.name==='minefield-red-mark').length,MISSION_3_4.minefields![0]!.mines.length);
+  assert.ok(!minefield?.getChildMeshes().some(mesh=>mesh.name==='red-minefield'));
+  const control=sim.facilities.find(f=>f.id==='ur-alr-mine-control')!;
+  sim.damageFacility(control,control.health,{x:control.x,y:3,z:control.z});
+  world.update(.3);
+  assert.equal(minefield?.isEnabled(),false);
+  assert.ok(world.scene.getMeshByName('mine-control-smoke'));
+  assert.equal(world.rigs.has('kylie-td'),false);
+  const waypoint=MISSION_3_4.waypoints.find(w=>w.id===3)!;
+  sim.mounted!.x=waypoint.x;sim.mounted!.z=waypoint.z;
+  sim.tick(1/60,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});
+  world.update(1/60);
+  assert.ok(world.rigs.has('kylie-td'));
+  assert.ok(world.rigs.has('sheridan-asv'));
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
 test('Darken Sentry keeps its narrow body, blue fin and two green weapon pods',async()=>{
  const {VEHICLE_SHAPES}=await import('../content/vehicles.ts');
  const {hologramSvg}=await import('./hologram.ts');
@@ -72,10 +116,15 @@ test('Darken Tactical Defense has gold legs, silver shoulder pods and its own ho
   const pods=rig.root.getChildMeshes().filter(mesh=>mesh.name==='weapon pod');assert.equal(pods.length,2);assert.ok(pods[0].position.x*pods[1].position.x<0);
   assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker pod red grille').length,6);assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker broad gold foot').length,2);assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker dark sole').length,2);
   assert.equal(unit.spec.speed,67.5);assert.equal(unit.spec.shield,50);assert.equal(unit.spec.energy,1500);assert.equal(unit.spec.height,7.9);
-  assert.notEqual(hologramSvg('darken-tactical'),hologramSvg('merc-tactical'));assert.ok(hologramSvg('darken-tactical').includes('M14 18h36v46H14z'));assert.equal(rig.root.getChildMeshes().some(mesh=>mesh.name==='shoulder crossbar'),false);
+  assert.notEqual(hologramSvg('darken-tactical'),hologramSvg('merc-tactical'));assert.ok(hologramSvg('darken-tactical').includes('M14 18h36v46H14z'));
+  const shape=VEHICLE_SHAPES['darken-tactical'],yokes=rig.root.getChildMeshes().filter(mesh=>mesh.name==='stalker shoulder yoke');
+  assert.equal(yokes.length,2);
+  for(const yoke of yokes){const extent=yoke.getBoundingInfo().boundingBox.extendSize.x,center=Math.abs(yoke.position.x);assert.ok(center-extent<shape.hull.w/2&&center+extent>shape.weapon.x-shape.weapon.w/2);}
+  const pelvis=rig.root.getChildMeshes().find(mesh=>mesh.name==='stalker pelvis bridge')!;assert.ok(pelvis.getBoundingInfo().boundingBox.extendSize.x>shape.legX);
+  assert.ok(shape.weapon.x<1.6);assert.equal(shape.weapon.x,shape.legX);
   world.update(.016);assert.ok(Math.abs(rig.torso.rotation.x-DARKEN_TACTICAL_HUNCH)<1e-8);assert.equal(rig.root.rotation.x,0);assert.ok(rig.knees.every(knee=>knee.rotation.x< -1.5));assert.ok(Math.abs(rig.knees[0].rotation.x-rig.knees[1].rotation.x)<1e-6);assert.ok(rig.legs[0].rotation.x>.5);assert.ok(Math.abs(rig.legs[0].rotation.x+rig.knees[0].rotation.x+rig.feet[0].rotation.x)<1e-8);
   for(const foot of rig.feet){foot.computeWorldMatrix(true);const at=foot.getAbsolutePosition();assert.ok(at.z>unit.z+DARKEN_TACTICAL_HIP_Z+.5);assert.ok(Math.abs(at.y-.225)<.05);assert.ok(Math.abs(at.z-rig.feet[0].getAbsolutePosition().z)<1e-4);}
-  const shape=VEHICLE_SHAPES['darken-tactical'];assert.equal(intersectParts(unit,{x:shape.legX,y:.4,z:unit.z+2.2},{x:shape.legX,y:.4,z:unit.z-.8})?.part,'rightLeg');
+  assert.equal(intersectParts(unit,{x:shape.legX,y:.4,z:unit.z+2.2},{x:shape.legX,y:.4,z:unit.z-.8})?.part,'rightLeg');
   const cockpit=VEHICLE_SHAPES['darken-tactical'].cockpit,head=pitchDarkenTactical(cockpit.y,cockpit.z);assert.equal(intersectParts(unit,{x:0,y:head.y,z:unit.z+head.z+6},{x:0,y:head.y,z:unit.z+head.z-2})?.part,'cockpit');
   world.mode=2;sim.fire(1);for(const event of sim.events)world.event(event);world.update(.016);
   const bolt=world.scene.meshes.find(mesh=>mesh.metadata?.weapon==='HOMP11'&&mesh.metadata.visual==='yellow-laser')!;assert.ok(bolt);
@@ -791,7 +840,7 @@ test('a thin cliff is the same box from both width edges and shares one texture'
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{
   const sim=new Simulation();sim.units=[];sim.mission.base=undefined;sim.mission.rocks=[];
-  sim.mission.terrain={...sim.mission.terrain,ridgeStyle:'rocky',biome:'desert',peaks:[],cliffs:[{id:'thin-cliff',x:40,z:30,width:21,depth:80,height:100},{id:'second-cliff',x:-80,z:30,width:21,depth:40,height:60}]};
+  sim.mission.terrain={...sim.mission.terrain,ridgeStyle:'rocky',biome:'desert',peaks:[],cliffs:[{id:'thin-cliff',x:40,z:30,width:21,depth:80,height:100},{id:'second-cliff',x:-80,z:30,width:21,depth:40,height:60},{id:'sloped-cliff',x:0,z:120,width:60,depth:80,height:75,surface:'slope'}]};
   const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);
   const mesh=world.scene.getMeshByName('thin-cliff')!,other=world.scene.getMeshByName('second-cliff')!;
   assert.equal(mesh.metadata.terrainObstacle,'thin-cliff');assert.equal(mesh.material,other.material);
@@ -803,9 +852,47 @@ test('a thin cliff is the same box from both width edges and shares one texture'
   for(let i=0;i<positions.length;i+=3){minX=Math.min(minX,positions[i]);maxX=Math.max(maxX,positions[i]);}
   const span=(edge:number)=>{let lo=Infinity,hi=-Infinity;for(let i=0;i<positions.length;i+=3)if(Math.abs(positions[i]-edge)<.05){lo=Math.min(lo,positions[i+1]);hi=Math.max(hi,positions[i+1]);}return hi-lo;};
   assert.ok(Math.abs(span(minX)-100)<1e-3);assert.ok(Math.abs(span(maxX)-100)<1e-3);
+  const slope=world.scene.getMeshByName('sloped-cliff')!;slope.computeWorldMatrix(true);
+  const bottom=slope.getVerticesData('position')!,corners=new Set<string>();
+  for(let i=0;i<bottom.length;i+=3)if(bottom[i+1]<0)corners.add(`${bottom[i]},${bottom[i+2]}`);
+  assert.deepEqual([...corners].sort(),['-30,-40','-30,40','30,-40','30,40']);
+  const slopeBounds=slope.getBoundingInfo().boundingBox;
+  assert.equal(slopeBounds.minimumWorld.x,-30);assert.equal(slopeBounds.maximumWorld.x,30);
+  assert.equal(slopeBounds.minimumWorld.z,80);assert.equal(slopeBounds.maximumWorld.z,160);
+  const walker={x:-60,z:120};sim.move(walker,Math.PI/2,100);
+  assert.ok(walker.x<=-32&&walker.x>-40,'movement stops at the rendered slope edge');
   const ridge=world.scene.meshes.find(item=>item.name==='rocky-mountain')! as import('@babylonjs/core/Meshes/mesh.js').Mesh;
   const ridgePaint=ridge.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
   assert.equal(ridgePaint.backFaceCulling,false);
+  for(const mountain of world.scene.meshes.filter(item=>item.name==='rocky-mountain')){
+   mountain.computeWorldMatrix(true);const {minimumWorld:a,maximumWorld:b}=mountain.getBoundingInfo().boundingBox;
+   assert.ok(b.x<=-sim.mission.terrain.halfWidth||a.x>=sim.mission.terrain.halfWidth||a.z>=sim.mission.terrain.maxZ||b.z<=sim.mission.terrain.minZ,'decorative mountain remains outside the playable field');
+  }
+ }finally{engine.dispose();}
+});
+
+test('Union AIP uses its photographed shell and rear nozzles with a distinct self hologram',async()=>{
+ const {unionAipCockpitShellSvg}=await import('./union-aip-cockpit.ts');
+ const {hologramSvg}=await import('./hologram.ts');
+ const shell=unionAipCockpitShellSvg();assert.ok(shell.includes('assets/cockpits/union-aip.png'));assert.ok(shell.includes('union-aip-metal-mask'));assert.equal(shell.includes('4044'),false);
+ assert.notEqual(hologramSvg('union-aip'),hologramSvg('merc-aip'));
+ const sim=new Simulation(),unit=makeUnit('union-aip-preview','union-aip',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
+ const engine=new NullEngine({renderWidth:1142,renderHeight:858,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='aip-rear-nozzle').length,2);assert.equal(world.rigs.get(unit.id)!.torso.position.y,0);}finally{engine.dispose();}
+});
+
+test('Scorp Assault LRIP fires a green laser',()=>{
+ const sim=new Simulation(),unit=makeUnit('assault-lrip','scorp-assault',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{const world=new World({} as HTMLCanvasElement,sim,engine);sim.fire(2);world.update(.01);const bolt=world.scene.meshes.find(mesh=>mesh.name==='laser-bolt'&&mesh.metadata?.weapon==='LRIP');assert.ok(bolt);assert.equal(bolt.metadata.visual,'green-laser');const paint=bolt.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.emissiveColor.g>paint.emissiveColor.r);}finally{engine.dispose();}
+});
+
+test('3-2 grass and rock slopes use the supplied landscape palette',async()=>{
+ const {MISSION_3_2}=await import('../content/missions/mission-3-2.ts');
+ const sim=new Simulation('Easy',MISSION_3_2),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{const world=new World({} as HTMLCanvasElement,sim,engine);const ground=world.scene.getMeshByName('valley')!,slope=world.scene.getMeshByName('3-2-slope-1')!;
+  assert.ok((ground.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseTexture);
+  assert.ok((slope.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseTexture);
  }finally{engine.dispose();}
 });
 
@@ -884,4 +971,24 @@ test('facility hits flash visibly and destroyed buildings disappear from the bat
 
 test('infantry target holograms show the selected person name and escape markup',async()=>{
  const {infantryHologramSvg}=await import('./hologram.ts');const kylie=infantryHologramSvg('キリー'),thane=infantryHologramSvg('ターン');assert.ok(kylie.includes('data-role="person-name"'));assert.ok(kylie.includes('キリー'));assert.ok(!thane.includes('キリー'));assert.ok(thane.includes('ターン'));const escaped=infantryHologramSvg('<ally & "friend">');assert.ok(!escaped.includes('<ally'));assert.ok(escaped.includes('&lt;ally &amp; &quot;friend&quot;&gt;'));
+});
+
+test('3-4 terrain renders both blocked color regions and projects the player onto the cropped original map',async()=>{
+ const {MISSION_3_4}=await import('../content/missions/mission-3-4.ts');
+ const {MAP_3_4_POINTS,MAP_3_4_SOURCE}=await import('../content/missions/mission-3-4-map.ts');
+ const {projectMapImagePoint}=await import('./mission-map.ts');
+ const preview=MISSION_3_4.briefingPresentation!.mapPreview!;
+ const point=projectMapImagePoint(preview,MAP_3_4_POINTS.bridge)!;
+ assert.ok(Math.abs(point.x-(131-MAP_3_4_SOURCE.x)/MAP_3_4_SOURCE.width)<1e-9);
+ assert.ok(Math.abs(point.y-(201-MAP_3_4_SOURCE.y)/MAP_3_4_SOURCE.height)<1e-9);
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_4),world=new World({} as HTMLCanvasElement,sim,engine);
+  assert.ok(world.scene.getMeshByName('river-water'));
+  assert.ok(world.scene.meshes.some(mesh=>mesh.name.startsWith('3-4-slope-')));
+  assert.ok(world.scene.meshes.some(mesh=>mesh.name.startsWith('3-4-plateau-')));
+  assert.equal(world.scene.meshes.filter(mesh=>mesh.name.startsWith('3-4-slope-')||mesh.name.startsWith('3-4-plateau-')).length,141);
+  assert.ok(world.scene.getMaterialByName('map-slope'));
+  assert.ok(world.scene.getMaterialByName('map-plateau'));
+ }finally{engine.dispose();}
 });

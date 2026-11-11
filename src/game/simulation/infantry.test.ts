@@ -11,7 +11,7 @@ const step=(s:Simulation,seconds:number)=>{for(let i=0;i<seconds*60;i++)s.tick(1
 function foot(){const s=new Simulation();s.units[0].x=100;s.units[0].z=-40;s.units[2].z=500;s.units[1].x=0;s.units[1].z=60;s.iff='6707';return s;}
 function aimAt(s:Simulation,x:number,y:number,z:number){s.humanYaw=Math.atan2(x-s.human.x,z-s.human.z);s.pitch=Math.atan2(y-s.eyeHeight,Math.hypot(x-s.human.x,z-s.human.z));}
 test('PRIF44 damages without ejecting; GASHR has five canisters and ejects after physical impact',()=>{
- const s=foot(),enemy=s.units[1];aimAt(s,0,4,60);s.fire(1);assert.equal(enemy.shield,22);assert.ok(s.missiles.some(m=>m.weapon==='PRIF44'));assert.equal(enemy.pilot,true);assert.equal(s.gashrAmmo,5);
+ const s=foot(),enemy=s.units[1];enemy.spec.speed=0;aimAt(s,0,4,60);s.fire(1);assert.equal(enemy.shield,22);assert.ok(s.missiles.some(m=>m.weapon==='PRIF44'));assert.equal(enemy.pilot,true);assert.equal(s.gashrAmmo,5);
  step(s,.5);assert.ok(enemy.shield<22);
  const shield=enemy.shield,armor=enemy.armor;s.fire(2);assert.equal(s.gashrAmmo,4);assert.equal(enemy.pilot,true);assert.equal(s.soldiers.length,0);
  step(s,1.1);assert.equal(enemy.pilot,false);assert.equal(s.soldiers.length,1);assert.equal(enemy.shield,shield);assert.equal(enemy.armor,armor);assert.equal(s.soldiers[0].flight,null);assert.ok(Math.hypot(s.soldiers[0].x-enemy.x,s.soldiers[0].z-enemy.z)>4);assert.ok(s.events.some(e=>e.type==='pilot-eject'));
@@ -169,7 +169,7 @@ test('friendly fire destroys a companion vehicle and launches its identified liv
 
 test('F boarding chooses nearest eligible vehicle; passenger preserves driver, orders and movement',async()=>{
  const {makeUnit}=await import('./simulation.ts');const s=new Simulation();s.mission.rocks=[];
- const far=makeUnit('far','union-sentry',0,10,false),carrier=makeUnit('carrier','scorp-asv',0,3);carrier.iff=s.iff;carrier.order={kind:'follow'};carrier.speed=8;carrier.yaw=.4;carrier.aim=.8;carrier.personId='driver';s.units=[far,carrier];s.human={x:0,z:0};
+ const far=makeUnit('far','union-sentry',0,10,false),carrier=makeUnit('carrier','union-asv',0,3);carrier.iff=s.iff;carrier.order={kind:'follow'};carrier.speed=8;carrier.yaw=.4;carrier.aim=.8;carrier.personId='driver';s.units=[far,carrier];s.human={x:0,z:0};
  far.z=6;carrier.speed=8;assert.equal(s.board(),true);assert.equal(s.passenger,carrier);assert.equal(s.mounted,null);assert.equal(carrier.pilot,true);assert.equal(carrier.personId,'driver');assert.equal(carrier.speed,8);
  const before={yaw:carrier.yaw,aim:carrier.aim,order:carrier.order};s.fire(1);assert.equal(s.events.filter(e=>e.type==='shot').length,0);
  s.tick(.05,{...idle,forward:true,right:true,fire1:true,fire2:true});assert.equal(carrier.yaw,before.yaw);assert.equal(carrier.aim,before.aim);assert.equal(carrier.order,before.order);assert.equal(s.player,carrier);assert.equal(s.humanHealth,100);
@@ -235,8 +235,8 @@ test('a facing infantry shot is intercepted by an intervening empty vehicle',()=
  s.tick(.02,idle);assert.equal(own.shield,shield);assert.equal(blocker.shield,before);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));step(s,.3);assert.equal(blocker.shield,before-INFANTRY_WEAPONS.PRIF44.vehicleDamage);
 });
 
-function occupiedCarrier(moving=false){
- const s=new Simulation(),carrier=makeUnit('occupied','scorp-asv',0,1.5,true);s.units=[carrier];s.human={x:0,z:0};s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.minefields=[];
+function occupiedCarrier(moving=false,kind:'scorp-asv'|'union-asv'='scorp-asv'){
+ const s=new Simulation(),carrier=makeUnit('occupied',kind,0,1.5,true);s.units=[carrier];s.human={x:0,z:0};s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.minefields=[];
  carrier.spec={...carrier.spec,speed:moving?15:0,weapons:[],ai:{...carrier.spec.ai,detection:120,keepMoving:moving,strafe:0,stopDistance:0}};carrier.alert=moving;return {s,carrier};
 }
 test('contact with an occupied hostile passenger carrier announces once and stationary contact stays alive',()=>{
@@ -250,13 +250,14 @@ test('a moving hostile passenger carrier warns on first contact and kills on con
  s.tick(.02,idle);assert.equal(s.status,'lost');assert.equal(s.events.filter(e=>e.type==='occupied-contact').length,1);assert.equal(s.events.filter(e=>e.type==='lose').length,1);assert.ok(s.events.findIndex(e=>e.type==='occupied-contact')<s.events.findIndex(e=>e.type==='soldier-death'));
 });
 test('friendly, empty and safely airborne carrier contacts do not emit an occupied warning',()=>{
- const friendly=occupiedCarrier();friendly.carrier.iff=friendly.s.iff;friendly.s.tick(.02,idle);assert.equal(friendly.s.status,'running');assert.equal(friendly.s.events.some(e=>e.type==='occupied-contact'),false);assert.equal(friendly.s.passenger,friendly.carrier);
+ const friendly=occupiedCarrier(false,'union-asv');friendly.carrier.iff=friendly.s.iff;friendly.s.tick(.02,idle);assert.equal(friendly.s.status,'running');assert.equal(friendly.s.events.some(e=>e.type==='occupied-contact'),false);assert.equal(friendly.s.passenger,friendly.carrier);
+ const disguisedEnemy=occupiedCarrier();disguisedEnemy.carrier.iff=disguisedEnemy.s.iff;disguisedEnemy.s.tick(.02,idle);assert.equal(disguisedEnemy.s.passenger,null);assert.equal(disguisedEnemy.s.events.some(e=>e.type==='occupied-contact'),true);
  const empty=occupiedCarrier();empty.carrier.pilot=false;empty.s.tick(.02,idle);assert.equal(empty.s.mounted,empty.carrier);assert.equal(empty.s.events.some(e=>e.type==='occupied-contact'),false);
  const flying=occupiedCarrier(true);flying.s.flight={altitude:20,vy:0,vx:0,vz:0};flying.s.tick(.02,idle);assert.equal(flying.s.status,'running');assert.equal(flying.s.events.some(e=>e.type==='occupied-contact'),false);
 });
 
 test('contact automatically boards a friendly carrier as passenger and accepts only ejection as a gameplay action',()=>{
- const {s,carrier}=occupiedCarrier();carrier.iff=s.iff;s.tick(.02,idle);assert.equal(s.passenger,carrier);assert.equal(s.mounted,null);assert.deepEqual(carrier.passengers,['player']);
+ const {s,carrier}=occupiedCarrier(false,'union-asv');carrier.iff=s.iff;s.tick(.02,idle);assert.equal(s.passenger,carrier);assert.equal(s.mounted,null);assert.deepEqual(carrier.passengers,['player']);
  const before={yaw:carrier.yaw,aim:carrier.aim,iff:s.iff,pitch:s.pitch,selected:s.selected,waypoint:s.selectedWaypoint,ammo:{...carrier.ammunition}};
  s.aimBy(1);s.lookBy(1);s.selectTarget();s.selectInCrosshair();s.cycleTarget();s.cycleWaypoint();assert.equal(s.changeIff('7777'),false);assert.equal(s.sendAllyOrder('all','hold').error,'inactive');s.fire(1);
  s.tick(.02,{...idle,forward:true,right:true,boost:true,lookUp:true,center:true,fire1:true,fire2:true});
@@ -280,7 +281,7 @@ test('walking into the hostile carrier movement boundary warns once without kill
 });
 
 test('holding a trigger through automatic passenger boarding and ejection cannot fire until release',()=>{
- const {s,carrier}=occupiedCarrier();carrier.iff=s.iff;s.tick(.02,{...idle,fire1:true});assert.equal(s.passenger,carrier);s.tick(.02,{...idle,fire1:true});s.eject();s.events=[];
+ const {s,carrier}=occupiedCarrier(false,'union-asv');carrier.iff=s.iff;s.tick(.02,{...idle,fire1:true});assert.equal(s.passenger,carrier);s.tick(.02,{...idle,fire1:true});s.eject();s.events=[];
  s.tick(.02,{...idle,fire1:true});assert.equal(s.events.some(e=>e.type==='shot'),false);s.tick(.02,idle);s.tick(.02,{...idle,fire1:true});assert.equal(s.events.filter(e=>e.type==='shot').length,1);
 });
 

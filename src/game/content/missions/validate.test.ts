@@ -3,9 +3,37 @@ import assert from 'node:assert/strict';
 import {MISSIONS} from './index.ts';
 import {validateMissions} from './validate.ts';
 import {MISSION_3_3} from './mission-3-3.ts';
+import {MISSION_3_2} from './mission-3-2.ts';
+import {MISSION_3_4} from './mission-3-4.ts';
 
 test('every registered mission has valid identities, references and completion data',()=>{
  assert.deepEqual(validateMissions(MISSIONS),[]);
+});
+test('3-2 scripted routes and encounter radio require valid units and timing',()=>{
+ const mission=structuredClone(MISSION_3_2);
+ mission.unitRoutes=[{unitId:'missing-route-unit',x:NaN,z:0,startAt:-1}];
+ mission.radioTriggers=[{id:'bad-encounter',event:'encounter',at:-1,range:0,unitIds:['missing-ally'],enemyUnitIds:[],speakerId:'thane',vehicleKind:'union-aip',line:{ja:'',en:''}}];
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['missing-route-unit','unit route has invalid','missing-ally','needs encounter units','invalid encounter timing'])assert.ok(errors.includes(expected),expected);
+});
+test('3-2 companion facility routes validate their pilot, target and firing positions',()=>{
+ const mission=structuredClone(MISSION_3_2),route=mission.unitRoutes![1]!;
+ mission.unitRoutes=[{...route,personId:'missing-pilot',attackTargetIds:['missing-facility'],attackPositions:[]}];
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['invalid companion','missing-facility','unmatched attack positions'])assert.ok(errors.includes(expected),expected);
+});
+test('facility IFF disguise requires a bridge control, valid codes and existing vehicles',()=>{
+ const mission=structuredClone(MISSION_3_4);
+ mission.facilityIffDisguise={facilityId:'missing-control',enemyIff:'9999',footIff:'4033',vehicleIds:['missing-unit']};
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['missing-control','invalid code','missing-unit'])assert.ok(errors.includes(expected),expected);
+});
+test('3-4 waypoint arrivals and controlled mines reference existing people and facilities',()=>{
+ const mission=structuredClone(MISSION_3_4);
+ mission.rendezvous={waypointId:999,units:[{...MISSION_3_4.rendezvous!.units[0]!,personId:'missing-person'}]};
+ mission.minefields![0]!.controlFacilityId='missing-mine-control';
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['missing waypoint','matching companion','missing-mine-control'])assert.ok(errors.includes(expected),expected);
 });
 test('registered missions do not start units or personnel inside mountain peaks',()=>{
  for(const mission of MISSIONS)for(const [index,peak] of (mission.terrain.peaks??[]).entries())for(const actor of [...mission.units,...(mission.personnel??[])]){

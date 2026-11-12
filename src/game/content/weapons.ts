@@ -7,18 +7,18 @@ export const LASERS = {
   TAR12:{range:500.5,minRange:50.05,recharge:1,movingRechargeFactor:.5,interval:1,energy:0,damage:10,speed:LASER_FLIGHT_SPEED},
   // Darken Tactical Defense HAWC card and W1 weapon table. Recharge and interval are provisional; visible bolt speed follows the other lasers.
   HOMP11:{range:635,minRange:62.5,recharge:1,movingRechargeFactor:.5,interval:.25,energy:3,damage:10,speed:LASER_FLIGHT_SPEED},
-  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:200},
+  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:180},
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
   RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:12,speed:LASER_FLIGHT_SPEED},
   // Manual p.57 lists 800 m range and 1000 m/s; current requested tuning widens range/hit width and slows flight.
-  GAUS30:{range:1000,minRange:90,recharge:3.6,movingRechargeFactor:1,interval:2.8,energy:5,damage:28,speed:200,hitPadding:1.5},
+  GAUS30:{range:1000,minRange:90,recharge:3.6,movingRechargeFactor:1,interval:2.8,energy:5,damage:28,speed:180,hitPadding:1.5},
   P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:11,speed:LASER_FLIGHT_SPEED},
   // 3-2 Union AIP cockpit confirms the name; P2MEC values are provisional stand-ins.
   'ARC-M':{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:11,speed:LASER_FLIGHT_SPEED},
   'FIL-30': {range:220,minRange:22,recharge:LASER_RECHARGE_SECONDS,movingRechargeFactor:.5,interval:1,energy:2,damage:9,speed:LASER_FLIGHT_SPEED},
   CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
   // Scorp Assault cockpit reference confirms the LRIP name and green beam; performance remains provisional.
-  LRIP: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
+  LRIP: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.6,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
   RAID: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
 } as const;
 export type LaserWeapon = keyof typeof LASERS;
@@ -84,6 +84,7 @@ export function weaponMountCount(chassis:string,weapon:string){
  if(chassis==='merc-aip'||chassis==='union-aip'||chassis==='airborne-insurgent-platform')return 1;
  if(chassis==='scorp-asv'&&weapon==='zWASP')return 1; // Duplicate slots already denote the ASV's left and right guns.
  if(chassis==='merc-assault'&&weapon==='RUPP')return 2;
+ if(chassis==='scorp-assault'&&weapon==='LRIP')return 2;
  if(chassis==='union-sentry'&&weapon==='FIL-30')return 2;
  if(chassis==='darken-sentry'&&(weapon==='RUPP'||weapon==='CHUM'))return 2;
  if(chassis==='darken-tactical'&&(weapon==='HOMP11'||weapon==='DASY'))return 2;

@@ -2,6 +2,17 @@ import {MACHINE_GUNS,weaponMountCount} from '../content/weapons.ts';
 import {TOWER_MINIMUM_ATTACK_RANGE} from '../content/vehicles.ts';
 import {test} from 'node:test';import assert from 'node:assert/strict';import {Simulation,makeUnit,distance,type Input} from './simulation.ts';import {MISSION_3_3} from '../content/missions/mission-3-3.ts';import {crossesBuilding,buildingContact} from './battlefield.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};const step=(s:Simulation,n:number,input=idle)=>{for(let i=0;i<n;i++)s.tick(1/60,input);};
+test('Scorp rocket tower notices a target within 240 m across missions',()=>{
+ for(const range of [239,241]){
+  const mission=structuredClone(MISSION_3_3);
+  mission.units=[{id:'own',kind:'union-asv',x:0,z:0,pilot:false},{id:'tower',kind:'scorp-rocket-tower',x:0,z:range,pilot:true}];
+  mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.minefields=[];mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
+  const sim=new Simulation('Easy',mission),tower=sim.units.find(unit=>unit.id==='tower')!;
+  assert.equal(tower.spec.ai.detection,240);
+  sim.tick(.05,idle);
+  assert.equal(sim.events.some(event=>event.type==='enemy-detected'&&event.unit===tower),range<240);
+ }
+});
 test('3-3 base lies beyond red minefield, with two functional towers and three empty Scorp HAWCs',()=>{const s=new Simulation('Easy',MISSION_3_3);assert.ok(s.mission.base!.x<s.mission.minefields![0].x-s.mission.minefields![0].width/2);assert.equal(s.units.filter(u=>u.kind==='scorp-rocket-tower').length,2);assert.deepEqual(s.mission.base!.buildings.map(b=>b.kind),['command','mine-control']);assert.ok(s.units.filter(u=>u.kind==='scorp-rocket-tower').every(u=>u.x>Math.max(...s.mission.base!.buildings.map(b=>b.x))));assert.equal(s.units.filter(u=>u.kind==='scorp-sentry'&&!u.pilot).length,1);assert.equal(s.units.filter(u=>u.kind==='scorp-tactical'&&!u.pilot).length,2);assert.ok(s.mines.length>70);assert.equal(new Simulation().mines.length,0);assert.equal(new Simulation().mission.base,undefined);
  const tower=s.units.find(u=>u.spec.category==='tower')!;s.units=[s.mounted!,tower];s.mounted!.x=tower.x;s.mounted!.z=tower.z-210;const at={x:tower.x,z:tower.z};step(s,180);assert.deepEqual({x:tower.x,z:tower.z},at);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower));s.damage(tower,9999);assert.equal(s.soldiers.length,1);assert.equal(s.soldiers[0].sourceVehicle,tower.id);assert.equal(s.soldiers[0].faction,'scorp');
 });

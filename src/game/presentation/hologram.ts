@@ -77,8 +77,16 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  leftLeg:'M55 57L24 12 9 101h9l12-68 23 31 M65 65L43 24 29 105h8l10-58 15 24',
  rightLeg:'M105 57l31-45 15 89h-9l-12-68-23 31 M95 65l22-41 14 81h-8l-10-58-15 24'
  });
+ if(kind==='scorp-assault')Object.assign(paths,{
+  hull:'M40 61L80 51 120 61 109 72H51Z M56 59h48v9H56z',
+  cockpit:'M77 28L84 52H76L66 54 55 48Z M66 49l-17 9 8 4 22-7',
+  leftWeapon:'M76 20l4-7 4 7v27h-8z M73 23h14',rightWeapon:'M83 21l5 6v21h-7z',
+  leftLeg:'M54 61L39 48 25 53 16 97 M51 64L36 61 25 70 21 101 M57 68L42 74 37 85 34 105',
+  rightLeg:'M106 61l15-13 14 5 9 44 M109 64l15-3 11 9 4 31 M103 68l15 6 5 11 3 20'
+ });
  if(kind==='merc-meson-tower')Object.assign(paths,{hull:'M68 59h24l11 43H57Z M75 74h10v8H75Z M69 88h7v10h-7Z',cockpit:'M39 23h82l-8 23-22 16H69L47 46Z M39 23h82v5H39Z M60 19l9-9h22l9 9Z M51 32h58 M59 48h42',leftWeapon:'M74 9h12v25H74Z M76 7h8v5H76Z',rightWeapon:'',leftLeg:'M55 101h50v4H55Z',rightLeg:''});
  if(kind==='scorp-meson-tower')Object.assign(paths,{hull:'M55 38H105L96 100H64Z M65 43V89M95 43V89',cockpit:'M28 25H132V38H28Z M32 20H128V25H32Z',leftWeapon:'M76 3H84V34H76Z M74 8H86V13H74Z',rightWeapon:'',leftLeg:'M62 61L34 101H47L70 67Z',rightLeg:'M90 67L113 101H126L98 61Z'});
+ if(kind==='scorp-popup-turret')Object.assign(paths,{hull:'M34 81H126V102H34Z M45 78H115V83H45Z',cockpit:'M47 54H113V80H47Z M51 50H109V56H51Z',leftWeapon:'M77 29H83V57H77Z M75 26H85V33H75Z',rightWeapon:'',leftLeg:'',rightLeg:''});
  if(kind==='scorp-rocket-tower')Object.assign(paths,{
   hull:'M64 29h32l-5 59H69z M70 34h20l-2 42H72z M68 47h24 M70 60h20 M72 73h16 M74 85h12',
   cockpit:'M45 15h70l11 10-7 9H41l-7-9z M52 12h56l-3-6H55z M41 23h78 M49 29h62 M61 15v12 M80 14v14 M99 15v12',

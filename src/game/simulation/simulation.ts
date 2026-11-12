@@ -32,7 +32,7 @@ export const targetName=(target:SelectionTarget,companions:MissionDefinition['co
 export type Input = {forward:boolean;back:boolean;left:boolean;right:boolean;boost:boolean;stop:boolean;fire1:boolean;fire2:boolean;fire3?:boolean;fire4?:boolean;lookUp?:boolean;lookDown?:boolean;center?:boolean};
 export type Point3 = Vec & {y:number};
 export type Missile = Point3 & {id:number;owner:string;weapon:MissileWeapon|'GASHR'|'EGGER'|'TCREAP'|'PRIF44'|LaserWeapon;playerOwned?:boolean;homingScale?:number;homingTargetId?:string;aiGuidance?:{point:Point3;offset:Point3;refreshAt:number};vx:number;vy:number;vz:number;damage:number;infantryDamage?:number;facilityDamage?:number;radius:number;life:number;fresh?:boolean};
-export type GameEvent = {type:'supply'|'air-support'|'bridge-raised'|'enemy-detected'|'minefield-found'|'occupied-contact'|'vehicle-contact'|'mission-radio'|'mine'|'ally-order'|'ally-order-complete'|'lured'|'guidance-end'|'pilot-eject'|'soldier-hit'|'soldier-death'|'stop'|'center'|'target-select'|'laser-ready'|'foot-ready'|'target'|'impact'|'board'|'shot'|'hit'|'facility-hit'|'destroy'|'waypoint'|'win'|'lose'|'boost'|'eject'|'warning';text?:string;minefieldId?:string;faction?:Faction;radioId?:string;otherUnitId?:string;unit?:Unit;from?:Vec&{y?:number};to?:Vec&{y?:number};weapon?:string;projectileId?:number;position?:Point3;part?:BodyPart;soldier?:Soldier;facility?:Facility;launch?:boolean;ejection?:'gas'|'destruction';command?:AllyCommand;recipients?:string[];targetId?:string};
+export type GameEvent = {type:'supply'|'air-support'|'ion-lock'|'bridge-raised'|'enemy-detected'|'minefield-found'|'occupied-contact'|'vehicle-contact'|'mission-radio'|'mine'|'ally-order'|'ally-order-complete'|'lured'|'guidance-end'|'pilot-eject'|'soldier-hit'|'soldier-death'|'stop'|'center'|'target-select'|'laser-ready'|'foot-ready'|'target'|'impact'|'board'|'shot'|'hit'|'facility-hit'|'destroy'|'waypoint'|'win'|'lose'|'boost'|'eject'|'warning';text?:string;minefieldId?:string;faction?:Faction;radioId?:string;otherUnitId?:string;unit?:Unit;from?:Vec&{y?:number};to?:Vec&{y?:number};weapon?:string;projectileId?:number;position?:Point3;part?:BodyPart;soldier?:Soldier;facility?:Facility;launch?:boolean;ejection?:'gas'|'destruction';command?:AllyCommand;recipients?:string[];targetId?:string};
 export const AGGRO_LOCK_SECONDS=3;
 export const CROSSHAIR_SELECTION={range:800,horizontalAngle:12*Math.PI/180,verticalAngle:8*Math.PI/180};
 export const distance=(a:Vec,b:Vec)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -91,11 +91,45 @@ export class Simulation {
   private radioSpeakerAlive(personId:string){return this.units.some(u=>u.alive&&u.pilot&&u.personId===personId)||this.soldiers.some(s=>s.alive&&s.personId===personId);}
 
   private playedMissionRadio=new Set<string>();
+  private ionRetreated=false;private ionStartedAt:number|null=null;private ionLockAt:number|null=null;private ionImpactAt:number|null=null;private ionImpactSurvived=false;private ionTargetUnitId:string|null=null;
   private suspendedUnitRoutes=new Set<string>();
+  private scriptedRadio(id:string){const cue=this.mission.radioTriggers?.find(item=>item.id===id&&item.event==='scripted');if(cue&&this.radioSpeakerAlive(cue.speakerId))this.emit({type:'mission-radio',radioId:id});}
+  private retreatIonAlly(){
+    const strike=this.mission.ionStrike;if(!strike||this.ionRetreated)return;
+    this.ionRetreated=true;this.scriptedRadio(strike.retreatRadioId);
+    const personId=this.mission.companions?.find(member=>member.unitId===strike.retreatUnitId)?.personId??this.units.find(unit=>unit.id===strike.retreatUnitId)?.personId;
+    if(!personId)return;
+    for(const soldier of this.soldiers.filter(item=>item.personId===personId)){
+      if(soldier.passengerOf){const carrier=this.units.find(unit=>unit.id===soldier.passengerOf);if(carrier)carrier.passengers=carrier.passengers.filter(id=>id!==soldier.id);}
+      this.cancelBoarding(soldier);
+    }
+    this.soldiers=this.soldiers.filter(soldier=>soldier.personId!==personId);
+    for(const unit of this.units)if(unit.personId===personId){
+      if(unit.pilot){unit.pilot=false;unit.order=null;unit.speed=0;unit.alert=false;unit.aggressorId=null;unit.aggressorUntil=0;}
+      delete unit.personId;
+    }
+  }
+  private tickIonStrike(){
+    const strike=this.mission.ionStrike;if(!strike)return;
+    const facility=this.facilities.find(item=>item.id===strike.facilityId);
+    if(!this.ionRetreated&&facility&&distance(this.player,facility)<strike.retreatRange)this.retreatIonAlly();
+    if(this.ionStartedAt===null||this.ionImpactAt!==null)return;
+    const target=this.units.find(unit=>unit.id===this.ionTargetUnitId);
+    if(this.ionLockAt===null){
+      if(this.time-this.ionStartedAt+1e-8<strike.delay)return;
+      this.ionLockAt=this.time;
+      if(target)this.emit({type:'ion-lock',unit:target,position:{x:target.x,y:0,z:target.z}});
+      return;
+    }
+    if(this.time-this.ionLockAt+1e-8<1)return;
+    this.ionImpactAt=this.time;
+    this.ionImpactSurvived=!this.mounted&&!this.passenger&&!this.insideFacility&&this.humanHealth>0&&!!target&&distance(this.human,target)>=strike.safeRadius;
+    if(target){this.emit({type:'impact',weapon:'ION',position:{x:target.x,y:2,z:target.z}});if(target.alive)this.damage(target,99999,'hull',{x:target.x,y:2,z:target.z});}
+  }
   private tickMissionRadio(){
     const carrier=this.mounted??this.passenger,base=this.mission.base;
     for(const cue of this.mission.radioTriggers??[]){
-      if(cue.event==='board'||cue.event==='completion'||this.playedMissionRadio.has(cue.id))continue;
+      if(cue.event==='board'||cue.event==='completion'||cue.event==='scripted'||this.playedMissionRadio.has(cue.id))continue;
       if(cue.event!=='time'&&cue.event!=='encounter'&&carrier?.kind!==cue.vehicleKind)continue;
       if(cue.event==='time'&&this.time<cue.at)continue;
       if(cue.event==='encounter'&&(this.time<cue.at||!cue.unitIds.some(id=>{
@@ -202,8 +236,9 @@ export class Simulation {
   private eliminated(id:string){const unit=this.units.find(u=>u.id===id);return !!unit&&(!unit.alive||this.soldiers.some(s=>s.sourceVehicle===id&&!s.alive));}
   private facilityIntegrity(f:Facility){const initial=this.mission.base?.buildings.find((b,i)=>(b.id??`facility-${b.kind??'command'}-${i}`)===f.id)?.health??200;return f.health/initial;}
   private laserEnergyCost(unit:Unit,weapon:LaserWeapon){return unit.spec.powerSupply==='external'?0:this.weapons.lasers[weapon].energy;}
-  unitPowered(unit:Unit){const source=this.mission.units.find(s=>s.id===unit.id)?.powerSourceId;return !source||this.facilities.some(f=>f.id===source&&f.alive);}
+  unitPowered(unit:Unit){const spawn=this.mission.units.find(s=>s.id===unit.id);return (!spawn?.powerSourceId||this.facilities.some(f=>f.id===spawn.powerSourceId&&f.alive))&&(!spawn?.controlFacilityId||this.facilities.some(f=>f.id===spawn.controlFacilityId&&f.alive));}
   get objectiveStates(){return this.mission.objectives.map(objective=>{
+    if(objective.type==='survive-ion-strike'){const done=this.ionImpactAt!==null&&this.ionImpactSurvived;return {...objective,current:Number(done),total:1,done};}
     if(objective.type==='escort-facility'){const done=this.completedEscorts.has(objective.id);return {...objective,current:Number(done),total:1,done};}
     if(objective.type==='neutralize'){const current=objective.unitIds.filter(id=>this.eliminated(id)).length+objective.facilityIds.filter(id=>this.facilities.some(f=>f.id===id&&!f.alive)).length+Number(!!objective.loweredBridgeId&&!this.raisedBridges.has(objective.loweredBridgeId)),total=objective.unitIds.length+objective.facilityIds.length+Number(!!objective.loweredBridgeId);return {...objective,current,total,done:total>0&&current===total};}
     if(objective.type==='raise-bridge'){const done=this.raisedBridges.has(objective.bridgeId);return {...objective,current:Number(done),total:1,done};}
@@ -378,6 +413,7 @@ export class Simulation {
         if(order.targetId&&!anchor){unit.order=null;this.coastVehicle(unit,dt);this.emit({type:'ally-order-complete',unit,command:'follow'});continue;}
         if(anchor===unit){unit.order=null;this.coastVehicle(unit,dt);continue;}
         const goal=followPosition(anchor??this.player,anchor?anchor.yaw:this.yaw,index);this.followAlly(unit,goal,order.targetId??'player',anchor??this.player,dt);
+        continue;
       }else if(!order&&route&&step<steps.length&&!threat){
         const goal=steps[step]!;
         if(distance(unit,goal)<28){this.unitRouteSteps.set(route.unitId,step+1);this.allyFollowRoutes.delete(unit.id);}
@@ -554,7 +590,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       this.emit({type:'soldier-death',soldier,faction:soldier?.faction??unit.spec.faction,position:{x:unit.x,y:unit.spec.height*.6,z:unit.z}});return null;
     }
 
-    if(!soldier){soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,personId:unit.personId,faction:unit.spec.faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};this.soldiers.push(soldier);}
+    if(!soldier){const faction=this.mission.companions?.find(member=>member.personId===unit.personId)?.faction??unit.spec.faction;soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,personId:unit.personId,faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};this.soldiers.push(soldier);}
     soldier.order=undefined;soldier.driverOf=undefined;soldier.iff=unit.iff;soldier.yaw=unit.yaw;this.cancelBoarding(soldier);
     const disguise=this.mission.facilityIffDisguise;if(this.facilityIffAcquired&&disguise?.vehicleIds.includes(unit.id)&&this.mission.companions?.some(member=>member.personId===soldier.personId)){soldier.iff=disguise.footIff;soldier.faction=this.mission.playerFaction;}
     const launch=cause!=='boarding'&&unit.spec.ejectionSeat!==false&&unit.spec.category!=='tower';soldier.velocity=undefined;soldier.x=unit.x+(launch?0:Math.cos(unit.yaw)*9);soldier.z=unit.z-(launch?0:Math.sin(unit.yaw)*9);soldier.flight=launch?launchFlight(unit.spec.height,unit.yaw):null;
@@ -564,7 +600,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!unit.alive)return;
     const crew=this.soldiers.filter(s=>s.alive&&(s.driverOf===unit.id||s.passengerOf===unit.id));
     if(unit.pilot&&!crew.some(s=>s.driverOf===unit.id)){
-      const pilot:Soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,driverOf:unit.id,personId:unit.personId,faction:unit.spec.faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:false,cooldown:0,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};
+      const faction=this.mission.companions?.find(member=>member.personId===unit.personId)?.faction??unit.spec.faction;
+      const pilot:Soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,driverOf:unit.id,personId:unit.personId,faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:false,cooldown:0,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};
       this.soldiers.push(pilot);crew.push(pilot);
     }
     for(const soldier of crew){soldier.health=0;soldier.alive=false;soldier.flight=null;soldier.velocity=undefined;soldier.driverOf=unit.id;soldier.passengerOf=undefined;this.cancelBoarding(soldier);this.emit({type:'soldier-death',soldier,faction:soldier.faction,position:{x:unit.x,y:unit.spec.height*.6,z:unit.z}});}
@@ -586,10 +623,10 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!soldier.alive||isEmbarked(soldier))return;if(amount>0){this.rememberAggressor(soldier,attacker);if(soldier.automaticBoarding)this.cancelBoarding(soldier);}soldier.health=Math.max(0,soldier.health-amount);this.emit({type:'soldier-hit',soldier,position});
     if(soldier.health===0){soldier.alive=false;this.cancelBoarding(soldier);this.emit({type:'soldier-death',soldier,position});}
   }
-  private friendlyVehicle(unit:Unit){return unit.id===this.mission.assignedUnitId||unit.spec.faction===this.mission.playerFaction||!!unit.personId&&!!this.mission.companions?.some(member=>member.personId===unit.personId);}
-  private friendlySoldier(soldier:Soldier){return soldier.faction===this.mission.playerFaction||!!soldier.personId&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);}
+  private friendlyVehicle(unit:Unit){return unit.id===this.mission.assignedUnitId||(this.mission.friendlyFactions??[this.mission.playerFaction]).includes(unit.spec.faction)||!!unit.personId&&!!this.mission.companions?.some(member=>member.personId===unit.personId);}
+  private friendlySoldier(soldier:Soldier){return (this.mission.friendlyFactions??[this.mission.playerFaction]).includes(soldier.faction)||!!soldier.personId&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);}
   private crushSoldier(soldier:Soldier,from:Point3,previousVehicle:Vec,unit:Unit|null=this.mounted){
-    if(!unit?.alive||!soldier.alive||isEmbarked(soldier)||this.friendlyVehicle(unit)===this.friendlySoldier(soldier))return false;
+    if(!unit?.alive||!soldier.alive||isEmbarked(soldier)||(unit===this.mounted||this.friendlyVehicle(unit))===this.friendlySoldier(soldier))return false;
     const to={x:soldier.x,y:soldier.flight?.altitude??0,z:soldier.z};
     if(!sweptVehicleContact(unit,previousVehicle,from,to))return false;
     this.damageSoldier(soldier,soldier.health,to);return true;
@@ -616,7 +653,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       this.approachPerson(soldier,followPosition(anchor??this.player,anchor?.yaw??this.yaw,slot),dt,3.5);
       for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);return true;
     }
-    const target=order?.kind==='attack'?this.selectionTargets.find(t=>t.id===order.targetId):this.combatTargets.filter(t=>t!==soldier&&t.alive&&(!isVehicle(t)||t.pilot)&&t.iff!==soldier.iff&&distance(t,soldier)<=INFANTRY_WEAPONS.PRIF44.range&&this.lineOfSight(soldier,t)).sort((a,b)=>distance(a,soldier)-distance(b,soldier))[0];
+    const target=order?.kind==='attack'?this.selectionTargets.find(t=>t.id===order.targetId):this.combatTargets.filter(t=>t!==soldier&&t.alive&&!isFacility(t)&&(!isVehicle(t)||t.pilot)&&t.iff!==soldier.iff&&distance(t,soldier)<=INFANTRY_WEAPONS.PRIF44.range&&this.lineOfSight(soldier,t)).sort((a,b)=>distance(a,soldier)-distance(b,soldier))[0];
     if(order?.kind==='attack'&&!this.validAttackTarget(target,true)){complete();this.moveInfantry(soldier,soldier.yaw,0,dt);return true;}
     const visible=!!target&&this.lineOfSight(soldier,target,isFacility(target)?target:undefined),range=INFANTRY_WEAPONS.PRIF44.range;
     if(order?.kind==='attack'&&target&&(distance(soldier,target)>range*.65||!visible))this.approachPerson(soldier,target,dt,visible?range*.65:0);
@@ -858,7 +895,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const mount=SCORP_TACTICAL_RAID_MUZZLES;
       return [-1,1].map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*mount.z,y:unit.spec.height*.6+mount.y,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*mount.z}));
     }
-    const assault=unit.kind==='merc-assault',tactical=unit.kind==='union-tactical'&&(weapon==='P2MEC'||weapon==='TCREAP'),ceti=unit.kind==='scorp-sentry'&&weapon==='CETI';
+    const assault=unit.kind==='merc-assault'||unit.kind==='scorp-assault',tactical=unit.kind==='union-tactical'&&(weapon==='P2MEC'||weapon==='TCREAP'),ceti=unit.kind==='scorp-sentry'&&weapon==='CETI';
     if(!tactical&&!ceti&&weaponMountCount(unit.kind,weapon)!==2)return [fallback];
     const mount=VEHICLE_SHAPES[unit.kind].weapon,forward=mount.z+mount.d/2+(ceti?1.05:.16);
     const unionMuzzle=unit.kind==='union-sentry',darkenMuzzle=unit.kind==='darken-sentry',stalker=unit.kind==='darken-tactical'?pitchDarkenTactical(mount.y,mount.z):null,muzzleForward=stalker?stalker.z+mount.d/2:assault||tactical||ceti||darkenMuzzle?forward:unionMuzzle?Math.sin(unit.aim)*(fallback.x-unit.x)+Math.cos(unit.aim)*(fallback.z-unit.z):mount.z+2.4,muzzleY=stalker?stalker.y:assault||tactical||ceti||darkenMuzzle?unit.spec.height*.6+mount.y-(ceti?.17:0):unionMuzzle?fallback.y:unit.spec.height*.6+mount.y;
@@ -898,7 +935,12 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     this.emit({type:'facility-hit',facility,position});
     if(facility.health===0){if(this.insideFacility===facility)this.eject('ground');facility.alive=false;facility.pilot=false;
       for(const field of this.mission.minefields??[])if(field.controlFacilityId===facility.id){const ids=new Set(field.mines.map(mine=>mine.id));for(const mine of this.mines)if(ids.has(mine.id))mine.spent=true;}
-      this.emit({type:'destroy',facility,position});}
+      this.emit({type:'destroy',facility,position});
+      const strike=this.mission.ionStrike;if(strike?.facilityId===facility.id&&this.ionStartedAt===null){
+        this.retreatIonAlly();this.ionStartedAt=this.time;this.ionTargetUnitId=this.mounted?.id??this.mission.assignedUnitId;
+        for(const id of strike.warningRadioIds)this.scriptedRadio(id);
+      }
+    }
   }
   private facilityShot(from:Point3,to:Point3,padding:number){
     let first=Infinity,facility:Facility|undefined;
@@ -967,6 +1009,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(p.weapon==='PRIF44'&&p.fresh){p.fresh=false;survivors.push(p);continue;}
       const from={x:p.x,y:p.y,z:p.z},step=Math.min(dt,p.life);
       const hitPadding=isLaser(p.weapon)?(this.weapons.lasers[p.weapon].hitPadding??0):0;
+      const infantryHitPadding=p.weapon==='GAUS30'?0:hitPadding;
       if(p.homingTargetId&&isMissile(p.weapon)&&p.weapon!=='VISOM'){
         const target=this.selectionTargets.find(t=>t.id===p.homingTargetId&&t.alive);
         const point=target?{x:target.x,y:targetHeight(target),z:target.z}:p.homingTargetId==='player'&&!this.mounted&&!this.passenger&&this.humanHealth>0?{...this.human,y:(this.flight?.altitude??0)+(this.prone?.5:1)}:null;
@@ -991,8 +1034,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
         if(!unit.alive||unit.id===p.owner||(p.owner==='player'&&unit===this.mounted))continue;
         const contact=intersectParts(unit,from,to,p.radius+hitPadding);if(contact&&contact.t<first){first=contact.t;hit=unit;hitFacility=undefined;part=contact.part;}
       }
-      if(!this.mounted&&!this.passenger&&!this.insideFacility&&p.owner!=='player')test({x:this.human.x,y:(this.flight?.altitude??0)+(this.prone?.5:1),z:this.human.z},(this.prone?.65:.9)+hitPadding,null);
-      if(p.weapon!=='GASHR'&&p.weapon!=='EGGER')for(const soldier of this.soldiers){if(!soldier.alive||soldier.id===p.owner||isEmbarked(soldier))continue;const t=segmentSphere(from,to,{x:soldier.x,y:(soldier.flight?.altitude??0)+1,z:soldier.z},INFANTRY_HIT_RADIUS+p.radius+hitPadding);if(t!==null&&t<first){first=t;hit=undefined;hitSoldier=soldier;hitFacility=undefined;}}
+      if(!this.mounted&&!this.passenger&&!this.insideFacility&&p.owner!=='player')test({x:this.human.x,y:(this.flight?.altitude??0)+(this.prone?.5:1),z:this.human.z},(this.prone?.65:.9)+infantryHitPadding,null);
+      if(p.weapon!=='GASHR'&&p.weapon!=='EGGER')for(const soldier of this.soldiers){if(!soldier.alive||soldier.id===p.owner||isEmbarked(soldier))continue;const t=segmentSphere(from,to,{x:soldier.x,y:(soldier.flight?.altitude??0)+1,z:soldier.z},INFANTRY_HIT_RADIUS+p.radius+infantryHitPadding);if(t!==null&&t<first){first=t;hit=undefined;hitSoldier=soldier;hitFacility=undefined;}}
       if(to.y<=.1&&from.y>.1){const t=(from.y-.1)/(from.y-to.y);if(t<first){first=t;hit=undefined;hitSoldier=undefined;hitFacility=undefined;}}
       p.life-=step;
       if(first!==Infinity){
@@ -1098,6 +1141,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     }
     for(const objective of this.objectiveStates)if(objective.type==='defend'&&objective.done)this.securedDefenses.add(objective.id);
     if(this.status==='running'&&this.mission.objectives.some(o=>o.type==='defend'&&!this.securedDefenses.has(o.id)&&o.targetIds.some(id=>!this.selectionTargets.some(t=>t.id===id&&t.alive))||o.type==='board-player'&&this.soldiers.some(s=>s.personId===o.personId&&!s.alive)||o.type==='escort-facility'&&!this.completedEscorts.has(o.id)&&(this.units.some(u=>u.personId===o.personId)||this.soldiers.some(s=>s.personId===o.personId))&&!this.units.some(u=>u.personId===o.personId&&u.alive&&u.pilot)&&!this.soldiers.some(s=>s.personId===o.personId&&s.alive))){this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}
+    if(this.ionImpactAt!==null&&this.status==='running'&&!this.ionImpactSurvived){this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}
     const complete=this.mission.completionEnabled!==false&&this.objectiveStates.length>0&&this.objectiveStates.every(o=>o.optional||o.done);
     if(this.status!=='running'||!complete){this.completionStartedAt=null;return;}
     const sequence=this.mission.completionSequence;
@@ -1180,7 +1224,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
 
       }
     }
-    this.tickAllies(dt);this.tickMines(previousHuman,previousUnits);if(this.status!=='running')return;this.tickMinefieldWarnings();this.tickMissionRadio();
+    this.tickAllies(dt);this.tickMines(previousHuman,previousUnits);if(this.status!=='running')return;this.tickMinefieldWarnings();this.tickMissionRadio();this.tickIonStrike();
     // Actual displacement includes coasting, reverse, AI movement and damaged legs.
     for(const unit of this.units){if(!unit.alive)continue;const weapon=unit.spec.weapons.find(isLaser);if(!weapon||!isLaser(weapon))continue;
       if(!this.unitPowered(unit)){unit.laserCharge=0;continue;}

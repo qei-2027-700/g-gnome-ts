@@ -319,8 +319,8 @@ test('a stopped vehicle is hit by both Scorp rocket tower missiles, while a movi
   for(let i=0;i<400&&s.missiles.some(m=>m.owner===tower.id);i++){if(moving){s.throttle=1;s.speed=own.speed=16;}s.tick(1/60,idle);}
   return s.events.filter(e=>e.type==='hit'&&e.unit===own).length;
  };
- for(const place of [[0,240],[70,210],[-90,160]] as [number,number][])for(const slot of [1,0])assert.equal(fire(false,slot,place),2,`stopped ${slot} at ${place}`);
- const moving=fire(true,0,[0,240]);assert.ok(moving<2,`moving volley hits ${moving}`);
+ for(const place of [[0,235],[70,210],[-90,160]] as [number,number][])for(const slot of [1,0])assert.equal(fire(false,slot,place),2,`stopped ${slot} at ${place}`);
+ const moving=fire(true,0,[0,235]);assert.ok(moving<2,`moving volley hits ${moving}`);
 });
 
 test('Merc AIP AI makes a slow bounded turn toward a side target while Union AIP keeps its original response',()=>{

@@ -50,7 +50,7 @@
 | 3-2 | CommArray at Ur-Kinsk | シェリダンが同行。さらにScorp領域へ進むため、LATLON通信施設を無力化する | [3-2](https://www.youtube.com/watch?v=EOdqH0-weos) | 施設への潜入・破壊・退避の順序 |
 | 3-3 | Raid on Ur-Ulit | Ur-Alrを守る地雷原を通るため、Ur-Ulit基地から地雷検知装置付きのScorp機を奪取する | [3-3](https://www.youtube.com/watch?v=m0IIJf0hlMw) | [既存仕様](mission-3-3.md)。原作の人数・搭乗・通過判定は別途照合 |
 | 3-4 | Ur-Alr | ガントとターンがErreskat川を渡ってキリー・シェリダンと合流。Ur-Alr司令部へ侵入し、研究所の座標を取得する | [3-4](https://www.youtube.com/watch?v=SBcPVtIrUFs) | [地図と試作範囲](mission-3-4.md)、[色と通行範囲](../reference/observations/mission-3-4/observations.md)。渡河と味方集合、シェリダンの侵入・情報取得判定 |
-| 3-5 | Ion-Strike | G-Nome研究所を発見して破壊へ進む。シェリダンがイオン攻撃の要請を引き受けるが、次章の裏切りにつながる | [3-5](https://www.youtube.com/watch?v=10mSGF0ZZ5c) | 照準装置・攻撃要請・退避・章終了の条件 |
+| 3-5 | Ion-Strike | G-Nome研究所を発見して破壊へ進む。シェリダンがイオン攻撃の要請を引き受けるが、次章の裏切りにつながる | [3-5](https://www.youtube.com/watch?v=10mSGF0ZZ5c) | [実装計画](mission-3-5.md)。照準装置・攻撃要請・退避・章終了の条件を要確認 |
 
 3-3の動画表記はUr-Ulit、既存資料の呼称は「ウル・ウリット」。3-4のUr-Alrと別の基地として記録する。動画説明だけで既存のシーン・施設IDを改名しない。
 

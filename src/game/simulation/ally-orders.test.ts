@@ -23,6 +23,27 @@ test('F1 then F1 attacks with all three: real movement, common weapons and targe
  assert.ok(target.shield<target.spec.shield||target.armor<target.spec.armor);assert.equal(s.mounted!.shield,s.mounted!.spec.shield);
  assert.ok(s.units[1].speed<=s.units[1].spec.speed/3.6);
 });
+test('F5 follows a selected hostile without firing even when it is in weapon range',()=>{
+ const s=setup(),menu=new RadioMenu(),ally=s.units.find(u=>u.personId==='kylie')!,target=s.units.find(u=>u.id==='scorp-asv')!;
+ s.mission.rocks=[];s.units=[s.mounted!,ally,target];target.x=0;target.z=105;target.cooldown=999;s.selected=target.id;
+ const before=distance(ally,target),shield=target.shield;
+ menu.begin('kylie');assert.deepEqual(key(s,menu,'F5')?.accepted,['kylie']);
+ run(s,3);
+ assert.equal(ally.order?.kind,'follow');
+ assert.ok(distance(ally,target)<before);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===ally),false);
+ assert.equal(target.shield,shield);
+});
+test('F5 replaces an attack order and stops new shots while following the player',()=>{
+ const s=setup(),ally=s.units.find(u=>u.personId==='kylie')!,target=s.units.find(u=>u.id==='scorp-asv')!;
+ s.mission.rocks=[];s.units=[s.mounted!,ally,target];target.x=0;target.z=110;target.cooldown=999;s.selected=target.id;
+ assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);
+ run(s,16);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));
+ s.selected=null;assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);s.events=[];
+ run(s,3);
+ assert.equal(ally.order?.kind,'follow');
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===ally),false);
+});
 test('F1 then F5 without selection follows player, updates as player moves, F7 stops',()=>{
  const s=setup(),menu=new RadioMenu();s.selected=null;menu.begin('all');assert.equal(key(s,menu,'F5')!.accepted.length,3);
  const target=s.units.find(u=>u.id==='scorp-asv')!;run(s,8,{...idle,forward:true});const before=distance(s.units[1],s.player);s.throttle=0;s.speed=0;s.mounted!.speed=0;run(s,8);
@@ -63,6 +84,16 @@ test('an ally on foot can attack an enemy facility despite matching IFF',()=>{
  run(s,5);
  assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));
  assert.ok(target.health<before);
+});
+test('uncommanded infantry ignore enemy facilities and empty towers',()=>{
+ const {s,people}=footSquad(),soldier=people[0],facility=s.facilities.find(f=>f.id==='ul-urit-mine-control')!;
+ for(const other of people.slice(1))other.alive=false;
+ soldier.x=15;soldier.z=0;soldier.yaw=0;soldier.cooldown=0;soldier.order=undefined;
+ facility.x=15;facility.z=65;facility.iff='3317';s.facilities=[facility];
+ const tower=makeUnit('empty-enemy-tower','scorp-rocket-tower',40,65,false);tower.iff='3317';s.units=[s.mounted!,tower];
+ const health=facility.health,shield=tower.shield;run(s,3);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),false);
+ assert.equal(facility.health,health);assert.equal(tower.shield,shield);
 });
 test('radio filters absent, dead and unoccupied actors; new mission has no orders',()=>{
  for(const reason of ['missing','dead','unoccupied'] as const){const s=setup(),u=s.units[1];if(reason==='missing')s.units.splice(1,1);if(reason==='dead')u.alive=false;if(reason==='unoccupied')u.pilot=false;if(reason==='range')u.z=700;if(reason==='blocked')s.mission.rocks.push({x:u.x/2,z:u.z/2,r:2});if(reason==='iff')s.iff='0000';
@@ -313,7 +344,7 @@ test('foot attack never shoots through an ally; foot follow moves to the command
 
 test('foot attack is shared by every current mission with companions, including interrupting 2-6 automatic tower boarding',async()=>{
  const {MISSIONS}=await import('../content/missions/index.ts');
- for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.units=[...def.units,...(def.rendezvous?.units??[])];delete def.rendezvous;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];delete def.terrain.river;def.terrain.cliffs=[];def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
+ for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.units=[...def.units,...(def.rendezvous?.units??[])];delete def.rendezvous;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];delete def.terrain.river;def.terrain.cliffs=[];def.terrain.maxZ=Math.max(def.terrain.maxZ,def.player.z+500);def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
   const s=new Simulation('Easy',def),radio=s.radioMembers[0],soldier=radio.soldier??s.forceEject(radio.unit!,'boarding')!,target=makeUnit('ordered-enemy','merc-sentry',soldier.x,soldier.z+200,true);soldier.flight=null;target.iff='0000';target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=999;s.units.push(target);s.selected=target.id;
   assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1,source.id);assert.equal(soldier.boardingTarget,undefined,source.id);soldier.x+=100;target.x=soldier.x;run(s,40);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),source.id);assert.ok(target.shield<target.spec.shield||!target.pilot,source.id);
  }

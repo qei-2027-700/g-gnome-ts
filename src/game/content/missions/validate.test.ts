@@ -5,6 +5,19 @@ import {validateMissions} from './validate.ts';
 import {MISSION_3_3} from './mission-3-3.ts';
 import {MISSION_3_2} from './mission-3-2.ts';
 import {MISSION_3_4} from './mission-3-4.ts';
+import {MISSION_3_5} from './mission-3-5.ts';
+
+test('ion strike requires valid targets, radio cues and positive timing',()=>{
+ const mission=structuredClone(MISSION_3_5);
+ mission.ionStrike={...mission.ionStrike!,facilityId:'missing-laboratory',retreatUnitId:'missing-ally',warningRadioIds:['missing-radio'],delay:0,safeRadius:0};
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['missing-laboratory','missing-ally','missing-radio','positive range, delay and safe radius'])assert.ok(errors.includes(expected),expected);
+});
+test('pop-up turrets require their control facility',()=>{
+ const mission=structuredClone(MISSION_3_5);
+ mission.units=mission.units.map(unit=>unit.id==='popup-turret-1'?{...unit,controlFacilityId:'missing-control'}:unit);
+ assert.ok(validateMissions([mission]).join('\n').includes('missing turret control: missing-control'));
+});
 
 test('every registered mission has valid identities, references and completion data',()=>{
  assert.deepEqual(validateMissions(MISSIONS),[]);

@@ -7,6 +7,7 @@ const FACILITY_HOLOGRAMS:Record<FacilityType,{label:string;command:boolean}>={
  'bridge-control':{label:'Bridge Control Building',command:true},
  command:{label:'司令部',command:true},
  'mine-control':{label:'地雷原コントロール設備',command:false},
+ 'popup-turret-control':{label:'ポップアップタレット制御施設',command:false},
  'shield-generator':{label:'シールドジェネレーター',command:false},
  'sweep-turret':{label:'スイープタレット',command:false},
 };

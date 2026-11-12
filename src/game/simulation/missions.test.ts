@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,makeUnit,type Input} from './simulation.ts';
+import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
@@ -9,9 +9,198 @@ import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
 import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
 import {MAP_3_4_POINTS,map34PixelToWorld} from '../content/missions/mission-3-4-map.ts';
+import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
+import {MAP_3_5_POINTS,MAP_3_5_SOURCE,map35PixelToWorld} from '../content/missions/mission-3-5-map.ts';
 import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
 import {MAP_3_2_POINTS,map32PixelToWorld} from '../content/missions/mission-3-2-map.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
+test('3-5 keeps a walkable black-ground route from the northern X to waypoint 1 and places the laboratory southeast',()=>{
+ const mission=MISSION_3_5,field=new Simulation('Easy',mission),slopes=mission.terrain.cliffs!,laboratory=field.facilities.find(f=>f.id==='g-nome-laboratory')!;
+ assert.equal(field.mounted?.kind,'scorp-assault');
+ assert.deepEqual({x:field.player.x,z:field.player.z},MAP_3_5_POINTS.playerStart);
+ assert.equal(field.iff,'1381');
+ assert.deepEqual(field.units.filter(u=>u.personId).map(u=>[u.personId,u.kind]).sort(),[['kylie','scorp-aip'],['sheridan','scorp-sentry'],['thane','scorp-tactical']]);
+ assert.deepEqual(field.units.filter(u=>u.iff==='3317').map(u=>[u.id,u.kind]).sort(),[
+  ['approach-td','scorp-tactical'],['first-rocket-tower','scorp-rocket-tower'],['laboratory-meson-tower','scorp-meson-tower'],
+  ['left-approach-asv','scorp-asv'],['left-meson-tower','scorp-meson-tower'],['second-line-aip-east','scorp-aip'],
+  ['second-line-aip-west','scorp-aip'],['second-rocket-tower','scorp-rocket-tower'],
+  ['popup-turret-1','scorp-popup-turret'],['popup-turret-2','scorp-popup-turret'],['popup-turret-3','scorp-popup-turret'],
+  ['popup-turret-4','scorp-popup-turret'],['popup-turret-5','scorp-popup-turret'],
+ ].sort());
+ assert.deepEqual(mission.units.filter(u=>u.powerSourceId).map(u=>u.powerSourceId),['g-nome-power-plant','g-nome-power-plant']);
+ assert.equal(field.facilities.find(f=>f.id==='g-nome-power-plant')?.alive,true);
+ assert.equal(field.facilities.find(f=>f.id==='popup-turret-control')?.facilityType,'popup-turret-control');
+ assert.equal(field.units.filter(u=>u.kind==='scorp-popup-turret').length,5);
+ assert.ok(field.units.filter(u=>u.kind==='scorp-popup-turret').every(u=>u.spec.weapons[0]==='TCREAP'&&u.spec.ai.detection<80));
+ assert.ok(field.weapons.lasers.LRIP.range>field.weapons.lasers.TAR12.range);
+ assert.ok(field.weapons.lasers.TAR12.range>field.weapons.lasers.GAUS30.range);
+ assert.ok(field.units.filter(u=>u.kind==='scorp-rocket-tower'||u.kind==='scorp-meson-tower').every(u=>u.spec.ai.detection<field.weapons.lasers.TAR12.range));
+ for(const unit of field.units.filter(u=>u.personId))assert.ok(Math.hypot(unit.x-field.player.x,unit.z-field.player.z)<80,`${unit.personId} starts nearby`);
+ assert.equal(mission.ionStrike?.delay,20);
+ assert.ok(slopes.length>80);
+ assert.ok(laboratory.x>MAP_3_5_POINTS.playerStart.x&&laboratory.z<MAP_3_5_POINTS.playerStart.z);
+ const insideSlope=(x:number,z:number,padding=0)=>slopes.some(c=>Math.abs(x-c.x)<c.width/2+padding&&Math.abs(z-c.z)<c.depth/2+padding);
+ for(const point of Object.values(MAP_3_5_POINTS))assert.ok(!insideSlope(point.x,point.z),`landmark remains on walkable ground: ${JSON.stringify(point)}`);
+ const route=['playerStart','approachTd','firstRocketTower','secondRocketTower','leftMesonTower','leftApproachAsv','laboratoryMesonTower','laboratory'] as const;
+ for(let i=1;i<route.length;i++)assert.ok(MAP_3_5_POINTS[route[i]!]!.z<=MAP_3_5_POINTS[route[i-1]!]!.z,`${route[i]} lies farther along the southern approach`);
+ assert.ok(MAP_3_5_POINTS.leftMesonTower.x<MAP_3_5_POINTS.leftApproachAsv.x);
+ assert.ok(MAP_3_5_POINTS.laboratory.x>MAP_3_5_POINTS.leftMesonTower.x);
+ const firstRocket=field.units.find(u=>u.id==='first-rocket-tower')!,secondRocket=field.units.find(u=>u.id==='second-rocket-tower')!;
+ assert.ok(distance(firstRocket,secondRocket)>firstRocket.spec.ai.detection+secondRocket.spec.ai.detection+60,'rocket towers have a no-fire gap between their detection zones');
+ const gap={x:(firstRocket.x+secondRocket.x)/2,z:(firstRocket.z+secondRocket.z)/2};
+ assert.ok(distance(gap,firstRocket)>firstRocket.spec.ai.detection&&distance(gap,secondRocket)>secondRocket.spec.ai.detection);
+ const widenedRoute=[[396,112],[384,152],[356,192],[344,232],[332,272],[332,304]] as const;
+ for(let i=1;i<widenedRoute.length;i++){
+  const [ax,ay]=widenedRoute[i-1]!,[bx,by]=widenedRoute[i]!,steps=Math.ceil(Math.hypot(bx-ax,by-ay)/4);
+  for(let step=0;step<=steps;step++){
+   const px=ax+(bx-ax)*step/steps,py=ay+(by-ay)*step/steps,center=map35PixelToWorld(px,py);
+   assert.ok(!insideSlope(center.x,center.z,32),`rocket approach has at least 32 m of free ground around ${px},${py}`);
+  }
+ }
+ for(const enemy of field.units.filter(u=>u.iff==='3317'))assert.ok(!insideSlope(enemy.x,enemy.z,6),`${enemy.id} has clearance from the slope`);
+ const plant=field.facilities.find(f=>f.id==='g-nome-power-plant')!;
+ field.damageFacility(plant,plant.health,{x:plant.x,y:2,z:plant.z});
+ assert.equal(field.unitPowered(field.units.find(u=>u.id==='left-meson-tower')!),false);
+ assert.equal(field.unitPowered(field.units.find(u=>u.id==='laboratory-meson-tower')!),false);
+ const control=field.facilities.find(f=>f.id==='popup-turret-control')!;
+ field.damageFacility(control,control.health,{x:control.x,y:2,z:control.z});
+ assert.ok(field.units.filter(u=>u.kind==='scorp-popup-turret').every(u=>!field.unitPowered(u)));
+ assert.ok(insideSlope(map35PixelToWorld(320,110).x,map35PixelToWorld(320,110).z),'bright northern band blocks crossing');
+ const rows=MAP_3_5_SOURCE.height/MAP_3_5_SOURCE.step,cols=MAP_3_5_SOURCE.width/MAP_3_5_SOURCE.step;
+ const cell=(point:{x:number;z:number})=>({col:Math.floor(((point.x/4)+408-MAP_3_5_SOURCE.x)/8),row:Math.floor((244-point.z/4-MAP_3_5_SOURCE.y)/8)});
+ const start=cell(MAP_3_5_POINTS.playerStart),goal=cell(MAP_3_5_POINTS.waypoint1),key=(col:number,row:number)=>`${col},${row}`;
+ const queue=[start],seen=new Set([key(start.col,start.row)]);
+ for(let i=0;i<queue.length;i++){
+  const current=queue[i]!;
+  for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){
+   const col=current.col+dc,row=current.row+dr;
+   if(col<0||row<0||col>=cols||row>=rows||seen.has(key(col,row)))continue;
+   const point=map35PixelToWorld(MAP_3_5_SOURCE.x+(col+.5)*8,MAP_3_5_SOURCE.y+(row+.5)*8);
+   if(insideSlope(point.x,point.z,4))continue;
+   seen.add(key(col,row));queue.push({col,row});
+  }
+ }
+ assert.ok(seen.has(key(goal.col,goal.row)),'black-ground cells connect the start and waypoint 1 with vehicle clearance');
+});
+test('3-5 mounted vehicle can travel the widened rocket approach without a slope collision',()=>{
+ const mission=structuredClone(MISSION_3_5);
+ mission.units=mission.units.filter(u=>u.id==='player-assault');
+ const sim=new Simulation('Easy',mission),vehicle=sim.mounted!;
+ Object.assign(vehicle,MAP_3_5_POINTS.approachTd);
+ const route=[[396,112],[384,152],[356,192],[344,232],[332,272],[332,304]] as const;
+ for(let i=1;i<route.length;i++){
+  const destination=map35PixelToWorld(...route[i]!),length=distance(vehicle,destination),steps=Math.ceil(length/2),yaw=Math.atan2(destination.x-vehicle.x,destination.z-vehicle.z);
+  for(let step=0;step<steps;step++)sim.move(vehicle,yaw,length/steps);
+  assert.ok(distance(vehicle,destination)<2,`vehicle reaches route point ${i}`);
+ }
+});
+test('3-5 companions remain Union infantry after boarding and leaving captured Scorp vehicles',()=>{
+ for(const [personId,unitId] of [['kylie','kylie-aip'],['thane','thane-td'],['sheridan','sheridan-sentry']] as const){
+  const mission=structuredClone(MISSION_3_5);mission.units=mission.units.filter(u=>u.id==='player-assault'||u.id===unitId);mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
+  const s=new Simulation('Easy',mission),ally=s.units.find(u=>u.id===unitId)!,soldier=s.forceEject(ally,'boarding')!;
+  const captured=makeUnit('captured','scorp-asv',soldier.x,soldier.z,false);captured.iff='3317';s.units.push(captured);s.selected=captured.id;
+  assert.equal(soldier.faction,'union');assert.deepEqual(s.sendAllyOrder(personId,'board').accepted,[unitId]);
+  s.tick(.05,idle);assert.equal(soldier.driverOf,captured.id);assert.equal(captured.pilot,true);
+  assert.deepEqual(s.sendAllyOrder(personId,'disembark').accepted,[unitId]);
+  assert.equal(soldier.faction,'union');assert.equal(soldier.alive,true);
+ }
+});
+test('3-5 pop-up turret leaves an 80 m standoff and stops after its control facility is destroyed',()=>{
+ const mission=structuredClone(MISSION_3_5);
+ mission.units=mission.units.filter(u=>u.id==='player-assault'||u.id==='popup-turret-1');
+ mission.terrain.cliffs=[];
+ const s=new Simulation('Easy',mission),turret=s.units.find(u=>u.id==='popup-turret-1')!,player=s.mounted!;
+ assert.equal(turret.spec.weapons[0],'TCREAP');
+ assert.equal(s.weapons.guns.TCREAP.range,160);
+ player.x=turret.x+80;player.z=turret.z;
+ for(let i=0;i<80;i++)s.tick(.05,idle);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===turret),false);
+ player.x=turret.x+60;
+ for(let i=0;i<80;i++)s.tick(.05,idle);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===turret),true);
+ const control=s.facilities.find(f=>f.id==='popup-turret-control')!;
+ s.damageFacility(control,control.health,{x:control.x,y:2,z:control.z});
+ s.events=[];
+ for(let i=0;i<80;i++)s.tick(.05,idle);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===turret),false);
+});
+test('3-5 Sheridan retreats before the laboratory, then ion lock gives one second to escape',()=>{
+ const s=new Simulation('Easy',MISSION_3_5),laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!,target=s.mounted!,sheridan=s.units.find(u=>u.id==='sheridan-sentry')!;
+ for(const enemy of s.units.filter(u=>u.iff==='3317'))enemy.pilot=false;
+ target.x=MAP_3_5_POINTS.waypoint1.x;target.z=MAP_3_5_POINTS.waypoint1.z;
+ s.tick(.05,idle);
+ assert.deepEqual(s.events.filter(e=>e.type==='mission-radio').map(e=>e.radioId),['sheridan-retreat']);
+ assert.ok(s.units.includes(sheridan));assert.equal(sheridan.alive,true);assert.equal(sheridan.pilot,false);
+ assert.equal(s.units.some(u=>u.personId==='sheridan'),false);
+ assert.equal(s.radioMembers.find(member=>member.personId==='sheridan')?.available,false);
+ assert.equal(s.mission.radioTriggers?.find(cue=>cue.id==='sheridan-retreat')?.line.ja,'Baby、やられた。戦線を離脱する');
+ s.events=[];s.damageFacility(laboratory,laboratory.health,{x:laboratory.x,y:2,z:laboratory.z});
+ assert.deepEqual(s.events.filter(e=>e.type==='mission-radio').map(e=>e.radioId),['thane-lost-gnome','kylie-eject']);
+ assert.equal(s.objectiveStates.find(o=>o.id==='destroy-laboratory')?.done,true);
+ assert.equal(s.status,'running');
+ s.events=[];for(let i=0;i<399;i++)s.tick(.05,idle);
+ assert.equal(s.events.some(e=>e.type==='ion-lock'),false);
+ s.tick(.05,idle);
+ assert.equal(s.events.filter(e=>e.type==='ion-lock').length,1);
+ assert.equal(target.alive,true,'target survives during the red pillar and announcement');
+ s.eject('ground');s.move(s.human,0,100);
+ assert.ok(distance(s.human,target)>=MISSION_3_5.ionStrike!.safeRadius);
+ for(let i=0;i<19;i++)s.tick(.05,idle);
+ assert.equal(s.status,'running');assert.equal(target.alive,true);
+ s.tick(.05,idle);
+ assert.equal(target.alive,false);assert.equal(s.events.filter(e=>e.type==='impact'&&e.weapon==='ION').length,1);
+ assert.equal(s.status,'won');assert.equal(s.events.filter(e=>e.type==='win').length,1);
+});
+test('3-5 removes Sheridan on foot while leaving his empty HAWK and starting the ion strike',()=>{
+ const s=new Simulation('Easy',MISSION_3_5),sheridan=s.units.find(u=>u.id==='sheridan-sentry')!,laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!;
+ for(const enemy of s.units.filter(u=>u.iff==='3317'))enemy.pilot=false;
+ const foot=s.forceEject(sheridan,'boarding')!;foot.flight=null;
+ s.mounted!.x=MAP_3_5_POINTS.waypoint1.x;s.mounted!.z=MAP_3_5_POINTS.waypoint1.z;s.tick(.05,idle);
+ assert.deepEqual(s.events.filter(e=>e.type==='mission-radio').map(e=>e.radioId),['sheridan-retreat']);
+ assert.ok(s.units.includes(sheridan));assert.equal(sheridan.pilot,false);
+ assert.equal(s.soldiers.some(soldier=>soldier.personId==='sheridan'),false);
+ assert.equal(s.radioMembers.find(member=>member.personId==='sheridan')?.available,false);
+ s.events=[];s.damageFacility(laboratory,laboratory.health,{x:laboratory.x,y:2,z:laboratory.z});
+ assert.deepEqual(s.events.filter(e=>e.type==='mission-radio').map(e=>e.radioId),['thane-lost-gnome','kylie-eject']);
+ for(let i=0;i<400;i++)s.tick(.05,idle);
+ assert.equal(s.events.filter(e=>e.type==='ion-lock').length,1);
+});
+test('3-5 ion strike fails if the player remains aboard or ejects without reaching safety',()=>{
+ for(const escape of [false,true]){
+  const s=new Simulation('Easy',MISSION_3_5),laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!;
+  for(const enemy of s.units.filter(u=>u.iff==='3317'))enemy.pilot=false;
+  s.damageFacility(laboratory,laboratory.health,{x:laboratory.x,y:2,z:laboratory.z});
+  for(let i=0;i<400;i++)s.tick(.05,idle);
+  if(escape)s.eject('ground');
+  for(let i=0;i<20;i++)s.tick(.05,idle);
+  assert.equal(s.status,'lost');assert.equal(s.events.filter(e=>e.type==='lose').length,1);
+  assert.equal(s.objectiveStates.find(o=>o.id==='survive-betrayal')?.done,false);
+ }
+});
+test('3-5 ion strike stays on the vehicle selected when the laboratory was destroyed',()=>{
+ const s=new Simulation('Easy',MISSION_3_5),laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!,target=s.mounted!,other=s.units.find(u=>u.id==='kylie-aip')!;
+ for(const enemy of s.units.filter(u=>u.iff==='3317'))enemy.pilot=false;
+ s.damageFacility(laboratory,laboratory.health,{x:laboratory.x,y:2,z:laboratory.z});
+ for(let i=0;i<400;i++)s.tick(.05,idle);
+ assert.equal(s.events.filter(e=>e.type==='ion-lock').at(-1)?.unit?.id,target.id);
+ s.mounted=other;
+ for(let i=0;i<20;i++)s.tick(.05,idle);
+ assert.equal(target.alive,false);
+ assert.equal(other.alive,true);
+ assert.equal(s.status,'lost');
+});
+test('3-5 warning starts when a player-fired missile destroys the laboratory',()=>{
+ const mission=structuredClone(MISSION_3_5);mission.base!.buildings[0]!.health=1;mission.terrain.cliffs=[];
+ const s=new Simulation('Easy',mission),laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!,player=s.mounted!;
+ player.x=laboratory.x;player.z=laboratory.z+65;player.yaw=Math.PI;player.aim=Math.PI;
+ s.selected=laboratory.id;s.lookBy(s.targetElevation(laboratory));
+ s.tick(.05,{...idle,fire4:true});
+ for(let i=0;i<100&&laboratory.alive;i++)s.tick(.05,idle);
+ assert.equal(laboratory.alive,false);
+ assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='SREM'));
+ assert.deepEqual(s.events.filter(e=>e.type==='mission-radio').map(e=>e.radioId),['sheridan-retreat','thane-lost-gnome','kylie-eject']);
+ assert.equal(s.status,'running');
+});
 test('3-2 starts with Thane on the left in a Sentry and Kylie and Sheridan in separate Tactical HAWCs',()=>{
  const s=new Simulation('Easy',MISSION_3_2);
  assert.equal(s.mounted?.kind,'union-aip');

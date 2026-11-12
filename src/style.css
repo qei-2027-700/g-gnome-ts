@@ -78,6 +78,8 @@
 #station[data-panel="completion"] #overlay{inset:0;padding:0;overflow:hidden;display:block;background:transparent;backdrop-filter:none;z-index:100;--door-closure:0}
 .mission-completion{position:absolute;inset:0;overflow:hidden;isolation:isolate;pointer-events:auto}
 .completion-label{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:96%;text-align:center;color:#63ff4d;font:bold clamp(25px,4.4vw,64px)/1.2 monospace;letter-spacing:.12em;text-shadow:2px 2px #09230a;z-index:1}
+.mission-completion[aria-label="MISSION FAILED"] .completion-label{color:#ff5555;text-shadow:2px 2px #350909}
+.result.failed h1{color:#ff5555}
 .completion-door-image{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:var(--door-closure,0);z-index:2}
 
 .facility-interior{position:absolute;top:85px;left:50%;transform:translateX(-50%);padding:16px 24px;background:#101e20e8;border:1px solid #8cb27c;color:#e1f4d9;z-index:5;white-space:nowrap}.facility-interior[hidden]{display:none}

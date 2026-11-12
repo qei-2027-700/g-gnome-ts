@@ -589,7 +589,7 @@ const BASE_VEHICLES = {
     },
     ai:{
       minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
-      detection:280,
+      detection:240,
       strafe:0,
       keepMoving:false,
       stopDistance:0,
@@ -598,6 +598,16 @@ const BASE_VEHICLES = {
     shape:{hull:{w:5.4,h:9.6,d:5.4,y:-2.4,z:0},cockpit:{w:8,h:2.4,d:8,y:3.6,z:0},weapon:{w:1.2,h:2.1,d:3.2,x:2.5,y:1.15,z:0},legX:2.8,support:{w:3.4,h:5.6,d:7,y:2.8,z:0}},
     gait:{stride:1,lift:0,lean:0,bounce:0},
     drive:{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'}
+  },
+  'scorp-popup-turret':{
+    category:'tower',boardable:false,ejectionSeat:false,
+    name:'Scorp Pop-up Turret',jp:'ポップアップタレット',faction:'scorp',
+    speed:0,shield:15,energy:0,armor:75,height:3,passengerCapacity:0,
+    color:SCORP_TOWER_PALETTE.green,weapons:['TCREAP'],torsoLimit:Math.PI,
+    voice:'solemn',initialAmmo:{TCREAP:300},
+    ai:{minimumRange:0,detection:70,strafe:0,keepMoving:false,stopDistance:0,missileVolley:1},
+    shape:{hull:{w:3.4,h:1.2,d:3.4,y:-1,z:0},cockpit:{w:2.6,h:.65,d:2.6,y:.25,z:0},weapon:{w:.4,h:.4,d:2.1,x:0,y:.3,z:1.2},legX:0},
+    gait:{stride:1,lift:0,lean:0,bounce:0},drive:{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'}
   },
 } as const satisfies Record<string,VehicleDefinition>;
 // Chassis and loadouts are provisional until the original Darken variants are measured.
@@ -624,7 +634,8 @@ export const VEHICLES={...BASE_VEHICLES,
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
  'scorp-aip':{...BASE_VEHICLES['merc-aip'],name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
- 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80}},
+ 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
+  shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.5,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-.95,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.75,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
 } as const satisfies Record<string,VehicleDefinition>;
 export type VehicleKind=keyof typeof VEHICLES;
 type VehicleDataKey='shape'|'gait'|'drive';

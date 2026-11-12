@@ -28,6 +28,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   }
   const targetRef=(id:string,label:string)=>{if(!targets.has(id))fail(`${label} references missing target: ${id}`);};
   for(const unit of allUnits)if(unit.powerSourceId){const source=mission.base?.buildings.find(b=>b.id===unit.powerSourceId);if(!source||source.kind!=='power-plant')fail(`unit ${unit.id} references missing power plant: ${unit.powerSourceId}`);}
+  for(const unit of allUnits)if(unit.controlFacilityId){const source=mission.base?.buildings.find(b=>b.id===unit.controlFacilityId);if(!source||source.kind!=='popup-turret-control')fail(`unit ${unit.id} references missing turret control: ${unit.controlFacilityId}`);}
   for(const person of mission.personnel??[]){if(person.facilityId){if(!mission.base?.buildings.some(b=>b.id===person.facilityId))fail(`person ${person.personId} references missing facility: ${person.facilityId}`);}if(person.boardingTargetId)unitRef(person.boardingTargetId,`person ${person.personId}`);if(person.facilityId&&person.boardingTargetId)fail(`person ${person.personId} has conflicting locations`);}
   for(const assault of mission.assaults??[]){unitRef(assault.unitId,'assault');targetRef(assault.targetId,'assault');if(!Number.isFinite(assault.startAt)||assault.startAt<0)fail('assault startAt must be nonnegative');}
   unique((mission.unitRoutes??[]).map(route=>route.unitId),'unit route ID');
@@ -92,6 +93,14 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
     for(const id of [...trigger.unitIds,...trigger.enemyUnitIds])unitRef(id,`radio trigger ${trigger.id}`);
    }
   }
+  if(mission.ionStrike){const strike=mission.ionStrike;
+   if(!mission.base?.buildings.some(b=>b.id===strike.facilityId))fail(`ion strike references missing facility: ${strike.facilityId}`);
+   unitRef(strike.retreatUnitId,'ion strike retreat');
+   if(![strike.retreatRange,strike.delay,strike.safeRadius].every(value=>Number.isFinite(value)&&value>0))fail('ion strike needs positive range, delay and safe radius');
+   for(const id of [strike.retreatRadioId,...strike.warningRadioIds])if(!mission.radioTriggers?.some(cue=>cue.id===id&&cue.event==='scripted'))fail(`ion strike references missing scripted radio: ${id}`);
+   if(!mission.objectives.some(o=>o.type==='survive-ion-strike'))fail('ion strike needs a survival objective');
+  }
+  if(mission.objectives.some(o=>o.type==='survive-ion-strike')&&!mission.ionStrike)fail('ion survival objective needs ion strike configuration');
   if(mission.completionSequence){if(!mission.radioTriggers?.some(r=>r.id===mission.completionSequence?.radioId&&r.event==='completion'))fail('completion sequence references missing radio trigger');if(!Number.isFinite(mission.completionSequence.delay)||mission.completionSequence.delay<0)fail('completion sequence has invalid delay');}
   unique([...allUnits.map(u=>u.id),...(mission.base?.buildings??[]).flatMap(b=>b.id?[b.id]:[])],'selection ID');
   unique((mission.minefields??[]).map(f=>f.id),'minefield ID');

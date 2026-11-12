@@ -7,6 +7,63 @@ import type {FacilityType} from '../simulation/facilities.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
 import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
+import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
+import {MAP_3_5_POINTS} from '../content/missions/mission-3-5-map.ts';
+test('3-5 pop-up turrets and their control building render at the configured field positions',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_5),world=new World({} as HTMLCanvasElement,sim,engine);
+  const turret=sim.units.find(unit=>unit.id==='popup-turret-1')!,rig=world.rigs.get(turret.id)!;
+  assert.ok(rig);
+  assert.ok(world.scene.getMeshByName('popup-turret-socket'));
+  assert.ok(world.scene.getMeshByName('popup-turret-gun'));
+  assert.ok(world.scene.getTransformNodeByName('facility-popup-turret-control'));
+  turret.aim=.5;world.update(.05);
+  assert.deepEqual([rig.root.position.x,rig.root.position.z],[turret.x,turret.z]);
+  assert.equal(rig.torso.rotation.y,.5);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
+test('3-5 Sheridan leaves an empty HAWK after his retreat radio',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_5),world=new World({} as HTMLCanvasElement,sim,engine);
+  assert.ok(world.rigs.has('sheridan-sentry'));
+  sim.mounted!.x=MAP_3_5_POINTS.waypoint1.x;sim.mounted!.z=MAP_3_5_POINTS.waypoint1.z;
+  sim.tick(.05,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});
+  for(const event of sim.events)world.event(event);
+  world.update(.05);
+  const sheridan=sim.units.find(unit=>unit.id==='sheridan-sentry')!;
+  assert.equal(sheridan.pilot,false);
+  assert.equal(world.rigs.has('sheridan-sentry'),true);
+  assert.equal(world.rigs.get('sheridan-sentry')!.root.isEnabled(),true);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
+test('3-5 Sheridan on foot disappears without removing his HAWK',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_5),world=new World({} as HTMLCanvasElement,sim,engine),hawk=sim.units.find(unit=>unit.id==='sheridan-sentry')!;
+  const soldier=sim.forceEject(hawk,'boarding')!;world.update(0);assert.ok(world.soldierRigs.has(soldier.id));
+  sim.mounted!.x=MAP_3_5_POINTS.waypoint1.x;sim.mounted!.z=MAP_3_5_POINTS.waypoint1.z;sim.tick(.05,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false});
+  world.update(.05);
+  assert.equal(world.soldierRigs.has(soldier.id),false);
+  assert.equal(world.rigs.has(hawk.id),true);assert.equal(hawk.pilot,false);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
+test('ion lock draws a red column on the marked vehicle for one second',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_5),world=new World({} as HTMLCanvasElement,sim,engine),target=sim.mounted!;
+  world.event({type:'ion-lock',unit:target,position:{x:target.x,y:0,z:target.z}});
+  const column=world.scene.getMeshByName('ion-lock-column')!;
+  assert.ok(column);assert.equal(column.material?.name,'ion-lock-red');
+  target.x+=12;world.update(.25);assert.equal(column.position.x,target.x);
+  world.update(.76);assert.equal(column.isDisposed(),true);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
 test('3-2 ground shield display shares its collision footprint and disappears with the power plant',()=>{
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
  try{
@@ -22,6 +79,23 @@ test('3-2 ground shield display shares its collision footprint and disappears wi
   const plant=sim.facilities.find(f=>f.id===shield.powerPlantId)!;
   sim.damageFacility(plant,plant.health,{x:plant.x,y:1,z:plant.z});world.update(0);
   assert.equal(mesh.isEnabled(),false);
+ }finally{engine.dispose();}
+});
+test('switching from a minefield mission to 3-2 removes the previous red area',async()=>{
+ const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_3_3),engine);
+  assert.ok(world.scene.getMeshByName('red-minefield'));
+  world.reset(new Simulation('Easy',MISSION_3_2));world.update(0);
+  assert.equal(world.sim.mines.length,0);
+  assert.equal(world.scene.getMeshByName('red-minefield'),null);
+  assert.equal(world.scene.transformNodes.filter(node=>node.name.startsWith('minefield-')).length,0);
+  world.reset(new Simulation('Easy',MISSION_3_4));world.update(0);
+  assert.ok(world.scene.getMeshByName('minefield-red-mark'));
+  world.reset(new Simulation('Easy',MISSION_3_2));world.update(0);
+  assert.equal(world.scene.getMeshByName('minefield-red-mark'),null);
+  assert.equal(world.scene.transformNodes.filter(node=>node.name.startsWith('minefield-')).length,0);
  }finally{engine.dispose();}
 });
 test('3-4 elevator appears and mine control destruction hides the minefield and emits smoke',()=>{
@@ -105,6 +179,27 @@ test('Scorp Sentry has a blue canopy, hanging arms and white outward feet',async
   assert.equal(through(shape.weapon.x,unit.spec.height*.6+shape.weapon.y),'rightWeapon');
   assert.equal(through(shape.legX,1.6),'rightLeg');
   world.update(.016);assert.equal(world.renderError,null);
+ }finally{engine.dispose();}
+});
+test('Scorp Assault cockpit uses its reference frame without fixed IFF',async()=>{
+ const {scorpAssaultCockpitShellSvg}=await import('./scorp-assault-cockpit.ts');
+ const shell=scorpAssaultCockpitShellSvg();
+ assert.ok(shell.includes('assets/cockpits/scope-assault-hawk.png'));
+ assert.ok(shell.includes('scorp-assault-metal-mask'));
+ assert.equal(shell.includes('1574'),false);
+});
+test('Scorp Assault has six grounded legs and an ejection seat',async()=>{
+ const {intersectParts}=await import('../simulation/parts.ts');
+ const engine=new NullEngine({renderWidth:960,renderHeight:720,textureSize:512});
+ try{
+  const sim=new Simulation(),unit=makeUnit('scorp-spider','scorp-assault',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
+  const world=new World({} as HTMLCanvasElement,sim,engine);world.mode=2;world.update(0);
+  const rig=world.rigs.get(unit.id)!;assert.equal(rig.spiderLegs!.length,6);
+  assert.equal(new Set(rig.spiderLegs!.map(leg=>`${leg.side}/${leg.front}`)).size,6);
+  assert.ok(rig.spiderLegs!.every(leg=>Math.abs(leg.foot.position.y-.1)<1e-8));
+  const middle=intersectParts(unit,{x:-6,y:3,z:0},{x:-2,y:3,z:0});assert.equal(middle?.part,'leftLeg');
+  sim.eject('launch');assert.equal(sim.mounted,null);assert.ok(sim.flight);
+  assert.equal(world.renderError,null);
  }finally{engine.dispose();}
 });
 test('Darken Tactical Defense has gold legs, silver shoulder pods and its own hologram',async()=>{
@@ -374,6 +469,33 @@ test('a Scorp pilot escaping a destroyed vehicle is rendered as a green combatan
  assert.equal(rig.root.metadata.faction,'scorp');assert.equal(rig.root.metadata.kind,'scorp-combatant');
  const skin=rig.root.getChildMeshes().find(m=>m.name==='soldier-head')!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
  assert.ok(skin.diffuseColor.g>skin.diffuseColor.r*1.5&&skin.diffuseColor.g>skin.diffuseColor.b*1.5);assert.ok(rig.root.position.y>0);engine.dispose();
+});
+test('3-5 allies leave Scorp machines in Union white while enemy pilots remain green',()=>{
+ const sim=new Simulation('Easy',MISSION_3_5);
+ const allies=['kylie-aip','thane-td','sheridan-sentry'].map(id=>sim.forceEject(sim.units.find(unit=>unit.id===id)!,'boarding')!);
+ const enemy=sim.forceEject(sim.units.find(unit=>unit.id==='approach-td')!,'boarding')!;
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);
+  for(const soldier of allies){
+   assert.equal(soldier.faction,'union');
+   const rig=world.soldierRigs.get(soldier.id)!;
+   assert.equal(rig.root.metadata.faction,'union');
+   const body=rig.root.getChildMeshes().find(mesh=>mesh.name==='soldier-body')!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
+   assert.ok(body.diffuseColor.r>.9&&body.diffuseColor.g>.9&&body.diffuseColor.b>.9);
+  }
+  assert.equal(enemy.faction,'scorp');
+  assert.equal(world.soldierRigs.get(enemy.id)!.root.metadata.faction,'scorp');
+  sim.eject('ground');sim.flight=null;
+  const captured=sim.units.find(unit=>unit.id==='approach-td')!;
+  sim.human={x:captured.x,z:captured.z};assert.equal(sim.board(),true);assert.equal(sim.mounted,captured);
+  sim.eject('ground');world.mode=2;world.update(0);
+  const player=world.soldierRigs.get('player')!;
+  assert.equal(player.root.metadata.faction,'union');
+  const playerBody=player.root.getChildMeshes().find(mesh=>mesh.name==='soldier-body')!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
+  assert.ok(playerBody.diffuseColor.r>.9&&playerBody.diffuseColor.g>.9&&playerBody.diffuseColor.b>.9);
+  world.scene.dispose();
+ }finally{engine.dispose();}
 });
 
 
@@ -881,10 +1003,22 @@ test('Union AIP uses its photographed shell and rear nozzles with a distinct sel
  try{const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='aip-rear-nozzle').length,2);assert.equal(world.rigs.get(unit.id)!.torso.position.y,0);}finally{engine.dispose();}
 });
 
-test('Scorp Assault LRIP fires a green laser',()=>{
+test('Scorp Assault LRIP fires two green lasers from its paired muzzles',async()=>{
+ const {VEHICLE_SHAPES}=await import('../content/vehicles.ts');
  const sim=new Simulation(),unit=makeUnit('assault-lrip','scorp-assault',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
- try{const world=new World({} as HTMLCanvasElement,sim,engine);sim.fire(2);world.update(.01);const bolt=world.scene.meshes.find(mesh=>mesh.name==='laser-bolt'&&mesh.metadata?.weapon==='LRIP');assert.ok(bolt);assert.equal(bolt.metadata.visual,'green-laser');const paint=bolt.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.emissiveColor.g>paint.emissiveColor.r);}finally{engine.dispose();}
+ try{
+  const world=new World({} as HTMLCanvasElement,sim,engine),mount=VEHICLE_SHAPES['scorp-assault'].weapon;
+  const energy=unit.energy;sim.fire(2);
+  const shots=sim.events.filter(event=>event.type==='shot'&&event.weapon==='LRIP');
+  assert.equal(shots.length,2);assert.equal(sim.missiles.filter(missile=>missile.weapon==='LRIP').length,2);
+  assert.deepEqual(shots.map(shot=>shot.from.x).sort((a,b)=>a-b),[-mount.x,mount.x]);
+  assert.ok(shots.every(shot=>Math.abs(shot.from.z-(mount.z+mount.d/2+.16))<1e-8));
+  assert.equal(energy-unit.energy,sim.weapons.lasers.LRIP.energy);
+  world.update(.01);const bolts=world.scene.meshes.filter(mesh=>mesh.name==='laser-bolt'&&mesh.metadata?.weapon==='LRIP');assert.equal(bolts.length,2);
+  assert.ok(bolts.every(bolt=>bolt.metadata.visual==='green-laser'));
+  const paint=bolts[0].material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.emissiveColor.g>paint.emissiveColor.r);
+ }finally{engine.dispose();}
 });
 
 test('3-2 grass and rock slopes use the supplied landscape palette',async()=>{

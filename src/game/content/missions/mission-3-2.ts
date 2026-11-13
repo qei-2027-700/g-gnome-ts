@@ -16,6 +16,8 @@ export const MISSION_3_2:MissionDefinition={
   {label:{ja:'第3ウェイポイント',en:'Waypoint 3'},detail:{ja:'地図左下の丸印は南西の通過地点。',en:'The circled marker at the lower left is the southwest passage.'}},
  ]},
  playerFaction:'union',initialIff:'4044',factionCodes:{union:'4044',scorp:'3317'},
+ // Opening stays silent. The same combat file as 1-5 starts once Sheridan's encounter line finishes.
+ bgm:{start:{trackId:'bgm-mission-1-1-sentry-combat',delay:Number.POSITIVE_INFINITY},afterRadio:{radioId:'sheridan-encounter',trackId:'bgm-mission-1-1-sentry-combat'}},
  vehicleOverrides:{'union-aip':{weapons:['ARC-M','3cREAP'],initialAmmo:{'3cREAP':220}}},
  player:MAP_3_2_POINTS.start,initialYaw:-Math.PI/2,assignedUnitId:'player-aip',startMountedUnitId:'player-aip',initialView:'first-person',
  units:[

@@ -22,6 +22,8 @@ test('3-1 foot travel stays on the dark ground and stops on the pale bands',()=>
  assert.equal(mission.bgm?.start.trackId,'bgm-credits');
  assert.equal(mission.bgm?.start.delay,0);
  assert.equal(mission.bgm?.afterRadio,undefined);
+ assert.deepEqual(mission.bgm?.afterAssault,{boardUnitId:'recon-asv',unitIds:['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv'],trackId:'bgm-union-march'});
+ assert.equal(s.missionMusicAssaultReady,false);
  assert.deepEqual(s.units.map(u=>u.id),['field-anchor','recon-asv','plaza-rocket','plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv','border-meson-north','border-meson-east','border-meson-south','border-sentry-west','border-sentry-south']);
  const recon=s.units.find(u=>u.id==='recon-asv')!,tower=s.units.find(u=>u.id==='plaza-rocket')!,enemyIff=mission.factionCodes.scorp;
  assert.equal(enemyIff,'0701');
@@ -62,7 +64,7 @@ test('3-1 foot travel stays on the dark ground and stops on the pale bands',()=>
  assert.ok(mission.rocks.every(rock=>rock.x>recon.x&&rock.x<s.player.x));
  assert.equal(s.lineOfSight({x:recon.x+70,z:recon.z},recon),false);
  assert.equal(s.lineOfSight({x:recon.x+70,z:recon.z+40},recon),true);
- assert.equal(mission.radioTriggers?.[0]?.line.ja,'偵察部隊に見つかった。真西の方角だ。攻撃は可能か！？');
+ assert.equal(mission.radioTriggers?.[0]?.line.ja,'偵察部隊に見つかった。真西の方角だ。攻撃はかのうか！');
  assert.deepEqual(mission.waypoints.map(w=>w.id),[1,2,3]);
  assert.deepEqual(mission.objectives.map(o=>o.type),['reach']);
  assert.equal(river.bridgeWidth,0);
@@ -141,9 +143,9 @@ test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provis
  assert.deepEqual(mission.passengerIff,{unitId:'recon-asv',iff:enemyIff});
  assert.deepEqual(mission.radioTriggers?.filter(cue=>cue.event==='iff').map(cue=>[cue.id,cue.line.ja,cue.unitId]),[
   ['kylie-iff-set','IFFコードセット完了！','recon-asv'],
-  ['kylie-iff-goal','目的はウル・ビンシャー！','recon-asv'],
+  ['kylie-iff-goal','目的は第2ウェイポイント、ウル・ビンシャー！','recon-asv'],
  ]);
- assert.equal(mission.radioTriggers?.find(cue=>cue.id==='kylie-plaza')?.line.ja,'まずいな…unionの夜戦基地の軍団だ');
+ assert.equal(mission.radioTriggers?.find(cue=>cue.id==='kylie-plaza')?.line.ja,'まずいな…ユニオンのやせん基地と目と鼻の先だ');
  assert.equal(mission.radioTriggers?.find(cue=>cue.id==='thane-union-hold')?.line.ja,'攻撃はできないわ！彼らは味方よ！');
  const early=new Simulation('Easy',mission);
  assert.equal(early.changeIff(enemyIff),true);
@@ -171,6 +173,7 @@ test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provis
  s.human={x:asv.x+3.2,z:asv.z};
  for(let i=0;i<30&&s.mounted!==asv;i++)s.tick(1/60,idle);
  assert.equal(s.mounted?.id,'recon-asv');
+ assert.equal(s.missionMusicAssaultReady,false);
  assert.equal(s.iff,'0000');
  assert.equal(s.events.filter(event=>event.radioId==='kylie-iff-set').length,0);
  for(let i=0;i<240&&(kylie.passengerOf!==asv.id||thane.passengerOf!==asv.id);i++){
@@ -217,6 +220,11 @@ test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provis
   unionMoved||=unionSide.alert&&(unionSide.speed!==0||distance(unionSide,unionAt)>1);
  }
  assert.equal(scorpMoved,true);assert.equal(unionMoved,true);
+ assert.equal(plaza.missionMusicAssaultReady,false);
+ const carrier=plaza.units.find(unit=>unit.id==='recon-asv')!;carrier.x=rocket.x;carrier.z=rocket.z;plaza.mounted=carrier;
+ assert.equal(plaza.missionMusicAssaultReady,true);
+ plaza.mounted=plaza.units.find(unit=>unit.id==='field-anchor')!;
+ assert.equal(plaza.missionMusicAssaultReady,false);
  assert.equal(plaza.events.filter(event=>event.radioId==='kylie-plaza').length,1);
  assert.equal(plaza.events.filter(event=>event.radioId==='thane-union-hold').length,0);
  assert.ok(worst<250,`plaza tick took ${worst.toFixed(0)}ms`);
@@ -509,6 +517,9 @@ test('3-2 Thane moves on his own, the conversation starts after five seconds, an
  }
  assert.ok(thane.x<initialX-400,'Thane heads west from his marked northeast start toward waypoint 1');
  assert.ok(thane.z<initialZ-20,'Thane then begins descending the western side');
+ assert.equal(s.mission.bgm?.start.trackId,'bgm-mission-1-1-sentry-combat');
+ assert.equal(s.mission.bgm?.start.delay,Number.POSITIVE_INFINITY);
+ assert.deepEqual(s.mission.bgm?.afterRadio,{radioId:'sheridan-encounter',trackId:'bgm-mission-1-1-sentry-combat'});
  assert.deepEqual(heard.map(entry=>entry.id),['thane-opening','kylie-history','thane-interrupt','kylie-reply','sheridan-encounter']);
  assert.ok(heard.slice(0,4).every(entry=>entry.time>=5&&entry.time<5.1));
  assert.ok(heard[4]!.time>=25&&heard[4]!.time<30);

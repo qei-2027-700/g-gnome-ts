@@ -98,7 +98,9 @@ test('river paths need multiple finite points inside the mission bounds',async()
 test('elimination BGM rejects an empty roster, duplicate IDs and absent enemies',()=>{
  const mission=structuredClone(MISSION_3_3);mission.bgm!.afterEliminate={unitIds:[],trackId:'next'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterEliminate has no units')));
  mission.bgm!.afterEliminate.unitIds=['missing','missing'];const errors=validateMissions([mission]).join('\n');assert.ok(errors.includes('duplicate BGM afterEliminate unit ID'));assert.ok(errors.includes('BGM afterEliminate references missing unit: missing'));
- mission.bgm!.afterEliminate=undefined;mission.bgm!.afterRadio={radioId:'missing-radio',trackId:'bgm-credits'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterRadio references missing radio: missing-radio')));
+ mission.bgm!.afterEliminate=undefined;mission.bgm!.afterAssault={boardUnitId:'missing',unitIds:[],trackId:'bgm-union-march'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterAssault has no units')));
+ mission.bgm!.afterAssault={boardUnitId:'missing',unitIds:['missing','missing'],trackId:'bgm-union-march'};const assaultErrors=validateMissions([mission]).join('\n');assert.ok(assaultErrors.includes('duplicate BGM afterAssault unit ID'));assert.ok(assaultErrors.includes('BGM afterAssault references missing unit: missing'));assert.ok(assaultErrors.includes('BGM afterAssault has no assault: missing'));
+ mission.bgm!.afterAssault=undefined;mission.bgm!.afterRadio={radioId:'missing-radio',trackId:'bgm-credits'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterRadio references missing radio: missing-radio')));
 });
 
 test('catalog validation always reports an assigned unit reference absent from the mission',()=>{

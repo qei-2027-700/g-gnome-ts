@@ -1,9 +1,9 @@
-import type {VehicleKind,VehicleSpec,Faction} from '../vehicles.ts';
+import type {VehicleKind,VehicleOverride,Faction} from '../vehicles.ts';
 import type {WeaponOverrides,MissileWeapon} from '../weapons.ts';
 import type {Difficulty} from '../../settings.ts';
 export type Localized={ja:string;en:string};
 export type Waypoint={id:number;x:number;z:number;radius:number};
-export type Spawn={id:string;kind:VehicleKind;x:number;z:number;pilot:boolean;powerSourceId?:string;controlFacilityId?:string;yaw?:number;personId?:string;iff?:string;overrides?:Partial<VehicleSpec>};
+export type Spawn={id:string;kind:VehicleKind;x:number;z:number;pilot:boolean;powerSourceId?:string;controlFacilityId?:string;yaw?:number;personId?:string;iff?:string;overrides?:VehicleOverride};
 export type Objective={id:string;label:Localized;optional?:boolean}&({type:'reach';waypointId:number}|{type:'eliminate';unitIds:readonly string[]}|{type:'destroy-facility';facilityIds:readonly string[]}|{type:'neutralize';unitIds:readonly string[];facilityIds:readonly string[];loweredBridgeId?:string}|{type:'escort-facility';personId:string;facilityId:string;radius:number;afterObjectiveIds:readonly string[]}|{type:'set-iff';iff:string}|{type:'lure';unitId:string}|{type:'defend';untilBridgeId?:string;targetIds:readonly string[];attackerIds:readonly string[];requiredKills?:number}|{type:'raise-bridge'|'lower-bridge';bridgeId:string}|{type:'board-unit';unitId:string}|{type:'board-player';personId:string}|{type:'board-faction';personIds:readonly string[];faction:Faction}|{type:'survive-ion-strike'});
 export type Cliff={id:string;x:number;z:number;width:number;depth:number;height:number;surface?:'slope'|'plateau'};
 export type River={bridgeId:string;x:number;z:number;width:number;length:number;bridgeZ:number;bridgeWidth:number;surface?:'water'|'lava';path?:readonly {x:number;z:number}[]};
@@ -18,7 +18,7 @@ export type BriefingPresentation={
 };
 export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number};
 export type MissionDefinition={
- bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string}};
+ bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterAssault?:{boardUnitId:string;unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string}};
  audioPath?:string;
  briefingPresentation?:BriefingPresentation;
  id:string;title:string;subtitle:Localized;briefing:Localized;startHint:Localized;success:Localized;radio:Localized;
@@ -46,5 +46,5 @@ export type MissionDefinition={
  facilityIffDisguise?:{facilityId:string;enemyIff:string;footIff:string;vehicleIds:readonly string[]};
  lures?:readonly {unitId:string;weapon:MissileWeapon;hits:number;onFootResponse?:'ram-player'}[];
  tuning:Record<Difficulty,{interval:number}>;
- vehicleOverrides?:Partial<Record<VehicleKind,Partial<VehicleSpec>>>;weaponOverrides?:WeaponOverrides;
+ vehicleOverrides?:Partial<Record<VehicleKind,VehicleOverride>>;weaponOverrides?:WeaponOverrides;
 };

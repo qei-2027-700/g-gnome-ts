@@ -82,7 +82,7 @@ export class GameAudio {
   private fireSources=new Set<AudioBufferSourceNode>();
   private zWaspStep=0;
   private zWaspLast=-1;
-  private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;radioEnded:boolean;track:string|null;missingReported:boolean}|null=null;
+  private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;assault:boolean;radioEnded:boolean;track:string|null;missingReported:boolean}|null=null;
   private musicOwner:'manual'|'mission'|null=null;
   private musicPaused=true;private musicPending=false;private musicFailed=false;private musicGeneration=0;
   musicError:string|null=null;
@@ -94,7 +94,7 @@ export class GameAudio {
   beginMissionMusic(mission:MissionDefinition){
     this.missionRadioQueue=[];this.missionRadioCue=null;
     if(mission.bgm||this.musicOwner==='mission')this.stopMusic();
-    this.missionMusic=mission.bgm?{cues:mission.bgm,boarded:false,detected:false,eliminated:false,radioEnded:false,track:null,missingReported:false}:null;this.musicError=null;
+    this.missionMusic=mission.bgm?{cues:mission.bgm,boarded:false,detected:false,eliminated:false,assault:false,radioEnded:false,track:null,missingReported:false}:null;this.musicError=null;
   }
   resetMissionMusic(){this.missionRadioQueue=[];this.missionRadioCue=null;if(this.musicOwner==='mission')this.stopMusic();this.missionMusic=null;this.musicError=null;}
   missionMusicBoarded(unitId:string){if(this.missionMusic?.cues.afterBoard?.unitId===unitId)this.missionMusic.boarded=true;}
@@ -112,14 +112,15 @@ export class GameAudio {
     });
   }
   private get musicVolume(){return this.settings.music*(this.musicOwner==='mission'?(this.missionMusic?.cues.volumeScale??1):1);}
-  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[]){
+  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false){
     this.musicPaused=paused;if(this.music)this.music.volume=this.musicVolume;
     if(paused){this.pauseMusic();return;}
     const state=this.missionMusic;
     if(state){
       const elimination=state.cues.afterEliminate;
       if(!state.eliminated&&units&&elimination?.unitIds.length&&elimination.unitIds.every(id=>units.some(unit=>unit.id===id&&(!unit.alive||unit.defeated===true))))state.eliminated=true;
-      const next=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.radioEnded?state.cues.afterRadio:undefined,availableNext=next&&this.bgmAssets[next.trackId];
+      if(!state.assault&&assaultReady&&state.cues.afterAssault)state.assault=true;
+      const next=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.assault?state.cues.afterAssault:state.radioEnded?state.cues.afterRadio:undefined,availableNext=next&&this.bgmAssets[next.trackId];
       if(next&&!availableNext&&!state.missingReported){state.missingReported=true;this.musicError='missing-next';}
       const track=availableNext?next!.trackId:time>=state.cues.start.delay?state.cues.start.trackId:null;
       if(track&&track!==state.track){

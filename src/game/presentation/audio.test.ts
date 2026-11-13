@@ -285,6 +285,21 @@ test('1-1 start music waits for launch, starts immediately once, resumes and res
   audio.beginMissionMusic(MISSION);assert.equal(tracks[0].paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,0);audio.resetMissionMusic();assert.equal(tracks[1].paused,true);assert.equal(audio.music,null);
  });
 });
+test('3-1 keeps Credits until the captured ASV is manned and both plaza forces have entered the fight',async()=>{
+ const {MISSION_3_1}=await import('../content/missions/mission-3-1.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_3_1);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'credits.mp3');assert.equal(tracks.at(-1).loop,true);
+  audio.updateMissionMusic(5,true,[],true);assert.equal(tracks.at(-1).src,'credits.mp3');assert.equal(tracks.at(-1).paused,true);
+  audio.updateMissionMusic(5,false,[],false);await Promise.resolve();assert.equal(tracks.length,1);
+  audio.updateMissionMusic(6,false,[],true);await Promise.resolve();assert.equal(tracks.at(-1).src,'union-march.mp3');assert.equal(tracks.at(-1).loop,true);assert.equal(tracks[0].paused,true);
+  const count=tracks.length;tracks.at(-1).currentTime=3;audio.updateMissionMusic(8,false,[],true);assert.equal(tracks.length,count);assert.equal(tracks.at(-1).currentTime,3);
+ });
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_3_1);audio.updateMissionMusic(0,false);await Promise.resolve();
+  audio.updateMissionMusic(1,false,[],true);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'credits.mp3');assert.equal(audio.musicError,'missing-next');
+  audio.musicError=null;audio.updateMissionMusic(2,false,[],true);assert.equal(audio.musicError,null);
+ },false);
+});
 test('3-1 starts Credits immediately and a finished mission radio switches once to the named track',async()=>{
  const {MISSION_3_1}=await import('../content/missions/mission-3-1.ts');
  await musicFixture(async(audio,tracks)=>{
@@ -309,6 +324,16 @@ test('a missing radio-switch track keeps Credits and reports the missing cue onc
   audio.missionMusicRadioEnded('later');audio.updateMissionMusic(2,false);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'credits.mp3');assert.equal(audio.musicError,'missing-next');
   audio.musicError=null;audio.updateMissionMusic(3,false);assert.equal(audio.musicError,null);assert.equal(tracks[0].paused,false);
  },false);
+});
+test('3-2 stays silent until Sheridan’s encounter line finishes, then plays the 1-1 combat track once',async()=>{
+ const {MISSION_3_2}=await import('../content/missions/mission-3-2.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_3_2);audio.updateMissionMusic(0,false);audio.updateMissionMusic(1000,false);assert.equal(tracks.length,0);
+  audio.missionMusicRadioEnded('thane-opening');audio.updateMissionMusic(1000,false);assert.equal(tracks.length,0);
+  audio.missionMusicRadioEnded('sheridan-encounter');audio.updateMissionMusic(30,true);assert.equal(tracks.length,0);
+  audio.updateMissionMusic(30,false);await Promise.resolve();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sentry-combat.mp3');assert.equal(tracks[0].loop,true);
+  const count=tracks.length;tracks[0].currentTime=4;audio.missionMusicRadioEnded('sheridan-encounter');audio.updateMissionMusic(40,false);assert.equal(tracks.length,count);assert.equal(tracks[0].currentTime,4);
+ });
 });
 test('1-5 plays the assigned combat BGM at launch and stops it when the mission ends',async()=>{
  const {MISSION_1_5}=await import('../content/missions/mission-1-5.ts');

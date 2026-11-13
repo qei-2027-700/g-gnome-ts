@@ -12,6 +12,8 @@ number>>;ai:{
   minimumRange?:number;detection:number;strafe:number;keepMoving:boolean;stopDistance:number;missileVolley:number
 }
 };
+// A mission override names only the fields it changes. Unspecified ai fields stay on the vehicle.
+export type VehicleOverride=Omit<Partial<VehicleSpec>,'ai'>&{ai?:Partial<VehicleSpec['ai']>};
 type ShapeBox={w:number;h:number;d:number;x?:number;y:number;z:number};
 // Dimensions are prototype metres in chassis-local coordinates.
 export type VehicleShape={
@@ -646,7 +648,7 @@ export const VEHICLE_SHAPES=vehicleData('shape');
 export const VEHICLE_GAITS=vehicleData('gait');
 export const VEHICLE_DRIVE_PROFILES=vehicleData('drive');
 export function resolveVehicle(kind:VehicleKind,
-                               ...overrides:(Partial<VehicleSpec>|undefined)[
+                               ...overrides:(VehicleOverride|undefined)[
 ]):VehicleSpec {
   const {shape:_shape,gait:_gait,drive:_drive,...base}=VEHICLES[kind];let spec:VehicleSpec={
     ...base,

@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,type Input} from './simulation.ts';
+import {Simulation,AI_TARGET_SETTLE,type Input} from './simulation.ts';
 import {MISSION_3_3} from '../content/missions/mission-3-3.ts';
 import {MISSILES} from '../content/weapons.ts';
 import {advanceSimulation} from '../session.ts';
@@ -88,7 +88,7 @@ test('the Scorp ASV ram response is mission data and ranged attacks resume again
   if(!override){def.id='other';def.lures=def.lures!.map(rule=>({...rule,onFootResponse:undefined}));}
   const s=new Simulation('Easy',def),enemy=s.units[1],own=s.units[0];enemy.lured=true;enemy.alert=true;if(!mounted)s.units=[enemy];tick(s,1);
   assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===enemy),mounted||!override);
-  if(!mounted&&override){s.units.push(own);s.human={x:own.x,z:own.z};assert.ok(s.board());s.events=[];enemy.cooldown=0;tick(s,1);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===enemy));}
+  if(!mounted&&override){s.units.push(own);s.human={x:own.x,z:own.z};assert.ok(s.board());s.events=[];enemy.cooldown=0;tick(s,Math.ceil((AI_TARGET_SETTLE+.5)*60));assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===enemy));}
  }
 });
 

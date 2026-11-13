@@ -41,7 +41,7 @@ test('Union Sentry FIL-30 fires both lower cockpit mounts for player and AI; wea
  assert.equal(weaponMountCount('union-sentry','FIL-30'),2);assert.equal(weaponDisplayName('union-sentry','FIL-30'),'FIL-30');assert.equal(weaponDisplayName('union-tactical','P2MEC'),'P2MEC');
  for(const ai of [false,true])for(const yaw of [0,Math.PI/2]){
   const s=new Simulation(),unit=makeUnit('sentry','union-sentry',0,ai?60:1,ai,{faction:ai?'scorp':'union',weapons:['FIL-30']});s.units=[unit];s.human={x:0,z:0};unit.yaw=unit.aim=yaw;
-  if(ai){unit.iff='6707';s.human={x:Math.sin(yaw)*40,z:60+Math.cos(yaw)*40};s.tick(.01,idle);}else{s.board();unit.aim=yaw;s.fire(1);}
+  if(ai){unit.iff='6707';unit.alert=true;s.human={x:Math.sin(yaw)*40,z:60+Math.cos(yaw)*40};s.tick(.01,idle);}else{s.board();unit.aim=yaw;s.fire(1);}
   const bolts=s.missiles.filter(p=>p.weapon==='FIL-30'),shots=s.events.filter(e=>e.type==='shot'&&e.unit===unit);assert.equal(bolts.length,2,`${ai?'AI':'player'} yaw=${yaw}`);assert.equal(shots.length,2);assert.equal(unit.energy,1598);
   const [a,b]=shots.map(e=>e.from!);assert.ok(Math.abs(Math.hypot(a.x-b.x,a.z-b.z)-1.3)<1e-8);assert.ok(shots.every(e=>e.from!.y!<unit.spec.height*.5));
  }
@@ -88,7 +88,7 @@ test('Union Tactical fires both arm weapons together for player and AI at rotate
  for(const weapon of ['P2MEC','TCREAP'] as const)for(const ai of [false,true])for(const yaw of [0,Math.PI/2]){
   const s=new Simulation(),u=makeUnit('dual','union-tactical',0,18,ai,{faction:ai?'scorp':'union',weapons:[weapon],ai:{detection:160,strafe:0,keepMoving:false,stopDistance:65,missileVolley:1}});
   s.units=[u];s.human={x:0,z:0};u.aim=yaw;u.yaw=yaw;
-  if(ai){s.human={x:Math.sin(yaw)*40,z:18+Math.cos(yaw)*40};s.tick(.01,idle);}else{s.human={x:0,z:18};s.board();u.aim=yaw;s.fire(1);}
+  if(ai){u.alert=true;s.human={x:Math.sin(yaw)*40,z:18+Math.cos(yaw)*40};s.tick(.01,idle);}else{s.human={x:0,z:18};s.board();u.aim=yaw;s.fire(1);}
   const shots=s.missiles.filter(p=>p.weapon===weapon);assert.equal(shots.length,2,`${weapon} ${ai?'AI':'player'}`);
   assert.notEqual(shots[0].id,shots[1].id);const origins=s.events.filter(e=>e.type==='shot'&&e.unit===u).map(e=>e.from!);assert.ok(Math.abs(Math.hypot(origins[0].x-origins[1].x,origins[0].z-origins[1].z)-5.3)<1e-8);
   assert.equal(s.events.filter(e=>e.type==='shot'&&e.unit===u).length,2);
@@ -116,7 +116,7 @@ test('Union Sentry gun and laser leave the lower cockpit mounts while converging
   const shot=s.events.find(e=>e.type==='shot'&&e.unit===u)!;assert.ok(shot);assert.ok(shot.from!.y!<s.eyeHeight-.8);assert.ok(shot.from!.z!>u.z+1.5);
   if(slot===2)step(s,100);assert.ok(target.shield<target.spec.shield);
  }
- const s=new Simulation(),enemy=makeUnit('enemy','union-sentry',0,60,true,{faction:'scorp',weapons:['FIL-30']});enemy.iff='scorp';enemy.yaw=enemy.aim=Math.PI;s.units=[enemy];s.human={x:0,z:0};s.tick(.02,idle);
+ const s=new Simulation(),enemy=makeUnit('enemy','union-sentry',0,60,true,{faction:'scorp',weapons:['FIL-30']});enemy.iff='scorp';enemy.alert=true;enemy.yaw=enemy.aim=Math.PI;s.units=[enemy];s.human={x:0,z:0};s.tick(.02,idle);
  const shot=s.events.find(e=>e.type==='shot'&&e.unit===enemy)!;assert.ok(shot);assert.ok(shot.from!.y!<enemy.spec.height*.5);assert.ok(shot.from!.z!<enemy.z-1.5);
 });
 
@@ -125,7 +125,7 @@ test('Scorp paired CETI, LRIP and chin RAID fire from both mounts for player and
  for(const [kind,weapon,separation] of [['scorp-sentry','CETI',4],['scorp-assault','LRIP',.7],['scorp-tactical','RAID',1.1]] as const)for(const ai of [false,true])for(const yaw of [0,Math.PI/2]){
   const s=new Simulation(),u=makeUnit('dual',kind,0,18,ai,{faction:ai?'scorp':'union',weapons:[weapon],ai:{detection:160,strafe:0,keepMoving:false,stopDistance:65,missileVolley:1}});
   s.units=[u];s.human={x:0,z:18};u.aim=u.yaw=yaw;const energy=u.energy;
-  if(ai){s.human={x:Math.sin(yaw)*40,z:18+Math.cos(yaw)*40};s.tick(.01,idle);}else{s.board();u.aim=yaw;s.fire(1);}
+  if(ai){u.alert=true;s.human={x:Math.sin(yaw)*40,z:18+Math.cos(yaw)*40};s.tick(.01,idle);}else{s.board();u.aim=yaw;s.fire(1);}
   const bolts=s.missiles.filter(p=>p.weapon===weapon);assert.equal(bolts.length,2,`${kind} ${ai?'AI':'player'}`);assert.notEqual(bolts[0].id,bolts[1].id);
   const origins=s.events.filter(e=>e.type==='shot'&&e.unit===u).map(e=>e.from!);assert.equal(origins.length,2);assert.ok(Math.abs(Math.hypot(origins[0].x-origins[1].x,origins[0].z-origins[1].z)-separation)<1e-8);assert.equal(u.energy,energy-2);
   if(kind==='scorp-tactical')for(const origin of origins)assert.ok(Math.abs(origin.y!-(u.spec.height*.6-.05))<1e-8);

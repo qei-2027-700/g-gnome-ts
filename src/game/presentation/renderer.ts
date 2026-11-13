@@ -3,7 +3,7 @@ import {weatheredArmor,mesonWeatheredArmor} from './vehicle-finish.ts';
 import {initialCameraMode,REAR_CAMERA_DISTANCE_SCALE} from './camera-mode.ts';
 import {isEmbarked} from '../simulation/infantry.ts';
 import {makeBase} from './base.ts';
-import {grassTexture,snowTexture,volcanicTexture,overcastSky,rockyMountains} from './landscape.ts';
+import {boulderTexture,grassTexture,snowTexture,volcanicTexture,overcastSky,rockyMountains} from './landscape.ts';
 import {DARKEN_TACTICAL_HIP_Y,DARKEN_TACTICAL_HIP_Z,DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_SHIN,DARKEN_TACTICAL_THIGH,DARKEN_TACTICAL_TORSO_Y,MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TACTICAL_SHIN,SCORP_TACTICAL_THIGH,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
 // Register rendering extensions and shaders before the first frame, including dev reloads.
 import '@babylonjs/core';
@@ -118,17 +118,18 @@ export class World {
       for(const point of samples){const nx=point.tz,nz=-point.tx;left.push(new Vector3(point.x-nx*halfWidth,-.7,point.z-nz*halfWidth));right.push(new Vector3(point.x+nx*halfWidth,-.7,point.z+nz*halfWidth));}
       const water=MeshBuilder.CreateRibbon('river-water',{pathArray:[left,right],sideOrientation:Mesh.DOUBLESIDE},this.scene);water.material=this.material(`river-${river.bridgeId}`,river.surface==='lava'?'#d74712':'#245c9a');
       const waterMaterial=water.material as StandardMaterial;waterMaterial.specularColor=river.surface==='lava'?new Color3(.5,.13,.02):new Color3(.42,.52,.62);waterMaterial.emissiveColor=color(river.surface==='lava'?'#9b2208':'#10283b');
-      const bridge=riverFrameAtZ(river,river.bridgeZ),bridgeYaw=Math.atan2(bridge.tx,bridge.tz);
+      if(river.bridgeWidth>0){const bridge=riverFrameAtZ(river,river.bridgeZ),bridgeYaw=Math.atan2(bridge.tx,bridge.tz);
       for(const side of [-1,1]){
         const hinge=new TransformNode(river===terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`,this.scene);hinge.position.set(bridge.x+bridge.tz*side*(river.width/2+9),.2,bridge.z-bridge.tx*side*(river.width/2+9));hinge.rotation.y=bridgeYaw;
         const leaf=MeshBuilder.CreateBox('river-bridge-leaf',{width:(river.width+18)/2,height:.35,depth:river.bridgeWidth},this.scene);leaf.parent=hinge;leaf.position.x=-side*(river.width+18)/4;leaf.material=this.material(`bridge-deck-${side}`,'#77796c');
         for(const edge of [-1,1]){const rail=MeshBuilder.CreateBox('bridge-rail',{width:(river.width+18)/2,height:1,depth:.3},this.scene);rail.parent=hinge;rail.position.set(-side*(river.width+18)/4,.65,edge*river.bridgeWidth/2);rail.material=this.material(`bridge-rail-${side}-${edge}`,'#494d43');}
-      }
+      }}
     }
-    const stone=grass&&!this.sim.mission.rocks.length?null:this.material('sandstone',grass?'#5f853f':volcanic?'#54504b':'#bda16d');const band=grass?null:this.material('strata',volcanic?'#3d3935':'#897751');
+    const stone=grass?null:this.material('sandstone',volcanic?'#54504b':'#bda16d');const band=grass?null:this.material('strata',volcanic?'#3d3935':'#897751');
+    const rockPaint=grass&&this.sim.mission.rocks.length?this.material('boulder','#ffffff'):stone;if(rockPaint&&grass){rockPaint.diffuseTexture=boulderTexture(this.scene,terrain.seed);rockPaint.specularColor=Color3.Black();}
     const ridge=(x:number,z:number,i:number)=>{const h=terrain.ridgeHeight+(Math.sin(i*7.1+terrain.seed)+1)*terrain.ridgeVariation;const rock=MeshBuilder.CreateCylinder('mesa',{height:h,diameterTop:16+(i%4)*8,diameterBottom:75+(i%5)*18,tessellation:6,subdivisions:4},this.scene);rock.position.set(x,h/2-3,z);rock.rotation.y=i;rock.material=stone;const line=MeshBuilder.CreateCylinder('sediment',{height:2.5,diameterTop:40+(i%4)*7,diameterBottom:45+(i%4)*7,tessellation:6},this.scene);line.position.set(x,h*.61,z);line.rotation.y=i;line.material=band;};
     if(!grass&&!snow){for(let i=0;i<28;i++){ridge(-terrain.halfWidth-55-(i%3)*42,terrain.minZ-80+i*35,i);ridge(terrain.halfWidth+50+(i%4)*34,terrain.minZ-70+i*35,i+30);}for(let i=0;i<8;i++)ridge(-220+i*65,terrain.maxZ+100,i+60);}
-    for(const [i,r] of this.sim.mission.rocks.entries()){const rock=MeshBuilder.CreateSphere('boulder',{diameter:r.r*2,segments:5},this.scene);rock.scaling.y=.75;rock.position.set(r.x,r.r*.55,r.z);rock.rotation.set(i,.4*i,.3);rock.material=stone;}
+    for(const [i,r] of this.sim.mission.rocks.entries()){const rock=MeshBuilder.CreateSphere('boulder',{diameter:r.r*2,segments:8,updatable:true},this.scene);const positions=rock.getVerticesData('position')!;for(let v=0;v<positions.length;v+=3){if(positions[v+1]>=0)continue;const horiz=Math.hypot(positions[v],positions[v+2]);if(horiz<1e-4)continue;const scale=r.r/horiz;positions[v]*=scale;positions[v+2]*=scale;}rock.updateVerticesData('position',positions);rock.createNormals(true);rock.scaling.y=.75;rock.position.set(r.x,r.r*.55,r.z);rock.rotation.y=.4*i;rock.material=rockPaint;}
     if(!grass&&!snow&&!volcanic){const shrubMat=this.material('scrub','#666744');for(let i=0;i<75;i++){const x=Math.sin(i*27.3)*135,z=-40+(i*87.7)%610;if(Math.abs(x)<14)continue;const s=MeshBuilder.CreateCylinder('scrub',{height:1.4,diameterTop:.1,diameterBottom:2,tessellation:3},this.scene);s.position.set(x,.7,z);s.rotation.z=Math.sin(i)*.4;s.material=shrubMat;}}
     makeBase(this.scene,this.sim.mission);
     for(const shield of this.sim.mission.groundShields??[]){const mesh=MeshBuilder.CreateBox(`ground-shield-${shield.id}`,{width:shield.width,height:shield.height,depth:shield.depth},this.scene);mesh.position.set(shield.x,shield.height/2,shield.z);const material=this.material(`ground-shield-${shield.id}`,'#38c9b4',true);material.alpha=.35;material.backFaceCulling=false;mesh.material=material;mesh.isPickable=false;this.groundShieldMeshes.set(shield.id,mesh);}

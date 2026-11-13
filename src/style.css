@@ -115,8 +115,9 @@
 .union-infantry-view .reticle:before,.union-infantry-view .reticle:after{display:none}
 .union-infantry-view .reticle i{position:absolute;left:50%;top:50%;width:8px;height:8px;transform:translate(-50%,-50%);border-radius:50%;background:#ff4b3e;box-shadow:0 0 5px #f33}
 .union-infantry-view .reticle b{display:none}
-.union-infantry-view #lockDistance{display:none}
-.union-infantry-view #waypointMarker,.union-infantry-view .throttle-meter,.union-infantry-view #targetBracket,.union-infantry-view #targetDirection{display:none!important}
+.union-infantry-view #lockDistance{display:block;z-index:6}
+.union-infantry-view #targetBracket,.union-infantry-view #targetDirection{z-index:6}
+.union-infantry-view #waypointMarker,.union-infantry-view .throttle-meter{display:none!important}
 .union-infantry-view #infantryIff{position:absolute;z-index:5;left:50%;top:61.5%;transform:translateX(-50%);font:700 clamp(14px,1.5vw,22px) monospace;color:#70f568;text-shadow:0 0 7px #38ed43a0;pointer-events:none}
 .union-infantry-view #infantryIff small{display:none}
 @media(max-width:600px){.union-infantry-view .infantry-weapons{left:17%;width:66%;top:1%;height:12%}.union-infantry-view .foot-weapon{grid-template-columns:1fr .8fr;padding:0 2%}.union-infantry-view #gasCartridges{gap:1px}.union-infantry-view #gasCartridges i{width:5px;height:12px;border-width:1px}.union-infantry-view .compass{left:13%;width:23%}}

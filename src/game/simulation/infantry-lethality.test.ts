@@ -59,7 +59,7 @@ test('explosive missile near-misses damage exposed infantry with distance fallof
 function aiMissileVolley(airborne:boolean,index:number){
  const def=structuredClone(MISSION);def.completionEnabled=false;def.rocks=[];def.units=[{id:'own',kind:'union-sentry',x:0,z:0,pilot:false}];def.assignedUnitId='own';def.startMountedUnitId='own';
  const s=new Simulation('Easy',def);s.eject(airborne?'launch':'ground');s.units=[];
- const shooter=makeUnit(`tower-${index}`,'scorp-rocket-tower',0,110,true);shooter.iff='enemy';shooter.aim=shooter.yaw=Math.atan2(s.human.x-shooter.x,s.human.z-shooter.z);s.units=[shooter];s.tick(1/60,idle);shooter.cooldown=999;
+ const shooter=makeUnit(`tower-${index}`,'scorp-rocket-tower',0,110,true);shooter.iff='enemy';shooter.alert=true;shooter.aim=shooter.yaw=Math.atan2(s.human.x-shooter.x,s.human.z-shooter.z);s.units=[shooter];s.tick(1/60,idle);shooter.cooldown=999;
  return s;
 }
 test('rocket tower volleys hit stopped infantry and hit ejected players less often',()=>{

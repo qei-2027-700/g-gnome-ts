@@ -9,6 +9,57 @@ import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
 import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
 import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
 import {MAP_3_5_POINTS} from '../content/missions/mission-3-5-map.ts';
+import {MISSION_3_1} from '../content/missions/mission-3-1.ts';
+import {StandardMaterial} from '@babylonjs/core/Materials/standardMaterial.js';
+import {boulderColor} from './landscape.ts';
+test('3-1 slope meshes meet the ground on the same rectangle that blocks movement',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const sim=new Simulation('Easy',MISSION_3_1),world=new World({} as HTMLCanvasElement,sim,engine);
+  assert.equal(world.scene.getTransformNodeByName('bridge-hinge-1'),null);
+  assert.equal(world.scene.getTransformNodeByName('bridge-hinge--1'),null);
+  const cliff=sim.mission.terrain.cliffs![0]!,mesh=world.scene.getMeshByName(cliff.id)!;
+  assert.ok(mesh);
+  const positions=mesh.getVerticesData('position')!;
+  let minX=Infinity,maxX=-Infinity,minZ=Infinity,maxZ=-Infinity,topInset=false;
+  for(let i=0;i<positions.length;i+=3){
+   const x=positions[i]!,y=positions[i+1]!,z=positions[i+2]!;
+   if(y<0){minX=Math.min(minX,x);maxX=Math.max(maxX,x);minZ=Math.min(minZ,z);maxZ=Math.max(maxZ,z);}
+   else if(Math.abs(x)<cliff.width/2-.1||Math.abs(z)<cliff.depth/2-.1)topInset=true;
+  }
+  assert.ok(Math.abs(maxX-minX-cliff.width)<1e-6&&Math.abs(maxZ-minZ-cliff.depth)<1e-6);
+  assert.equal(topInset,true);
+  assert.equal(mesh.position.x,cliff.x);assert.equal(mesh.position.z,cliff.z);
+  assert.equal(sim.mission.terrain.weather,MISSION_3_2.terrain.weather);
+  assert.equal(sim.mission.terrain.biome,MISSION_3_2.terrain.biome);
+  assert.equal(sim.mission.terrain.skyPalette,MISSION_3_2.terrain.skyPalette);
+  assert.equal(world.scene.getMeshByName('storm-cloud-dome'),null);
+  assert.ok(Math.abs(world.scene.clearColor.r-.46)<1e-6&&Math.abs(world.scene.clearColor.g-.66)<1e-6&&Math.abs(world.scene.clearColor.b-.79)<1e-6);
+  const boulders=world.scene.meshes.filter(mesh=>mesh.name==='boulder');
+  assert.equal(boulders.length,sim.mission.rocks.length);
+  for(const [i,rock] of sim.mission.rocks.entries()){
+   const mesh=boulders[i]!,paint=mesh.material as StandardMaterial,positions=mesh.getVerticesData('position')!;
+   assert.equal(paint.name,'boulder');
+   assert.equal(paint.diffuseTexture?.name,'boulder-ochre');
+   assert.notEqual(paint.diffuseColor.toHexString().toLowerCase(),'#5f853f');
+   assert.equal(mesh.rotation.x,0);assert.equal(mesh.rotation.z,0);assert.equal(mesh.scaling.y,.75);
+   let widened=false;
+   for(let v=0;v<positions.length;v+=3){
+    if(positions[v+1]!>=0)continue;
+    const horiz=Math.hypot(positions[v]!,positions[v+2]!);
+    if(horiz<1e-3)continue;
+    assert.ok(Math.abs(horiz-rock.r)<1e-3,`lower vertex radius ${horiz} for r ${rock.r}`);
+    widened=true;
+   }
+   assert.equal(widened,true);
+  }
+  for(const seed of [0,31,99])for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+   const [r,g,b]=boulderColor(x/8,y/8,seed);
+   assert.ok(r>g&&g>b,`${seed},${x},${y} -> ${r},${g},${b}`);
+  }
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
 test('3-5 pop-up turrets and their control building render at the configured field positions',()=>{
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
  try{

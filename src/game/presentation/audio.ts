@@ -64,9 +64,10 @@ export class GameAudio {
   private wind=new ExternalWind();
   updateWind(external:boolean,paused=false){this.wind.update(this.ctx,external,this.settings.sfx,paused);}
   private radioStaticBuffer:AudioBuffer|null=null;private radioSpeechTimer:ReturnType<typeof setTimeout>|undefined;
-  private missionRadioQueue:{personId?:string;line:{ja:string;en:string}}[]=[];
-  queueMissionRadio(reply:{personId?:string;line:{ja:string;en:string}}){this.missionRadioQueue.push(reply);}
-  async updateMissionRadio(paused=false){if(paused||this.radioPending>0||this.occupiedUtterance||!this.missionRadioQueue.length)return;await this.sayRadio([this.missionRadioQueue.shift()!]);}
+  private missionRadioQueue:{radioId?:string;personId?:string;line:{ja:string;en:string}}[]=[];
+  private missionRadioCue:{id:string;generation:number}|null=null;
+  queueMissionRadio(reply:{radioId?:string;personId?:string;line:{ja:string;en:string}}){this.missionRadioQueue.push(reply);}
+  async updateMissionRadio(paused=false){if(paused||this.radioPending>0||this.occupiedUtterance||!this.missionRadioQueue.length)return;const next=this.missionRadioQueue.shift()!;await this.sayRadio([next],'young',next.radioId);}
   private radioPending=0;private radioGeneration=0;
   private radioSources=new Map<AudioBufferSourceNode,GainNode>();private radioBuffers=new Map<string,Promise<AudioBuffer|null>>();
   private guidanceBuffer=new Map<string,Promise<AudioBuffer|null>>();private guidanceSource:AudioBufferSourceNode|null=null;private guidanceGeneration=0;
@@ -81,7 +82,7 @@ export class GameAudio {
   private fireSources=new Set<AudioBufferSourceNode>();
   private zWaspStep=0;
   private zWaspLast=-1;
-  private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;track:string|null;missingReported:boolean}|null=null;
+  private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;radioEnded:boolean;track:string|null;missingReported:boolean}|null=null;
   private musicOwner:'manual'|'mission'|null=null;
   private musicPaused=true;private musicPending=false;private musicFailed=false;private musicGeneration=0;
   musicError:string|null=null;
@@ -91,13 +92,14 @@ export class GameAudio {
     if(this.url){URL.revokeObjectURL(this.url);this.url=null;}
   }
   beginMissionMusic(mission:MissionDefinition){
-    this.missionRadioQueue=[];
+    this.missionRadioQueue=[];this.missionRadioCue=null;
     if(mission.bgm||this.musicOwner==='mission')this.stopMusic();
-    this.missionMusic=mission.bgm?{cues:mission.bgm,boarded:false,detected:false,eliminated:false,track:null,missingReported:false}:null;this.musicError=null;
+    this.missionMusic=mission.bgm?{cues:mission.bgm,boarded:false,detected:false,eliminated:false,radioEnded:false,track:null,missingReported:false}:null;this.musicError=null;
   }
-  resetMissionMusic(){this.missionRadioQueue=[];if(this.musicOwner==='mission')this.stopMusic();this.missionMusic=null;this.musicError=null;}
+  resetMissionMusic(){this.missionRadioQueue=[];this.missionRadioCue=null;if(this.musicOwner==='mission')this.stopMusic();this.missionMusic=null;this.musicError=null;}
   missionMusicBoarded(unitId:string){if(this.missionMusic?.cues.afterBoard?.unitId===unitId)this.missionMusic.boarded=true;}
   missionMusicDetected(unitKind:VehicleKind){if(this.missionMusic?.cues.afterDetection?.unitKind===unitKind)this.missionMusic.detected=true;}
+  missionMusicRadioEnded(radioId:string){if(this.missionMusic?.cues.afterRadio?.radioId===radioId)this.missionMusic.radioEnded=true;}
   private pauseMusic(){
     this.musicPaused=true;if(this.musicPending){this.musicGeneration++;this.musicPending=false;}this.music?.pause();
   }
@@ -117,7 +119,7 @@ export class GameAudio {
     if(state){
       const elimination=state.cues.afterEliminate;
       if(!state.eliminated&&units&&elimination?.unitIds.length&&elimination.unitIds.every(id=>units.some(unit=>unit.id===id&&(!unit.alive||unit.defeated===true))))state.eliminated=true;
-      const next=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:undefined,availableNext=next&&this.bgmAssets[next.trackId];
+      const next=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.radioEnded?state.cues.afterRadio:undefined,availableNext=next&&this.bgmAssets[next.trackId];
       if(next&&!availableNext&&!state.missingReported){state.missingReported=true;this.musicError='missing-next';}
       const track=availableNext?next!.trackId:time>=state.cues.start.delay?state.cues.start.trackId:null;
       if(track&&track!==state.track){
@@ -291,10 +293,13 @@ export class GameAudio {
     if(this.ctx?.state==='suspended'){try{await this.ctx.resume();}catch{return;}if(generation!==this.radioGeneration)return;}
     this.radioPending=this.radioHiss((this.ctx?.currentTime??0)+.01,generation,()=>{this.radioPending=0;})?1:0;
   }
+  private finishMissionRadio(generation:number){
+    const cue=this.missionRadioCue;if(!cue||cue.generation!==generation)return;this.missionRadioCue=null;this.missionMusicRadioEnded(cue.id);
+  }
   private radioVoiceEnded(generation:number){
     if(generation!==this.radioGeneration)return;
     this.radioPending=Math.max(0,this.radioPending-1);
-    if(this.radioPending===0&&this.radioHiss(this.ctx?.currentTime??0,generation,()=>{this.radioPending=0;}))this.radioPending=1;
+    if(this.radioPending===0){this.finishMissionRadio(generation);if(this.radioHiss(this.ctx?.currentTime??0,generation,()=>{this.radioPending=0;}))this.radioPending=1;}
   }
   private radioTts(replies:readonly {personId?:string;line:{ja:string;en:string}}[],generation:number,profile:'young'|'solemn'){
     const delay=this.radioHiss((this.ctx?.currentTime??0)+.01,generation);
@@ -306,15 +311,15 @@ export class GameAudio {
     };
     if(delay)this.radioSpeechTimer=setTimeout(speak,(delay+.01)*1000);else speak();
   }
-  async sayRadio(replies:readonly {personId?:string;line:{ja:string;en:string}}[],profile:'young'|'solemn'='young'){
+  async sayRadio(replies:readonly {personId?:string;line:{ja:string;en:string}}[],profile:'young'|'solemn'='young',radioCueId?:string){
     this.occupiedUtterance=null;this.afterOccupied=null;
     if(!replies.length)return;
-    this.stopRadio();const generation=this.radioGeneration;this.radioPending=replies.length;this.lastSpeech=performance.now();
+    this.stopRadio();const generation=this.radioGeneration;this.missionRadioCue=radioCueId?{id:radioCueId,generation}:null;this.radioPending=replies.length;this.lastSpeech=performance.now();
     if('speechSynthesis'in window)speechSynthesis.cancel();
-    if(this.ctx?.state==='suspended'){try{await this.ctx.resume();}catch{this.radioPending=0;return;}if(generation!==this.radioGeneration)return;}
+    if(this.ctx?.state==='suspended'){try{await this.ctx.resume();}catch{this.radioPending=0;this.missionRadioCue=null;return;}if(generation!==this.radioGeneration)return;}
     if(!this.settings.voice){
       const start=this.ctx?.currentTime??0,duration=this.radioHiss(start,generation);this.radioPending=duration?1:0;
-      if(duration)this.radioHiss(start+duration+.03,generation,()=>{this.radioPending=0;});return;
+      if(duration)this.radioHiss(start+duration+.03,generation,()=>{this.radioPending=0;this.finishMissionRadio(generation);});else this.finishMissionRadio(generation);return;
     }
     const locale=this.settings.locale,clips=replies.map(reply=>RADIO_VOICE_CLIPS[radioVoiceKey(locale,reply.personId??'',reply.line[locale])]);
     if(!this.ctx||clips.some(clip=>!clip)){this.radioTts(replies,generation,profile);return;}

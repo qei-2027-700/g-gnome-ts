@@ -74,6 +74,59 @@ test('enemy laser and missile hit a chassis with the shooter IFF instead of pass
  }
 });
 
+test('a low shot inside a boulder footprint stops, and guidance does not steer around the boulder',()=>{
+ const covered=new Simulation();
+ covered.mission.rocks=[{x:0,z:40,r:6}];covered.mission.base=undefined;covered.mission.terrain.cliffs=[];covered.mission.terrain.peaks=[];
+ const enemy=makeUnit('launcher','scorp-asv',0,-30,false);covered.units=[enemy];covered.human={x:12.4,z:80};
+ // y=0.2 crosses the disk but stays outside the sphere of radius r centered at 0.55r.
+ const missile=covered.fireMissile(enemy,'SREM',1,{x:covered.human.x,y:.2,z:covered.human.z});
+ const speed=Math.hypot(12.4,80);
+ missile.x=0;missile.y=.2;missile.z=0;missile.vx=12.4/speed*110;missile.vy=0;missile.vz=80/speed*110;
+ tick(covered,2);
+ assert.equal(covered.humanHealth,100);
+ assert.equal(covered.missiles.length,0);
+ const impact=covered.events.find(e=>e.type==='impact'&&e.weapon==='SREM');
+ assert.ok(impact?.position);assert.ok(impact.position.z>30&&impact.position.z<55);assert.ok(Math.hypot(impact.position.x,impact.position.z-40)<8);
+ const open=new Simulation();
+ open.mission.rocks=[];open.mission.base=undefined;open.mission.terrain.cliffs=[];open.mission.terrain.peaks=[];
+ const shooter=makeUnit('launcher','scorp-asv',0,-30,false);open.units=[shooter];open.human={x:12.4,z:80};
+ const shot=open.fireMissile(shooter,'SREM',1,{x:open.human.x,y:.2,z:open.human.z});
+ shot.x=0;shot.y=.2;shot.z=0;shot.vx=missile.vx;shot.vy=0;shot.vz=missile.vz;
+ tick(open,2);
+ assert.ok(open.humanHealth<100);
+ const beside=new Simulation();
+ beside.mission.rocks=[{x:0,z:40,r:12}];beside.mission.base=undefined;beside.mission.terrain.cliffs=[];beside.mission.terrain.peaks=[];
+ const guide=makeUnit('guide','scorp-asv',0,-40,false);beside.units=[guide];beside.human={x:0,z:70};
+ const passing=beside.fireMissile(guide,'SREM',1,{x:beside.human.x,y:1,z:beside.human.z});
+ passing.x=-20;passing.y=1;passing.z=10;passing.vx=0;passing.vy=0;passing.vz=110;passing.homingTargetId='player';
+ beside.tick(1/60,idle);assert.equal(passing.homingTargetId,undefined);
+ tick(beside,1);assert.equal(beside.humanHealth,100);assert.ok(beside.missiles.length===1);assert.ok(Math.abs(beside.missiles[0].x+20)<1);
+ const shadow=new Simulation();
+ shadow.mission.rocks=[{x:0,z:30,r:12}];shadow.mission.base=undefined;shadow.mission.terrain.cliffs=[];shadow.mission.terrain.peaks=[];
+ const gunner=makeUnit('gunner','scorp-asv',0,0,true,{speed:0,ai:{detection:300,strafe:0,keepMoving:false,stopDistance:800,missileVolley:1}});
+ shadow.units=[gunner];shadow.human={x:0,z:46};gunner.yaw=gunner.aim=0;gunner.alert=true;
+ tick(shadow,4);assert.equal(shadow.humanHealth,100);
+ // Reproduced graze: closest approach 12.44 m on an r=12 rock. The extra meter stops it.
+ // The same shooter with the player about 16 m off that axis still connects.
+ const graze=new Simulation();
+ graze.mission.rocks=[{x:-40,z:530,r:12}];graze.mission.base=undefined;graze.mission.terrain.cliffs=[];graze.mission.terrain.peaks=[];
+ const grazer=makeUnit('grazer','scorp-asv',-90,500,false);graze.units=[grazer];graze.human={x:-25.95,z:542};
+ assert.equal(graze.lineOfSight({x:-90,z:544},{x:graze.human.x,z:graze.human.z}),false);
+ const grazed=graze.fireMissile(grazer,'SREM',1,{x:graze.human.x,y:1.2,z:graze.human.z});
+ const gdx=-25.95-(-90),gdz=542-544,glen=Math.hypot(gdx,gdz);
+ grazed.x=-90;grazed.y=1.2;grazed.z=544;grazed.vx=gdx/glen*110;grazed.vy=0;grazed.vz=gdz/glen*110;grazed.homingTargetId='player';
+ tick(graze,2);assert.equal(graze.humanHealth,100);assert.equal(graze.missiles.length,0);
+ const grazeImpact=graze.events.find(e=>e.type==='impact'&&e.weapon==='SREM');
+ assert.ok(grazeImpact?.position);assert.ok(Math.hypot(grazeImpact.position.x+40,grazeImpact.position.z-530)<14);
+ const flank=new Simulation();
+ flank.mission.rocks=[{x:-40,z:530,r:12}];flank.mission.base=undefined;flank.mission.terrain.cliffs=[];flank.mission.terrain.peaks=[];
+ const flanker=makeUnit('flanker','scorp-asv',-90,500,false);flank.units=[flanker];flank.human={x:-25.95,z:546};
+ assert.equal(flank.lineOfSight({x:-90,z:544},{x:flank.human.x,z:flank.human.z}),true);
+ const flanked=flank.fireMissile(flanker,'SREM',1,{x:flank.human.x,y:1.2,z:flank.human.z});
+ const fdx=-25.95-(-90),fdz=546-544,flen=Math.hypot(fdx,fdz);
+ flanked.x=-90;flanked.y=1.2;flanked.z=544;flanked.vx=fdx/flen*110;flanked.vy=0;flanked.vz=fdz/flen*110;flanked.homingTargetId='player';
+ tick(flank,2);assert.ok(flank.humanHealth<100);
+});
 test('incoming enemy missiles stop at buildings, cliffs, rocks and mountains before reaching the player',async()=>{
  const {makeUnit}=await import('./simulation.ts');
  for(const cover of ['building','cliff','rock','peak'] as const){const s=new Simulation(),own=makeUnit('own','union-sentry',0,0,false),enemy=makeUnit('launcher','merc-sentry',0,120,false);s.units=[own,enemy];s.human={x:0,z:0};s.board();enemy.aim=Math.PI;s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];

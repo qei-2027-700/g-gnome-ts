@@ -21,6 +21,7 @@
 - [製品版1-1](missions/mission-1-1.md)：最初の再現対象。Union Sentry対Merc軍、開始から終了までの流れ
 - [2-4 Merc編の雪原](missions/mission-2-4.md)：Merc Tactical Defense搭乗開始、雪原・雪山・右側の岩壁と機内表示、キリーへの個別指示。敵配置・クリア条件は未確認
 - [2-6 Battle of Clouds](missions/mission-2-6.md)：2基のミーゾンタワーで四方のMerc AIPを迎撃し、要塞から出たターンを回収。敵数・必要撃破数・配置は仮設定
+- [3-1 Scorp Crossing](missions/mission-3-1.md)：黒い地と淡い帯のフィールドを仮の5m/画素で配置。開始は第1ウェイポイントの真東。キリーとターンは仮の位置で徒歩同行。開始BGMはCredits。真西の偵察ASVと岩、中央の無人ロケットタワー、広場の両側のHAWC、南東の司令部と電力プラントとミーゾンタワーは仮の位置。偵察ASVを奪うとキリーとターンが同乗し、その時点で仮のIFF `0701` になりキリーが完了を告げる。広場は近づくと交戦する。南東の到達地点は仮
 - [3-3 ウル・ウリット侵攻](missions/mission-3-3.md)：VISOM手動誘導・敵ASV誘引・基地と地雷原・仲間のScorp機搭乗を実装。仲間3人全員の搭乗でクリア。EGGERによる奪取は未実装
 - [3-4 Ur-Alr](missions/mission-3-4.md)：原作画像から川、通行できない斜面・高台、橋とウェイポイントを写した地図試作。任務進行は未接続
 

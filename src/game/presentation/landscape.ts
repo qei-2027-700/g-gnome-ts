@@ -12,6 +12,9 @@ function noise(x:number,y:number,seed:number){const ix=Math.floor(x),iy=Math.flo
 function texture(scene:Scene,name:string,size:number,pixel:(x:number,y:number)=>number[]){const pixels=new Uint8Array(size*size*3);for(let y=0;y<size;y++)for(let x=0;x<size;x++)pixels.set(pixel(x/size,y/size).map(v=>Math.max(0,Math.min(255,v))),3*(y*size+x));const t=RawTexture.CreateRGBTexture(pixels,size,size,scene,true,false,Texture.BILINEAR_SAMPLINGMODE);t.name=name;t.wrapU=Texture.WRAP_ADDRESSMODE;t.wrapV=Texture.WRAP_ADDRESSMODE;return t;}
 export function grassTexture(scene:Scene,seed:number,greenOnly=false){const t=texture(scene,'mottled-grass',256,(x,y)=>{const patches=noise(x*20,y*20,seed),fine=noise(x*110,y*110,seed+1),soil=!greenOnly&&patches>.72;return soil?[75+fine*35,72+fine*25,37+fine*18]:[20+patches*65+fine*20,60+patches*125+fine*30,15+fine*32];});t.uScale=45;t.vScale=45;return t;}
 export function snowTexture(scene:Scene,seed:number){const t=texture(scene,'wind-swept-snow',256,(x,y)=>{const n=noise(x*60,y*25,seed),ripple=Math.sin(y*220+noise(x*12,y*8,seed)*6)*2;return [223+n*22+ripple,232+n*18+ripple,238+n*16+ripple];});t.uScale=36;t.vScale=36;return t;}
+// Grassland boulders used a green sandstone tint. Rocks read as brown and ochre, not grass.
+export function boulderColor(x:number,y:number,seed:number){const n=noise(x*16,y*12,seed),grit=noise(x*64,y*52,seed+4),ochre=n>.46;return ochre?[168+grit*36,132+grit*28,68+grit*16]:[118+grit*22,74+grit*14,38+grit*8];}
+export function boulderTexture(scene:Scene,seed:number){const t=texture(scene,'boulder-ochre',64,(x,y)=>boulderColor(x,y,seed));t.uScale=2;t.vScale=2;return t;}
 export function volcanicTexture(scene:Scene,seed:number){const t=texture(scene,'mottled-volcanic-ground',256,(x,y)=>{
  const broad=noise(x*9,y*9,seed),patch=noise(x*27,y*27,seed+7),grain=noise(x*115,y*115,seed+17);
  if(broad>.61&&patch>.43)return [90+grain*65,85+grain*62,76+grain*55];

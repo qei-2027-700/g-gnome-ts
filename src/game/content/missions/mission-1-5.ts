@@ -6,7 +6,8 @@ import type {MissionDefinition} from './types.ts';
 // The rocket tower stays on the far bank. The meter scale is still provisional.
 export const MISSION_1_5:MissionDefinition={
  id:'1-5',title:'Rescue!',subtitle:{ja:'キリーとの合流',en:'Contact Kylie at Chambers Pass'},
- playerFaction:'darken',initialIff:'0024',factionCodes:{darken:'6707'},
+ playerFaction:'union',initialIff:'0024',factionCodes:{darken:'6707'},
+//  playerFaction:'darken',initialIff:'0024',factionCodes:{darken:'6707'},
  bgm:{start:{trackId:'bgm-mission-1-1-sentry-combat',delay:0}},
  briefing:{ja:'チャンバーズ峠の橋を渡り、キリーと連絡を取る。ミーゾン・ガードタワーと警備部隊を倒し、IFFを0024に設定せよ。橋制御棟へ入る前にシールドジェネレーターを破壊する。',en:'Cross the bridge at Chambers Pass and contact Kylie. Defeat the Meson Tower and security forces, and set IFF to 0024. Destroy the shield generator before entering the bridge control building.'},
  startHint:{ja:'Darken TD HAWCに搭乗済み。川は左手、正面から右手は歩けない山と崖。川の反対側にロケットタワー。橋の北側にミーゾンタワー、電力プラント、橋制御棟、シールドジェネレーターとダーケンのTD、セントリーがいる。北岸を西へ進み、ジェネレーターを壊して橋を下げ、渡ってキリーへ。',en:'You start in a Darken TD HAWC. The river is on your left, and the mountains ahead and to the right cannot be walked. The rocket tower is across the river. North of the bridge are the meson tower, power plant, bridge control, shield generator, a Darken TD and a sentry. Follow the north bank west, destroy the generator, lower the bridge and cross to Kylie.'},

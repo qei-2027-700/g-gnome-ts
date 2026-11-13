@@ -16,8 +16,9 @@ export type BriefingPresentation={
  title?:string;mapPreview?:BriefingImage;vehiclePreview?:BriefingImage;
  entries:readonly {label:Localized;detail:Localized}[];
 };
+export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number};
 export type MissionDefinition={
- bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string}};
+ bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string}};
  audioPath?:string;
  briefingPresentation?:BriefingPresentation;
  id:string;title:string;subtitle:Localized;briefing:Localized;startHint:Localized;success:Localized;radio:Localized;
@@ -26,16 +27,16 @@ export type MissionDefinition={
  base?:Base;minefields?:readonly Minefield[];vehicleElevator?:{x:number;z:number;width:number;depth:number};
  rendezvous?:{waypointId:number;units:readonly Spawn[]};shieldProtectionRadius?:number;
  terrain:Terrain;rocks:readonly {x:number;z:number;r:number}[];
- radioTriggers?:readonly ({id:string;speakerId:string;vehicleKind:VehicleKind;line:Localized}&({event:'board'|'completion'|'scripted';range?:never}|{event?:'near-base';range:number}|{event:'time';at:number;range?:never}|{event:'encounter';at:number;unitIds:readonly string[];enemyUnitIds:readonly string[];range:number}))[];
+ radioTriggers?:readonly ({id:string;speakerId:string;vehicleKind:VehicleKind;line:Localized}&({event:'board'|'completion'|'scripted';range?:never}|{event?:'near-base';range:number}|{event:'time';at:number;range?:never}|{event:'encounter';at:number;unitIds:readonly string[];enemyUnitIds:readonly string[];range:number}|{event:'near-units';unitIds:readonly string[];range:number}|{event:'iff';iff:string;unitId?:string;range?:never}|{event:'player-hit';unitIds:readonly string[];range?:never}))[];
  ionStrike?:{facilityId:string;retreatUnitId:string;retreatRadioId:string;retreatRange:number;warningRadioIds:readonly string[];delay:number;safeRadius:number};
  infantrySorties?:readonly {id:string;facilityId:string;vehicleKind:VehicleKind;range:number;count:number;delay:number;interval:number}[];
- garrison?:readonly string[];companions?:readonly Companion[];radioRange?:number;autoFollowOnBoard?:readonly VehicleKind[];
+ garrison?:readonly string[];companions?:readonly Companion[];radioRange?:number;autoFollowOnBoard?:readonly VehicleKind[];autoPassengerOnBoard?:readonly string[];passengerIff?:{unitId:string;iff:string};
  footSecondaryWeapon?:'GASHR'|'EGGER';
  startMountedUnitId?:string;initialView?:'first-person'|'external-rear'|'external-diagonal';rearCamera?:{range:number;height:number;lookAhead:number;targetHeight:number};completionEnabled?:boolean;
  completionSequence?:{delay:number;radioId:string};
  pickups?:readonly {personId:string;facilityId:string;attackerIds:readonly string[];requiredKills:number}[];
- personnel?:readonly {personId:string;x:number;z:number;facilityId?:string;boardingTargetId?:string}[];
- assaults?:readonly {unitId:string;targetId:string;startAt:number}[];
+ personnel?:readonly {personId:string;x:number;z:number;facilityId?:string;boardingTargetId?:string;follow?:boolean;faction?:Faction;iff?:string}[];
+ assaults?:readonly Assault[];
  unitRoutes?:readonly {unitId:string;personId?:string;x:number;z:number;startAt:number;via?:readonly {x:number;z:number}[];attackTargetIds?:readonly string[];attackPositions?:readonly {x:number;z:number}[]}[];
  autoBoardCompanions?:boolean;
  groundShields?:readonly {id:string;powerPlantId:string;x:number;z:number;width:number;depth:number;height:number}[];

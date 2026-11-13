@@ -285,6 +285,31 @@ test('1-1 start music waits for launch, starts immediately once, resumes and res
   audio.beginMissionMusic(MISSION);assert.equal(tracks[0].paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,0);audio.resetMissionMusic();assert.equal(tracks[1].paused,true);assert.equal(audio.music,null);
  });
 });
+test('3-1 starts Credits immediately and a finished mission radio switches once to the named track',async()=>{
+ const {MISSION_3_1}=await import('../content/missions/mission-3-1.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_3_1);audio.updateMissionMusic(0,false);await Promise.resolve();
+  assert.equal(tracks.length,1);assert.equal(tracks[0].src,'credits.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].plays,1);
+  audio.missionMusicRadioEnded('unassigned');audio.updateMissionMusic(1,false);assert.equal(tracks.length,1);assert.equal(tracks[0].currentTime,0);
+  const switching={...MISSION_3_1,bgm:{...MISSION_3_1.bgm!,afterRadio:{radioId:'later',trackId:'bgm-mission-1-1-sentry-combat'}}};
+  audio.beginMissionMusic(switching);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'credits.mp3');
+  audio.missionMusicRadioEnded('later');audio.updateMissionMusic(1,true);assert.equal(tracks.at(-1).src,'credits.mp3');assert.equal(tracks.at(-1).paused,true);
+  audio.updateMissionMusic(1,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sentry-combat.mp3');assert.equal(tracks.at(-1).loop,true);
+  const count=tracks.length;audio.missionMusicRadioEnded('later');audio.updateMissionMusic(4,false);assert.equal(tracks.length,count);
+  audio.beginMissionMusic(switching);const previous=Object.getOwnPropertyDescriptor(globalThis,'window');
+  try{Object.defineProperty(globalThis,'window',{configurable:true,value:{}});audio.queueMissionRadio({radioId:'later',personId:'kylie',line:{ja:'後で切り替える',en:'Switch later'}});await audio.updateMissionRadio(false);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sentry-combat.mp3');}
+  finally{if(previous)Object.defineProperty(globalThis,'window',previous);else Reflect.deleteProperty(globalThis,'window');}
+ });
+});
+test('a missing radio-switch track keeps Credits and reports the missing cue once',async()=>{
+ const {MISSION_3_1}=await import('../content/missions/mission-3-1.ts');
+ const switching={...MISSION_3_1,bgm:{...MISSION_3_1.bgm!,afterRadio:{radioId:'later',trackId:'bgm-mission-1-1-sentry-combat'}}};
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(switching);audio.updateMissionMusic(0,false);await Promise.resolve();
+  audio.missionMusicRadioEnded('later');audio.updateMissionMusic(2,false);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'credits.mp3');assert.equal(audio.musicError,'missing-next');
+  audio.musicError=null;audio.updateMissionMusic(3,false);assert.equal(audio.musicError,null);assert.equal(tracks[0].paused,false);
+ },false);
+});
 test('1-5 plays the assigned combat BGM at launch and stops it when the mission ends',async()=>{
  const {MISSION_1_5}=await import('../content/missions/mission-1-5.ts');
  await musicFixture(async(audio,tracks)=>{

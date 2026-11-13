@@ -1,7 +1,7 @@
 import {LASERS,weaponMountCount} from '../content/weapons.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,makeUnit,distance,angle,type Input} from './simulation.ts';
+import {Simulation,makeUnit,distance,angle,AI_TARGET_SETTLE,type Input} from './simulation.ts';
 import {KEYBOARD_AIM_RAMP} from './movement.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {DEFAULT_MISSION} from '../content/missions/index.ts';
@@ -28,7 +28,7 @@ test('player gun and laser stop at a mountain before a target behind it',()=>{
 });
 test('IFF controls AI launch; missile damage stays identical across difficulty while aim can miss',()=>{
  for(const difficulty of ['Easy','Medium','Hard'] as const){
-  const s=new Simulation(difficulty);s.units[0].z=100;s.human={x:0,z:100};s.board();s.units[1].x=0;s.units[1].yaw=Math.PI;s.units[1].aim=Math.PI;s.tick(.05,idle);
+  const s=new Simulation(difficulty);s.units[0].z=100;s.human={x:0,z:100};s.board();s.units[1].x=0;s.units[1].yaw=Math.PI;s.units[1].aim=Math.PI;s.units[1].alert=true;s.tick(.05,idle);
   assert.ok(s.enemies[0].alert);assert.equal(s.humanHealth,100);assert.equal(s.missiles.length,1);assert.equal(s.missiles[0].damage,18);assert.equal(s.mounted!.shield,35);
   step(s,1.3);assert.ok([35,17].includes(s.mounted!.shield));
   s.iff='6707';const health=s.humanHealth;step(s,5);assert.equal(s.units[1].alert,false);assert.equal(s.enemies.length,0);assert.equal(s.missiles.length,0);assert.equal(s.humanHealth,health);
@@ -52,7 +52,7 @@ test('missiles have travel time, can be dodged and hit rocks before the player',
 });
 test('swept collision catches fast rockets; tactical defense fires two missiles',()=>{
  const s=mounted();const enemy=s.units[1];enemy.x=0;enemy.z=60;enemy.cooldown=999;const p=s.fireMissile(enemy,'CHUM');p.vx=0;p.vy=0;p.vz=-4000;p.x=0;p.y=4;s.tick(.05,idle);assert.equal(s.mounted!.shield,17);assert.equal(s.missiles.length,0);
- const tactical=mounted();tactical.units[1].alive=false;tactical.units[2].x=0;tactical.units[2].z=130;tactical.units[2].yaw=Math.PI;tactical.units[2].aim=Math.PI;tactical.tick(.05,idle);assert.equal(tactical.missiles.length,2);assert.ok(tactical.missiles.every(m=>m.weapon==='SAG5T'));
+ const tactical=mounted();tactical.units[1].alive=false;tactical.units[2].x=0;tactical.units[2].z=130;tactical.units[2].yaw=Math.PI;tactical.units[2].aim=Math.PI;tactical.units[2].alert=true;tactical.tick(.05,idle);assert.equal(tactical.missiles.length,2);assert.ok(tactical.missiles.every(m=>m.weapon==='SAG5T'));
 });
 test('waypoint and all enemies are both required; death cannot produce a win',()=>{const s=mounted();for(const u of s.enemies)s.damage(u,1000);s.tick(.05,idle);assert.equal(s.status,'running');s.mounted!.z=MISSION.waypoint.z;s.tick(.05,idle);assert.equal(s.status,'won');const lost=mounted();lost.waypoint=true;for(const u of lost.enemies)lost.damage(u,1000);lost.damage(lost.mounted,1000);lost.damage(null,1000);lost.tick(.05,idle);assert.equal(lost.status,'lost');});
 test('fresh mission resets state and setting validation rejects corrupt storage',()=>{const s=mounted();s.eject();s.iff='0000';s.waypoint=true;const next=new Simulation();assert.equal(next.iff,'2620');assert.equal(next.kills,0);assert.equal(next.waypoint,false);assert.equal(next.mounted,null);assert.deepEqual(validateSettings(null),defaults());assert.equal(validateSettings({difficulty:'Impossible',sfx:Infinity,voice:-2}).difficulty,'Easy');assert.equal(validateSettings({voice:-2}).voice,0);const bad=defaults();bad.bindings.left=bad.bindings.right;assert.deepEqual(validateSettings(bad).bindings,defaults().bindings);});
@@ -152,6 +152,25 @@ test('AI cycles past an empty left zWASP and consumes the right slot',()=>{
  step(s,12);assert.equal(original.slotAmmo[0],0);assert.ok(original.slotAmmo[1]!<2);assert.equal(original.ammunition.zWASP,original.slotAmmo[1]);
 });
 
+test('vehicle AI holds fire after a new target and slews slower than an instant turn',()=>{
+ const open=(s:Simulation)=>{s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];};
+ const quiet=(s:Simulation,enemy:ReturnType<typeof makeUnit>)=>s.events.filter(e=>e.type==='shot'&&e.unit===enemy).length;
+ const held=new Simulation();open(held);
+ const enemy=makeUnit('asv','scorp-asv',0,40,true);enemy.iff='0701';enemy.yaw=enemy.aim=Math.PI;enemy.spec.speed=0;held.units=[enemy];held.human={x:0,z:0};
+ step(held,AI_TARGET_SETTLE-.1);assert.equal(enemy.alert,true);assert.equal(quiet(held,enemy),0);assert.equal(held.missiles.some(m=>m.owner===enemy.id),false);
+ step(held,.3);assert.ok(quiet(held,enemy)>0);assert.equal(held.events.find(e=>e.type==='shot'&&e.unit===enemy)?.weapon,'zWASP');
+ const turning=new Simulation();open(turning);
+ const slewer=makeUnit('slewer','scorp-asv',0,0,true);slewer.iff='0701';slewer.yaw=slewer.aim=0;slewer.spec.speed=0;turning.units=[slewer];turning.human={x:40,z:0};
+ step(turning,.55);assert.ok(Math.abs(angle(slewer.aim-Math.PI/2))>.5,`aim error ${angle(slewer.aim-Math.PI/2)}`);
+ step(turning,1);assert.ok(Math.abs(angle(slewer.aim-Math.PI/2))<.12);assert.equal(quiet(turning,slewer),0);
+ const hot=new Simulation();open(hot);
+ const ready=makeUnit('ready','scorp-asv',0,40,true);ready.iff='0701';ready.yaw=ready.aim=Math.PI;ready.alert=true;ready.spec.speed=0;hot.units=[ready];hot.human={x:0,z:0};
+ hot.tick(1/60,idle);assert.equal(quiet(hot,ready),1);
+ ready.cooldown=0;const decoy=makeUnit('decoy','union-asv',40,40,true);decoy.iff='0000';decoy.cooldown=999;hot.units.push(decoy);
+ ready.aggressorId=decoy.id;ready.aggressorUntil=1000;ready.yaw=ready.aim=Math.atan2(decoy.x-ready.x,decoy.z-ready.z);
+ const before=quiet(hot,ready);step(hot,AI_TARGET_SETTLE-.1);assert.equal(quiet(hot,ready),before);step(hot,.3);assert.ok(quiet(hot,ready)>before);
+});
+
 function homingSetup(weapon:import('../content/weapons.ts').MissileWeapon='SREM'){
  const mission=structuredClone(new Simulation().mission);mission.completionEnabled=false;mission.rocks=[];mission.units=[{id:'own',kind:'scorp-asv',x:0,z:0,pilot:false,overrides:{weapons:[weapon],initialAmmo:{[weapon]:10}}},{id:'target',kind:'union-asv',x:0,z:160,pilot:false}];mission.assignedUnitId='own';mission.startMountedUnitId='own';
  const s=new Simulation('Easy',mission);s.selected='target';return {s,target:s.units[1]};
@@ -182,9 +201,9 @@ test('friendly AI uses dispersed aim and delayed guidance for vehicles and eject
  for(const airborne of [false,true]){
   const {s,target}=homingSetup();s.mounted!.x=100;s.mounted!.z=0;target.iff='enemy';target.pilot=true;target.cooldown=999;
   const ally=makeUnit('friendly-tower','scorp-rocket-tower',0,20,true);ally.iff=s.iff;ally.personId='kylie';s.units.push(ally);s.mission.companions=[{personId:'kylie',unitId:ally.id,name:{ja:'キリー',en:'Kylie'},key:'F2'}];
-  if(airborne)s.damage(target,9999);const victim=airborne?s.soldiers[0]:target;s.selected=victim.id;
-  assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,[ally.id]);s.tick(.05,idle);ally.cooldown=999;
-  const p=s.missiles.find(p=>p.owner===ally.id)!;assert.ok(p?.aiGuidance);assert.ok(Math.hypot(p.aiGuidance.offset.x,p.aiGuidance.offset.y,p.aiGuidance.offset.z)>0);const point={...p.aiGuidance.point};delays.push(p.aiGuidance.refreshAt-s.time);victim.x=12;
+  if(airborne){s.damage(target,9999);const pilot=s.soldiers[0];if(pilot.flight){pilot.flight.altitude=80;pilot.flight.vy=2;pilot.flight.vx=3;pilot.flight.vz=0;}}const victim=airborne?s.soldiers[0]:target;s.selected=victim.id;
+  assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,[ally.id]);step(s,AI_TARGET_SETTLE+.15);ally.cooldown=999;
+  const p=s.missiles.find(p=>p.owner===ally.id)!;assert.ok(p?.aiGuidance);assert.ok(Math.hypot(p.aiGuidance.offset.x,p.aiGuidance.offset.y,p.aiGuidance.offset.z)>0);const point={...p.aiGuidance.point};delays.push(p.aiGuidance.refreshAt-s.time);victim.x+=12;
   s.tick(.05,idle);assert.deepEqual(p.aiGuidance.point,point);step(s,airborne?.8:.4);assert.ok(p.aiGuidance.point.x>point.x);
  }
  assert.ok(delays[1]>delays[0]);
@@ -258,7 +277,7 @@ test('a player laser still selects on impact after exiting the firing vehicle; e
  const s=hitSelectionFixture();s.fire(1);assert.equal(s.missiles[0].playerOwned,true);s.eject('ground');s.events=[];
  for(let i=0;i<100&&s.missiles.length;i++)s.tick(.02,idle);assert.equal(s.selected,'hit-facility');
  for(const iff of ['hostile','2620']){
-  const ai=hitSelectionFixture(),own=ai.mounted!;own.x=400;const enemy=makeUnit('ai-tower','merc-meson-tower',0,0,true);enemy.iff=iff;ai.units.push(enemy);ai.mission={...ai.mission,assaults:[{unitId:enemy.id,targetId:'hit-facility',startAt:0}]};ai.events=[];
+  const ai=hitSelectionFixture(),own=ai.mounted!;own.x=400;const enemy=makeUnit('ai-tower','merc-meson-tower',0,0,true);enemy.iff=iff;enemy.alert=true;ai.units.push(enemy);ai.mission={...ai.mission,assaults:[{unitId:enemy.id,targetId:'hit-facility',startAt:0}]};ai.events=[];
   for(let i=0;i<100;i++)ai.tick(.02,idle);
   assert.ok(ai.events.some(e=>e.type==='shot'&&e.unit===enemy));assert.ok(ai.facilities[0].health<5000);assert.equal(ai.selected,null);assert.ok(!ai.events.some(e=>e.type==='target'));
  }
@@ -285,7 +304,7 @@ test('projectile misses and destroyed facilities never acquire a target',()=>{
  }
 });
 test('taking over an AI firing vehicle does not turn its already fired bolt into a player attack',()=>{
- const s=hitSelectionFixture();s.mounted!.x=400;const enemy=makeUnit('ai-tower','merc-meson-tower',0,0,true);enemy.iff='hostile';s.units.push(enemy);s.mission={...s.mission,assaults:[{unitId:enemy.id,targetId:'hit-facility',startAt:0}]};
+ const s=hitSelectionFixture();s.mounted!.x=400;const enemy=makeUnit('ai-tower','merc-meson-tower',0,0,true);enemy.iff='hostile';enemy.alert=true;s.units.push(enemy);s.mission={...s.mission,assaults:[{unitId:enemy.id,targetId:'hit-facility',startAt:0}]};
  for(let i=0;i<50&&!s.missiles.length;i++)s.tick(.01,idle);assert.ok(s.missiles.length);assert.equal(s.missiles[0].playerOwned,false);
  s.forceEject(enemy);s.eject('ground');s.human={x:enemy.x,z:enemy.z};assert.ok(s.board());assert.equal(s.mounted,enemy);s.events=[];
  for(let i=0;i<100&&s.missiles.length;i++)s.tick(.01,idle);
@@ -312,7 +331,7 @@ test('a stopped vehicle is hit by both Scorp rocket tower missiles, while a movi
  const fire=(moving:boolean,slot:number,place:[number,number])=>{
   const mission=structuredClone(DEFAULT_MISSION);mission.completionEnabled=false;mission.rocks=[];mission.base=undefined;mission.terrain={...mission.terrain,cliffs:[],peaks:[]};mission.units=[{id:'own',kind:'union-sentry',x:0,z:0,pilot:true}];mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.companions=[];mission.personnel=[];mission.objectives=[];mission.assaults=[];
   const s=new Simulation('Easy',mission),own=s.mounted!;if(moving){s.throttle=1;s.speed=own.speed=16;}
-  const tower=makeUnit(`tower-${slot}-${place[0]}`,'scorp-rocket-tower',place[0],place[1],true);tower.iff='enemy';tower.attackCycle=slot;tower.yaw=tower.aim=Math.atan2(own.x-tower.x,own.z-tower.z);s.units.push(tower);
+  const tower=makeUnit(`tower-${slot}-${place[0]}`,'scorp-rocket-tower',place[0],place[1],true);tower.iff='enemy';tower.alert=true;tower.attackCycle=slot;tower.yaw=tower.aim=Math.atan2(own.x-tower.x,own.z-tower.z);s.units.push(tower);
   s.tick(1/60,idle);tower.cooldown=999;const shots=s.missiles.filter(m=>m.owner===tower.id);assert.equal(shots.length,2);assert.ok(shots.every(m=>m.weapon===(slot===1?'SREM':'UNKPA')));
   if(moving)assert.ok(shots.every(m=>Math.hypot(m.aiGuidance!.offset.x,m.aiGuidance!.offset.y,m.aiGuidance!.offset.z)>0));
   else assert.ok(shots.every(m=>m.aiGuidance!.offset.x===0&&m.aiGuidance!.offset.y===0&&m.aiGuidance!.offset.z===0));

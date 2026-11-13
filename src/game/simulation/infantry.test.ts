@@ -256,6 +256,12 @@ test('friendly, empty and safely airborne carrier contacts do not emit an occupi
  const flying=occupiedCarrier(true);flying.s.flight={altitude:20,vy:0,vx:0,vz:0};flying.s.tick(.02,idle);assert.equal(flying.s.status,'running');assert.equal(flying.s.events.some(e=>e.type==='occupied-contact'),false);
 });
 
+test('on-foot target selection reports a hostile and its distance',()=>{
+ const s=new Simulation();assert.equal(s.mounted,null);
+ const enemy=makeUnit('hostile','merc-sentry',0,80,true);enemy.iff='6707';s.units=[s.units[0],enemy];s.human={x:0,z:0};
+ s.selectTarget();assert.equal(s.target,enemy);assert.equal(s.isHostile(enemy),true);
+ assert.ok(s.targetState&&Number.isFinite(s.targetState.distance)&&Math.abs(s.targetState.distance-80)<1);
+});
 test('contact automatically boards a friendly carrier as passenger and accepts only ejection as a gameplay action',()=>{
  const {s,carrier}=occupiedCarrier(false,'union-asv');carrier.iff=s.iff;s.tick(.02,idle);assert.equal(s.passenger,carrier);assert.equal(s.mounted,null);assert.deepEqual(carrier.passengers,['player']);
  const before={yaw:carrier.yaw,aim:carrier.aim,iff:s.iff,pitch:s.pitch,selected:s.selected,waypoint:s.selectedWaypoint,ammo:{...carrier.ammunition}};

@@ -32,6 +32,25 @@ export function peakMotionContact(from:Vec,to:Vec,peak:Peak,padding=0){
  const nx=hit.nx/rx,nz=hit.nz/rz,length=Math.hypot(nx,nz);
  return {...hit,nx:nx/length,nz:nz/length};
 }
+// Boulder shots use the full horizontal footprint up to the old sphere top.
+// The drawn lower half fills that disk. One extra meter catches a graze along the silhouette.
+// Shots that clear the disk by more than this still pass. The margin is not part of the placed radius.
+export const ROCK_COVER_MARGIN=1;
+export function rockTop(rock:{r:number},padding=0){return rock.r*1.55+padding;}
+export function rockSegmentContact(from:Vec&{y:number},to:Vec&{y:number},rock:{x:number;z:number;r:number},padding=0){
+ const radius=rock.r+ROCK_COVER_MARGIN+padding,dx=to.x-from.x,dy=to.y-from.y,dz=to.z-from.z,ox=from.x-rock.x,oz=from.z-rock.z;
+ const a=dx*dx+dz*dz,b=ox*dx+oz*dz,c=ox*ox+oz*oz-radius*radius;
+ let lo=0,hi=1;
+ if(a<1e-12){if(c>1e-8)return null;}
+ else{const disc=b*b-a*c;if(disc<0)return null;const root=Math.sqrt(disc);lo=Math.max(0,(-b-root)/a);hi=Math.min(1,(-b+root)/a);if(lo>hi)return null;}
+ const top=rockTop(rock,padding),yAt=(t:number)=>from.y+dy*t,inside=(t:number)=>{const y=yAt(t);return y>=-padding&&y<=top;};
+ if(inside(lo))return lo;
+ if(Math.abs(dy)<1e-9)return null;
+ let hit:number|null=null;
+ for(const plane of [-padding,top]){const t=(plane-from.y)/dy;if(t>=lo&&t<=hi&&(hit===null||t<hit))hit=t;}
+ return hit;
+}
+
 export function peakSegmentContact(from:Vec&{y:number},to:Vec&{y:number},peak:Peak,padding=0){
  const rx=peak.width/2+padding,rz=peak.depth/2+padding;
  const x=(from.x-peak.x)/rx,z=(from.z-peak.z)/rz,dx=(to.x-from.x)/rx,dz=(to.z-from.z)/rz;

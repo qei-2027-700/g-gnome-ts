@@ -111,7 +111,7 @@ test('allies automatically engage approaching vehicles by IFF, without an attack
  const s=setup(),ally=s.units[1],enemy=s.units.find(u=>u.id==='scorp-asv')!;
  s.mission.rocks=[];s.mounted!.x=-80;s.mounted!.z=-80;ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;
  s.units[2].pilot=false;s.units[3].pilot=false;enemy.x=0;enemy.z=60;enemy.cooldown=999;
- const initial=enemy.shield;run(s,3);assert.ok(enemy.shield<initial);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.equal(ally.order,null);
+ const initial=enemy.shield;run(s,8);assert.ok(enemy.shield<initial);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.equal(ally.order,null);
  const friend=setup(),a=friend.units[1],e=friend.units.find(u=>u.id==='scorp-asv')!;friend.mission.rocks=[];a.x=0;a.z=0;e.x=0;e.z=60;e.iff=a.iff;run(friend,2);assert.ok(!friend.events.some(event=>event.type==='shot'&&event.unit===a));
 });
 test('E selects enemy infantry, allies attack it, and infantry rifles can damage an ally',()=>{
@@ -119,7 +119,7 @@ test('E selects enemy infantry, allies attack it, and infantry rifles can damage
  const soldier=s.forceEject(enemy)!;enemy.alive=false;soldier.flight=null;soldier.x=0;soldier.z=60;soldier.yaw=Math.PI;soldier.cooldown=0;soldier.gashrAmmo=0;
  s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.spec.speed=0;ally.spec.ai.keepMoving=false;ally.yaw=0;ally.aim=0;s.units[2].pilot=false;s.units[3].pilot=false;
  s.selectTarget();assert.equal(s.target,soldier);assert.ok(s.targetState);assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1);
- run(s,3);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(ally.shield<ally.spec.shield||s.events.some(e=>e.type==='pilot-eject'&&e.unit===ally));assert.ok(soldier.health<35);
+ run(s,6);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(ally.shield<ally.spec.shield||s.events.some(e=>e.type==='pilot-eject'&&e.unit===ally));assert.ok(soldier.health<35);
 });
 test('IFF overrides faction for selection, radio and autonomous ally fire, and ejection keeps the code',()=>{
  const s=setup(),ally=s.units[1],enemy=s.units.find(u=>u.id==='scorp-asv')!;enemy.iff=s.iff;assert.equal(s.isHostile(enemy),false);
@@ -131,7 +131,7 @@ test('ordered allies fire at an original enemy with matching IFF without pursuin
  s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.yaw=ally.aim=0;enemy.x=0;enemy.z=65;enemy.iff=ally.iff;enemy.cooldown=999;
  s.units[2].pilot=false;s.units[3].pilot=false;s.selected=enemy.id;
  assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);
- run(s,2);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===ally));assert.ok(distance(ally,{x:0,z:0})<2);
+ run(s,3);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===ally));assert.ok(distance(ally,{x:0,z:0})<2);
 });
 
 function footSquad(){const s=setup();s.mission.rocks=[];s.units.find(u=>u.id==='scorp-asv')!.pilot=false;
@@ -259,7 +259,7 @@ test('individual F5 follows the selected moving unit, keeps that identity after 
 });
 test('F5 accepts an empty selected vehicle as a destination and waits nearby',()=>{
  const s=setup();s.mission.rocks=[];s.mines=[];s.units=s.units.filter(u=>u.spec.faction==='union');const parked=makeUnit('destination','scorp-asv',80,150,false);s.units.push(parked);s.selected=parked.id;const follower=s.units[1];
- assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);run(s,14);assert.ok(distance(follower,parked)<35);assert.equal(follower.speed,0);assert.equal(follower.pilot,true);assert.equal(parked.pilot,false);
+ assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);run(s,18);assert.ok(distance(follower,parked)<35);assert.equal(follower.speed,0);assert.equal(follower.pilot,true);assert.equal(parked.pilot,false);
 });
 
 test('ally already stopped beside a building can leave the navigation margin and continue attacking',()=>{
@@ -306,7 +306,7 @@ test('F5 routes around a destroyed fixed tower and keeps following after its fir
 
 test('mission companions receive and execute orders across range, terrain and IFF differences',()=>{
  const s=setup(),ally=s.units[1];s.selected=null;s.iff='0000';ally.x=0;ally.z=900;s.mission.terrain.cliffs=[{id:'radio-wall',x:0,z:450,width:50,depth:30,height:30}];
- assert.equal(s.lineOfSight(ally,s.player),false);assert.ok(distance(ally,s.player)>400);assert.ok(s.radioMembers.every(m=>m.available));assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);const before=ally.z;run(s,2);assert.ok(ally.z<before-5);assert.equal(ally.order?.kind,'follow');
+ assert.equal(s.lineOfSight(ally,s.player),false);assert.ok(distance(ally,s.player)>400);assert.ok(s.radioMembers.every(m=>m.available));assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);const before=ally.z;run(s,4);assert.ok(ally.z<before-5);assert.equal(ally.order?.kind,'follow');
 });
 
 test('2-6 F2 addresses Kylie before and after tower boarding; F1 attacks the selected AIP and radio survives disembark/reboard',async()=>{

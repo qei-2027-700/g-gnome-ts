@@ -17,12 +17,14 @@ export function keyboardAimScale(heldSeconds:number){
 export const MOVEMENT_RESPONSE={vehicleAcceleration:1.8,vehicleBraking:1.4,footAcceleration:10,footBraking:6,restSpeed:.035} as const;
 // Heavy low-hover handling, tuned from the user's Merc AIP agility feedback.
 export const MERC_AIP_RESPONSE={turnRate:.55,aimTurnRate:.9,acceleration:.7,braking:.65} as const;
+// Provisional feel tuning (2026-11-13). Not a measured original slew rate.
+const AI_HULL_TURN_RATE=.95,AI_HULL_EASE=.85,AI_AIM_TURN_RATE=1.2;
 export function aiTurnStep(kind:VehicleKind,error:number,dt:number,eased=false){
  if(kind==='merc-aip')return Math.max(-dt*MERC_AIP_RESPONSE.turnRate,Math.min(dt*MERC_AIP_RESPONSE.turnRate,error));
- return eased?error*Math.min(1,dt*1.7):Math.max(-dt*1.8,Math.min(dt*1.8,error));
+ return eased?error*Math.min(1,dt*AI_HULL_EASE):Math.max(-dt*AI_HULL_TURN_RATE,Math.min(dt*AI_HULL_TURN_RATE,error));
 }
 export function aiAimTurnStep(kind:VehicleKind,error:number,dt:number){
- const rate=kind==='merc-aip'?MERC_AIP_RESPONSE.aimTurnRate:2.4;return Math.max(-dt*rate,Math.min(dt*rate,error));
+ const rate=kind==='merc-aip'?MERC_AIP_RESPONSE.aimTurnRate:AI_AIM_TURN_RATE;return Math.max(-dt*rate,Math.min(dt*rate,error));
 }
 export function accelerateSpeed(current:number,desired:number,dt:number,kind?:VehicleKind){
  const braking=Math.abs(desired)<Math.abs(current)||current*desired<0;

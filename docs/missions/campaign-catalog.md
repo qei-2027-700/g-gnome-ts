@@ -46,7 +46,7 @@
 
 | 番号 | 英語名（動画表記） | 目的・進行の概要 | 参照動画 | 確認を残す内容 |
 | --- | --- | --- | --- | --- |
-| 3-1 | Scorp Crossing | Scorp戦車を奪い、IFFで偽装して輸送部隊へ合流し国境を越える。その先でシェリダンと合流する | [3-1](https://www.youtube.com/watch?v=YpUF8RLP7EA) | 奪取対象・合流地点・識別信号と国境通過条件 |
+| 3-1 | Scorp Crossing | Scorp戦車を奪い、IFFで偽装して輸送部隊へ合流し国境を越える。その先でシェリダンと合流する | [3-1](https://www.youtube.com/watch?v=YpUF8RLP7EA) | [地図と実プレイの進行](mission-3-1.md)。黒い地と帯は仮の5m/画素で配置済み。開始は第1ウェイポイントの真東。キリーとターンは仮の位置で徒歩同行し、開始BGMはCredits。真西の偵察ASVと岩、中央の無人ロケットタワー、広場の両側のHAWC、南東の司令部と電力プラントとミーゾンタワーは仮の位置。偵察ASVを奪うとキリーとターンが同乗し、その時点で未計測のIFF `0701` になる。広場の交戦も進行へつないだ。成功位置の画素は仮 |
 | 3-2 | CommArray at Ur-Kinsk | シェリダンが同行。さらにScorp領域へ進むため、LATLON通信施設を無力化する | [3-2](https://www.youtube.com/watch?v=EOdqH0-weos) | 施設への潜入・破壊・退避の順序 |
 | 3-3 | Raid on Ur-Ulit | Ur-Alrを守る地雷原を通るため、Ur-Ulit基地から地雷検知装置付きのScorp機を奪取する | [3-3](https://www.youtube.com/watch?v=m0IIJf0hlMw) | [既存仕様](mission-3-3.md)。原作の人数・搭乗・通過判定は別途照合 |
 | 3-4 | Ur-Alr | ガントとターンがErreskat川を渡ってキリー・シェリダンと合流。Ur-Alr司令部へ侵入し、研究所の座標を取得する | [3-4](https://www.youtube.com/watch?v=SBcPVtIrUFs) | [地図と試作範囲](mission-3-4.md)、[色と通行範囲](../reference/observations/mission-3-4/observations.md)。渡河と味方集合、シェリダンの侵入・情報取得判定 |

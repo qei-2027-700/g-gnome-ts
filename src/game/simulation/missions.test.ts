@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
+import {Simulation,makeUnit,distance,AI_TARGET_SETTLE,type Input} from './simulation.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
@@ -13,7 +13,228 @@ import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
 import {MAP_3_5_POINTS,MAP_3_5_SOURCE,map35PixelToWorld} from '../content/missions/mission-3-5-map.ts';
 import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
 import {MAP_3_2_POINTS,map32PixelToWorld} from '../content/missions/mission-3-2-map.ts';
+import {MISSION_3_1} from '../content/missions/mission-3-1.ts';
+import {MAP_3_1_POINTS,MAP_3_1_SOURCE,map31PixelToWorld} from '../content/missions/mission-3-1-map.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
+test('3-1 foot travel stays on the dark ground and stops on the pale bands',()=>{
+ const mission=MISSION_3_1,s=new Simulation('Easy',mission),river=mission.terrain.river!,slopes=mission.terrain.cliffs!;
+ assert.equal(s.mounted,null);
+ assert.equal(mission.bgm?.start.trackId,'bgm-credits');
+ assert.equal(mission.bgm?.start.delay,0);
+ assert.equal(mission.bgm?.afterRadio,undefined);
+ assert.deepEqual(s.units.map(u=>u.id),['field-anchor','recon-asv','plaza-rocket','plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv','border-meson-north','border-meson-east','border-meson-south','border-sentry-west','border-sentry-south']);
+ const recon=s.units.find(u=>u.id==='recon-asv')!,tower=s.units.find(u=>u.id==='plaza-rocket')!,enemyIff=mission.factionCodes.scorp;
+ assert.equal(enemyIff,'0701');
+ assert.equal(recon.pilot,true);assert.equal(recon.iff,enemyIff);assert.equal(recon.spec.ai.stopDistance,800);assert.equal(tower.iff,enemyIff);
+ assert.equal(tower.pilot,false);assert.equal(tower.kind,'scorp-rocket-tower');
+ const plazaScorp=['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical'].map(id=>s.units.find(u=>u.id===id)!);
+ const plazaUnion=['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'].map(id=>s.units.find(u=>u.id===id)!);
+ assert.deepEqual(plazaScorp.map(u=>u.kind),['scorp-assault','scorp-sentry','scorp-tactical']);
+ assert.deepEqual(plazaUnion.map(u=>u.kind),['union-tactical','union-sentry','union-asv']);
+ assert.ok(plazaScorp.every(u=>u.pilot&&u.iff===enemyIff&&u.x<tower.x&&u.x>MAP_3_1_POINTS.waypoint2.x));
+ assert.ok(plazaUnion.every(u=>u.pilot&&u.iff===s.iff&&u.x>tower.x));
+ assert.ok(Math.min(...plazaUnion.map(u=>Math.min(...plazaScorp.map(other=>distance(u,other)))))>200);
+ const borderMesons=s.units.filter(u=>u.id.startsWith('border-meson'));
+ const borderSentries=s.units.filter(u=>u.id.startsWith('border-sentry'));
+ const ring=map31PixelToWorld(281,339),reach=MAP_3_1_POINTS.southeastReach;
+ const command=s.facilities.find(f=>f.id==='border-command')!,plant=s.facilities.find(f=>f.id==='border-power')!;
+ assert.equal(command.facilityType,'command');assert.equal(plant.facilityType,'power-plant');
+ assert.equal(borderMesons.length,3);assert.equal(borderSentries.length,2);
+ assert.ok(borderMesons.every(u=>u.pilot&&u.iff===enemyIff&&u.kind==='scorp-meson-tower'&&u.spec.ai.detection===180&&mission.units.find(spawn=>spawn.id===u.id)?.powerSourceId==='border-power'));
+ assert.ok(borderSentries.every(u=>u.pilot&&u.iff===enemyIff&&u.kind==='scorp-sentry'));
+ assert.ok([...borderMesons,...borderSentries,command,plant].every(u=>u.x>ring.x&&u.z<ring.z));
+ assert.ok([...borderMesons,...borderSentries].every(u=>distance(u,reach)>u.spec.ai.detection));
+ assert.ok([command,plant].every(f=>Math.abs(reach.x-f.x)>f.width/2+40&&Math.abs(reach.z-f.z)>f.depth/2+40));
+ assert.deepEqual(mission.companions?.map(c=>[c.personId,c.key,c.name.ja]),[['kylie','F2','キリー'],['thane','F3','ターン']]);
+ const kylie=s.soldiers.find(p=>p.personId==='kylie')!,thane=s.soldiers.find(p=>p.personId==='thane')!;
+ assert.equal(kylie.order?.kind,'follow');assert.equal(thane.order?.kind,'follow');
+ assert.equal(kylie.boardingTarget,undefined);assert.equal(thane.boardingTarget,undefined);
+ assert.equal(s.radioMembers.find(m=>m.personId==='kylie')?.available,true);
+ assert.equal(s.radioMembers.find(m=>m.personId==='thane')?.available,true);
+ assert.deepEqual({x:s.player.x,z:s.player.z},MAP_3_1_POINTS.playerStart);
+ assert.equal(s.player.z,MAP_3_1_POINTS.waypoint1.z);assert.ok(s.player.x>MAP_3_1_POINTS.waypoint1.x);
+ assert.equal(s.humanYaw,Math.atan2(MAP_3_1_POINTS.waypoint1.x-s.player.x,MAP_3_1_POINTS.waypoint1.z-s.player.z));
+ assert.ok(Math.abs(s.humanYaw+Math.PI/2)<1e-9);
+ const reconFoot=s.soldiers.filter(p=>p.faction==='scorp');
+ assert.deepEqual(reconFoot.map(p=>p.personId),['recon-north','recon-south']);
+ assert.ok(reconFoot.every(p=>p.iff===enemyIff&&p.order===undefined&&Math.abs(p.x-recon.x)<1&&Math.abs(p.z-recon.z)>10));
+ assert.equal(mission.rocks.length,3);
+ assert.ok(mission.rocks.every(rock=>rock.x>recon.x&&rock.x<s.player.x));
+ assert.equal(s.lineOfSight({x:recon.x+70,z:recon.z},recon),false);
+ assert.equal(s.lineOfSight({x:recon.x+70,z:recon.z+40},recon),true);
+ assert.equal(mission.radioTriggers?.[0]?.line.ja,'偵察部隊に見つかった。真西の方角だ。攻撃は可能か！？');
+ assert.deepEqual(mission.waypoints.map(w=>w.id),[1,2,3]);
+ assert.deepEqual(mission.objectives.map(o=>o.type),['reach']);
+ assert.equal(river.bridgeWidth,0);
+ assert.ok(river.path!.length>10);
+ assert.equal(river.width,40);
+ assert.ok(slopes.length>40&&slopes.every(c=>c.surface==='slope'&&c.height===64));
+ assert.ok(Math.abs(s.units.find(u=>u.id==='field-anchor')!.x)>mission.terrain.halfWidth);
+ const pad=2,blocked=(x:number,z:number)=>riverDistance(river,x,z)<river.width/2+pad||slopes.some(c=>Math.abs(x-c.x)<c.width/2+pad&&Math.abs(z-c.z)<c.depth/2+pad);
+ for(const point of [...Object.values(MAP_3_1_POINTS),kylie,thane,recon,...reconFoot,...mission.rocks,...plazaScorp,...plazaUnion,...borderMesons,...borderSentries])assert.ok(!blocked(point.x,point.z),`landmark stays off the bands and the river: ${JSON.stringify(point)}`);
+ for(const facility of [command,plant])for(const x of [facility.x-facility.width/2,facility.x+facility.width/2])for(const z of [facility.z-facility.depth/2,facility.z+facility.depth/2])assert.ok(!blocked(x,z),`${facility.id} stays off the bands and the river`);
+ assert.ok(distance(kylie,s.player)<12&&distance(thane,s.player)<12&&distance(kylie,thane)>6);
+ const before={kylie:{x:kylie.x,z:kylie.z},thane:{x:thane.x,z:thane.z}};
+ for(let i=0;i<30;i++)s.tick(1/60,idle);
+ assert.ok(distance(kylie,before.kylie)>0.4,`kylie follows instead of standing: ${distance(kylie,before.kylie)}`);
+ assert.ok(distance(thane,before.thane)>0.4,`thane follows instead of standing: ${distance(thane,before.thane)}`);
+ for(const [px,py] of [[299,98],[165,108],[116,176],[281,339]] as const){const point=map31PixelToWorld(px,py);assert.ok(!blocked(point.x,point.z),`marker pixel stays out of the terrain paint: ${px},${py}`);}
+ assert.ok(reach.x>ring.x&&reach.z<ring.z);
+ assert.ok(distance(reach,ring)>100);
+ const cols=MAP_3_1_SOURCE.width/MAP_3_1_SOURCE.step,rows=MAP_3_1_SOURCE.height/MAP_3_1_SOURCE.step;
+ const cellOf=(px:number,py:number)=>({col:Math.floor((px-MAP_3_1_SOURCE.x)/MAP_3_1_SOURCE.step),row:Math.floor((py-MAP_3_1_SOURCE.y)/MAP_3_1_SOURCE.step)});
+ const center=(col:number,row:number)=>map31PixelToWorld(MAP_3_1_SOURCE.x+(col+.5)*MAP_3_1_SOURCE.step,MAP_3_1_SOURCE.y+(row+.5)*MAP_3_1_SOURCE.step);
+ const linked=(goal:{x:number;z:number},px:number,py:number)=>{
+  const start=cellOf(198+MAP_3_1_POINTS.playerStart.x/MAP_3_1_SOURCE.metersPerPixel,214-MAP_3_1_POINTS.playerStart.z/MAP_3_1_SOURCE.metersPerPixel),end=cellOf(px,py),key=(col:number,row:number)=>`${col},${row}`;
+  const queue=[start],seen=new Set([key(start.col,start.row)]);
+  for(let i=0;i<queue.length;i++){
+   const current=queue[i]!;
+   for(const [dc,dr] of [[1,0],[-1,0],[0,1],[0,-1]] as const){
+    const col=current.col+dc,row=current.row+dr;
+    if(col<0||row<0||col>=cols||row>=rows||seen.has(key(col,row)))continue;
+    const point=center(col,row);
+    if(blocked(point.x,point.z))continue;
+    seen.add(key(col,row));queue.push({col,row});
+   }
+  }
+  assert.ok(seen.has(key(end.col,end.row)),`dark cells connect the due-west start to ${goal.x},${goal.z}`);
+ };
+ linked(MAP_3_1_POINTS.waypoint1,165,108);linked(MAP_3_1_POINTS.waypoint2,116,176);linked(reach,360,378);
+ const open={...s.human},yaw=s.humanYaw;s.move(s.human,yaw,12);
+ assert.ok(Math.abs(distance(s.human,open)-12)<.05,'open dark ground accepts a foot step toward waypoint 1');
+ const band=slopes.find(c=>!blocked(c.x-c.width/2-8,c.z)&&Math.abs(c.x-c.width/2-8)<=mission.terrain.halfWidth)!;
+ assert.ok(band);
+ s.human={x:band.x-band.width/2-8,z:band.z};s.move(s.human,Math.atan2(1,0),40);
+ assert.ok(s.human.x<band.x-band.width/2,'a pale band stops foot travel at the slope rectangle');
+ const channel=riverSamples(river,8).find(frame=>Math.abs(frame.tx)<.35&&frame.z<200&&frame.z>-200)!;
+ const bank={x:channel.x+river.width/2+8,z:channel.z};
+ assert.ok(riverDistance(river,bank.x,bank.z)>river.width/2+pad);
+ s.human=bank;s.move(s.human,Math.atan2(-1,0),40);
+ assert.ok(s.human.x>channel.x,'the river channel stops foot travel before the centerline');
+ assert.equal(s.status,'running');
+ let worst=0;for(let i=0;i<30;i++){const t=performance.now();s.tick(1/60,idle);worst=Math.max(worst,performance.now()-t);}
+ assert.ok(worst<250,`tick took ${worst.toFixed(0)}ms`);
+ assert.equal(s.units.find(u=>u.id==='field-anchor')!.alert,false);
+ assert.equal(recon.alert,false);
+ assert.ok([...plazaScorp,...plazaUnion,...borderMesons,...borderSentries].every(u=>!u.alert));
+ s.human={...reach};s.tick(.05,idle);
+ assert.equal(s.status,'won');
+ const quiet=new Simulation('Easy',mission),cue=mission.radioTriggers![0]!;
+ for(let i=0;i<20;i++)quiet.tick(1/60,idle);
+ assert.ok(!quiet.events.some(event=>event.radioId===cue.id));
+ const heard=quiet.units.find(u=>u.id==='recon-asv')!;
+ quiet.human={x:heard.x+cue.range+40,z:heard.z};quiet.events=[];quiet.tick(1/60,idle);
+ assert.ok(!quiet.events.some(event=>event.radioId===cue.id));
+ quiet.human={x:heard.x+cue.range-10,z:heard.z};quiet.events=[];quiet.tick(1/60,idle);
+ assert.ok(quiet.events.some(event=>event.type==='mission-radio'&&event.radioId===cue.id));
+ const fight=new Simulation('Easy',mission),gunner=fight.units.find(u=>u.id==='recon-asv')!;
+ fight.human={x:gunner.x+70,z:gunner.z+40};
+ let worstAlert=0,sawAlert=false;
+ for(let i=0;i<40;i++){const t=performance.now();fight.tick(1/60,idle);worstAlert=Math.max(worstAlert,performance.now()-t);sawAlert||=gunner.alert;}
+ assert.equal(sawAlert,true);assert.equal(gunner.speed,0);
+ assert.ok(worstAlert<250,`alert tick took ${worstAlert.toFixed(0)}ms`);
+});
+test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provisional IFF and the plaza fight follow',()=>{
+ const mission=MISSION_3_1,enemyIff=mission.factionCodes.scorp??'',idleStep=(sim:Simulation,n=1)=>{for(let i=0;i<n;i++)sim.tick(1/60,idle);};
+ assert.equal(enemyIff,'0701');
+ assert.deepEqual(mission.autoPassengerOnBoard,['recon-asv']);
+ assert.deepEqual(mission.passengerIff,{unitId:'recon-asv',iff:enemyIff});
+ assert.deepEqual(mission.radioTriggers?.filter(cue=>cue.event==='iff').map(cue=>[cue.id,cue.line.ja,cue.unitId]),[
+  ['kylie-iff-set','IFFコードセット完了！','recon-asv'],
+  ['kylie-iff-goal','目的はウル・ビンシャー！','recon-asv'],
+ ]);
+ assert.equal(mission.radioTriggers?.find(cue=>cue.id==='kylie-plaza')?.line.ja,'まずいな…unionの夜戦基地の軍団だ');
+ assert.equal(mission.radioTriggers?.find(cue=>cue.id==='thane-union-hold')?.line.ja,'攻撃はできないわ！彼らは味方よ！');
+ const early=new Simulation('Easy',mission);
+ assert.equal(early.changeIff(enemyIff),true);
+ idleStep(early);
+ assert.equal(early.events.filter(event=>event.radioId==='kylie-iff-set').length,0);
+ assert.equal(early.isHostile(early.units.find(unit=>unit.id==='plaza-union-asv')!),true);
+ assert.equal(early.isHostile(early.units.find(unit=>unit.id==='border-meson-north')!),false);
+ const exposed=new Simulation('Easy',mission),meson=exposed.units.find(unit=>unit.id==='border-meson-north')!;
+ exposed.human={x:meson.x,z:meson.z+50};
+ let mesonAlert=false;for(let i=0;i<40;i++){exposed.tick(1/60,idle);mesonAlert||=meson.alert;}
+ assert.equal(mesonAlert,true);
+ const s=new Simulation('Easy',mission),asv=s.units.find(unit=>unit.id==='recon-asv')!;
+ const kylie=s.soldiers.find(person=>person.personId==='kylie')!,thane=s.soldiers.find(person=>person.personId==='thane')!;
+ const armor=asv.armor,shield=asv.shield;
+ s.human={x:asv.x+18,z:asv.z+18};
+ s.humanYaw=Math.atan2(asv.x-s.human.x,asv.z-s.human.z);
+ s.pitch=Math.atan2(asv.spec.height*.5-s.eyeHeight,distance(s.human,asv));
+ s.fire(2);
+ assert.ok(s.missiles.some(missile=>missile.weapon==='GASHR'&&missile.playerOwned));
+ for(let i=0;i<180&&asv.pilot&&s.humanHealth>0;i++)s.tick(1/60,idle);
+ assert.equal(asv.pilot,false,`ASV crew still aboard after GASHR, health ${s.humanHealth}`);
+ assert.equal(asv.alive,true);assert.equal(asv.armor,armor);assert.equal(asv.shield,shield);
+ assert.ok(s.humanHealth>0);
+ kylie.x=asv.x+8;kylie.z=asv.z-8;thane.x=asv.x+8;thane.z=asv.z+8;
+ s.human={x:asv.x+3.2,z:asv.z};
+ for(let i=0;i<30&&s.mounted!==asv;i++)s.tick(1/60,idle);
+ assert.equal(s.mounted?.id,'recon-asv');
+ assert.equal(s.iff,'0000');
+ assert.equal(s.events.filter(event=>event.radioId==='kylie-iff-set').length,0);
+ for(let i=0;i<240&&(kylie.passengerOf!==asv.id||thane.passengerOf!==asv.id);i++){
+  s.tick(1/60,idle);
+  if(kylie.passengerOf!==asv.id||thane.passengerOf!==asv.id)assert.equal(s.iff,'0000');
+ }
+ assert.equal(kylie.passengerOf,asv.id);assert.equal(thane.passengerOf,asv.id);
+ assert.equal(s.mounted,asv);
+ assert.equal(s.iff,enemyIff);
+ assert.equal(kylie.iff,'0000');assert.equal(thane.iff,'0000');
+ assert.deepEqual(s.events.filter(event=>event.radioId==='kylie-iff-set'||event.radioId==='kylie-iff-goal').map(event=>event.radioId),['kylie-iff-set','kylie-iff-goal']);
+ s.tick(1/60,idle);
+ assert.equal(s.changeIff(enemyIff),true);
+ assert.equal(s.events.filter(event=>event.radioId==='kylie-iff-set').length,1);
+ assert.equal(asv.iff,enemyIff);
+ assert.equal(s.isHostile(s.units.find(unit=>unit.id==='plaza-union-tactical')!),true);
+ assert.equal(s.isHostile(s.units.find(unit=>unit.id==='border-meson-east')!),false);
+ s.mounted.x=meson.x;s.mounted.z=meson.z+50;s.mounted.speed=0;
+ let matchedAlert=false;for(let i=0;i<40;i++){s.tick(1/60,idle);matchedAlert||=s.units.find(unit=>unit.id==='border-meson-north')!.alert;}
+ assert.equal(matchedAlert,false);
+ const union=s.units.find(unit=>unit.id==='plaza-union-tactical')!;
+ s.mounted.x=union.x;s.mounted.z=union.z+18;s.mounted.speed=0;s.mounted.yaw=s.mounted.aim=Math.atan2(0,-1);s.pitch=s.targetElevation(union);
+ s.mounted.cooldown=0;
+ const unionShield=union.shield;
+ s.tick(1/60,{...idle,fire1:true});
+ assert.ok(union.shield<unionShield,`player gun did not hit the Union HAWC, shield ${union.shield}`);
+ assert.equal(s.events.filter(event=>event.radioId==='thane-union-hold').length,1);
+ s.mounted.cooldown=0;
+ s.tick(1/60,{...idle,fire1:true});
+ assert.equal(s.events.filter(event=>event.radioId==='thane-union-hold').length,1);
+ const plaza=new Simulation('Easy',mission),rocket=plaza.units.find(unit=>unit.id==='plaza-rocket')!;
+ const scorp=plaza.units.find(unit=>unit.id==='plaza-scorp-assault')!,unionSide=plaza.units.find(unit=>unit.id==='plaza-union-tactical')!;
+ const scorpAt={x:scorp.x,z:scorp.z},unionAt={x:unionSide.x,z:unionSide.z};
+ idleStep(plaza,20);
+ assert.ok(plaza.units.filter(unit=>unit.id.startsWith('plaza-')&&unit.id!=='plaza-rocket').every(unit=>!unit.alert));
+ assert.equal(plaza.events.filter(event=>event.radioId==='kylie-plaza').length,0);
+ assert.equal(plaza.events.filter(event=>event.radioId==='thane-union-hold').length,0);
+ plaza.human={x:rocket.x,z:rocket.z};
+ for(const person of plaza.soldiers.filter(person=>person.personId==='kylie'||person.personId==='thane')){person.x=rocket.x+6;person.z=rocket.z;}
+ let worst=0,scorpMoved=false,unionMoved=false;
+ for(let i=0;i<90;i++){
+  const t=performance.now();plaza.tick(1/60,idle);worst=Math.max(worst,performance.now()-t);
+  scorpMoved||=scorp.alert&&(scorp.speed!==0||distance(scorp,scorpAt)>1);
+  unionMoved||=unionSide.alert&&(unionSide.speed!==0||distance(unionSide,unionAt)>1);
+ }
+ assert.equal(scorpMoved,true);assert.equal(unionMoved,true);
+ assert.equal(plaza.events.filter(event=>event.radioId==='kylie-plaza').length,1);
+ assert.equal(plaza.events.filter(event=>event.radioId==='thane-union-hold').length,0);
+ assert.ok(worst<250,`plaza tick took ${worst.toFixed(0)}ms`);
+});
+test('3-1 recon ASV waits after first sight before the machine gun, and the missile is later',()=>{
+ const s=new Simulation('Easy',MISSION_3_1),asv=s.units.find(unit=>unit.id==='recon-asv')!;
+ s.human={x:asv.x+18,z:asv.z+18};
+ const shots=()=>s.events.filter(event=>event.type==='shot'&&event.unit===asv);
+ for(let i=0;i<Math.floor((AI_TARGET_SETTLE-.1)*60);i++)s.tick(1/60,idle);
+ assert.equal(asv.alert,true);
+ assert.equal(shots().length,0);
+ assert.equal(s.missiles.some(missile=>missile.owner===asv.id),false);
+ let firedAt=0;
+ for(let i=0;i<90&&shots().length===0&&s.humanHealth>0;i++){s.tick(1/60,idle);firedAt=s.time;}
+ assert.ok(shots().length>0,`no shot by ${s.time.toFixed(2)}s, health ${s.humanHealth}`);
+ assert.ok(firedAt>=AI_TARGET_SETTLE);
+ assert.equal(shots()[0].weapon,'zWASP');
+});
 test('3-5 keeps a walkable black-ground route from the northern X to waypoint 1 and places the laboratory southeast',()=>{
  const mission=MISSION_3_5,field=new Simulation('Easy',mission),slopes=mission.terrain.cliffs!,laboratory=field.facilities.find(f=>f.id==='g-nome-laboratory')!;
  assert.equal(field.mounted?.kind,'scorp-assault');
@@ -329,7 +550,7 @@ test('3-2 a GASHR-ejected companion boards a nearby empty vehicle and resumes th
  for(let i=0;i<600&&!pilot.driverOf;i++)s.tick(.05,idle);
  assert.equal(pilot.driverOf,replacement.id);
  assert.equal(replacement.personId,'kylie');assert.equal(replacement.iff,s.iff);
- for(let i=0;i<3600&&plant.alive;i++)s.tick(.05,idle);
+ for(let i=0;i<4800&&plant.alive;i++)s.tick(.05,idle);
  assert.equal(plant.alive,false,'Kylie retains her scripted target after changing vehicles');
 });
 test('3-2 ground shield blocks foot and HAWCs, permits AIPs and shots, and vanishes with the power plant',()=>{
@@ -472,22 +693,23 @@ test('3-4 bridge crew exits after GASHR and the far-bank tower respects IFF',()=
  s.mounted!.x=tower.x-48;s.mounted!.z=tower.z;tower.pilot=true;
  for(let i=0;i<120;i++)s.tick(1/60,idle);
  assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower),'the matching vehicle IFF keeps the tower friendly');
- thane.x=tower.x-42;thane.z=tower.z+24;
+ // Far enough that Thane's GASHR (80 m) cannot unseat the crew during the acquisition wait, still inside the tower's 140 m detection.
+ thane.x=tower.x-70;thane.z=tower.z+55;
  const exposedThane=s.forceEject(thane,'boarding')!;
  assert.equal(exposedThane.iff,'4033');
- for(let i=0;i<90;i++)s.tick(1/60,idle);
+ for(let i=0;i<220;i++)s.tick(1/60,idle);
  assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower),'the tower recognizes Thane on foot while the player remains disguised');
  exposedThane.alive=false;thane.alive=false;
  s.events.length=0;
  s.eject('ground');assert.equal(s.iff,'4033');assert.equal(s.isHostile(tower),true);
- for(let i=0;i<180;i++)s.tick(1/60,idle);
+ for(let i=0;i<220;i++)s.tick(1/60,idle);
  assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower),'the tower recognizes the player on foot');
  const atStart=new Simulation('Easy',MISSION_3_4),distantGuard=atStart.units.find(u=>u.id==='east-meson-tower')!;
  for(let i=0;i<180;i++)atStart.tick(1/60,idle);
  assert.ok(!atStart.events.some(e=>e.type==='shot'&&e.unit===distantGuard),'the far-bank tower does not fire at the initial position');
  const exposed=new Simulation('Easy',MISSION_3_4),guard=exposed.units.find(u=>u.id==='east-meson-tower')!;
  exposed.mounted!.x=guard.x-48;exposed.mounted!.z=guard.z;
- for(let i=0;i<120;i++)exposed.tick(1/60,idle);
+ for(let i=0;i<220;i++)exposed.tick(1/60,idle);
  assert.ok(exposed.events.some(e=>e.type==='shot'&&e.unit===guard),'the tower fires at a visible player before IFF alignment');
  const disguised=new Simulation('Easy',MISSION_3_4),friendlyGuard=disguised.units.find(u=>u.id==='east-meson-tower')!;
  disguised.mounted!.x=friendlyGuard.x-48;disguised.mounted!.z=friendlyGuard.z;

@@ -17,9 +17,23 @@ export const MISSION_3_4:MissionDefinition={
   {id:'thane-td',kind:'scorp-tactical',...MAP_3_4_POINTS.thaneStart,yaw:-Math.PI/6,pilot:true,personId:'thane',iff:'4033'},
   {id:'east-meson-tower',kind:'scorp-meson-tower',...MAP_3_4_POINTS.mesonTower,yaw:-Math.PI/2,pilot:true,iff:'3317',overrides:{ai:{detection:140,strafe:0,keepMoving:false,stopDistance:0,missileVolley:1}}},
   {id:'base-rocket-tower',kind:'scorp-rocket-tower',...MAP_3_4_POINTS.rocketTower,yaw:-Math.PI/4,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-01',kind:'scorp-tactical',x:430,z:-200,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-02',kind:'scorp-tactical',x:530,z:-200,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-03',kind:'scorp-tactical',x:530,z:-300,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-04',kind:'scorp-tactical',x:530,z:-400,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-05',kind:'scorp-tactical',x:530,z:-500,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-06',kind:'scorp-tactical',x:630,z:-500,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-07',kind:'scorp-tactical',x:230,z:-600,pilot:true,iff:'3317'},
+  {id:'base-scoe-td-hawk-08',kind:'scorp-tactical',x:330,z:-530,pilot:true,iff:'3317'},
+  // {id:'scorp-tactical-guard2',kind:'scorp-tactical',x:-90,z:715,pilot:true},
+  // {id:'scorp-td-north',kind:'scorp-tactical',...map32PixelToWorld(155,148),yaw:0,pilot:true},
  ],
- companions:[{personId:'kylie',unitId:'kylie-td',key:'F2',name:{ja:'キリー',en:'Kylie'}},{personId:'thane',unitId:'thane-td',key:'F3',name:{ja:'ターン',en:'Thane'}},{personId:'sheridan',unitId:'sheridan-asv',key:'F4',name:{ja:'シェリダン',en:'Sheridan'}}],
- rendezvous:{waypointId:3,units:[
+ companions:[
+  {personId:'kylie',unitId:'kylie-td',key:'F2',name:{ja:'キリー',en:'Kylie'}},
+  {personId:'thane',unitId:'thane-td',key:'F3',name:{ja:'ターン',en:'Thane'}},
+  {personId:'sheridan',unitId:'sheridan-asv',key:'F4',name:{ja:'シェリダン',en:'Sheridan'}}
+ ],
+ rendezvous:{waypointId:2,units:[
   {id:'kylie-td',kind:'scorp-tactical',...MAP_3_4_POINTS.kylieArrival,yaw:Math.PI/2,pilot:true,personId:'kylie',iff:'3317'},
   {id:'sheridan-asv',kind:'scorp-asv',...MAP_3_4_POINTS.sheridanArrival,yaw:Math.PI/2,pilot:true,personId:'sheridan',iff:'3317'},
  ]},radioRange:400,

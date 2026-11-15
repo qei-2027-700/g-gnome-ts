@@ -17,7 +17,7 @@ export const MISSION_1_5:MissionDefinition={
  units:[
   {id:'player-td',kind:'darken-tactical',x:352,z:134,yaw:-Math.PI/2,pilot:false},
   {id:'rocket-tower',kind:'scorp-rocket-tower',x:256,z:-6,yaw:.4,pilot:true,overrides:{name:'Darken Rocket Tower',jp:'ダーケン軍 ロケットタワー',faction:'darken',color:'#a6522b',missileHomingScale:{UNKPA:0}}},
-  {id:'approach-asv',kind:'darken-asv',x:172,z:210,yaw:Math.PI/2,pilot:true},
+  {id:'approach-asv',kind:'darken-asv',x:-400,z:0,yaw:Math.PI/2,pilot:true},
   {id:'bridge-td',kind:'darken-tactical',x:-512,z:-18,yaw:Math.PI/2,pilot:true},
   {id:'control-sentry',kind:'darken-sentry',x:-572,z:-78,yaw:Math.PI/2,pilot:true},
   {id:'bridge-sentry',kind:'darken-sentry',x:-176,z:114,yaw:0,pilot:true},

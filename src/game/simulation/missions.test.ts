@@ -939,7 +939,7 @@ test('Meson held fire uses the slower cadence and slower flight while external p
  const times:number[]=[];let flightSpeed=0;
  for(let i=0;i<600;i++){s.tick(1/60,{...idle,fire1:true});if(s.events.some(e=>e.type==='shot'&&e.unit===tower)){times.push(s.time);const beam=s.missiles.find(m=>m.owner===tower.id);if(beam)flightSpeed=Math.hypot(beam.vx,beam.vy,beam.vz);}s.events=[];}
  assert.equal(times.length,3);for(let i=1;i<times.length;i++)assert.ok(Math.abs(times[i]-times[i-1]-LASERS.GAUS30.recharge)<1e-9);
- assert.ok(LASERS.GAUS30.recharge>LASERS.GAUS30.interval);assert.equal(flightSpeed,LASERS.GAUS30.speed);assert.ok(flightSpeed<1000);assert.equal(tower.energy,tower.spec.energy);assert.deepEqual(tower.ammunition,{});
+ assert.ok(LASERS.GAUS30.recharge>LASERS.GAUS30.interval);assert.ok(Math.abs(flightSpeed-LASERS.GAUS30.speed)<1e-6);assert.ok(flightSpeed<1000);assert.equal(tower.energy,tower.spec.energy);assert.deepEqual(tower.ammunition,{});
 });
 
 test('Meson external power supports unlimited player, friendly and enemy firing until its linked plant is destroyed',()=>{
@@ -981,9 +981,11 @@ test('2-6 timed Merc assaults damage the Citadel even under a Merc disguise, cau
 
 test('2-6 progresses through real GAUS shots, Thane leaving the fortress and boarding a reserved HAWC',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);let shots=0;const thane=s.soldiers.find(p=>p.personId==='thane')!;
+ const pilotedHostile=()=>{const target=s.target;return !!target&&'pilot' in target&&target.pilot&&s.isHostile(target)&&!!s.targetState?.inSight;};
  for(let i=0;i<12000&&s.status==='running'&&thane.insideFacility;i++){
-  if(!s.target||!s.targetState?.inSight){s.selectTarget();for(let n=0;n<s.selectionTargets.length&&(!s.targetState?.inSight||!s.target||!s.isHostile(s.target));n++)s.cycleTarget();}s.tracking=true;
-  s.tick(1/60,{...idle,fire1:!!s.targetState?.locked&&s.mounted?.laserCharge===1});shots+=s.events.filter(e=>e.type==='shot'&&e.unit===s.mounted).length;s.events=[];
+  // E can select an empty enemy HAWC. The nearby reserve vehicles are that nearest target, so keep the defense fire on a piloted aircraft.
+  if(!pilotedHostile()){s.selectTarget();for(let n=0;n<s.selectionTargets.length&&!pilotedHostile();n++)s.cycleTarget();}s.tracking=true;
+  s.tick(1/60,{...idle,fire1:pilotedHostile()&&!!s.targetState?.locked&&s.mounted?.laserCharge===1});shots+=s.events.filter(e=>e.type==='shot'&&e.unit===s.mounted).length;s.events=[];
  }
  assert.ok(shots>0);assert.equal(thane.insideFacility,undefined);assert.equal(s.status,'running');assert.ok(s.objectiveStates[0].done);assert.ok(!s.objectiveStates[1].done);assert.ok(!thane.passengerOf);
  s.eject();for(let i=0;i<600&&s.flight;i++)s.tick(1/60,idle);const reserve=s.units.find(u=>u.id==='reserve-assault'&&u.alive)??s.units.find(u=>u.id==='reserve-cruiser'&&u.alive)!;assert.ok(reserve?.alive);

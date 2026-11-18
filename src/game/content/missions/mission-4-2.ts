@@ -1,11 +1,10 @@
 import type {MissionDefinition,Spawn} from './types.ts';
 // User-confirmed scenario; coordinates, roster, timings and IFF are provisional.
 const groundAttackers:Spawn[]=Array.from(
-  {length:15},(_,i)=>(
+  {length:8},(_,i)=>(
     {
       id:`sheridan-union-${i+1}`,
-      kind:i<5?'union-sentry':i<9?'union-asv':'union-tactical',
-      // kind:i<4?'union-sentry':i<6?'union-asv':'union-tactical',
+      kind:i<4?'union-sentry':i<6?'union-asv':'union-tactical',
       x:(i%4-1.5)*90+(i===4?45:0),z:360+Math.floor(i/4)*160+(i===4?130:0),
       yaw:Math.PI,pilot:true
     }

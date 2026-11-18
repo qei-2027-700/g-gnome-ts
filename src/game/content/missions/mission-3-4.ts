@@ -33,7 +33,7 @@ export const MISSION_3_4:MissionDefinition={
   {personId:'thane',unitId:'thane-td',key:'F3',name:{ja:'ターン',en:'Thane'}},
   {personId:'sheridan',unitId:'sheridan-asv',key:'F4',name:{ja:'シェリダン',en:'Sheridan'}}
  ],
- rendezvous:{waypointId:2,units:[
+ rendezvous:{waypointId:3,units:[
   {id:'kylie-td',kind:'scorp-tactical',...MAP_3_4_POINTS.kylieArrival,yaw:Math.PI/2,pilot:true,personId:'kylie',iff:'3317'},
   {id:'sheridan-asv',kind:'scorp-asv',...MAP_3_4_POINTS.sheridanArrival,yaw:Math.PI/2,pilot:true,personId:'sheridan',iff:'3317'},
  ]},radioRange:400,

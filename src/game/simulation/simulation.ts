@@ -263,6 +263,7 @@ export class Simulation {
     const cue=this.mission.bgm?.afterAssault;if(!cue||this.mounted?.id!==cue.boardUnitId)return false;
     return cue.unitIds.every(id=>{const assault=this.mission.assaults?.find(item=>item.unitId===id),unit=this.units.find(item=>item.id===id);return !!assault&&!!unit&&this.assaultBegun(assault,unit);});
   }
+  get ionAnnouncementAt(){const strike=this.mission.ionStrike;if(!strike||this.ionStartedAt===null)return null;return this.ionStartedAt+strike.delay;}
   private eliminated(id:string){const unit=this.units.find(u=>u.id===id);return !!unit&&(!unit.alive||this.soldiers.some(s=>s.sourceVehicle===id&&!s.alive));}
   private facilityIntegrity(f:Facility){const initial=this.mission.base?.buildings.find((b,i)=>(b.id??`facility-${b.kind??'command'}-${i}`)===f.id)?.health??200;return f.health/initial;}
   private laserEnergyCost(unit:Unit,weapon:LaserWeapon){return unit.spec.powerSupply==='external'?0:this.weapons.lasers[weapon].energy;}

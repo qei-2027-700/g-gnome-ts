@@ -13,6 +13,12 @@ test('ion strike requires valid targets, radio cues and positive timing',()=>{
  const errors=validateMissions([mission]).join('\n');
  for(const expected of ['missing-laboratory','missing-ally','missing-radio','positive range, delay and safe radius'])assert.ok(errors.includes(expected),expected);
 });
+test('beforeIonLock requires an ion strike and a lead inside its delay',()=>{
+ const late=structuredClone(MISSION_3_5);late.bgm={...late.bgm!,beforeIonLock:{lead:late.ionStrike!.delay+1,trackId:'bgm-defeated'}};
+ assert.ok(validateMissions([late]).join('\n').includes('beforeIonLock lead'));
+ const bare=structuredClone(MISSION_3_3);bare.bgm={...bare.bgm!,beforeIonLock:{lead:2,trackId:'bgm-defeated'}};
+ assert.ok(validateMissions([bare]).join('\n').includes('beforeIonLock needs an ion strike'));
+});
 test('pop-up turrets require their control facility',()=>{
  const mission=structuredClone(MISSION_3_5);
  mission.units=mission.units.map(unit=>unit.id==='popup-turret-1'?{...unit,controlFacilityId:'missing-control'}:unit);

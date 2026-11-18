@@ -229,7 +229,7 @@ test('minefield discovery uses female voice two for the Japanese warning, suppor
 async function musicFixture(check:(audio:GameAudio,tracks:any[])=>Promise<void>,availableNext=true){
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const previous=Object.getOwnPropertyDescriptor(globalThis,'Audio'),tracks:any[]=[];
  class Music{src:string;loop=false;volume=1;paused=true;currentTime=0;plays=0;fail=false;defer:(()=>Promise<void>)|null=null;constructor(src:string){this.src=src;tracks.push(this);}pause(){this.paused=true;}play(){this.plays++;this.paused=false;return this.defer?this.defer():this.fail?Promise.reject(new Error('Playback blocked')):Promise.resolve();}}
- try{Object.defineProperty(globalThis,'Audio',{configurable:true,value:Music});const audio=new GameAudio(defaults(),{'bgm-mission-1-1-start':'mission-1-1-start.mp3','bgm-mission-1-1-sentry-combat':availableNext?'sentry-combat.mp3':null,'bgm-mission-3-3':'start.mp3','bgm-fighting-on-the-tundra':'tundra.mp3','bgm-snow-maze':'snow-maze.mp3','bgm-credits':'credits.mp3','bgm-union-march':availableNext?'union-march.mp3':null});audio.beginMissionMusic(MISSION_3_3);await check(audio,tracks);}
+ try{Object.defineProperty(globalThis,'Audio',{configurable:true,value:Music});const audio=new GameAudio(defaults(),{'bgm-mission-1-1-start':'mission-1-1-start.mp3','bgm-mission-1-1-sentry-combat':availableNext?'sentry-combat.mp3':null,'bgm-mission-3-3':'start.mp3','bgm-fighting-on-the-tundra':'tundra.mp3','bgm-snow-maze':'snow-maze.mp3','bgm-credits':'credits.mp3','bgm-union-march':availableNext?'union-march.mp3':null,'bgm-crossing-the-war-zone':'crossing-the-war-zone.mp3','bgm-sheridan':'sheridan.mp3','bgm-defeated':availableNext?'defeated.mp3':null});audio.beginMissionMusic(MISSION_3_3);await check(audio,tracks);}
  finally{if(previous)Object.defineProperty(globalThis,'Audio',previous);else Reflect.deleteProperty(globalThis,'Audio');}
 }
 test('3-3 music starts once at three simulation seconds, loops, preserves position across pause and follows music volume',async()=>{
@@ -325,15 +325,52 @@ test('a missing radio-switch track keeps Credits and reports the missing cue onc
   audio.musicError=null;audio.updateMissionMusic(3,false);assert.equal(audio.musicError,null);assert.equal(tracks[0].paused,false);
  },false);
 });
-test('3-2 stays silent until Sheridan’s encounter line finishes, then plays the 1-1 combat track once',async()=>{
+test('3-2 plays Crossing the War Zone at launch and switches once after Sheridan’s encounter line',async()=>{
  const {MISSION_3_2}=await import('../content/missions/mission-3-2.ts');
  await musicFixture(async(audio,tracks)=>{
-  audio.beginMissionMusic(MISSION_3_2);audio.updateMissionMusic(0,false);audio.updateMissionMusic(1000,false);assert.equal(tracks.length,0);
-  audio.missionMusicRadioEnded('thane-opening');audio.updateMissionMusic(1000,false);assert.equal(tracks.length,0);
-  audio.missionMusicRadioEnded('sheridan-encounter');audio.updateMissionMusic(30,true);assert.equal(tracks.length,0);
-  audio.updateMissionMusic(30,false);await Promise.resolve();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sentry-combat.mp3');assert.equal(tracks[0].loop,true);
-  const count=tracks.length;tracks[0].currentTime=4;audio.missionMusicRadioEnded('sheridan-encounter');audio.updateMissionMusic(40,false);assert.equal(tracks.length,count);assert.equal(tracks[0].currentTime,4);
+  audio.beginMissionMusic(MISSION_3_2);audio.updateMissionMusic(0,false);await Promise.resolve();
+  assert.equal(tracks.length,1);assert.equal(tracks[0].src,'crossing-the-war-zone.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].plays,1);
+  audio.missionMusicRadioEnded('thane-opening');audio.updateMissionMusic(10,false);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'crossing-the-war-zone.mp3');
+  audio.missionMusicRadioEnded('sheridan-encounter');audio.updateMissionMusic(30,true);assert.equal(tracks[0].paused,true);assert.equal(tracks.length,1);
+  audio.updateMissionMusic(30,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sentry-combat.mp3');assert.equal(tracks.at(-1).loop,true);assert.equal(tracks[0].paused,true);
+  const count=tracks.length;tracks.at(-1).currentTime=4;audio.missionMusicRadioEnded('sheridan-encounter');audio.updateMissionMusic(40,false);assert.equal(tracks.length,count);assert.equal(tracks.at(-1).currentTime,4);
  });
+});
+test('3-5 plays Sheridan at launch and switches to Defeated two seconds before the ion announcement',async()=>{
+ const {Simulation}=await import('../simulation/simulation.ts'),{MISSION_3_5}=await import('../content/missions/mission-3-5.ts');
+ const idle={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
+ await musicFixture(async(audio,tracks)=>{
+  const s=new Simulation('Easy',MISSION_3_5);
+  for(const enemy of s.units.filter(u=>u.iff==='3317'))enemy.pilot=false;
+  const update=(paused=false)=>audio.updateMissionMusic(s.time,paused,s.missionMusicUnits,false,s.ionAnnouncementAt);
+  audio.beginMissionMusic(s.mission);update();await Promise.resolve();
+  assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sheridan.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].plays,1);
+  const laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!;
+  s.damageFacility(laboratory,laboratory.health,{x:laboratory.x,y:2,z:laboratory.z});
+  assert.equal(s.ionAnnouncementAt,s.time+MISSION_3_5.ionStrike!.delay);
+  update();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sheridan.mp3');
+  const switchAt=s.ionAnnouncementAt!-MISSION_3_5.bgm!.beforeIonLock!.lead;
+  while(s.time+.05<=switchAt-1e-6){s.tick(.05,idle);s.events=[];}
+  update();assert.ok(s.time<switchAt);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sheridan.mp3');
+  s.tick(.05,idle);assert.equal(s.events.some(e=>e.type==='ion-lock'),false);s.events=[];
+  update(true);assert.equal(tracks.length,1);assert.equal(tracks[0].paused,true);
+  update(false);await Promise.resolve();
+  assert.equal(tracks.at(-1).src,'defeated.mp3');assert.equal(tracks.at(-1).loop,true);assert.equal(tracks[0].paused,true);
+  const switchedAt=s.time;tracks.at(-1).currentTime=3;update();
+  assert.equal(tracks.length,2);assert.equal(tracks.at(-1).currentTime,3);
+  let lockAt:number|null=null;
+  for(let i=0;i<80&&lockAt===null;i++){s.tick(.05,idle);if(s.events.some(e=>e.type==='ion-lock'))lockAt=s.time;s.events=[];}
+  assert.ok(lockAt!==null);assert.ok(Math.abs(lockAt!-switchedAt-2)<.051,`switch ${switchedAt} lock ${lockAt}`);
+  update();assert.equal(tracks.length,2);assert.equal(tracks.at(-1).src,'defeated.mp3');
+ });
+});
+test('3-5 keeps Sheridan when the ion track is missing',async()=>{
+ const {MISSION_3_5}=await import('../content/missions/mission-3-5.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_3_5);audio.updateMissionMusic(0,false,undefined,false,null);await Promise.resolve();
+  audio.updateMissionMusic(18,false,undefined,false,20);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sheridan.mp3');assert.equal(audio.musicError,'missing-next');
+  audio.musicError=null;audio.updateMissionMusic(19,false,undefined,false,20);assert.equal(audio.musicError,null);assert.equal(tracks[0].paused,false);
+ },false);
 });
 test('1-5 plays the assigned combat BGM at launch and stops it when the mission ends',async()=>{
  const {MISSION_1_5}=await import('../content/missions/mission-1-5.ts');

@@ -32,12 +32,12 @@
 | `bgm-infiltrating-darken-territory` | Track 04: Infiltrating Darken Territory（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長118.485秒・用途未指定 | [動画](https://www.youtube.com/watch?v=j_oylgkm3Fo) |
 | `bgm-sneaking-in` | Track 07: Sneaking In（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長92.011秒・用途未指定 | [動画](https://www.youtube.com/watch?v=mziZW_QQPJI) |
 | `bgm-rescuing-kylie` | Track 09: Rescuing Kylie（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長125.333秒・用途未指定 | [動画](https://www.youtube.com/watch?v=FB664mAqM28) |
-| `bgm-sheridan` | Track 11: Sheridan（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長121.173秒・用途未指定 | [動画](https://www.youtube.com/watch?v=ckEY6gEo_2A) |
+| `bgm-sheridan` | Track 11: Sheridan（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長121.173秒・3-5では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=ckEY6gEo_2A) |
 | `bgm-merc-ambush` | Track 13: Merc Ambush（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長55.168秒・用途未指定 | [動画](https://www.youtube.com/watch?v=1JM8Vrm8TX8) |
 | `bgm-undercover-operations` | Track 14: Undercover Operations（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長110.827秒・用途未指定 | [動画](https://www.youtube.com/watch?v=TxUlQ-EEK1o) |
 | `bgm-betrayal` | Track 16: Betrayal（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長201.301秒・用途未指定 | [動画](https://www.youtube.com/watch?v=uWpTUXuLG_g) |
-| `bgm-defeated` | Track 18: Defeated（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長26.958秒・用途未指定 | [動画](https://www.youtube.com/watch?v=4XJIibD6gr8) |
-| `bgm-crossing-the-war-zone` | Track 19: Crossing the War Zone（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長140.224秒・用途未指定 | [動画](https://www.youtube.com/watch?v=BROWgPMUPDg) |
+| `bgm-defeated` | Track 18: Defeated（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長26.958秒・3-5ではイオン砲アナウンスの2秒前からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=4XJIibD6gr8) |
+| `bgm-crossing-the-war-zone` | Track 19: Crossing the War Zone（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長140.224秒・3-2では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=BROWgPMUPDg) |
 | `bgm-passenger` | Track 20: Passenger（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長64.939秒・用途未指定 | [動画](https://www.youtube.com/watch?v=icXcc3u4Po4) |
 
 同じ曲が日本語版・英語版で同じ位置に流れるかは未確認。曲データと再生ルールに版・言語の確認状況を持たせるが、BGMを言語だけで別曲へ変更する前提にはしない。
@@ -76,7 +76,10 @@
 | 3-1・開始 | 出撃時 | `bgm-credits` | 奪ったScorp ASVの操縦席で、広場の両軍6機の進軍がすべて始まったとき Union March へ一度切り替える | ユーザー指定（2026-11-12、後の指定、2026-11-13に広場の切り替えを追加）。既存の Credits を待機なしでループする。偵察の無線は `afterRadio` には結び付けていない。シェリダンの無線はまだない |
 | 3-1・広場の両軍が戦闘に入ったあと | `recon-asv`の操縦者であり、広場のScorp 3機とUnion 3機の進軍がすべて始まったとき | `bgm-union-march` | 未確認 | ユーザー指定（2026-11-13）。既存の Union March。搭乗だけ、または徒歩で広場へ近づいただけでは切り替えない。進軍開始は仮の220m。ループはファイル全体の仮設定 |
 | 3-1・シェリダンの無線のあと | シェリダンの無線の再生が終わったとき | `bgm-mission-1-1-sentry-combat` | 未確認 | ユーザー指定（2026-11-12、先の指定）。1-5 Rescue! と同じ音源。切り替え前の曲は、後の指定で Credits になった。台詞と任務内の位置は未指定。共通の `bgm.afterRadio` で切り替えられる。3-1の定義には、無線が未配置のためまだ書いていない |
-| 3-2・シェリダンの遭遇無線のあと | `sheridan-encounter`「さあー諸君。ひと暴れと行こうか！」の再生が終わったとき | `bgm-mission-1-1-sentry-combat` | 未確認 | ユーザー指定（2026-11-13）。1-5と同じ既存音源。出撃時は無音。開始曲の待機は無限で、経過時間だけでは始まらない。前の会話無線では切り替えない。ループはファイル全体の仮設定 |
+| 3-2・出撃 | 出撃時 | `bgm-crossing-the-war-zone` | `sheridan-encounter` の再生が終わったとき、下の戦闘曲へ一度切り替える | ユーザー指定（2026-11-18）。音源は [crossing-the-war-zone-BROWgPMUPDg.mp3](../../assets/audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3)。待機なし。ファイル全体のループは仮設定 |
+| 3-2・シェリダンの遭遇無線のあと | `sheridan-encounter`「さあー諸君。ひと暴れと行こうか！」の再生が終わったとき | `bgm-mission-1-1-sentry-combat` | 未確認 | ユーザー指定（2026-11-13）。1-5と同じ既存音源。出撃時の曲は2026-11-18の指定で Crossing the War Zone。前の会話無線では切り替えない。ループはファイル全体の仮設定 |
+| 3-5・出撃 | 出撃時 | `bgm-sheridan` | イオン砲の捕捉アナウンス「イオンキャノン準備完了」の2秒前に、下の曲へ一度切り替える | ユーザー指定（2026-11-18）。音源は [sheridan-ckEY6gEo_2A.mp3](../../assets/audio/bgm/sheridan-ckEY6gEo_2A.mp3)。待機なし。投稿動画の題であり正式曲名ではない。ファイル全体のループは仮設定 |
+| 3-5・イオン砲アナウンスの2秒前 | 研究所破壊後、捕捉アナウンスの予定時刻の2秒前 | `bgm-defeated` | 未確認 | ユーザー指定（2026-11-18）。音源は [defeated-4XJIibD6gr8.mp3](../../assets/audio/bgm/defeated-4XJIibD6gr8.mp3)。アナウンスと赤い光柱の時刻は変えない。研究所を破壊するまで切り替わらない。一時停止中は保留し、再開で同じ曲の再生位置は戻さない。全長約27秒のファイル全体ループは仮設定。投稿動画の題であり正式曲名ではない |
 
 切り替え条件は、ミッション開始、任務イベント、領域への進入、戦闘状態、会話、曲の再生終了、経過時間などを候補として調べる。交戦開始と同時に曲が変わった1回の観察だけで、戦闘開始が原因と決めない。
 
@@ -227,7 +230,7 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 
 ## 未配置曲の前半（2026-11-18）
 
-ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。任務へは未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Sheridan は 3-5 の出撃曲として接続した。ほかの5曲は任務へ未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
 
 | 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
 | --- | --- | --- | ---: | --- |
@@ -242,7 +245,7 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 
 ## 未配置曲の残り（2026-11-18）
 
-ユーザー指定により、同じ再生リストで残っていた5曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。任務へは未接続。検査ログは `.artifacts/bgm-rest-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+ユーザー指定により、同じ再生リストで残っていた5曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Defeated は 3-5 のイオン砲アナウンスの2秒前、Crossing the War Zone は 3-2 の出撃曲として接続した。ほかの3曲は任務へ未接続。検査ログは `.artifacts/bgm-rest-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
 
 | 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
 | --- | --- | --- | ---: | --- |

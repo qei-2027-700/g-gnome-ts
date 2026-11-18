@@ -21,6 +21,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   if(mission.bgm?.afterEliminate){const cue=mission.bgm.afterEliminate;if(!cue.unitIds.length)fail('BGM afterEliminate has no units');unique(cue.unitIds,'BGM afterEliminate unit ID');for(const id of cue.unitIds)unitRef(id,'BGM afterEliminate');}
   if(mission.bgm?.afterAssault){const cue=mission.bgm.afterAssault;if(!cue.unitIds.length)fail('BGM afterAssault has no units');unitRef(cue.boardUnitId,'BGM afterAssault');unique(cue.unitIds,'BGM afterAssault unit ID');for(const id of cue.unitIds){unitRef(id,'BGM afterAssault');if(!mission.assaults?.some(assault=>assault.unitId===id))fail(`BGM afterAssault has no assault: ${id}`);}}
   if(mission.bgm?.afterRadio&&!mission.radioTriggers?.some(trigger=>trigger.id===mission.bgm?.afterRadio?.radioId))fail(`BGM afterRadio references missing radio: ${mission.bgm.afterRadio.radioId}`);
+  if(mission.bgm?.beforeIonLock){const cue=mission.bgm.beforeIonLock;if(!mission.ionStrike)fail('BGM beforeIonLock needs an ion strike');else if(!Number.isFinite(cue.lead)||cue.lead<0||cue.lead>mission.ionStrike.delay)fail('BGM beforeIonLock lead must fit the ion delay');}
   const targets=new Set([...units,...(mission.base?.buildings??[]).map((b,i)=>b.id??`facility-${b.kind??'command'}-${i}`)]);
   if(mission.facilityIffDisguise){const disguise=mission.facilityIffDisguise;
    if(!mission.base?.buildings.some(b=>b.id===disguise.facilityId&&b.kind==='bridge-control'))fail(`IFF disguise references missing bridge control: ${disguise.facilityId}`);

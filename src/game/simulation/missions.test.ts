@@ -305,6 +305,9 @@ test('3-5 keeps a walkable black-ground route from the northern X to waypoint 1 
  assert.ok(field.units.filter(u=>u.kind==='scorp-rocket-tower'||u.kind==='scorp-meson-tower').every(u=>u.spec.ai.detection<field.weapons.lasers.TAR12.range));
  for(const unit of field.units.filter(u=>u.personId))assert.ok(Math.hypot(unit.x-field.player.x,unit.z-field.player.z)<80,`${unit.personId} starts nearby`);
  assert.equal(mission.ionStrike?.delay,20);
+ assert.equal(mission.bgm?.start.trackId,'bgm-sheridan');
+ assert.equal(mission.bgm?.start.delay,0);
+ assert.deepEqual(mission.bgm?.beforeIonLock,{lead:2,trackId:'bgm-defeated'});
  assert.ok(slopes.length>80);
  assert.ok(laboratory.x>MAP_3_5_POINTS.playerStart.x&&laboratory.z<MAP_3_5_POINTS.playerStart.z);
  const insideSlope=(x:number,z:number,padding=0)=>slopes.some(c=>Math.abs(x-c.x)<c.width/2+padding&&Math.abs(z-c.z)<c.depth/2+padding);
@@ -556,8 +559,8 @@ test('3-2 Thane moves on his own, the conversation starts after five seconds, an
  }
  assert.ok(thane.x<initialX-400,'Thane heads west from his marked northeast start toward waypoint 1');
  assert.ok(thane.z<initialZ-20,'Thane then begins descending the western side');
- assert.equal(s.mission.bgm?.start.trackId,'bgm-mission-1-1-sentry-combat');
- assert.equal(s.mission.bgm?.start.delay,Number.POSITIVE_INFINITY);
+ assert.equal(s.mission.bgm?.start.trackId,'bgm-crossing-the-war-zone');
+ assert.equal(s.mission.bgm?.start.delay,0);
  assert.deepEqual(s.mission.bgm?.afterRadio,{radioId:'sheridan-encounter',trackId:'bgm-mission-1-1-sentry-combat'});
  assert.deepEqual(heard.map(entry=>entry.id),['thane-opening','kylie-history','thane-interrupt','kylie-reply','sheridan-encounter']);
  assert.ok(heard.slice(0,4).every(entry=>entry.time>=5&&entry.time<5.1));

@@ -33,12 +33,12 @@
 | [audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3](audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3) | 投稿動画の Track 04: Infiltrating Darken Territory。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/sneaking-in-mziZW_QQPJI.mp3](audio/bgm/sneaking-in-mziZW_QQPJI.mp3) | 投稿動画の Track 07: Sneaking In。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/rescuing-kylie-FB664mAqM28.mp3](audio/bgm/rescuing-kylie-FB664mAqM28.mp3) | 投稿動画の Track 09: Rescuing Kylie。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
-| [audio/bgm/sheridan-ckEY6gEo_2A.mp3](audio/bgm/sheridan-ckEY6gEo_2A.mp3) | 投稿動画の Track 11: Sheridan。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
+| [audio/bgm/sheridan-ckEY6gEo_2A.mp3](audio/bgm/sheridan-ckEY6gEo_2A.mp3) | 投稿動画の Track 11: Sheridan。3-5の出撃時から再生し、イオン砲アナウンスの2秒前に Defeated へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3](audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3) | 投稿動画の Track 13: Merc Ambush。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/undercover-operations-TxUlQ-EEK1o.mp3](audio/bgm/undercover-operations-TxUlQ-EEK1o.mp3) | 投稿動画の Track 14: Undercover Operations。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
 | [audio/bgm/betrayal-uWpTUXuLG_g.mp3](audio/bgm/betrayal-uWpTUXuLG_g.mp3) | 投稿動画の Track 16: Betrayal。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
-| [audio/bgm/defeated-4XJIibD6gr8.mp3](audio/bgm/defeated-4XJIibD6gr8.mp3) | 投稿動画の Track 18: Defeated。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
-| [audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3](audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3) | 投稿動画の Track 19: Crossing the War Zone。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
+| [audio/bgm/defeated-4XJIibD6gr8.mp3](audio/bgm/defeated-4XJIibD6gr8.mp3) | 投稿動画の Track 18: Defeated。3-5でイオン砲アナウンスの2秒前から再生する。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
+| [audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3](audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3) | 投稿動画の Track 19: Crossing the War Zone。3-2の出撃時から再生し、シェリダンの遭遇無線のあと戦闘曲へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
 | [audio/bgm/passenger-icXcc3u4Po4.mp3](audio/bgm/passenger-icXcc3u4Po4.mp3) | 投稿動画の Track 20: Passenger。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
 | `ui/mission-console.png` | [3-3の開始画面](../docs/reference/observations/mission-3-3/3-3-launch前.png)。開始画面の枠と3-3のプレビューに使用 |
 | `ui/mission-4-3-map.png` | [4-3の出撃前画面](https://www.youtube.com/watch?v=dlIy0zh8vVk&t=92s)から切り出した原作Map。4-3の開始画面に使用。青い4点は橋、赤い流路はマグマ |

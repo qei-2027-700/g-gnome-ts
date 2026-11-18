@@ -14,6 +14,8 @@ export const MISSION_3_5:MissionDefinition={
  startHint:{ja:'地図上部のXから味方3人と開始する。黒い領域は歩行できる。',en:'Start with three allies at the X near the top of the map. The black areas are walkable.'},
  success:{ja:'研究所を破壊し、シェリダンのイオン攻撃から生き延びた。',en:'The laboratory was destroyed and the player survived Sheridan’s ion strike.'},
  radio:{ja:'南東の研究所へ向かえ。',en:'Proceed to the laboratory in the southeast.'},
+ // Sheridan at launch. Defeated starts two seconds before the ion-lock announcement. Whole-file loop is provisional.
+ bgm:{start:{trackId:'bgm-sheridan',delay:0},beforeIonLock:{lead:2,trackId:'bgm-defeated'}},
  player:MAP_3_5_POINTS.playerStart,initialYaw:Math.PI,assignedUnitId:'player-assault',startMountedUnitId:'player-assault',initialView:'first-person',
  units:[
   {id:'player-assault',kind:'scorp-assault',...MAP_3_5_POINTS.playerStart,yaw:Math.PI,pilot:false,iff:'1381'},

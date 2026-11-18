@@ -18,7 +18,7 @@ export type BriefingPresentation={
 };
 export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number};
 export type MissionDefinition={
- bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterAssault?:{boardUnitId:string;unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string}};
+ bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterAssault?:{boardUnitId:string;unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string};beforeIonLock?:{lead:number;trackId:string}};
  audioPath?:string;
  briefingPresentation?:BriefingPresentation;
  id:string;title:string;subtitle:Localized;briefing:Localized;startHint:Localized;success:Localized;radio:Localized;

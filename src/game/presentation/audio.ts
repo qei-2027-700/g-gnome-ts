@@ -112,7 +112,7 @@ export class GameAudio {
     });
   }
   private get musicVolume(){return this.settings.music*(this.musicOwner==='mission'?(this.missionMusic?.cues.volumeScale??1):1);}
-  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false){
+  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false,ionAnnouncementAt:number|null=null){
     this.musicPaused=paused;if(this.music)this.music.volume=this.musicVolume;
     if(paused){this.pauseMusic();return;}
     const state=this.missionMusic;
@@ -120,7 +120,8 @@ export class GameAudio {
       const elimination=state.cues.afterEliminate;
       if(!state.eliminated&&units&&elimination?.unitIds.length&&elimination.unitIds.every(id=>units.some(unit=>unit.id===id&&(!unit.alive||unit.defeated===true))))state.eliminated=true;
       if(!state.assault&&assaultReady&&state.cues.afterAssault)state.assault=true;
-      const next=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.assault?state.cues.afterAssault:state.radioEnded?state.cues.afterRadio:undefined,availableNext=next&&this.bgmAssets[next.trackId];
+      const ion=state.cues.beforeIonLock,ionDue=!!ion&&ionAnnouncementAt!==null&&time+1e-8>=ionAnnouncementAt-ion.lead;
+      const next=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.assault?state.cues.afterAssault:state.radioEnded?state.cues.afterRadio:ionDue?ion:undefined,availableNext=next&&this.bgmAssets[next.trackId];
       if(next&&!availableNext&&!state.missingReported){state.missingReported=true;this.musicError='missing-next';}
       const track=availableNext?next!.trackId:time>=state.cues.start.delay?state.cues.start.trackId:null;
       if(track&&track!==state.track){

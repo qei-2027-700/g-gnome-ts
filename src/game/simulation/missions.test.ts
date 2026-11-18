@@ -952,12 +952,35 @@ test('direct infantry fire reduces facility integrity and destroys the building 
  s.events=[];s.fire(1);assert.equal(facility.health,7);advance(s,60);
  assert.equal(facility.health,0);assert.equal(facility.alive,false);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.facility===facility).length,1);
 });
-test('2-2 starts in the Merc Tactical with its configured loadout and Union IFF',async()=>{
+test('2-2 starts in the Union TD with Kylie and completes on Latlon destruction',async()=>{
  const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
  const s=new Simulation('Easy',MISSION_2_2),player=s.mounted!;
- assert.equal(player.id,'merc-player');assert.equal(player.kind,'merc-tactical');assert.equal(player.iff,'2620');
- assert.deepEqual(player.spec.weapons,['DASY','SAG5T','RAID']);
- assert.equal(player.ammunition.DASY,300);assert.equal(player.ammunition.SAG5T,40);
+ assert.equal(player.id,'player-td');assert.equal(player.kind,'union-tactical');assert.equal(player.iff,'2620');
+ assert.equal(s.units.find(u=>u.personId==='kylie')?.kind,'union-sentry');
+ assert.equal(s.units.find(u=>u.personId==='kylie')?.order?.kind,'follow');
+ assert.equal(s.mission.objectives.length,1);
+ const comm=s.facilities.find(f=>f.id==='merc-latlon')!;
+ assert.equal(comm.facilityType,'comm-array');
+ s.damageFacility(comm,comm.health,{x:comm.x,y:2,z:comm.z});
+ s.tick(1/60,idle);
+ assert.equal(s.status,'won');
+});
+test('2-2 western sentry activates the bridge reinforcement, raising the bridge halts it',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ const s=new Simulation('Easy',MISSION_2_2),guard=s.units.find(u=>u.id==='west-sentry')!,reinforcement=s.units.find(u=>u.id==='bridge-reinforcement')!;
+ const bridge=s.facilities.find(f=>f.id==='north-control-a')!;
+ const start={x:reinforcement.x,z:reinforcement.z};
+ for(let i=0;i<30;i++)s.tick(1/60,idle);
+ assert.equal(reinforcement.x,start.x);assert.equal(reinforcement.z,start.z);
+ s.damage(guard,99999);
+ for(let i=0;i<120;i++)s.tick(1/60,idle);
+ assert.ok(Math.hypot(reinforcement.x-start.x,reinforcement.z-start.z)>1,'reinforcement should advance after the western guard falls');
+ s.insideFacility=bridge;
+ assert.equal(s.raiseBridge(),true);
+ const stopped={x:reinforcement.x,z:reinforcement.z};
+ for(let i=0;i<90;i++)s.tick(1/60,idle);
+ assert.ok(Math.hypot(reinforcement.x-stopped.x,reinforcement.z-stopped.z)<1,'raised bridge should halt the reinforcement');
+ assert.equal(s.status,'running','bridge control alone is not the victory condition');
 });
 test('mission objectives support multiple waypoints and targeted elimination without Merc or enemy-count assumptions',()=>{
  const def=mission();def.waypoints=[{id:2,x:40,z:20,radius:2},{id:3,x:40,z:50,radius:2}];

@@ -219,6 +219,12 @@ test('4-2 ride-along in a piloted Scorp HAWC or Scorp ASV arms Passenger and an 
  for(let i=0;i<120&&!open.mounted;i++)open.tick(1/60,{...idle,forward:true});
  assert.equal(open.mounted?.id,'scorp-assault3');assert.equal(open.passenger,null);assert.equal(open.missionMusicPassengerRide,false);
  const hostile=new Simulation('Easy',MISSION_4_2),union=hostile.units.find(u=>u.id==='bridge-union-sentry')!;hostile.human={x:union.x,z:union.z};assert.equal(hostile.board(),false);assert.equal(hostile.missionMusicPassengerRide,false);
+ for(const id of ['scorp-sentry-guard','scorp-asv-guard']){
+  const wrecked=new Simulation('Easy',MISSION_4_2),carrier=wrecked.units.find(u=>u.id===id)!;wrecked.human={x:carrier.x,z:carrier.z+3.2};wrecked.humanYaw=Math.PI;
+  for(let i=0;i<120&&!wrecked.passenger;i++)wrecked.tick(1/60,{...idle,forward:true});
+  assert.equal(wrecked.missionMusicPassengerRide,true,id);carrier.shield=0;wrecked.damage(carrier,9999);
+  assert.equal(carrier.alive,false,id);assert.equal(wrecked.passenger,null,id);assert.equal(wrecked.mounted,null,id);assert.ok(wrecked.flight,id);assert.equal(wrecked.missionMusicPassengerRide,false,id);
+ }
 });
 test('destroying or removing a passenger carrier clears riding state without killing the passenger',async()=>{
  const {makeUnit}=await import('./simulation.ts');for(const remove of [false,true]){const s=new Simulation(),u=makeUnit('carrier','union-asv',s.human.x,s.human.z);s.units=[u];assert.ok(s.board());const health=s.humanHealth;if(remove){s.units=[];s.tick(.01,idle);}else s.damage(u,9999);assert.equal(s.passenger,null);assert.equal(s.humanHealth,health);assert.equal(s.status,'running');assert.ok(s.flight);assert.ok(!u.passengers.includes('player'));}

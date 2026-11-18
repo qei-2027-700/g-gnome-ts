@@ -117,8 +117,10 @@ export class GameAudio {
   updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false,ionAnnouncementAt:number|null=null,bridgeCrossed=false,passengerHawk=false){
     this.musicPaused=paused;if(this.music)this.music.volume=this.musicVolume;
     if(paused){this.pauseMusic();return;}
+    const releasePassenger=!passengerHawk&&this.passengerHawk;
+    if(passengerHawk)this.passengerHawk=true;
+    else if(releasePassenger){this.passengerHawk=false;this.passengerLoose=false;if(this.missionMusic?.track==='bgm-passenger')this.missionMusic.track=null;else if(!this.missionMusic&&this.musicOwner==='mission')this.stopMusic();}
     if(this.musicOwner==='manual'){this.playCurrentMusic();return;}
-    if(!this.passengerHawk&&passengerHawk)this.passengerHawk=true;
     const state=this.missionMusic;
     if(state){
       const elimination=state.cues.afterEliminate;

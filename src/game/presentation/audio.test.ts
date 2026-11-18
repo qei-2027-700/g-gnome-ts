@@ -533,7 +533,7 @@ test('4-3 starts Barren Landscape and switches once to Merc region after the nor
  });
 });
 
-test('riding a piloted HAWC switches to Passenger once, holds across pause and dismount, and yields to elimination and the ion cue',async()=>{
+test('riding a piloted HAWC switches to Passenger, holds across pause, returns to the mission cue when the ride ends, and yields to elimination and the ion cue',async()=>{
  const {MISSION}=await import('../content/mission-1-1.ts'),{MISSION_3_5}=await import('../content/missions/mission-3-5.ts'),{MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  await musicFixture(async(audio,tracks)=>{
   const ride=(paused=false)=>audio.updateMissionMusic(1,paused,undefined,false,null,false,true);
@@ -541,16 +541,20 @@ test('riding a piloted HAWC switches to Passenger once, holds across pause and d
   audio.missionMusicDetected('merc-sentry');audio.updateMissionMusic(1,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sentry-combat.mp3');
   ride(true);assert.equal(tracks.at(-1).src,'sentry-combat.mp3');assert.equal(tracks.at(-1).paused,true);
   ride();await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).loop,true);assert.equal(tracks.at(-1).paused,false);assert.equal(tracks.at(-1).volume,audio.settings.music);
-  tracks.at(-1).currentTime=9;audio.updateMissionMusic(2,false,undefined,false,null,false,false);assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).currentTime,9);
-  audio.updateMissionMusic(3,true);assert.equal(tracks.at(-1).paused,true);audio.resume();await Promise.resolve();assert.equal(tracks.at(-1).currentTime,9);assert.equal(tracks.at(-1).paused,false);
+  tracks.at(-1).currentTime=9;audio.updateMissionMusic(2,true,undefined,false,null,false,true);assert.equal(tracks.at(-1).paused,true);audio.resume();await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).currentTime,9);assert.equal(tracks.at(-1).paused,false);
+  audio.updateMissionMusic(3,false,undefined,false,null,false,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sentry-combat.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(tracks.at(-1).paused,false);
   audio.beginMissionMusic(MISSION);assert.equal(tracks.at(-1).paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'mission-1-1-start.mp3');assert.equal(tracks.at(-1).currentTime,0);
   audio.beginMissionMusic(MISSION_4_2);audio.updateMissionMusic(0,false,[{id:'enemy',alive:true}]);await Promise.resolve();
   audio.updateMissionMusic(1,false,[{id:'enemy',alive:true}],false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).volume,audio.settings.music*.8);
-  audio.updateMissionMusic(2,false,MISSION_4_2.bgm!.afterEliminate!.unitIds.map(id=>({id,alive:false})));await Promise.resolve();assert.equal(tracks.at(-1).src,'snow-maze.mp3');
+  audio.updateMissionMusic(1.2,false,[{id:'enemy',alive:true}],false,null,false,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'credits.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(tracks.at(-1).volume,audio.settings.music*.8);
+  audio.updateMissionMusic(1.4,false,[{id:'enemy',alive:true}],false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');
+  audio.updateMissionMusic(2,false,MISSION_4_2.bgm!.afterEliminate!.unitIds.map(id=>({id,alive:false})),false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'snow-maze.mp3');
   audio.beginMissionMusic(MISSION_3_5);audio.updateMissionMusic(0,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');
   audio.updateMissionMusic(18,false,undefined,false,20,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'defeated.mp3');
   audio.beginMissionMusic({...MISSION,bgm:undefined});audio.updateMissionMusic(0,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).currentTime,0);
-  await audio.loadMusic(new File(['audio'],'manual.mp3',{type:'audio/mpeg'}));audio.updateMissionMusic(1,false,undefined,false,null,false,true);assert.equal(tracks.at(-1).src.startsWith('blob:'),true);assert.equal(tracks.at(-1).paused,false);
+  audio.updateMissionMusic(1,false,undefined,false,null,false,false);assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).paused,true);
+  audio.updateMissionMusic(1.2,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).paused,false);assert.equal(tracks.at(-1).currentTime,0);
+  await audio.loadMusic(new File(['audio'],'manual.mp3',{type:'audio/mpeg'}));audio.updateMissionMusic(2,false,undefined,false,null,false,false);assert.equal(tracks.at(-1).src.startsWith('blob:'),true);assert.equal(tracks.at(-1).paused,false);
  });
 });
 test('missing Passenger BGM keeps the mission track and reports the missing asset once',async()=>{

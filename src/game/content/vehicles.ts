@@ -9,7 +9,7 @@ export type VehicleSpec={
   number>>;powerSupply?:'external';boardable?:boolean;ejectionSeat?:boolean;category?:'vehicle'|'tower'|'hovercraft';hoverHeight?:number;mineDetectorRange?:number;name:string;jp:string;faction:Faction;speed:number;shield:number;energy:number;armor:number;height:number;passengerCapacity:number;color:string;weapons:readonly VehicleWeapon[
   ];torsoLimit:number;voice:'young'|'solemn';initialAmmo:Partial<Record<VehicleWeapon,
 number>>;ai:{
-  minimumRange?:number;detection:number;strafe:number;keepMoving:boolean;stopDistance:number;missileVolley:number
+  minimumRange?:number;detection:number;pursuitRange?:number;waitForClearShot?:boolean;strafe:number;keepMoving:boolean;stopDistance:number;missileVolley:number
 }
 };
 // A mission override names only the fields it changes. Unspecified ai fields stay on the vehicle.

@@ -24,7 +24,7 @@ test('building collision blocks ground movement and bullets but permits shots ov
 
 test('a vehicle cannot skip a mine by crossing its entire trigger circle in one frame',()=>{const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:-8,pilot:false}];def.startMountedUnitId='own';def.minefields=[{id:'sweep',x:0,z:0,width:30,depth:30,triggerRadius:2,mines:[{id:'one',x:0,z:0}]}];const s=new Simulation('Easy',def);s.speed=400;s.throttle=1;s.tick(.05,idle);assert.equal(s.status,'running');assert.ok(s.flight);assert.ok(s.mines[0].spent);});
 
-test('TCREAP hits on a dismounted player deal infantry projectile damage rather than missile instant death',()=>{const s=new Simulation();const enemy=makeUnit('enemy','union-asv',0,80,true,{faction:'scorp',weapons:['TCREAP'],ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});enemy.iff='scorp';enemy.alert=true;enemy.yaw=Math.PI;enemy.aim=Math.PI;s.units=[enemy];s.human={x:0,z:0};s.tick(1/60,idle);assert.ok(s.missiles.some(p=>p.weapon==='TCREAP'));assert.equal(s.humanHealth,100);step(s,90);assert.equal(s.humanHealth,100-MACHINE_GUNS.TCREAP.infantryDamage!*weaponMountCount(enemy.kind,'TCREAP'));assert.equal(s.status,'running');});
+test('TCREAP hits on a dismounted player deal infantry projectile damage rather than missile instant death',()=>{const s=new Simulation();const enemy=makeUnit('enemy','union-asv',0,80,true,{faction:'scorp',weapons:['TCREAP'],ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});enemy.iff='scorp';enemy.alert=true;enemy.yaw=Math.PI;enemy.aim=Math.PI;s.units=[enemy];s.human={x:0,z:0};s.tick(1/60,idle);assert.ok(s.missiles.some(p=>p.weapon==='TCREAP'));assert.equal(s.humanHealth,100);step(s,90);const burstDamage=MACHINE_GUNS.TCREAP.infantryDamage!*weaponMountCount(enemy.kind,'TCREAP'),damage=100-s.humanHealth;assert.ok(damage>=burstDamage);assert.equal(damage%burstDamage,0);assert.equal(s.status,'running');});
 
 test('friendly AI follows across a mine without detonating or consuming it, including a captured Scorp chassis',()=>{
  for(const kind of ['union-sentry','scorp-asv'] as const){
@@ -132,7 +132,7 @@ test('Kylie tower warning fires once when Scorp ASV reaches the base, never from
 
 test('tower operator clears its solid wreck, lands visibly outside it, attacks and is targeted by an ally',()=>{
  const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:0,pilot:false},{id:'kylie',personId:'kylie',kind:'union-sentry',x:-20,z:0,pilot:true},{id:'tower',kind:'scorp-rocket-tower',x:0,z:65,yaw:0,pilot:true}];def.assignedUnitId='own';def.startMountedUnitId='own';def.companions=[{personId:'kylie',unitId:'kylie',key:'F2',name:{ja:'キリー',en:'Kylie'}}];def.minefields=[];def.base=undefined;def.rocks=[];def.terrain.cliffs=[];
- const s=new Simulation('Easy',def),tower=s.units[2];s.damage(tower,9999);const soldier=s.soldiers[0];soldier.gashrAmmo=0;step(s,600);
+ const s=new Simulation('Easy',def),tower=s.units[2];s.damage(tower,9999);const soldier=s.soldiers[0];soldier.gashrAmmo=0;step(s,300);
  assert.equal(soldier.flight,null);assert.equal(soldier.alive,true);assert.ok(Math.abs(soldier.x)>7);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(s.events.some(e=>e.type==='shot'&&e.unit?.personId==='kylie'));assert.ok(soldier.health<35);
 });
 

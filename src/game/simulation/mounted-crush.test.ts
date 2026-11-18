@@ -56,7 +56,7 @@ test('4-2 Scorp defense vehicles crush enemy Union infantry and spare Scorp crew
 
 test('AI vehicles sweep opposing infantry during forward and reverse travel and respect ejection height',()=>{
  for(const same of [false,true])for(const reverse of [false,true])for(const altitude of [0,20]){
-  const {s,unit,soldier}=setup();s.mounted=null;s.human={x:0,z:200};s.iff='0000';s.units=[unit];unit.alert=true;unit.iff=same?soldier.iff:'7777';unit.spec={...unit.spec,ai:{...unit.spec.ai,stopDistance:10000,keepMoving:false}};
+  const {s,unit,soldier}=setup();s.mounted=null;s.human={x:0,z:200};s.iff='0000';s.units=[unit];unit.alert=true;unit.iff=same?soldier.iff:'7777';unit.spec={...unit.spec,ai:{...unit.spec.ai,detection:0,stopDistance:10000,keepMoving:false}};
   unit.x=0;unit.z=reverse?30:-30;unit.speed=reverse?-2000:2000;unit.cooldown=999;soldier.x=0;soldier.z=0;soldier.faction=same?s.mission.playerFaction:'merc';soldier.flight=altitude?{altitude,vy:0,vx:0,vz:0}:null;
   s.tick(.05,idle);assert.equal(soldier.alive,same||altitude>0,`${same}/${reverse}/${altitude}`);
  }

@@ -31,12 +31,26 @@ test('retaliation keeps its attacker for three seconds despite alternating incom
  s.time+=.51;s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,second.id);
  s.damage(enemy,.1,'hull',undefined,s.mounted,'FLECH');assert.equal(enemy.aggressorId,second.id);
 });
-test('a dead or unoccupied attacker releases retaliation, while matching IFF retains the attacker',()=>{
+test('a dead, unoccupied, or newly friendly attacker releases retaliation',()=>{
  for(const invalid of ['dead','unoccupied'] as const){const {s,enemy}=setup(),first=s.units[1],second=s.units[2];
  s.damage(enemy,1,'hull',undefined,first,'FLECH');if(invalid==='dead')first.alive=false;if(invalid==='unoccupied')first.pilot=false;
  s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,second.id);assert.ok(s.time<3);
  }
- const {s,enemy}=setup(),first=s.units[1],second=s.units[2];s.damage(enemy,1,'hull',undefined,first,'FLECH');first.iff=enemy.iff;s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,first.id);
+ const {s,enemy}=setup(),first=s.units[1],second=s.units[2];s.damage(enemy,1,'hull',undefined,first,'FLECH');first.iff=enemy.iff;s.damage(enemy,.1,'hull',undefined,second,'FLECH');assert.equal(enemy.aggressorId,second.id);
+});
+test('an enemy vehicle detects a nearby allied vehicle before the player approaches',()=>{
+ const s=new Simulation(),ally=makeUnit('ally','union-sentry',0,70,true),enemy=makeUnit('enemy','scorp-asv',0,0,true,{speed:0,ai:{detection:150,strafe:0,keepMoving:false,stopDistance:80,missileVolley:1}});
+ s.units=[ally,enemy];s.human={x:500,z:500};s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];enemy.yaw=enemy.aim=0;
+ tick(s,4);assert.equal(enemy.alert,true);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy));
+ assert.equal(s.humanHealth,100);
+ ally.pilot=false;for(const soldier of s.soldiers)if(soldier.sourceVehicle===ally.id)soldier.alive=false;
+ enemy.alert=false;enemy.aggressorId=null;s.events=[];tick(s,.1);assert.equal(enemy.aggressorId,null);assert.ok(!s.events.some(event=>event.type==='shot'&&event.unit===enemy));
+});
+test('enemy Union Sentry keeps firing from a clear position',()=>{
+ const s=new Simulation(),own=makeUnit('own','scorp-asv',0,75,false),enemy=makeUnit('enemy','union-sentry',0,0,true);
+ s.units=[own,enemy];s.human={x:0,z:75};s.board();enemy.iff='enemy';enemy.yaw=enemy.aim=0;own.shield=10000;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];
+ const shots:number[]=[];for(let i=0;i<600;i++){s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===enemy))shots.push(s.time);s.events=[];}
+ assert.ok(shots.length>=3,`shots: ${shots.length}`);assert.ok(shots[2]-shots[0]<3,`first three shots span ${(shots[2]-shots[0]).toFixed(2)}s`);
 });
 test('a disguised player can provoke weapon fire from the original enemy',()=>{
  const {s,enemy}=setup();s.mounted!.x=0;s.mounted!.z=245;enemy.z=300;enemy.yaw=enemy.aim=Math.PI;enemy.iff='1234';

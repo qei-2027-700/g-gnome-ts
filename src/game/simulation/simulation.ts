@@ -407,8 +407,9 @@ export class Simulation {
     const dist=distance(unit,target),minimum=unit.spec.ai.minimumRange??0;
     const preferred=Math.max(minimum+15,Math.min(Math.max(30,unit.spec.ai.stopDistance),range*.65));
     const clear=this.clearAIShot(unit,{x:unit.x,y:unit.spec.height*.6,z:unit.z},{x:target.x,y:targetHeight(target),z:target.z},target);
-    // A short firing pause allows fixed forward weapons to aim; otherwise keep maneuvering.
-    if(clear&&(unit.spec.torsoLimit===0?dist<Math.max(preferred*1.6,95):dist>preferred*.75&&dist<preferred*1.2)&&(this.time+index*.7)%5>(unit.spec.torsoLimit===0?2.5:3)){this.coastVehicle(unit,dt);this.allyManeuvers.delete(unit.id);return;}
+    // A forward-only gun keeps its firing position while the line stays clear.
+    if(unit.spec.torsoLimit===0&&clear&&dist>preferred*.75&&dist<Math.min(range*.8,Math.max(preferred*1.6,95))){this.coastVehicle(unit,dt);this.allyManeuvers.delete(unit.id);return;}
+    if(unit.spec.torsoLimit!==0&&clear&&dist>preferred*.75&&dist<preferred*1.2&&(this.time+index*.7)%5>3){this.coastVehicle(unit,dt);this.allyManeuvers.delete(unit.id);return;}
     let plan=this.allyManeuvers.get(unit.id);
     if(!plan||plan.targetId!==target.id||this.time>=plan.until||distance(plan.target,target)>8){
       const side=index%2===0?1:-1,bearing=Math.atan2(unit.x-target.x,unit.z-target.z);
@@ -469,6 +470,12 @@ export class Simulation {
     const firstBody=bodies[0];if(firstBody&&(!hits[0]||firstBody.t!<hits[0].hit!.t))return firstBody.soldier===target;
     return target&&isVehicle(target)?hits[0]?.unit===target:hits.length===0;
   }
+  private clearAITerrainShot(from:Point3,to:Point3,target:SelectionTarget|null){
+    if(!this.lineOfSight(from,to,target??undefined))return false;
+    return !this.terrainObstacles.some(obstacle=>obstacle!==target&&buildingContact(from,to,obstacle,.1)!==null)
+      &&!this.mission.rocks.some(rock=>rockSegmentContact(from,to,rock,.1)!==null)
+      &&!(this.mission.terrain.peaks??[]).some(peak=>peakSegmentContact(from,to,peak)!==null);
+  }
   private fireAI(unit:Unit,target:SelectionTarget|null){
     if(!this.unitPowered(unit))return;
     const spec=unit.spec,point={x:target?.x??this.human.x,y:target?targetHeight(target):(this.flight?.altitude??0)+(this.prone?.5:1),z:target?.z??this.human.z};
@@ -496,10 +503,12 @@ export class Simulation {
     if(isLaser(weapon)?unit.energy<this.laserEnergyCost(unit,weapon):(unit.slotAmmo[slot]??0)<=0)return;
     const origin=this.sentryMuzzle(unit,weapon,{x:unit.x,y:unit.hoverHeight+spec.height*.6,z:unit.z});
     const length=Math.hypot(point.x-origin.x,point.y-origin.y,point.z-origin.z),fraction=Math.min(1,range/(length||1)),endpoint={x:origin.x+(point.x-origin.x)*fraction,y:origin.y+(point.y-origin.y)*fraction,z:origin.z+(point.z-origin.z)*fraction};
+    const gunMuzzles=!isLaser(weapon)?this.weaponOrigins(unit,weapon,origin,slot).filter(muzzle=>this.clearAITerrainShot(muzzle,endpoint,target)):[];
+    if(!isLaser(weapon)&&gunMuzzles.length===0)return;
     if(isLaser(weapon)&&this.mission.companions?.some(member=>member.personId===unit.personId)&&this.weaponOrigins(unit,weapon,origin).some(muzzle=>!this.clearAIShot(unit,muzzle,point,target)))return;
     unit.cooldown=isLaser(weapon)?Math.max(profile.interval,this.mission.tuning[this.difficulty].interval):profile.interval;
     if(isLaser(weapon)){unit.energy-=this.laserEnergyCost(unit,weapon);unit.laserCharge=0;this.laserRechargePending.add(unit);this.fireLaser(unit,weapon,origin,endpoint,range);}
-    else{unit.slotAmmo[slot]!--;if(weapon==='TCREAP'){this.fireReapTracer(unit,origin,endpoint);return;}const gun=this.weapons.guns[weapon as MachineGun];for(const muzzle of this.weaponOrigins(unit,weapon,origin,slot))if(unit.iff!==this.iff||this.clearAIShot(unit,muzzle,point,target))this.fireAIBullet(unit,muzzle,endpoint,weapon as MachineGun,gun.damage,gun.infantryDamage??gun.damage);}
+    else{unit.slotAmmo[slot]!--;if(weapon==='TCREAP'){this.fireReapTracer(unit,origin,endpoint,gunMuzzles);return;}const gun=this.weapons.guns[weapon as MachineGun];for(const muzzle of gunMuzzles)if(unit.iff!==this.iff||this.clearAIShot(unit,muzzle,point,target))this.fireAIBullet(unit,muzzle,endpoint,weapon as MachineGun,gun.damage,gun.infantryDamage??gun.damage);}
   }
   // Hitscan AI machine guns stop at the nearest physical contact, regardless of IFF.
   private fireAIBullet(owner:CombatTarget,from:Point3,to:Point3,weapon:MachineGun|'PRIF44',damage:number,infantryDamage=damage){
@@ -536,7 +545,7 @@ export class Simulation {
   private assaultBegun(assault:{startAt:number;engageRange?:number;targetId:string},unit:Unit){
     if(this.time<assault.startAt)return false;
     const range=assault.engageRange;if(range===undefined)return true;
-    return distance(this.player,unit)<=range||this.selectionTargets.some(target=>target.id===assault.targetId&&distance(this.player,target)<=range);
+    return distance(this.player,unit)<=range||this.selectionTargets.some(target=>target.id===assault.targetId&&distance(this.player,target)<=range)||this.combatTargets.some(target=>target!==unit&&target.alive&&target.iff!==unit.iff&&(!isVehicle(target)||target.pilot)&&distance(unit,target)<unit.spec.ai.detection&&this.attackVisible(unit,target));
   }
   private lureImpact(unit:Unit,missile:Missile){const rule=this.mission.lures?.find(r=>r.unitId===unit.id&&r.weapon===missile.weapon);
     if(!rule||unit===this.mounted||!missile.playerOwned||!unit.alive||!unit.pilot||unit.lured)return;
@@ -654,11 +663,12 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   }
   private activeAggressor(actor:CombatTarget){
     if(actor.aggressorId==='player'){if(this.humanHealth>0)return this.mounted??this.passenger??this.human;}
-    else if(actor.aggressorId){const target=this.combatTargets.find(t=>t.id===actor.aggressorId&&t.alive&&(!isVehicle(t)||t.pilot));if(target)return target;}
+    else if(actor.aggressorId){const target=this.combatTargets.find(t=>t.id===actor.aggressorId&&t.alive&&t.iff!==actor.iff&&(!isVehicle(t)||t.pilot));if(target)return target;}
     actor.aggressorId=null;actor.aggressorUntil=0;return null;
   }
   private friendlyCombatant(actor:CombatTarget){return isVehicle(actor)?this.friendlyVehicle(actor):this.friendlySoldier(actor);}
   private rememberAggressor(actor:CombatTarget,attacker:CombatTarget|null){
+    if(attacker&&(!attacker.alive||isVehicle(attacker)&&!attacker.pilot||!isVehicle(attacker)&&isEmbarked(attacker)))return;
     const player=!attacker||attacker===this.mounted;if(attacker===actor||this.friendlyCombatant(actor)===(player?true:this.friendlyCombatant(attacker!)))return;
     const current=this.activeAggressor(actor);if(current&&this.time<actor.aggressorUntil)return;
     actor.aggressorId=player?'player':attacker!.id;actor.aggressorUntil=this.time+AGGRO_LOCK_SECONDS;
@@ -691,6 +701,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     soldier.combatIdleTime=0;
     const complete=()=>{soldier.order=null;this.emit({type:'ally-order-complete',soldier,command:order?.kind,targetId:order?.targetId});};
     if(order?.kind==='follow'){
+      soldier.alert=false;
       const anchor=order.targetId?this.selectionTargets.find(t=>t.id===order.targetId&&t.alive):undefined;
       if(order.targetId&&!anchor){complete();this.moveInfantry(soldier,soldier.yaw,0,dt);return true;}
       const slot=Math.max(0,(this.mission.companions??[]).findIndex(m=>m.personId===soldier.personId));
@@ -708,9 +719,9 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     const origin={x:soldier.x,y:1.2,z:soldier.z},to={x:target.x,y:targetHeight(target),z:target.z},dist=distance(soldier,target);
     const useGashr=isVehicle(target)&&target.pilot&&(soldier.gashrAmmo??0)>0&&dist<=INFANTRY_WEAPONS.GASHR.range;
     const aimTolerance=useGashr ? .025 : INFANTRY_AI_AIM_TOLERANCE;
-    if(Math.hypot(to.x-origin.x,to.y-origin.y,to.z-origin.z)<=range&&Math.abs(angle(bearing-soldier.yaw))<aimTolerance&&soldier.cooldown===0&&this.clearAIShot(soldier,origin,to,target)){
+    if(Math.hypot(to.x-origin.x,to.y-origin.y,to.z-origin.z)<=range&&Math.abs(angle(bearing-soldier.yaw))<aimTolerance&&soldier.cooldown===0&&(!useGashr||this.time>=(soldier.gashrObserveUntil??0))&&this.clearAIShot(soldier,origin,to,target)){
       if(useGashr){
-        soldier.gashrAmmo=(soldier.gashrAmmo??0)-1;soldier.cooldown=INFANTRY_WEAPONS.GASHR.cooldown;
+        soldier.gashrAmmo=(soldier.gashrAmmo??0)-1;soldier.cooldown=INFANTRY_WEAPONS.GASHR.cooldown;soldier.gashrObserveUntil=this.time+2+dist/100;
         const speed=INFANTRY_WEAPONS.GASHR.speed;const direction={x:Math.sin(soldier.yaw),y:(targetHeight(target)-origin.y)/(dist||1),z:Math.cos(soldier.yaw)};
         const projectile:Missile={...origin,id:this.nextMissileId++,owner:soldier.id,playerOwned:false,weapon:'GASHR',vx:direction.x*speed,vy:direction.y*speed,vz:direction.z*speed,damage:0,radius:.22,life:INFANTRY_WEAPONS.GASHR.range/speed};
         this.missiles.push(projectile);this.emit({type:'shot',soldier,from:origin,to,weapon:'GASHR',projectileId:projectile.id,position:origin});
@@ -737,15 +748,16 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       }
       if(soldier.flight){soldier.flight=this.advanceFlight(soldier,soldier.flight,dt);for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);continue;}
       soldier.cooldown=Math.max(0,soldier.cooldown-dt);
-      if(this.tickFootOrder(soldier,dt,from))continue;
+      const followThreat=soldier.order?.kind==='follow'&&this.combatTargets.some(target=>target!==soldier&&target.alive&&target.iff!==soldier.iff&&(!isVehicle(target)||target.pilot)&&distance(soldier,target)<120&&this.lineOfSight(soldier,target));
+      if(!followThreat&&this.tickFootOrder(soldier,dt,from))continue;
       if(this.mission.pickups?.some(p=>p.personId===soldier.personId)){soldier.combatIdleTime=0;this.approachPerson(soldier,this.player,dt,6);continue;}
       const autoCompanion=!!this.mission.autoBoardCompanions&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);
       const carrier=this.units.filter(unit=>unit!==this.mounted&&unit!==this.passenger&&unit.alive&&!unit.pilot&&(isHawc(unit.kind)||autoCompanion&&unit.spec.category!=='tower')&&(unit.iff===soldier.iff||autoCompanion||this.companionDisguiseBoarding(soldier,unit))&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&!this.pilotReserved(unit,soldier.id)&&distance(soldier,unit)<=INFANTRY_AUTO_BOARD_RANGE).sort((a,b)=>distance(soldier,a)-distance(soldier,b))[0];
       if((autoCompanion||(soldier.gashrAmmo??0)<=0)&&carrier){
         soldier.boardingTarget=carrier.id;soldier.boardingRole='pilot';soldier.automaticBoarding=true;soldier.combatIdleTime=0;this.approachPerson(soldier,carrier,dt);for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);continue;
       }
-      const opponents:{position:Vec;unit:Unit|null}[]=this.units.filter(u=>u.alive&&u.pilot&&u!==this.mounted&&u.iff!==soldier.iff).map(u=>({position:u,unit:u as Unit|null}));
-      if(this.soldierHostile(soldier))opponents.push({position:this.player,unit:this.mounted??this.passenger});
+      const opponents:{position:Vec;unit:CombatTarget|null}[]=this.combatTargets.filter(t=>t!==soldier&&t.alive&&t.iff!==soldier.iff&&(!isVehicle(t)||t.pilot)&&t!==this.mounted&&t!==this.passenger).map(t=>({position:t,unit:t}));
+      if(this.soldierHostile(soldier)&&this.humanHealth>0)opponents.push({position:this.player,unit:this.mounted??this.passenger});
       const aggressor=this.activeAggressor(soldier);
       const visible=opponents.filter(o=>distance(soldier,o.position)<120&&this.lineOfSight(soldier,o.position)).sort((a,b)=>distance(soldier,a.position)-distance(soldier,b.position));
       const opponent=aggressor?opponents.find(o=>o.position===aggressor):visible[0];
@@ -760,16 +772,18 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const dist=distance(soldier,opponent.position),away=Math.atan2(soldier.x-opponent.position.x,soldier.z-opponent.position.z);
       const bearing=away+Math.PI;
       soldier.yaw+=Math.max(-INFANTRY_MOVEMENT.turn*dt,Math.min(INFANTRY_MOVEMENT.turn*dt,angle(bearing-soldier.yaw)));
-      this.moveInfantry(soldier,away,dist<45?3.5:0,dt);
+      const observingVehicle=!!opponent.unit&&isVehicle(opponent.unit)&&(soldier.gashrAmmo??0)>0&&dist<=INFANTRY_WEAPONS.GASHR.range;
+      this.moveInfantry(soldier,dist<45?away:observingVehicle?bearing+Math.PI/2:bearing,dist<45||dist>100||observingVehicle&&(soldier.cooldown>0||this.time<(soldier.gashrObserveUntil??0))?3.5:0,dt);
       for(const unit of this.units)if(unit.pilot)this.crushSoldier(soldier,from,unit,unit);if(!soldier.alive)continue;
       const aim=Math.atan2(opponent.position.x-soldier.x,opponent.position.z-soldier.z);
       const useGashr=!!opponent.unit&&isVehicle(opponent.unit)&&opponent.unit.pilot&&(soldier.gashrAmmo??0)>0&&dist<=INFANTRY_WEAPONS.GASHR.range;
       const aimTolerance=useGashr ? .025 : INFANTRY_AI_AIM_TOLERANCE;
-      if(dist<100&&Math.abs(angle(aim-soldier.yaw))<aimTolerance&&this.lineOfSight(soldier,opponent.position)&&soldier.cooldown===0){
+      if(dist<100&&Math.abs(angle(aim-soldier.yaw))<aimTolerance&&this.lineOfSight(soldier,opponent.position)&&soldier.cooldown===0&&(!useGashr||this.time>=(soldier.gashrObserveUntil??0))){
         const origin={x:soldier.x,y:1.2,z:soldier.z},range=dist+2,targetY=opponent.unit?targetHeight(opponent.unit):this.eyeHeight;
         const to={x:origin.x+Math.sin(soldier.yaw)*range,y:origin.y+(targetY-origin.y)*range/(distance(soldier,opponent.position)||1),z:origin.z+Math.cos(soldier.yaw)*range};
+        if(useGashr&&!this.clearAIShot(soldier,origin,{x:opponent.position.x,y:targetY,z:opponent.position.z},opponent.unit))continue;
         if(useGashr){
-          soldier.gashrAmmo=(soldier.gashrAmmo??0)-1;soldier.cooldown=INFANTRY_WEAPONS.GASHR.cooldown;
+          soldier.gashrAmmo=(soldier.gashrAmmo??0)-1;soldier.cooldown=INFANTRY_WEAPONS.GASHR.cooldown;soldier.gashrObserveUntil=this.time+2+dist/100;
           const speed=INFANTRY_WEAPONS.GASHR.speed;const direction={x:Math.sin(soldier.yaw),y:(targetY-origin.y)/(dist||1),z:Math.cos(soldier.yaw)};
           const projectile:Missile={...origin,id:this.nextMissileId++,owner:soldier.id,playerOwned:false,weapon:'GASHR',vx:direction.x*speed,vy:direction.y*speed,vz:direction.z*speed,damage:0,radius:.22,life:INFANTRY_WEAPONS.GASHR.range/speed};
           this.missiles.push(projectile);this.emit({type:'shot',soldier,from:origin,to,weapon:'GASHR',projectileId:projectile.id,position:origin});
@@ -945,9 +959,9 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     const unionMuzzle=unit.kind==='union-sentry',darkenMuzzle=unit.kind==='darken-sentry',stalker=unit.kind==='darken-tactical'?pitchDarkenTactical(mount.y,mount.z):null,muzzleForward=stalker?stalker.z+mount.d/2:assault||tactical||ceti||darkenMuzzle?forward:unionMuzzle?Math.sin(unit.aim)*(fallback.x-unit.x)+Math.cos(unit.aim)*(fallback.z-unit.z):mount.z+2.4,muzzleY=stalker?stalker.y:assault||tactical||ceti||darkenMuzzle?unit.spec.height*.6+mount.y-(ceti?.17:0):unionMuzzle?fallback.y:unit.spec.height*.6+mount.y;
     return [-1,1].map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*muzzleForward,y:muzzleY,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*muzzleForward}));
   }
-  private fireReapTracer(unit:Unit,from:Point3,to:Point3){
+  private fireReapTracer(unit:Unit,from:Point3,to:Point3,origins=this.weaponOrigins(unit,'TCREAP',from)){
     const profile=this.weapons.guns.TCREAP,speed=profile.projectileSpeed??60;
-    for(const origin of this.weaponOrigins(unit,'TCREAP',from)){
+    for(const origin of origins){
       const length=Math.hypot(to.x-origin.x,to.y-origin.y,to.z-origin.z)||1;
       const p:Missile={...origin,id:this.nextMissileId++,owner:unit.id,playerOwned:unit===this.mounted,weapon:'TCREAP',vx:(to.x-origin.x)/length*speed,vy:(to.y-origin.y)/length*speed,vz:(to.z-origin.z)/length*speed,damage:profile.damage,radius:.12,life:profile.range/speed};
       this.missiles.push(p);this.emit({type:'shot',unit,from:origin,to,weapon:'TCREAP',projectileId:p.id,position:origin});
@@ -1253,20 +1267,31 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const opponent=unit.aggressorId&&unit.aggressorId!=='player'?this.combatTargets.find(candidate=>candidate.id===unit.aggressorId):undefined,retaliatingToPlayer=unit.aggressorId==='player';
       const disguise=this.facilityIffAcquired?this.mission.facilityIffDisguise:undefined;
       const exposedCompanion=disguise&&unit.iff===disguise.enemyIff?this.soldiers.filter(soldier=>soldier.alive&&!isEmbarked(soldier)&&soldier.iff!==unit.iff&&this.mission.companions?.some(member=>member.personId===soldier.personId)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0]:undefined;
-      if(!this.isHostile(unit)&&!opponent&&!retaliatingToPlayer&&!assaultTarget&&!exposedCompanion){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
+      const nearby=this.combatTargets.filter(candidate=>candidate!==unit&&candidate.alive&&candidate.iff!==unit.iff&&(!isVehicle(candidate)||candidate.pilot)&&distance(unit,candidate)<spec.ai.detection&&this.attackVisible(unit,candidate)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0];
+      const playerNearby=this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<spec.ai.detection&&this.attackVisible(unit,this.player);
+      const playerPursuit=unit.alert&&this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<(spec.ai.pursuitRange??Infinity);
+      if(!this.isHostile(unit)&&!opponent&&!retaliatingToPlayer&&!assaultTarget&&!exposedCompanion&&!nearby){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       if(this.waitingForLure(unit)&&!unit.alert){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
-      const hostile=!!opponent||retaliatingToPlayer||!!assaultTarget||!!exposedCompanion||this.isHostile(unit);if(!hostile){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
-      const ramPlayer=this.shouldRamPlayer(unit),target=ramPlayer?null:opponent??(retaliatingToPlayer?this.mounted??this.passenger:assaultTarget)??(this.isHostile(unit)?this.mounted??this.passenger:exposedCompanion)??null,position=target??this.human;
-      const dist=distance(unit,position),sight=this.attackVisible(unit,position),playerVisible=(target===this.mounted||target===this.passenger||target===null||target===exposedCompanion)&&dist<spec.ai.detection&&sight;if(playerVisible){unit.alert=true;if(!this.playerDetectionAnnounced.has(unit.id)){this.playerDetectionAnnounced.add(unit.id);this.emit({type:'enemy-detected',unit});}}if(!unit.alert){this.aiFocus.delete(unit.id);continue;}
+      const hostile=!!opponent||retaliatingToPlayer||!!assaultTarget||!!exposedCompanion||!!nearby||playerNearby||playerPursuit;if(!hostile){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
+      const ramPlayer=this.shouldRamPlayer(unit),nearest=nearby&&(!playerNearby||distance(unit,nearby)<=distance(unit,this.player))?nearby:undefined;
+      const target=ramPlayer?null:opponent??(retaliatingToPlayer?this.mounted??this.passenger:assaultTarget)??nearest??(playerNearby||playerPursuit?this.mounted??this.passenger:exposedCompanion)??exposedCompanion??null;
+      const position=target??this.human,dist=distance(unit,position),sight=this.attackVisible(unit,position);
+      if((target||playerNearby)&&dist<spec.ai.detection&&sight){unit.alert=true;if(position===this.player&&this.isHostile(unit)&&!this.playerDetectionAnnounced.has(unit.id)){this.playerDetectionAnnounced.add(unit.id);this.emit({type:'enemy-detected',unit});}}
+      if(!unit.alert){this.aiFocus.delete(unit.id);continue;}
       if(!sight&&assaultTarget&&target===assaultTarget&&spec.category==='hovercraft'){this.followAlly(unit,assaultTarget,assault!.targetId,assaultTarget,dt);continue;}
-      unit.phase+=dt;const bearing=Math.atan2(position.x-unit.x,position.z-unit.z),routed=!ramPlayer&&this.navigateEnemy(unit,position,target,dt);
+      unit.phase+=dt;const bearing=Math.atan2(position.x-unit.x,position.z-unit.z);
+      const fixedFirePosition=!ramPlayer&&spec.torsoLimit===0&&(target||playerNearby||retaliatingToPlayer)&&dist>Math.max(25,spec.ai.stopDistance*.75)&&dist<Math.min(spec.ai.detection,120)&&this.clearAIShot(unit,{x:unit.x,y:unit.spec.height*.6,z:unit.z},{x:position.x,y:target?targetHeight(target):this.eyeHeight,z:position.z},target);
+      if(fixedFirePosition){this.coastVehicle(unit,dt);unit.yaw+=aiTurnStep(unit.kind,angle(bearing-unit.yaw),dt);}
+      const routed=!!fixedFirePosition||!ramPlayer&&this.navigateEnemy(unit,position,target,dt);
       if(!routed){const strafe=unit.lured?0:spec.ai.keepMoving?spec.ai.strafe:Math.sin(unit.phase*.8)*spec.ai.strafe;
         const desired=bearing+(dist>95?strafe*.28:strafe);unit.yaw+=aiTurnStep(unit.kind,angle(desired-unit.yaw),dt,true);
         const holdingForVisom=this.waitingForLure(unit)&&unit.aggressorId===null,moving=ramPlayer||!holdingForVisom&&(dist>spec.ai.stopDistance||spec.ai.keepMoving),desiredSpeed=moving?spec.speed*mobilityMultiplier(unit.parts)/3.6:0;
         unit.speed=accelerateSpeed(unit.speed,desiredSpeed,dt,unit.kind);this.move(unit,unit.yaw,unit.speed*dt);
       }
       const limit=spec.torsoLimit,desiredAim=unit.yaw+Math.max(-limit,Math.min(limit,angle(bearing-unit.yaw)));unit.aim+=aiAimTurnStep(unit.kind,angle(desiredAim-unit.aim),dt);unit.aim=unit.yaw+Math.max(-limit,Math.min(limit,angle(unit.aim-unit.yaw)));
-      const focusId=target&&'id' in target?target.id:'player',settled=this.trackAiFocus(unit,focusId,wasAlert);
+      const focusId=target&&'id' in target?target.id:'player';
+      if(!sight&&spec.ai.waitForClearShot)this.aiFocus.delete(unit.id);
+      const settled=sight&&this.trackAiFocus(unit,focusId,wasAlert&&!(spec.ai.waitForClearShot&&!this.aiFocus.has(unit.id)));
       if(!ramPlayer&&dist<(spec.category==='tower'||spec.category==='hovercraft'?spec.ai.detection:180)&&sight&&unit.cooldown<=0&&Math.abs(angle(unit.aim-bearing))<.12&&settled){
         this.fireAI(unit,target);
 

@@ -98,6 +98,20 @@ test('ordered infantry fires at a nearby enemy within the wider aim tolerance',(
  attacker.flight=null;attacker.x=0;attacker.z=0;attacker.iff='attacker';attacker.cooldown=0;attacker.order={kind:'attack',targetId:target.id};
  s.tick(.02,idle);assert.equal(target.health,35);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===attacker&&e.weapon==='PRIF44'));step(s,.3);assert.equal(target.health,28);
 });
+test('opposing ejected soldiers acquire each other, then stop after an IFF change',()=>{
+ const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:500,z:500};
+ const first=s.forceEject(makeUnit('first','union-sentry',0,0,true))!,second=s.forceEject(makeUnit('second','scorp-asv',0,30,true))!;
+ first.flight=second.flight=null;first.x=second.x=0;first.z=0;second.z=30;first.iff='0000';second.iff='0701';first.cooldown=second.cooldown=0;first.gashrAmmo=second.gashrAmmo=0;first.order={kind:'follow'};
+ step(s,1.5);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===first));assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===second));
+ first.iff=second.iff;s.events=[];step(s,.1);assert.equal(first.alert,false);assert.equal(second.alert,false);assert.ok(!s.events.some(e=>e.type==='shot'&&e.soldier===first||e.type==='shot'&&e.soldier===second));
+});
+test('NPC GASHR pauses after a shot while the soldier keeps moving',()=>{
+ const s=new Simulation();s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:500,z:500};
+ const vehicle=makeUnit('target','scorp-asv',0,65,true,{speed:0,ai:{detection:0,strafe:0,keepMoving:false,stopDistance:100,missileVolley:1}}),soldier=s.forceEject(makeUnit('shooter','union-sentry',0,0,true))!;
+ s.units=[vehicle];soldier.flight=null;soldier.x=0;soldier.z=0;soldier.iff='0000';vehicle.iff='0701';soldier.cooldown=0;
+ step(s,.2);assert.equal(s.events.filter(e=>e.type==='shot'&&e.soldier===soldier&&e.weapon==='GASHR').length,1);
+ const position={x:soldier.x,z:soldier.z};step(s,1.2);assert.equal(s.events.filter(e=>e.type==='shot'&&e.soldier===soldier&&e.weapon==='GASHR').length,1);assert.ok(Math.hypot(soldier.x-position.x,soldier.z-position.z)>1);
+});
 test('vehicle machine guns apply their higher infantry damage to exposed soldiers',()=>{
  for(const [weapon,damage] of [['DASY',6],['zWASP',4.5]] as const){
   const s=new Simulation();s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.human={x:-100,z:-100};

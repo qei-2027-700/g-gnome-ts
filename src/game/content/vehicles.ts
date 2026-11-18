@@ -2,6 +2,8 @@ import type {
   VehicleWeapon
 } from './weapons.ts';
 export type Faction = 'union' | 'merc' | 'darken' | 'scorp';
+// Fixed towers do not fire at targets inside this provisional close range.
+export const TOWER_MINIMUM_ATTACK_RANGE=40;
 export type VehicleSpec={
   missileHomingScale?:Partial<Record<VehicleWeapon,
   number>>;powerSupply?:'external';boardable?:boolean;ejectionSeat?:boolean;category?:'vehicle'|'tower'|'hovercraft';hoverHeight?:number;mineDetectorRange?:number;name:string;jp:string;faction:Faction;speed:number;shield:number;energy:number;armor:number;height:number;passengerCapacity:number;color:string;weapons:readonly VehicleWeapon[
@@ -10,6 +12,8 @@ number>>;ai:{
   minimumRange?:number;detection:number;strafe:number;keepMoving:boolean;stopDistance:number;missileVolley:number
 }
 };
+// A mission override names only the fields it changes. Unspecified ai fields stay on the vehicle.
+export type VehicleOverride=Omit<Partial<VehicleSpec>,'ai'>&{ai?:Partial<VehicleSpec['ai']>};
 type ShapeBox={w:number;h:number;d:number;x?:number;y:number;z:number};
 // Dimensions are prototype metres in chassis-local coordinates.
 export type VehicleShape={
@@ -343,7 +347,7 @@ const BASE_VEHICLES = {
       'zWASP',
       'SREM'
     ],
-    torsoLimit:Math.PI/3,
+    torsoLimit:0,
     voice:'young',
     initialAmmo:{
       zWASP:400,
@@ -371,13 +375,13 @@ const BASE_VEHICLES = {
     armor:140,
     height:8.9,
     passengerCapacity:0,
-    color:'#a8ac86',
+    color:'#b18a42',
     weapons:[
       'RAID',
       'zWASP',
       'HSSO',
     ],
-    torsoLimit:Math.PI/3,
+    torsoLimit:0,
     voice:'solemn',
     initialAmmo:{
       zWASP:1000,
@@ -390,7 +394,8 @@ const BASE_VEHICLES = {
       stopDistance:70,
       missileVolley:1
     },
-    shape:{hull:{w:3,h:1.4,d:2.6,y:-.4,z:0},cockpit:{w:2.6,h:1.8,d:2.1,y:1.2,z:.1},weapon:{w:1.4,h:1.3,d:2.3,x:2.5,y:1.8,z:0},legX:1.7,chinWeapon:{x:.55,y:-.05,z:1.7,w:.28,h:.28,d:1.2}},
+    // 3-4 front and rear views: a narrow ochre center, small silver head, low hanging arms and slim separated legs. Metre dimensions remain prototypes.
+    shape:{hull:{w:1.55,h:1.55,d:1.15,y:-.15,z:0},cockpit:{w:.92,h:.72,d:.85,y:1.23,z:.08},weapon:{w:.8,h:2.05,d:.85,x:1.52,y:.04,z:.12},legX:1.17,chinWeapon:{x:.55,y:-.05,z:1.7,w:.28,h:.28,d:1.2}},
     gait:{stride:7,lift:.65,lean:.05,bounce:.15},
     drive:{idle:64,rev:50,harmonic:2.5,filter:300,volume:.035,wave:'triangle'}
   },
@@ -517,6 +522,7 @@ const BASE_VEHICLES = {
     initialAmmo:{
     },
     ai:{
+      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
       detection:1000,
       strafe:0,
       keepMoving:false,
@@ -548,6 +554,7 @@ const BASE_VEHICLES = {
     initialAmmo:{
     },
     ai:{
+      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
       detection:1000,
       strafe:0,
       keepMoving:false,
@@ -583,8 +590,8 @@ const BASE_VEHICLES = {
       UNKPA:1.2
     },
     ai:{
-      minimumRange:40,
-      detection:280,
+      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
+      detection:240,
       strafe:0,
       keepMoving:false,
       stopDistance:0,
@@ -593,6 +600,16 @@ const BASE_VEHICLES = {
     shape:{hull:{w:5.4,h:9.6,d:5.4,y:-2.4,z:0},cockpit:{w:8,h:2.4,d:8,y:3.6,z:0},weapon:{w:1.2,h:2.1,d:3.2,x:2.5,y:1.15,z:0},legX:2.8,support:{w:3.4,h:5.6,d:7,y:2.8,z:0}},
     gait:{stride:1,lift:0,lean:0,bounce:0},
     drive:{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'}
+  },
+  'scorp-popup-turret':{
+    category:'tower',boardable:false,ejectionSeat:false,
+    name:'Scorp Pop-up Turret',jp:'ポップアップタレット',faction:'scorp',
+    speed:0,shield:15,energy:0,armor:75,height:3,passengerCapacity:0,
+    color:SCORP_TOWER_PALETTE.green,weapons:['TCREAP'],torsoLimit:Math.PI,
+    voice:'solemn',initialAmmo:{TCREAP:300},
+    ai:{minimumRange:0,detection:70,strafe:0,keepMoving:false,stopDistance:0,missileVolley:1},
+    shape:{hull:{w:3.4,h:1.2,d:3.4,y:-1,z:0},cockpit:{w:2.6,h:.65,d:2.6,y:.25,z:0},weapon:{w:.4,h:.4,d:2.1,x:0,y:.3,z:1.2},legX:0},
+    gait:{stride:1,lift:0,lean:0,bounce:0},drive:{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'}
   },
 } as const satisfies Record<string,VehicleDefinition>;
 // Chassis and loadouts are provisional until the original Darken variants are measured.
@@ -606,15 +623,21 @@ export const DARKEN_TACTICAL_HIP_Z=-.55;
 export const DARKEN_TACTICAL_THIGH=2.3;
 export const DARKEN_TACTICAL_SHIN=2.4;
 export const DARKEN_TACTICAL_REST_STEP=.65;
+export const SCORP_TACTICAL_THIGH=2.75;
+export const SCORP_TACTICAL_SHIN=2.55;
+export const SCORP_TACTICAL_REST_STEP=.75;
 export function pitchDarkenTactical(localY:number,localZ:number){
  const c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH);
  return {y:DARKEN_TACTICAL_TORSO_Y+localY*c-localZ*s,z:localY*s+localZ*c};
 }
 export const VEHICLES={...BASE_VEHICLES,
  // Rear view, torso width = 1. Pods are 1.15 wide at x 2.05, so the inner gap is about 2.95. The head sits on the rear top of the dark center. Metres use the 7.9 m card height as a prototype scale.
- 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:.72,h:1.8,d:.85,y:.4,z:.05},cockpit:{w:.5,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:2.05,y:.7,z:.35},legX:1.95,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:.9,h:3.5,d:3.4,y:1.75,z:.85}}},
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1.05,h:1.8,d:1.05,y:.4,z:.05},cockpit:{w:.58,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:1.5,y:.7,z:.35},legX:1.5,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:1.15,h:3.5,d:3.4,y:1.75,z:.85}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
+ 'scorp-aip':{...BASE_VEHICLES['merc-aip'],name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
+ 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
+  shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.5,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-.95,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.75,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
 } as const satisfies Record<string,VehicleDefinition>;
 export type VehicleKind=keyof typeof VEHICLES;
 type VehicleDataKey='shape'|'gait'|'drive';
@@ -625,7 +648,7 @@ export const VEHICLE_SHAPES=vehicleData('shape');
 export const VEHICLE_GAITS=vehicleData('gait');
 export const VEHICLE_DRIVE_PROFILES=vehicleData('drive');
 export function resolveVehicle(kind:VehicleKind,
-                               ...overrides:(Partial<VehicleSpec>|undefined)[
+                               ...overrides:(VehicleOverride|undefined)[
 ]):VehicleSpec {
   const {shape:_shape,gait:_gait,drive:_drive,...base}=VEHICLES[kind];let spec:VehicleSpec={
     ...base,

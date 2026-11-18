@@ -12,6 +12,7 @@ const attackers=[...groundAttackers];
 // Coordinates and bounds are provisional; no original objectives are inferred.
 export const MISSION_2_2:MissionDefinition={
  id:'2-2',title:'River Race',playerFaction:'union',initialIff:'2620',factionCodes:{merc:'5031',union:'2620'},
+ bgm:{start:{trackId:'bgm-snow-maze',delay:0}},
  subtitle:{ja:'Merc Tactical HAWC・River Race',en:'Merc Tactical HAWC · River Race'},
  briefing:{ja:'Merc Tactical Defense HAWCに搭乗した状態で開始する。地形は提供画像を基準にした仮配置。原作の敵配置・任務目標は未確認。',en:'Start aboard a Merc Tactical Defense HAWC. Terrain placement is provisional, based on the supplied image. Original enemies and objectives are unverified.'},
  startHint:{ja:'Merc Tactical Defense HAWC · 雪原。B：地図、C：視点切替。任務目標は未確定。',en:'Merc Tactical Defense HAWC · Snowfield. B: map, C: camera. Objectives unverified.'},

@@ -8,9 +8,12 @@
 | --- | --- |
 | `cockpits/union-sentry-reference.png` | [Union Sentryの提供画像](../docs/reference/vehicles/union-sentry/user-sentry-identification-2026-10-23.png) |
 | `cockpits/union-tactical-reference.png` | [Union Tacticalの機内参照](../docs/reference/vehicles/union-tactical/1-3-darken軍-sentry-hawk.png)。適用先はユーザー指定 |
+| [cockpits/union-aip.png](cockpits/union-aip.png) | [3-2のUnion AIP機内画像](map/3-2/3-2-union-aip.png)から窓と固定計器を除き、金属フレームとして使用 |
 | [cockpits/merc-td-hawk.png](cockpits/merc-td-hawk.png) | Merc Tacticalの機内フレーム。窓とHUDを除いて使用。[機内資料](../docs/reference/vehicles/merc-tactical/2-4-merc軍-タクティカルディフェンスhawk内view.png) |
 | [cockpits/darken-sentry-hawk.png](cockpits/darken-sentry-hawk.png) | Darken Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/darken/README.md) |
 | [cockpits/scope-sentry-hawk.png](cockpits/scope-sentry-hawk.png) | Scorp Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/scope-sentry/README.md) |
+| [cockpits/scope-assault-hawk.png](cockpits/scope-assault-hawk.png) | Scorp Assaultの機内フレーム。窓と固定計器を除いて使用。[提供画像](reference/scope-assault/scope-assault-hawk.png) |
+| [cockpits/scorp-td-hawk.png](cockpits/scorp-td-hawk.png) | Scorp Tactical Defense HAWCの機内フレーム。窓と固定計器を除いて使用。[原画像](<map/3-4/sc- 2026-11-11 23.54.41.png>) |
 | [cockpits/merc-assault.png](cockpits/merc-assault.png) | ユーザー指定のMerc Assault HAWCの機内。窓と固定計器を除いて使用。[専用コックピット](../docs/gameplay/cockpit-hud.md#merc-assault-hawcの操縦席2026-10-29) |
 | [cockpits/merc-mison-guard-tower.png](cockpits/merc-mison-guard-tower.png) | ユーザー提供のミーゾン・ガードタワーの機内とMerc AIP。窓・固定計器を除いたフレームに使用。[専用機内表示](../docs/gameplay/cockpit-hud.md#mercミーゾンガードタワーの機内2026-10-29) |
 | `cockpits/union-asv-reference.png` | [Union ASVの機内](../docs/reference/vehicles/union-asv/3-3-union-ASV内.png) |
@@ -18,11 +21,11 @@
 | `cockpits/visom-reference.png` | [VISOMの画面枠](../docs/reference/vehicles/scope-asv/3-3-VISOM-view-and-scope-ASV.png) |
 | `cockpits/bridge-control-building.png` | 橋制御棟の内側view。提供画像を参照し、窓と計器表示を動的に合成する。 |
 | [audio/bgm/mission-1-1-start.mp3](audio/bgm/mission-1-1-start.mp3) | ユーザー指定の1-1開始曲。LAUNCH後に自動再生。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みの1-1開始曲2026-10-24) |
-| [audio/bgm/mission-1-1-sentry-combat.mp3](audio/bgm/mission-1-1-sentry-combat.mp3) | Merc Sentry HAWKがプレイヤーを視認すると再生。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みの1-1戦闘曲2026-10-24) |
+| [audio/bgm/mission-1-1-sentry-combat.mp3](audio/bgm/mission-1-1-sentry-combat.mp3) | Merc Sentry HAWKがプレイヤーを視認すると再生。1-5は出撃時、3-2はシェリダンの遭遇無線のあとにも同じファイルを使う。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みの1-1戦闘曲2026-10-24) |
 | [audio/bgm/mission-3-3.mp3](audio/bgm/mission-3-3.mp3) | ユーザーが抽出・再生確認した3-3のBGM。[音源・参照URLの記録](../docs/audio/bgm-mapping.md#配置済みの3-3音源2026-10-24) |
-| [audio/bgm/union-march.mp3](audio/bgm/union-march.mp3) | ユーザーが抽出したTrack 02: Union March。3-3で敵Scorp ASV搭乗後に再生。[音源の記録](../docs/audio/bgm-mapping.md#配置済みのunion-marchと3-3の再生処理2026-10-24) |
+| [audio/bgm/union-march.mp3](audio/bgm/union-march.mp3) | ユーザーが抽出したTrack 02: Union March。3-3で敵Scorp ASV搭乗後に再生。3-1では奪ったScorp ASVの操縦席で広場の両軍が進軍を始めたあとにも同じファイルを使う。[音源の記録](../docs/audio/bgm-mapping.md#配置済みのunion-marchと3-3の再生処理2026-10-24) |
 | [audio/bgm/fighting-on-the-tundra.mp3](audio/bgm/fighting-on-the-tundra.mp3) | 投稿動画表記はTrack 12: Fighting on the Tundra。2-6のミーゾンタワー防衛で、出撃直後からファイル全体をループ再生する。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのmerc最終戦用音源2026-10-29) |
-| [audio/bgm/credits.mp3](audio/bgm/credits.mp3) | ユーザー指定の原作クレジット曲。4-2で再生。[出典・検査値](../docs/audio/bgm-mapping.md#原作クレジット曲と4-2への接続2026-10-30) |
+| [audio/bgm/credits.mp3](audio/bgm/credits.mp3) | ユーザー指定の原作クレジット曲。4-2と3-1で再生。[出典・検査値](../docs/audio/bgm-mapping.md#原作クレジット曲と4-2への接続2026-10-30) |
 | [audio/bgm/snow-maze-D0jKDtJPqLM.mp3](audio/bgm/snow-maze-D0jKDtJPqLM.mp3) | 指定YouTube動画D0jKDtJPqLMの15 Snow Maze。4-2のUnion部隊全滅後に再生。[出典・検査値](../docs/audio/bgm-mapping.md#4-2のunion部隊全滅後の切り替え2026-10-30) |
 | `ui/mission-console.png` | [3-3の開始画面](../docs/reference/observations/mission-3-3/3-3-launch前.png)。開始画面の枠と3-3のプレビューに使用 |
 | `ui/mission-4-3-map.png` | [4-3の出撃前画面](https://www.youtube.com/watch?v=dlIy0zh8vVk&t=92s)から切り出した原作Map。4-3の開始画面に使用。青い4点は橋、赤い流路はマグマ |

@@ -9,6 +9,11 @@ import {VEHICLES} from '../content/vehicles.ts';
 import {LASER_RECHARGE_SECONDS,LASERS} from '../content/weapons.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function mounted(){const s=new Simulation();s.human={...MISSION.vehicle};s.board();return s;}
+test('pop-up turret hit regions match its low rendered gun and body',()=>{
+ const turret=makeUnit('popup','scorp-popup-turret',0,0);
+ assert.equal(intersectParts(turret,{x:0,y:2.1,z:10},{x:0,y:2.1,z:-10})?.part,'leftWeapon');
+ assert.equal(intersectParts(turret,{x:0,y:6,z:10},{x:0,y:6,z:-10}),null);
+});
 test('self and enemy damage is local; shields absorb hits and regeneration does not repair parts',()=>{
  for(const own of [true,false]){
   const s=mounted(),u=own?s.mounted!:s.units[1];u.shield=0;const initial=freshParts();s.damage(u,VEHICLES[u.kind].armor*.3,'leftLeg');

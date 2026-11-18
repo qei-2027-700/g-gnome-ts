@@ -1,0 +1,55 @@
+.scorp-tactical-shell{display:none}
+.scorp-tactical-cockpit{background:#000}
+.scorp-tactical-cockpit #cockpit,.scorp-tactical-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--scorp-tactical-width);height:var(--scorp-tactical-height);transform:translate(-50%,-50%);container-type:size;color:#5aff32;font-family:"Courier New",monospace}
+.scorp-tactical-cockpit #world{left:calc((100% - var(--scorp-tactical-width))/2);top:calc((100% - 38px - var(--scorp-tactical-height))/2);width:var(--scorp-tactical-width);height:var(--scorp-tactical-height)}
+.scorp-tactical-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden}
+.scorp-tactical-cockpit .scorp-tactical-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.scorp-tactical-cockpit .cockpit-shell,.scorp-tactical-cockpit .darken-sentry-shell,.scorp-tactical-cockpit .scorp-sentry-shell,.scorp-tactical-cockpit .union-tactical-shell,.scorp-tactical-cockpit .merc-reference,.scorp-tactical-cockpit .merc-assault-reference,.scorp-tactical-cockpit .meson-reference,.scorp-tactical-cockpit .scorp-meson-reference,.scorp-tactical-cockpit .asv-cockpit-shell,.scorp-tactical-cockpit .scorp-cockpit-shell,.scorp-tactical-cockpit .cockpit-reference-metal,.scorp-tactical-cockpit .cockpit-well-underlay,.scorp-tactical-cockpit .cockpit-grain,.scorp-tactical-cockpit .overhead-display,.scorp-tactical-cockpit #cockpit>.canopy,.scorp-tactical-cockpit #cockpit>.pillar,.scorp-tactical-cockpit #cockpit>.dashboard,.scorp-tactical-cockpit #cockpit>.dash-rim{display:none}
+.scorp-tactical-cockpit .weapon-panel{inset:0;width:100%;height:100%;min-height:0;padding:0;border:0;background:none;box-shadow:none;font:1.55cqw/1 "Courier New",monospace;z-index:3}
+.scorp-tactical-cockpit .weapon-panel>div{position:absolute;left:1%;top:3.2%;display:flex;align-items:center;gap:2%;width:24.5%;height:4.2%;margin:0;white-space:nowrap}
+.scorp-tactical-cockpit .weapon-panel>div:nth-child(2){top:8.5%}
+.scorp-tactical-cockpit .weapon-panel>div:nth-child(3){left:74%;top:3.2%}
+.scorp-tactical-cockpit .weapon-panel>div:nth-child(4){left:74%;top:8.5%}
+.scorp-tactical-cockpit .weapon-panel i{order:0;padding:0 .2em;margin:0;border:1px solid #4dff28;font-size:1.35cqw;line-height:1.15}
+.scorp-tactical-cockpit .weapon-panel b{order:1;width:5em;font-weight:400}
+.scorp-tactical-cockpit .weapon-panel>div:before{content:'';order:2;width:.6cqw;height:.6cqw;border-radius:50%;background:#ff2a16;flex:none}
+.scorp-tactical-cockpit .weapon-panel>div.ready:before{background:#4dff28}
+.scorp-tactical-cockpit .weapon-panel span[id^=ammo]{order:4;margin-left:auto;float:none;font-size:1.3cqw;color:#67ff32}
+.scorp-tactical-cockpit .weapon-panel .asv-weapon-symbol{display:none}
+.scorp-tactical-cockpit .weapon-panel .charge-meter{order:3;position:relative;float:none;flex:1;height:1.25cqw;min-width:24%;margin:0;border:2px solid #3dff22;border-radius:1cqw;background:#041405}
+.scorp-tactical-cockpit #laserChargeFill{height:100%;background:#4dff24;transform-origin:left}
+.scorp-tactical-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
+.scorp-tactical-cockpit .iff-display{left:47%;top:8%;width:6%;height:4%;padding:0;transform:none;border:0;background:#000;display:flex;align-items:center;justify-content:center;font-size:0;z-index:3}
+.scorp-tactical-cockpit .iff-display strong{margin:0;font:1.6cqw "Courier New",monospace;color:#62ff36}
+.scorp-tactical-cockpit .instrument{position:absolute;border:0;border-radius:0;background:#000;box-shadow:none;overflow:hidden;z-index:2}
+.scorp-tactical-cockpit .instrument .micro,.scorp-tactical-cockpit .holo-grid{display:none}
+.scorp-tactical-cockpit .target-instrument{left:0;bottom:0;width:30%;height:37%}
+.scorp-tactical-cockpit .self-instrument{right:0;bottom:0;width:30%;height:37%}
+.scorp-tactical-cockpit #targetHologram{left:24%;top:12%;width:64%;height:70%}
+.scorp-tactical-cockpit #selfHologram{left:28%;top:14%;width:58%;height:72%}
+.scorp-tactical-cockpit #targetData{left:13%;right:20%;bottom:5%;top:auto;font-size:.8cqw;line-height:1.2}
+.scorp-tactical-cockpit .target-instrument:has(#targetHologram[hidden]) #targetData{display:none}
+.scorp-tactical-cockpit #clearTarget{right:4%;top:5%;padding:0 3px;color:#76ff40;background:#010804}
+.scorp-tactical-cockpit .vertical-meter{position:absolute;right:8%;bottom:7%;height:74%;width:4.5%;border:1px solid #2db83a;background:#001108;display:flex;align-items:end}
+.scorp-tactical-cockpit #targetShieldMeter:not([hidden]){display:flex}
+.scorp-tactical-cockpit .self-instrument .vertical-meter{left:8%;right:auto}
+.scorp-tactical-cockpit .vertical-meter>div,.scorp-tactical-cockpit #targetShieldFill{width:100%;background:#4fff1c}
+.scorp-tactical-cockpit .asv-energy-meter{display:block;position:absolute;left:2%;bottom:7%;height:74%;width:4%;border:1px solid #2fd59e;background:#001109}
+.scorp-tactical-cockpit #asvEnergyFill{position:absolute;bottom:0;width:100%;background:#72ff27}
+.scorp-tactical-cockpit .radar-instrument{left:35%;bottom:0;width:30%;height:32%;background:#000;clip-path:polygon(0 16%,20% 0,80% 0,100% 16%,100% 100%,0 100%)}
+.scorp-tactical-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.scorp-tactical-cockpit .radar-instrument .micro{display:block;position:absolute;bottom:2%;left:2%;top:auto;z-index:3;font-size:.7cqw;letter-spacing:0}
+.scorp-tactical-cockpit #pingLight,.scorp-tactical-cockpit .telemetry,.scorp-tactical-cockpit .objectives,.scorp-tactical-cockpit #squadOrders{display:none}
+.scorp-tactical-cockpit .compass{top:53%;left:50%;width:23%;font-size:0;color:#55ff2a}
+.scorp-tactical-cockpit .compass .ticks{display:block;font-size:1.8cqw;letter-spacing:.35em;line-height:.7}
+.scorp-tactical-cockpit .reticle{top:47%;width:4.4cqw;height:4.4cqw;border:0;border-radius:50%;outline:2px dashed #59fa39}
+.scorp-tactical-cockpit .throttle-meter{left:60%;top:33%;width:1.5%;height:20%;border:2px solid #f4ee2a;background:transparent;box-shadow:none}
+.scorp-tactical-cockpit #throttleFill{background:#f4ee2a}
+.scorp-tactical-cockpit .throttle-meter span{display:none}
+.scorp-tactical-cockpit .asv-aim-ladder{display:block;position:absolute;left:40%;top:37%;width:2.4%;height:17%}
+.scorp-tactical-cockpit .topbar{position:static;height:0;padding:0;border:0;background:none}
+.scorp-tactical-cockpit .topbar .brand,.scorp-tactical-cockpit .topbar .mission-id{display:none}
+.scorp-tactical-cockpit .topbar nav{position:fixed;left:8px;bottom:7px;z-index:30;gap:5px}
+.scorp-tactical-cockpit .topbar nav button,.scorp-tactical-cockpit footer button{padding:4px 7px;font-size:9px;background:#161b13;border-color:#3c4c31}
+.scorp-tactical-cockpit footer{height:38px;min-height:38px;justify-content:flex-end}
+.scorp-tactical-cockpit footer #controls,.scorp-tactical-cockpit #viewLabel{display:none}

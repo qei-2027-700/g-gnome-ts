@@ -23,6 +23,27 @@ test('F1 then F1 attacks with all three: real movement, common weapons and targe
  assert.ok(target.shield<target.spec.shield||target.armor<target.spec.armor);assert.equal(s.mounted!.shield,s.mounted!.spec.shield);
  assert.ok(s.units[1].speed<=s.units[1].spec.speed/3.6);
 });
+test('F5 follows a selected hostile without firing even when it is in weapon range',()=>{
+ const s=setup(),menu=new RadioMenu(),ally=s.units.find(u=>u.personId==='kylie')!,target=s.units.find(u=>u.id==='scorp-asv')!;
+ s.mission.rocks=[];s.units=[s.mounted!,ally,target];target.x=0;target.z=105;target.cooldown=999;s.selected=target.id;
+ const before=distance(ally,target),shield=target.shield;
+ menu.begin('kylie');assert.deepEqual(key(s,menu,'F5')?.accepted,['kylie']);
+ run(s,3);
+ assert.equal(ally.order?.kind,'follow');
+ assert.ok(distance(ally,target)<before);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===ally),false);
+ assert.equal(target.shield,shield);
+});
+test('F5 replaces an attack order and stops new shots while following the player',()=>{
+ const s=setup(),ally=s.units.find(u=>u.personId==='kylie')!,target=s.units.find(u=>u.id==='scorp-asv')!;
+ s.mission.rocks=[];s.units=[s.mounted!,ally,target];target.x=0;target.z=110;target.cooldown=999;s.selected=target.id;
+ assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);
+ run(s,16);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));
+ s.selected=null;assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);s.events=[];
+ run(s,3);
+ assert.equal(ally.order?.kind,'follow');
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===ally),false);
+});
 test('F1 then F5 without selection follows player, updates as player moves, F7 stops',()=>{
  const s=setup(),menu=new RadioMenu();s.selected=null;menu.begin('all');assert.equal(key(s,menu,'F5')!.accepted.length,3);
  const target=s.units.find(u=>u.id==='scorp-asv')!;run(s,8,{...idle,forward:true});const before=distance(s.units[1],s.player);s.throttle=0;s.speed=0;s.mounted!.speed=0;run(s,8);
@@ -33,9 +54,46 @@ test('G recipient stage, individual recipient and long press do not issue uninte
  const s=setup(),menu=new RadioMenu();menu.begin();key(s,menu,'F1');assert.equal(s.units[1].order,null);key(s,menu,'F1',true);assert.equal(s.units[1].order,null);key(s,menu,'F5');assert.equal(s.units[3].order?.kind,'follow');
  s.sendAllyOrder('all','hold');menu.begin();key(s,menu,'F2');key(s,menu,'F1');assert.equal(s.units[1].order?.kind,'attack');assert.equal(s.units[2].order,null);menu.close();key(s,menu,'F1');assert.equal(menu.recipient,'all');assert.equal(s.units[1].order?.kind,'attack');
 });
-test('attack snapshots target, rejects no target and friends, ends once for destroyed or empty target',()=>{
+test('attack snapshots target, rejects no target and friends, ends once for destroyed target',()=>{
  const s=setup();s.sendAllyOrder('all','attack');s.selected='kylie';assert.equal(s.sendAllyOrder('all','attack').error,'target');assert.deepEqual(s.units[1].order,{kind:'attack',targetId:'scorp-asv'});
- s.selected=null;assert.equal(s.sendAllyOrder('all','attack').error,'target');const target=s.units.find(u=>u.id==='scorp-asv')!;target.pilot=false;run(s,.1);assert.equal(s.units[1].order,null);assert.equal(s.events.filter(e=>e.type==='ally-order-complete').length,3);run(s,1);assert.equal(s.events.filter(e=>e.type==='ally-order-complete').length,3);
+ s.selected=null;assert.equal(s.sendAllyOrder('all','attack').error,'target');const target=s.units.find(u=>u.id==='scorp-asv')!;target.alive=false;run(s,.1);assert.equal(s.units[1].order,null);assert.equal(s.events.filter(e=>e.type==='ally-order-complete').length,3);run(s,1);assert.equal(s.events.filter(e=>e.type==='ally-order-complete').length,3);
+});
+test('attack orders target original enemies with matching IFF, empty HAWCs and facilities',()=>{
+ for(const kind of ['occupied','empty','facility'] as const){
+  const s=setup(),ally=s.units.find(u=>u.id==='kylie')!;
+  s.mission.rocks=[];ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;
+  for(const other of s.units.filter(u=>u.personId&&u.personId!=='kylie')){other.x=200;other.z=200;}
+  const target=kind==='facility'?s.facilities.find(f=>f.id==='ul-urit-mine-control')!:s.units.find(u=>u.id==='scorp-asv')!;
+  target.x=0;target.z=100;target.iff=ally.iff;
+  if(kind==='empty'&&'pilot' in target)target.pilot=false;
+  s.selected=null;s.selectTarget();assert.equal(s.target?.id,target.id,`${kind}: E selects the target`);
+  run(s,.2);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===ally),'matching IFF does not trigger automatic fire');
+  const before='health' in target?target.health:target.shield;
+  assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie'],kind);
+  run(s,5);
+  assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally),`${kind}: ally fired`);
+  assert.ok(('health' in target?target.health:target.shield)<before,`${kind}: target took damage`);
+ }
+});
+test('an ally on foot can attack an enemy facility despite matching IFF',()=>{
+ const {s,people}=footSquad(),soldier=people[0],target=s.facilities.find(f=>f.id==='ul-urit-mine-control')!;
+ for(const other of people.slice(1)){other.x=200;other.z=200;}
+ target.x=15;target.z=65;target.iff=soldier.iff;s.selected=target.id;
+ const before=target.health;
+ assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);
+ run(s,5);
+ assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));
+ assert.ok(target.health<before);
+});
+test('uncommanded infantry ignore enemy facilities and empty towers',()=>{
+ const {s,people}=footSquad(),soldier=people[0],facility=s.facilities.find(f=>f.id==='ul-urit-mine-control')!;
+ for(const other of people.slice(1))other.alive=false;
+ soldier.x=15;soldier.z=0;soldier.yaw=0;soldier.cooldown=0;soldier.order=undefined;
+ facility.x=15;facility.z=65;facility.iff='3317';s.facilities=[facility];
+ const tower=makeUnit('empty-enemy-tower','scorp-rocket-tower',40,65,false);tower.iff='3317';s.units=[s.mounted!,tower];
+ const health=facility.health,shield=tower.shield;run(s,3);
+ assert.equal(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),false);
+ assert.equal(facility.health,health);assert.equal(tower.shield,shield);
 });
 test('radio filters absent, dead and unoccupied actors; new mission has no orders',()=>{
  for(const reason of ['missing','dead','unoccupied'] as const){const s=setup(),u=s.units[1];if(reason==='missing')s.units.splice(1,1);if(reason==='dead')u.alive=false;if(reason==='unoccupied')u.pilot=false;if(reason==='range')u.z=700;if(reason==='blocked')s.mission.rocks.push({x:u.x/2,z:u.z/2,r:2});if(reason==='iff')s.iff='0000';
@@ -53,7 +111,7 @@ test('allies automatically engage approaching vehicles by IFF, without an attack
  const s=setup(),ally=s.units[1],enemy=s.units.find(u=>u.id==='scorp-asv')!;
  s.mission.rocks=[];s.mounted!.x=-80;s.mounted!.z=-80;ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;
  s.units[2].pilot=false;s.units[3].pilot=false;enemy.x=0;enemy.z=60;enemy.cooldown=999;
- const initial=enemy.shield;run(s,3);assert.ok(enemy.shield<initial);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.equal(ally.order,null);
+ const initial=enemy.shield;run(s,8);assert.ok(enemy.shield<initial);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.equal(ally.order,null);
  const friend=setup(),a=friend.units[1],e=friend.units.find(u=>u.id==='scorp-asv')!;friend.mission.rocks=[];a.x=0;a.z=0;e.x=0;e.z=60;e.iff=a.iff;run(friend,2);assert.ok(!friend.events.some(event=>event.type==='shot'&&event.unit===a));
 });
 test('E selects enemy infantry, allies attack it, and infantry rifles can damage an ally',()=>{
@@ -61,12 +119,19 @@ test('E selects enemy infantry, allies attack it, and infantry rifles can damage
  const soldier=s.forceEject(enemy)!;enemy.alive=false;soldier.flight=null;soldier.x=0;soldier.z=60;soldier.yaw=Math.PI;soldier.cooldown=0;soldier.gashrAmmo=0;
  s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.spec.speed=0;ally.spec.ai.keepMoving=false;ally.yaw=0;ally.aim=0;s.units[2].pilot=false;s.units[3].pilot=false;
  s.selectTarget();assert.equal(s.target,soldier);assert.ok(s.targetState);assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1);
- run(s,3);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(ally.shield<ally.spec.shield||s.events.some(e=>e.type==='pilot-eject'&&e.unit===ally));assert.ok(soldier.health<35);
+ run(s,6);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(ally.shield<ally.spec.shield||s.events.some(e=>e.type==='pilot-eject'&&e.unit===ally));assert.ok(soldier.health<35);
 });
 test('IFF overrides faction for selection, radio and autonomous ally fire, and ejection keeps the code',()=>{
  const s=setup(),ally=s.units[1],enemy=s.units.find(u=>u.id==='scorp-asv')!;enemy.iff=s.iff;assert.equal(s.isHostile(enemy),false);
  ally.iff='1111';assert.equal(s.isHostile(ally),true);assert.equal(s.radioMembers[0].reason,undefined);s.selected=ally.id;assert.equal(s.sendAllyOrder('all','attack').accepted.length,3);
  const soldier=s.forceEject(enemy)!;assert.equal(soldier.iff,enemy.iff);s.selectTarget();assert.equal(s.target,ally);assert.equal(s.isHostile(soldier),false);
+});
+test('ordered allies fire at an original enemy with matching IFF without pursuing it',()=>{
+ const s=setup(),ally=s.units[1],enemy=s.units.find(u=>u.id==='scorp-asv')!;s.mission.completionEnabled=false;s.mission.rocks=[];
+ s.mounted!.x=-150;s.mounted!.z=-150;ally.x=0;ally.z=0;ally.yaw=ally.aim=0;enemy.x=0;enemy.z=65;enemy.iff=ally.iff;enemy.cooldown=999;
+ s.units[2].pilot=false;s.units[3].pilot=false;s.selected=enemy.id;
+ assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);
+ run(s,3);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===ally));assert.ok(distance(ally,{x:0,z:0})<2);
 });
 
 function footSquad(){const s=setup();s.mission.rocks=[];s.units.find(u=>u.id==='scorp-asv')!.pilot=false;
@@ -194,7 +259,7 @@ test('individual F5 follows the selected moving unit, keeps that identity after 
 });
 test('F5 accepts an empty selected vehicle as a destination and waits nearby',()=>{
  const s=setup();s.mission.rocks=[];s.mines=[];s.units=s.units.filter(u=>u.spec.faction==='union');const parked=makeUnit('destination','scorp-asv',80,150,false);s.units.push(parked);s.selected=parked.id;const follower=s.units[1];
- assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);run(s,14);assert.ok(distance(follower,parked)<35);assert.equal(follower.speed,0);assert.equal(follower.pilot,true);assert.equal(parked.pilot,false);
+ assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);run(s,18);assert.ok(distance(follower,parked)<35);assert.equal(follower.speed,0);assert.equal(follower.pilot,true);assert.equal(parked.pilot,false);
 });
 
 test('ally already stopped beside a building can leave the navigation margin and continue attacking',()=>{
@@ -241,7 +306,7 @@ test('F5 routes around a destroyed fixed tower and keeps following after its fir
 
 test('mission companions receive and execute orders across range, terrain and IFF differences',()=>{
  const s=setup(),ally=s.units[1];s.selected=null;s.iff='0000';ally.x=0;ally.z=900;s.mission.terrain.cliffs=[{id:'radio-wall',x:0,z:450,width:50,depth:30,height:30}];
- assert.equal(s.lineOfSight(ally,s.player),false);assert.ok(distance(ally,s.player)>400);assert.ok(s.radioMembers.every(m=>m.available));assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);const before=ally.z;run(s,2);assert.ok(ally.z<before-5);assert.equal(ally.order?.kind,'follow');
+ assert.equal(s.lineOfSight(ally,s.player),false);assert.ok(distance(ally,s.player)>400);assert.ok(s.radioMembers.every(m=>m.available));assert.deepEqual(s.sendAllyOrder('kylie','follow').accepted,['kylie']);const before=ally.z;run(s,4);assert.ok(ally.z<before-5);assert.equal(ally.order?.kind,'follow');
 });
 
 test('2-6 F2 addresses Kylie before and after tower boarding; F1 attacks the selected AIP and radio survives disembark/reboard',async()=>{
@@ -262,11 +327,11 @@ function orderedFootSetup(){const {s,people}=footSquad();s.mission.base=undefine
 test('dismounted F2/F1 attack advances into common PRIF44 range, fires and damages the selected enemy; invalid target clears once',()=>{
  const {s,people,target}=orderedFootSetup(),soldier=people[0],menu=new RadioMenu();key(s,menu,'F2');assert.deepEqual(key(s,menu,'F1')!.accepted,['kylie']);assert.deepEqual(soldier.order,{kind:'attack',targetId:target.id});const shield=target.shield;
  run(s,40);assert.ok(soldier.z>100);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(target.shield<shield||!target.pilot);assert.ok(distance(soldier,target)<150);
- target.pilot=false;run(s,.1);assert.equal(soldier.order,null);assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&e.soldier===soldier).length,1);run(s,1);assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&e.soldier===soldier).length,1);
+ target.pilot=false;run(s,.1);assert.deepEqual(soldier.order,{kind:'attack',targetId:target.id});target.alive=false;run(s,.1);assert.equal(soldier.order,null);assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&e.soldier===soldier).length,1);run(s,1);assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&e.soldier===soldier).length,1);
 });
 
 test('foot attack routes around cover, F7 cancels approach and F4 replaces the order with boarding',()=>{
- const {s,people,target}=orderedFootSetup(),soldier=people[0];target.z=150;s.mission.rocks=[{x:0,z:60,r:12}];assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);run(s,30);assert.ok(Math.abs(soldier.x)>10);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));
+ const {s,people,target}=orderedFootSetup(),soldier=people[0];target.z=150;s.mission.rocks=[{x:0,z:60,r:12}];assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);let widest=0;for(let i=0;i<30*60;i++){s.tick(1/60,idle);widest=Math.max(widest,Math.abs(soldier.x));}assert.ok(widest>10,`widest=${widest}`);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));
  s.sendAllyOrder('kylie','hold');run(s,2);const stopped={x:soldier.x,z:soldier.z};run(s,2);assert.ok(distance(soldier,stopped)<.1);assert.equal(soldier.order,null);
  s.selected=null;assert.deepEqual(s.sendAllyOrder('kylie','board').accepted,['kylie']);assert.equal(soldier.boardingTarget,s.mounted!.id);assert.equal(soldier.order,null);run(s,45);assert.equal(soldier.passengerOf,s.mounted!.id);assert.equal(soldier.order,undefined);
 });
@@ -279,7 +344,7 @@ test('foot attack never shoots through an ally; foot follow moves to the command
 
 test('foot attack is shared by every current mission with companions, including interrupting 2-6 automatic tower boarding',async()=>{
  const {MISSIONS}=await import('../content/missions/index.ts');
- for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];delete def.terrain.river;def.terrain.cliffs=[];def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
+ for(const source of MISSIONS.filter(m=>m.companions?.some(p=>p.personId==='kylie'))){const def=structuredClone(source),member=def.companions!.find(m=>m.personId==='kylie')!;def.units=[...def.units,...(def.rendezvous?.units??[])];delete def.rendezvous;def.companions=[member];def.personnel=def.personnel?.filter(p=>p.personId==='kylie');def.units=def.units.filter(u=>u.id===def.assignedUnitId||u.id===member.unitId);def.base=undefined;def.rocks=[];delete def.terrain.river;def.terrain.cliffs=[];def.terrain.maxZ=Math.max(def.terrain.maxZ,def.player.z+500);def.minefields=[];def.objectives=[];def.completionEnabled=false;def.assaults=[];def.pickups=[];
   const s=new Simulation('Easy',def),radio=s.radioMembers[0],soldier=radio.soldier??s.forceEject(radio.unit!,'boarding')!,target=makeUnit('ordered-enemy','merc-sentry',soldier.x,soldier.z+200,true);soldier.flight=null;target.iff='0000';target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=999;s.units.push(target);s.selected=target.id;
   assert.equal(s.sendAllyOrder('kylie','attack').accepted.length,1,source.id);assert.equal(soldier.boardingTarget,undefined,source.id);soldier.x+=100;target.x=soldier.x;run(s,40);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier),source.id);assert.ok(target.shield<target.spec.shield||!target.pilot,source.id);
  }

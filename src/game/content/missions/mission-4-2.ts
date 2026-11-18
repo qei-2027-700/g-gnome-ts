@@ -1,10 +1,11 @@
 import type {MissionDefinition,Spawn} from './types.ts';
 // User-confirmed scenario; coordinates, roster, timings and IFF are provisional.
 const groundAttackers:Spawn[]=Array.from(
-  {length:8},(_,i)=>(
+  {length:15},(_,i)=>(
     {
       id:`sheridan-union-${i+1}`,
-      kind:i<4?'union-sentry':i<6?'union-asv':'union-tactical',
+      kind:i<5?'union-sentry':i<9?'union-asv':'union-tactical',
+      // kind:i<4?'union-sentry':i<6?'union-asv':'union-tactical',
       x:(i%4-1.5)*90+(i===4?45:0),z:360+Math.floor(i/4)*160+(i===4?130:0),
       yaw:Math.PI,pilot:true
     }
@@ -18,7 +19,7 @@ const airAttackers:Spawn[]=[
 const attackers=[...groundAttackers,...airAttackers];
 
 export const MISSION_4_2:MissionDefinition={
- id:'4-2',title:'Scorp Defense',playerFaction:'union',initialIff:'3317',factionCodes:{scorp:'3317',union:'2620'},
+ id:'4-2',title:'Scorp Defense',playerFaction:'union',friendlyFactions:['scorp'],initialIff:'3317',factionCodes:{scorp:'3317',union:'2620'},
  bgm:{volumeScale:.8,start:{trackId:'bgm-credits',delay:0},afterEliminate:{unitIds:attackers.map(u=>u.id),trackId:'bgm-snow-maze'}},
  subtitle:{ja:'ScorpとともにシェリダンのUnion軍を迎撃',en:'Defend Ur-Kinsk alongside Scorp against Sheridan’s Union forces'},
  briefing:{ja:'シェリダン率いるUnion軍がUr-Kinskへ迫っている。徒歩の開始地点から左手のScorpミーゾン・ガードタワーへ搭乗し、友軍Scorpとともに基地を守れ。キリーは右手のロケットタワー、ターンはもう1基のミーゾンタワーへ搭乗する。Union AIP2機が電力プラントを狙うため優先して迎撃せよ。最後は川辺のBridge Control Buildingへ入り、スイッチで橋を上げると即座に完了する。地上編成・配置・数値は試作設定。',en:'Sheridan’s Union forces are approaching Ur-Kinsk. Occupy the Scorp Meson tower to your left and defend the base alongside Scorp. Kylie boards the right rocket tower; Thane boards the second Meson tower. Two Union AIPs attack the power plant: intercept them before both Meson towers lose power. Finish by entering the riverside Bridge Control Building and raising the bridge. Ground roster, positions and statistics are provisional.'},
@@ -31,12 +32,19 @@ export const MISSION_4_2:MissionDefinition={
   {id:'scorp-rocket',kind:'scorp-rocket-tower',x:-50,z:820,pilot:false},
   {id:'thane-meson',kind:'scorp-meson-tower',x:-65,z:755,pilot:false,powerSourceId:'ur-kinsk-power'},
   {id:'scorp-sentry-guard',kind:'scorp-sentry',x:-80,z:780,pilot:true},
+  {id:'scorp-assault2',kind:'scorp-assault',x:-40,z:680,pilot:true},
+  {id:'scorp-assault3',kind:'scorp-assault',x:-40,z:580,pilot:false},
+  {id:'scorp-assault4',kind:'scorp-assault',x:-40,z:480,pilot:false},
+  {id:'scorp-assault5',kind:'scorp-assault',x:-60,z:680,pilot:false},
+  // {id:'scorp-assault6',kind:'scorp-assault',x:-60,z:580,pilot:false},
   {id:'scorp-asv-guard',kind:'scorp-asv',x:110,z:770,pilot:true},
   {id:'scorp-asv-guard2',kind:'scorp-asv',x:100,z:730,pilot:true},
-  {id:'scorp-asv-guard3',kind:'scorp-asv',x:55,z:710,pilot:false},
+  {id:'scorp-asv-guard3',kind:'scorp-asv',x:55,z:710,pilot:true},
+  {id:'scorp-asv-guard4',kind:'scorp-asv',x:35,z:710,pilot:true},
+  {id:'scorp-asv-guard5',kind:'scorp-asv',x:15,z:610,pilot:false},
   {id:'scorp-tactical-guard',kind:'scorp-tactical',x:-130,z:730,pilot:true},
   {id:'scorp-tactical-guard2',kind:'scorp-tactical',x:-90,z:715,pilot:true},
-  {id:'scorp-tactical-guard3',kind:'scorp-tactical',x:-600,z:5,pilot:true},
+  // {id:'scorp-tactical-guard3',kind:'scorp-tactical',x:-600,z:5,pilot:true},
   {id:'bridge-rocket',kind:'scorp-rocket-tower',x:80,z:620,pilot:false},
   {id:'bridge-union-sentry',kind:'union-sentry',x:350,z:420,yaw:-Math.PI/2,pilot:true},
   {id:'bridge-union-asv',kind:'union-asv',x:300,z:440,yaw:-Math.PI/2,pilot:true},
@@ -61,7 +69,7 @@ export const MISSION_4_2:MissionDefinition={
   buildings:[
    {id:'ur-kinsk-hq',kind:'command',name:'Ur-Kinsk HQ · 司令部',x:0,z:700,width:45,depth:35,height:18,health:1600,color:'#466b4c',boardable:false},
    {id:'ur-kinsk-power',kind:'power-plant',name:'Scorp Power Plant · 電力プラント',x:-105,z:700,width:38,depth:35,height:15,health:500,boardable:false},
-   {id:'ur-kinsk-latlon',kind:'comm-array',name:'Scorp Latlon COMM Array',x:105,z:700,width:35,depth:30,height:15,health:500,boardable:false},
+  //  {id:'ur-kinsk-latlon',kind:'comm-array',name:'Scorp Latlon COMM Array',x:105,z:700,width:35,depth:30,height:15,health:500,boardable:false},
    {id:'bridge-control',kind:'bridge-control',bridgeId:'ur-kinsk-bridge',name:'Bridge Control Building',x:20,z:550,width:32,depth:25,height:12,health:800,boardable:true}
   ]
  },

@@ -1,13 +1,13 @@
 import {VEHICLES,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
 // Manual input tuning: smaller keyboard steps and finer mouse aiming. AI turn rates are separate.
 export const MANUAL_AIM={vehicleYaw:.6,towerYaw:1.5,towerTracking:2.0,infantryYaw:1.8,pitch:.55,mousePerPixel:.0025,mouseYawPerPixel:.0025} as const;
-const HAWC_KINDS=new Set<VehicleKind>(['union-sentry','union-tactical','merc-sentry','merc-tactical','merc-assault','scorp-sentry','scorp-tactical','merc-cruiser','darken-sentry','darken-tactical']);
-const COMMON_HORIZONTAL_AIM_KINDS=new Set<VehicleKind>([...HAWC_KINDS,'union-asv','scorp-asv','darken-asv','union-aip','merc-aip','darken-aip']);
+const HAWC_KINDS=new Set<VehicleKind>(['union-sentry','union-tactical','merc-sentry','merc-tactical','merc-assault','scorp-assault','scorp-sentry','scorp-tactical','merc-cruiser','darken-sentry','darken-tactical']);
+const COMMON_HORIZONTAL_AIM_KINDS=new Set<VehicleKind>([...HAWC_KINDS,'union-asv','scorp-asv','darken-asv','union-aip','merc-aip','darken-aip','scorp-aip']);
 export const canFlyAcrossRiver=(kind?:VehicleKind)=>!!kind&&(VEHICLES[kind] as VehicleSpec).category==='hovercraft';
 export const isHawc=(kind:VehicleKind)=>HAWC_KINDS.has(kind);
 const HAWC_MANUAL_AIM={...MANUAL_AIM,vehicleYaw:1.5,mouseYawPerPixel:.005} as const;
 const ASSAULT_MANUAL_AIM={...HAWC_MANUAL_AIM,pitch:.825,mousePerPixel:.00375} as const;
-export const manualAimFor=(kind?:VehicleKind)=>kind==='merc-assault'?ASSAULT_MANUAL_AIM:kind&&COMMON_HORIZONTAL_AIM_KINDS.has(kind)?HAWC_MANUAL_AIM:MANUAL_AIM;
+export const manualAimFor=(kind?:VehicleKind)=>kind==='merc-assault'||kind==='scorp-assault'?ASSAULT_MANUAL_AIM:kind&&COMMON_HORIZONTAL_AIM_KINDS.has(kind)?HAWC_MANUAL_AIM:MANUAL_AIM;
 // A tap stays at `start`. After `rise` seconds the held key uses the full cruise rate above.
 export const KEYBOARD_AIM_RAMP={rise:.1,start:.18} as const;
 export function keyboardAimScale(heldSeconds:number){
@@ -17,12 +17,14 @@ export function keyboardAimScale(heldSeconds:number){
 export const MOVEMENT_RESPONSE={vehicleAcceleration:1.8,vehicleBraking:1.4,footAcceleration:10,footBraking:6,restSpeed:.035} as const;
 // Heavy low-hover handling, tuned from the user's Merc AIP agility feedback.
 export const MERC_AIP_RESPONSE={turnRate:.55,aimTurnRate:.9,acceleration:.7,braking:.65} as const;
+// Provisional feel tuning (2026-11-13). Not a measured original slew rate.
+const AI_HULL_TURN_RATE=.95,AI_HULL_EASE=.85,AI_AIM_TURN_RATE=1.2;
 export function aiTurnStep(kind:VehicleKind,error:number,dt:number,eased=false){
  if(kind==='merc-aip')return Math.max(-dt*MERC_AIP_RESPONSE.turnRate,Math.min(dt*MERC_AIP_RESPONSE.turnRate,error));
- return eased?error*Math.min(1,dt*1.7):Math.max(-dt*1.8,Math.min(dt*1.8,error));
+ return eased?error*Math.min(1,dt*AI_HULL_EASE):Math.max(-dt*AI_HULL_TURN_RATE,Math.min(dt*AI_HULL_TURN_RATE,error));
 }
 export function aiAimTurnStep(kind:VehicleKind,error:number,dt:number){
- const rate=kind==='merc-aip'?MERC_AIP_RESPONSE.aimTurnRate:2.4;return Math.max(-dt*rate,Math.min(dt*rate,error));
+ const rate=kind==='merc-aip'?MERC_AIP_RESPONSE.aimTurnRate:AI_AIM_TURN_RATE;return Math.max(-dt*rate,Math.min(dt*rate,error));
 }
 export function accelerateSpeed(current:number,desired:number,dt:number,kind?:VehicleKind){
  const braking=Math.abs(desired)<Math.abs(current)||current*desired<0;

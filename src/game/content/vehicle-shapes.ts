@@ -15,3 +15,11 @@ export function mercAssaultLegPose(side:number,front:number,phase=0,run=0){
  const s=VEHICLE_SHAPES['merc-assault'].spider,strength=Math.max(0,Math.min(1,run)),cycle=phase+(side*front>0?0:Math.PI),stride=Math.cos(cycle)*s.step*strength,lift=Math.max(0,Math.sin(cycle))*s.lift*strength,lateral=Math.sin(cycle)*strength;
  return {hip:{x:side*s.hipX,y:s.hipY,z:front*s.hipZ},knee:{x:side*(s.kneeX+lateral*s.sway),y:s.kneeY+Math.sin(cycle)*s.kneeLift*strength,z:front*s.kneeZ+stride*.3},foot:{x:side*(s.footX+Math.max(0,lateral)*s.sideStep),y:.1+lift,z:front*s.footZ+stride}};
 }
+
+// Three legs per side; the middle pair runs half a cycle behind its neighbors.
+export function scorpAssaultLegPose(side:number,position:number,phase=0,run=0){
+ const s=VEHICLE_SHAPES['scorp-assault'].spider,strength=Math.max(0,Math.min(1,run));
+ const cycle=phase+(position===0?Math.PI:0)+(side<0?Math.PI:0);
+ const stride=Math.cos(cycle)*s.step*strength,lift=Math.max(0,Math.sin(cycle))*s.lift*strength,lateral=Math.sin(cycle)*strength;
+ return {hip:{x:side*s.hipX,y:s.hipY,z:position*s.hipZ},knee:{x:side*(s.kneeX+lateral*s.sway),y:s.kneeY+Math.sin(cycle)*s.kneeLift*strength,z:position*s.kneeZ+stride*.3},foot:{x:side*(s.footX+Math.max(0,lateral)*s.sideStep),y:.1+lift,z:position*s.footZ+stride}};
+}

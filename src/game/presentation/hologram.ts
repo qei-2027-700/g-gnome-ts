@@ -16,6 +16,14 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  leftLeg:'M49 59h15l-5 22 1 18H44V80z M45 84h14 M44 93h15 M40 99h24v7H40z',
  rightLeg:'M96 59h15l5 21v19h-16l1-18z M101 84h14 M101 93h15 M96 99h24v7H96z'
  });
+ if(kind==='scorp-tactical')Object.assign(paths,{
+  hull:'M62 30h36l7 22-10 13H65L55 52z M70 35h20v23H70z M75 62h10v7H75z',
+  cockpit:'M67 8h26l5 17-7 6H69l-7-6z M70 12h20v12H70z M74 7V3h12v4 M72 28h16',
+  leftWeapon:'M55 30l-14 2-9 11 2 25 10 4 14-16z M39 37l-2 24 7 3 8-24z M37 73l-3 8 10 3 5-10z',
+  rightWeapon:'M105 30l14 2 9 11-2 25-10 4-14-16z M121 37l2 24-7 3-8-24z M123 73l3 8-10 3-5-10z',
+  leftLeg:'M64 63h14l-8 18-13 4-5-8z M57 82l13-4-6 12-8 5-6-5z M52 91l-5 10-12 2v4h31v-6l-10-4z M39 101v5 M47 101v5',
+  rightLeg:'M82 63h14l12 14-5 8-13-4z M90 78l13 4 7 8-6 5-8-5z M104 97l-10 4v6h31v-4l-12-2-5-10z M113 101v5 M121 101v5'
+ });
  if(kind==='union-sentry')Object.assign(paths,{
  hull:'M43 31l24 22h26l24-22-5-5-24 19H72L48 26z M64 57h32l-8 15H72z',
  cockpit:'M65 45h30v18H65z M69 48h22v10H69z',
@@ -55,21 +63,43 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  rightLeg:'M112 42h31v51h-31z M116 48h23 M116 55h23 M116 62h23 M116 69h23 M116 76h23 M116 83h23'
  });
  if(kind==='merc-cruiser')Object.assign(paths,{hull:'M69 35h22l4 20H65z',cockpit:'M67 10h26l-5 27H72z',leftWeapon:'M61 27h8v18h-8z',rightWeapon:'M91 27h8v18h-8z',leftLeg:'M68 45L25 27l-9 67h5l10-59 36 21M70 50L53 72l-3 34h5l4-31 15-17',rightLeg:'M92 45l43-18 9 67h-5l-10-59-36 21M90 50l17 22 3 34h-5l-4-31-15-17'});
- if(kind==='merc-aip'||kind==='union-aip')Object.assign(paths,{hull:'M12 77L80 44 148 77 80 89Z',cockpit:'M61 61L72 43H88L99 61 80 70Z',leftWeapon:'M35 69h10v12H35Z',rightWeapon:'M115 69h10v12h-10Z',leftLeg:'',rightLeg:''});
- if(kind==='merc-assault')Object.assign(paths,{
+ if(kind==='merc-aip'||kind==='union-aip'||kind==='scorp-aip')Object.assign(paths,{hull:'M12 77L80 44 148 77 80 89Z',cockpit:'M61 61L72 43H88L99 61 80 70Z',leftWeapon:'M35 69h10v12H35Z',rightWeapon:'M115 69h10v12h-10Z',leftLeg:'',rightLeg:''});
+ if(kind==='union-aip')Object.assign(paths,{
+  hull:'M8 77L28 68 51 65 63 57H97L109 65 132 68 152 77 143 82 111 79 96 91H64L49 79 17 82Z M54 71H106V81H54Z',
+  cockpit:'M64 56L72 46H88L96 56 92 71H68Z M72 49H88V64H72Z',
+  leftWeapon:'M28 68L45 65 57 70 53 85 36 83Z M45 80h13v8H45Z',
+  rightWeapon:'M132 68L115 65 103 70 107 85 124 83Z M102 80h13v8h-13Z',
+ });
+ if(kind==='merc-assault'||kind==='scorp-assault')Object.assign(paths,{
  hull:'M42 57l38-9 38 9-12 15H54z M54 57h52v9H54z',
  cockpit:'M64 39h32l8 14H56z M69 43h22v7H69z',
  leftWeapon:'M32 33h22v9H32z M29 37H16v6h24',rightWeapon:'M106 33h22v9h-22z M120 37h24v6h-13',
  leftLeg:'M55 57L24 12 9 101h9l12-68 23 31 M65 65L43 24 29 105h8l10-58 15 24',
  rightLeg:'M105 57l31-45 15 89h-9l-12-68-23 31 M95 65l22-41 14 81h-8l-10-58-15 24'
  });
+ if(kind==='scorp-assault')Object.assign(paths,{
+  hull:'M40 61L80 51 120 61 109 72H51Z M56 59h48v9H56z',
+  cockpit:'M77 28L84 52H76L66 54 55 48Z M66 49l-17 9 8 4 22-7',
+  leftWeapon:'M76 20l4-7 4 7v27h-8z M73 23h14',rightWeapon:'M83 21l5 6v21h-7z',
+  leftLeg:'M54 61L39 48 25 53 16 97 M51 64L36 61 25 70 21 101 M57 68L42 74 37 85 34 105',
+  rightLeg:'M106 61l15-13 14 5 9 44 M109 64l15-3 11 9 4 31 M103 68l15 6 5 11 3 20'
+ });
  if(kind==='merc-meson-tower')Object.assign(paths,{hull:'M68 59h24l11 43H57Z M75 74h10v8H75Z M69 88h7v10h-7Z',cockpit:'M39 23h82l-8 23-22 16H69L47 46Z M39 23h82v5H39Z M60 19l9-9h22l9 9Z M51 32h58 M59 48h42',leftWeapon:'M74 9h12v25H74Z M76 7h8v5H76Z',rightWeapon:'',leftLeg:'M55 101h50v4H55Z',rightLeg:''});
  if(kind==='scorp-meson-tower')Object.assign(paths,{hull:'M55 38H105L96 100H64Z M65 43V89M95 43V89',cockpit:'M28 25H132V38H28Z M32 20H128V25H32Z',leftWeapon:'M76 3H84V34H76Z M74 8H86V13H74Z',rightWeapon:'',leftLeg:'M62 61L34 101H47L70 67Z',rightLeg:'M90 67L113 101H126L98 61Z'});
- if(kind==='scorp-rocket-tower')Object.assign(paths,{hull:'M54 33h52l-11 67H65z M60 60h40 M63 77h34 M65 94h30',cockpit:'M30 31l22-13 18-7h20l18 7 22 13z M68 11l4-7h16l4 7 M43 32h74',leftWeapon:'M49 35h19v22H51z M54 40h10v5H54z',rightWeapon:'M92 35h19l-2 22H92z M96 40h10v5H96z',leftLeg:'M61 59L37 99h15l18-36z M34 99h20v5H34z',rightLeg:'M90 63l18 36h15L99 59z M106 99h20v5h-20z'});
+ if(kind==='scorp-popup-turret')Object.assign(paths,{hull:'M34 81H126V102H34Z M45 78H115V83H45Z',cockpit:'M47 54H113V80H47Z M51 50H109V56H51Z',leftWeapon:'M77 29H83V57H77Z M75 26H85V33H75Z',rightWeapon:'',leftLeg:'',rightLeg:''});
+ if(kind==='scorp-rocket-tower')Object.assign(paths,{
+  hull:'M64 29h32l-5 59H69z M70 34h20l-2 42H72z M68 47h24 M70 60h20 M72 73h16 M74 85h12',
+  cockpit:'M45 15h70l11 10-7 9H41l-7-9z M52 12h56l-3-6H55z M41 23h78 M49 29h62 M61 15v12 M80 14v14 M99 15v12',
+  leftWeapon:'M45 30h20l-3 38-13 6-9-8z M49 37h12l-2 20H47z M43 45h19 M43 55h18',
+  rightWeapon:'M95 30h20l5 36-9 8-13-6z M99 37h12l2 20h-12z M98 45h19 M99 55h18',
+  leftLeg:'M68 69L40 101h15l21-25z M40 101h19v5H36v-3z M49 91l14-13',
+  rightLeg:'M92 69l28 32h-15L84 76z M101 101h19l4 2v3h-23z M97 78l14 13'
+ });
  const labelY=kind==='scorp-asv'?27:kind.endsWith('-asv')?35:kind==='scorp-rocket-tower'?30:heavy?33:merc?29:50;
  const safeName=crewName.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!)),labelWidth=Math.min(144,crewName.length*5+8);
  const label=crewName?`<g data-role="crew-name"><rect x="${80-labelWidth/2}" y="${labelY-9}" width="${labelWidth}" height="12" fill="#001006"/><text x="80" y="${labelY}" text-anchor="middle" font-family="monospace" font-size="9" fill="#baff9e" textLength="${labelWidth-6}" lengthAdjust="spacingAndGlyphs">${safeName}</text></g>`:'';
- return `<svg viewBox="0 0 160 110" aria-hidden="true">${Object.entries(paths).map(([part,d])=>`<path data-part="${part}" d="${d}" fill="${partColor(parts[part as BodyPart])}" fill-opacity=".08" stroke="${partColor(parts[part as BodyPart])}" stroke-width="1.6" stroke-linejoin="round"/>`).join('')}${label}</svg>`;
+ const fillOpacity=kind==='scorp-tactical'||kind==='scorp-rocket-tower'?'.26':'.08';
+ return `<svg viewBox="0 0 160 110" aria-hidden="true">${Object.entries(paths).map(([part,d])=>`<path data-part="${part}" d="${d}" fill="${partColor(parts[part as BodyPart])}" fill-opacity="${fillOpacity}" stroke="${partColor(parts[part as BodyPart])}" stroke-width="1.6" stroke-linejoin="round"/>`).join('')}${label}</svg>`;
 }
 
 

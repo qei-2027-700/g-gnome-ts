@@ -3,7 +3,7 @@ import type {Faction} from '../content/vehicles.ts';
 export type FacilityType=NonNullable<Base['buildings'][number]['kind']>;
 export type Facility={bridgeId?:string;id:string;facilityType:FacilityType;name:string;faction:Faction;x:number;z:number;width:number;depth:number;height:number;yaw:number;iff:string;alive:boolean;pilot:boolean;health:number;boardable:boolean};
 export const isFacility=(target:object):target is Facility=>'facilityType' in target;
-export const FACILITY_NAMES:Record<FacilityType,string>={citadel:'Citadel', 'power-plant':'電力施設','comm-array':'Latlon通信基地','bridge-control':'Bridge Control Building',command:'司令部','mine-control':'地雷原コントロール設備','shield-generator':'シールドジェネレーター','sweep-turret':'スイープタレット'};
+export const FACILITY_NAMES:Record<FacilityType,string>={citadel:'Citadel', 'power-plant':'電力施設','comm-array':'Latlon通信基地','bridge-control':'Bridge Control Building',command:'司令部','mine-control':'地雷原コントロール設備','popup-turret-control':'ポップアップタレット制御施設','shield-generator':'シールドジェネレーター','sweep-turret':'スイープタレット'};
 export function makeFacilities(base:Base|undefined,iff='scorp'):Facility[]{
  return (base?.buildings??[]).map((b,i)=>({...b,id:b.id??`facility-${b.kind??'command'}-${i}`,facilityType:b.kind??'command',name:b.name??FACILITY_NAMES[b.kind??'command'],faction:base?.faction??'scorp',yaw:b.yaw??Math.PI/2,iff:b.iff??iff,alive:true,pilot:b.pilot??false,health:b.health??200,boardable:b.kind!=='sweep-turret'&&b.boardable!==false}));
 }

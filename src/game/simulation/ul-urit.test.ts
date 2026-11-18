@@ -1,6 +1,18 @@
 import {MACHINE_GUNS,weaponMountCount} from '../content/weapons.ts';
+import {TOWER_MINIMUM_ATTACK_RANGE} from '../content/vehicles.ts';
 import {test} from 'node:test';import assert from 'node:assert/strict';import {Simulation,makeUnit,distance,type Input} from './simulation.ts';import {MISSION_3_3} from '../content/missions/mission-3-3.ts';import {crossesBuilding,buildingContact} from './battlefield.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};const step=(s:Simulation,n:number,input=idle)=>{for(let i=0;i<n;i++)s.tick(1/60,input);};
+test('Scorp rocket tower notices a target within 240 m across missions',()=>{
+ for(const range of [239,241]){
+  const mission=structuredClone(MISSION_3_3);
+  mission.units=[{id:'own',kind:'union-asv',x:0,z:0,pilot:false},{id:'tower',kind:'scorp-rocket-tower',x:0,z:range,pilot:true}];
+  mission.assignedUnitId='own';mission.startMountedUnitId='own';mission.minefields=[];mission.base=undefined;mission.rocks=[];mission.terrain.cliffs=[];
+  const sim=new Simulation('Easy',mission),tower=sim.units.find(unit=>unit.id==='tower')!;
+  assert.equal(tower.spec.ai.detection,240);
+  sim.tick(.05,idle);
+  assert.equal(sim.events.some(event=>event.type==='enemy-detected'&&event.unit===tower),range<240);
+ }
+});
 test('3-3 base lies beyond red minefield, with two functional towers and three empty Scorp HAWCs',()=>{const s=new Simulation('Easy',MISSION_3_3);assert.ok(s.mission.base!.x<s.mission.minefields![0].x-s.mission.minefields![0].width/2);assert.equal(s.units.filter(u=>u.kind==='scorp-rocket-tower').length,2);assert.deepEqual(s.mission.base!.buildings.map(b=>b.kind),['command','mine-control']);assert.ok(s.units.filter(u=>u.kind==='scorp-rocket-tower').every(u=>u.x>Math.max(...s.mission.base!.buildings.map(b=>b.x))));assert.equal(s.units.filter(u=>u.kind==='scorp-sentry'&&!u.pilot).length,1);assert.equal(s.units.filter(u=>u.kind==='scorp-tactical'&&!u.pilot).length,2);assert.ok(s.mines.length>70);assert.equal(new Simulation().mines.length,0);assert.equal(new Simulation().mission.base,undefined);
  const tower=s.units.find(u=>u.spec.category==='tower')!;s.units=[s.mounted!,tower];s.mounted!.x=tower.x;s.mounted!.z=tower.z-210;const at={x:tower.x,z:tower.z};step(s,180);assert.deepEqual({x:tower.x,z:tower.z},at);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower));s.damage(tower,9999);assert.equal(s.soldiers.length,1);assert.equal(s.soldiers[0].sourceVehicle,tower.id);assert.equal(s.soldiers[0].faction,'scorp');
 });
@@ -12,7 +24,7 @@ test('building collision blocks ground movement and bullets but permits shots ov
 
 test('a vehicle cannot skip a mine by crossing its entire trigger circle in one frame',()=>{const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:-8,pilot:false}];def.startMountedUnitId='own';def.minefields=[{id:'sweep',x:0,z:0,width:30,depth:30,triggerRadius:2,mines:[{id:'one',x:0,z:0}]}];const s=new Simulation('Easy',def);s.speed=400;s.throttle=1;s.tick(.05,idle);assert.equal(s.status,'running');assert.ok(s.flight);assert.ok(s.mines[0].spent);});
 
-test('TCREAP hits on a dismounted player deal infantry projectile damage rather than missile instant death',()=>{const s=new Simulation();const enemy=makeUnit('enemy','union-asv',0,80,true,{faction:'scorp',weapons:['TCREAP'],ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});enemy.iff='scorp';enemy.yaw=Math.PI;enemy.aim=Math.PI;s.units=[enemy];s.human={x:0,z:0};s.tick(1/60,idle);assert.ok(s.missiles.some(p=>p.weapon==='TCREAP'));assert.equal(s.humanHealth,100);step(s,90);assert.equal(s.humanHealth,100-MACHINE_GUNS.TCREAP.infantryDamage!*weaponMountCount(enemy.kind,'TCREAP'));assert.equal(s.status,'running');});
+test('TCREAP hits on a dismounted player deal infantry projectile damage rather than missile instant death',()=>{const s=new Simulation();const enemy=makeUnit('enemy','union-asv',0,80,true,{faction:'scorp',weapons:['TCREAP'],ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});enemy.iff='scorp';enemy.alert=true;enemy.yaw=Math.PI;enemy.aim=Math.PI;s.units=[enemy];s.human={x:0,z:0};s.tick(1/60,idle);assert.ok(s.missiles.some(p=>p.weapon==='TCREAP'));assert.equal(s.humanHealth,100);step(s,90);assert.equal(s.humanHealth,100-MACHINE_GUNS.TCREAP.infantryDamage!*weaponMountCount(enemy.kind,'TCREAP'));assert.equal(s.status,'running');});
 
 test('friendly AI follows across a mine without detonating or consuming it, including a captured Scorp chassis',()=>{
  for(const kind of ['union-sentry','scorp-asv'] as const){
@@ -35,7 +47,20 @@ test('rocket tower cannot fire or consume ammo inside minimum range, and resumes
  const remaining=tower.ammo;s.events=[];s.missiles=[];s.mounted!.z=0;step(s,180);assert.equal(tower.ammo,remaining);assert.equal(s.events.filter(e=>e.type==='shot'&&e.unit===tower).length,0);
 });
 test('rocket tower minimum range includes its boundary and applies to infantry targets',()=>{
- for(const range of [39.9,40]){const def=structuredClone(MISSION_3_3);delete def.startMountedUnitId;def.player={x:0,z:0};def.units=[{id:'tower',kind:'scorp-rocket-tower',x:0,z:range,pilot:true}];def.minefields=[];def.base=undefined;def.rocks=[];const s=new Simulation('Easy',def),tower=s.units[0];tower.yaw=Math.PI;tower.aim=Math.PI;s.tick(1/60,idle);assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===tower),range===40);}
+ for(const range of [39.9,40]){const def=structuredClone(MISSION_3_3);delete def.startMountedUnitId;def.player={x:0,z:0};def.units=[{id:'tower',kind:'scorp-rocket-tower',x:0,z:range,pilot:true}];def.minefields=[];def.base=undefined;def.rocks=[];const s=new Simulation('Easy',def),tower=s.units[0];tower.yaw=Math.PI;tower.aim=Math.PI;tower.alert=true;s.tick(1/60,idle);assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===tower),range===40);}
+});
+test('Merc and Scorp Meson towers stop firing inside their shared minimum range and resume beyond it',()=>{
+ for(const kind of ['merc-meson-tower','scorp-meson-tower'] as const){
+  for(const mounted of [false,true])for(const range of [TOWER_MINIMUM_ATTACK_RANGE-.1,TOWER_MINIMUM_ATTACK_RANGE]){
+   const def=structuredClone(MISSION_3_3);def.player={x:0,z:0};def.units=[...(mounted?[{id:'own',kind:'union-asv' as const,x:0,z:0,pilot:false}]:[]),{id:'tower',kind,x:0,z:range,pilot:true}];if(mounted)def.startMountedUnitId='own';else delete def.startMountedUnitId;def.minefields=[];def.base=undefined;def.rocks=[];
+   const s=new Simulation('Easy',def),tower=s.units.find(u=>u.id==='tower')!;tower.yaw=Math.PI;tower.aim=Math.PI;tower.alert=true;s.tick(1/60,idle);
+   assert.equal(s.events.some(e=>e.type==='shot'&&e.unit===tower),range===TOWER_MINIMUM_ATTACK_RANGE,`${kind} at ${range}m, mounted=${mounted}`);
+  }
+  const def=structuredClone(MISSION_3_3);delete def.startMountedUnitId;def.player={x:0,z:0};def.units=[{id:'tower',kind,x:0,z:30,pilot:true}];def.minefields=[];def.base=undefined;def.rocks=[];
+  const s=new Simulation('Easy',def),tower=s.units[0]!;tower.yaw=Math.PI;tower.aim=Math.PI;step(s,180);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
+  s.human.z=-30;s.events=[];s.tick(1/60,idle);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower));
+  s.human.z=0;tower.cooldown=0;s.missiles=[];s.events=[];s.tick(1/60,idle);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
+ }
 });
 
 test('lethal missile impact ejects a living tower operator once; empty towers eject nobody',()=>{
@@ -107,7 +132,7 @@ test('Kylie tower warning fires once when Scorp ASV reaches the base, never from
 
 test('tower operator clears its solid wreck, lands visibly outside it, attacks and is targeted by an ally',()=>{
  const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:0,pilot:false},{id:'kylie',personId:'kylie',kind:'union-sentry',x:-20,z:0,pilot:true},{id:'tower',kind:'scorp-rocket-tower',x:0,z:65,yaw:0,pilot:true}];def.assignedUnitId='own';def.startMountedUnitId='own';def.companions=[{personId:'kylie',unitId:'kylie',key:'F2',name:{ja:'キリー',en:'Kylie'}}];def.minefields=[];def.base=undefined;def.rocks=[];def.terrain.cliffs=[];
- const s=new Simulation('Easy',def),tower=s.units[2];s.damage(tower,9999);const soldier=s.soldiers[0];step(s,300);
+ const s=new Simulation('Easy',def),tower=s.units[2];s.damage(tower,9999);const soldier=s.soldiers[0];soldier.gashrAmmo=0;step(s,600);
  assert.equal(soldier.flight,null);assert.equal(soldier.alive,true);assert.ok(Math.abs(soldier.x)>7);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(s.events.some(e=>e.type==='shot'&&e.unit?.personId==='kylie'));assert.ok(soldier.health<35);
 });
 

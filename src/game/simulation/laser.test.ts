@@ -37,6 +37,20 @@ test('laser bolts take time, can miss a moving target, and manual firing observe
  const cadence=mounted(),times:number[]=[];for(let i=0;i<180;i++){const before=cadence.events.filter(e=>e.type==='shot'&&e.weapon==='FIL-30').length;cadence.tick(1/60,{...idle,fire2:true});if(cadence.events.filter(e=>e.type==='shot'&&e.weapon==='FIL-30').length>before)times.push(cadence.time);}assert.ok(times.length>=2&&times.length<=3);for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=LASERS['FIL-30'].interval-1e-8);step(cadence,60);const before=cadence.events.filter(e=>e.type==='shot').length;cadence.tick(1/60,{...idle,fire2:true});assert.equal(cadence.events.filter(e=>e.type==='shot').length,before+2);
 });
 
+test('Merc Cruiser GAUS20 travels at the slower speed without losing range',()=>{
+ const s=mounted('merc-cruiser');
+ assert.equal(LASERS.GAUS20.speed,90);
+ assert.equal(LASERS.GAUS30.speed,180);
+ s.fire(2);
+ const bolt=s.missiles.find(p=>p.weapon==='GAUS20')!;
+ assert.ok(bolt);
+ assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-90)<1e-8);
+ assert.ok(Math.abs(bolt.life-LASERS.GAUS20.range/90)<1e-8);
+ const from={x:bolt.x,y:bolt.y,z:bolt.z};
+ for(let i=0;i<5;i++)s.tick(.05,idle);
+ assert.ok(Math.abs(Math.hypot(bolt.x-from.x,bolt.y-from.y,bolt.z-from.z)-22.5)<1e-6);
+});
+
 test('Union Sentry FIL-30 fires both lower cockpit mounts for player and AI; weapon names omit the mount count',()=>{
  assert.equal(weaponMountCount('union-sentry','FIL-30'),2);assert.equal(weaponDisplayName('union-sentry','FIL-30'),'FIL-30');assert.equal(weaponDisplayName('union-tactical','P2MEC'),'P2MEC');
  for(const ai of [false,true])for(const yaw of [0,Math.PI/2]){

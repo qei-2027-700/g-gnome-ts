@@ -20,7 +20,7 @@
 | 番号 | 英語名（動画表記）／日本語の参照名 | 目的・進行の概要 | 参照動画 | 再現側の資料 |
 | --- | --- | --- | --- | --- |
 | 1-1 | Renegade Mercs／出撃 | 徒歩で始まり、HAWCへ搭乗。指定地点へ進み、Mercの襲撃部隊を排除する | [1-1](https://www.youtube.com/watch?v=ouTQ_oUpzWA) | [実装仕様](mission-1-1.md) |
-| 1-2 | Drawbridge／渡河 | Darkenの機体を奪取し、橋制御施設で橋を下ろしてAngada川を渡る。対岸の防衛部隊への対処が続く | [1-2](https://www.youtube.com/watch?v=wg9YCQxUqSE) | 原作の達成分岐は未検証 |
+| 1-2 | Drawbridge／渡河 | Darkenの機体を奪取し、橋制御施設で橋を下ろしてAngada川を渡る。対岸の防衛部隊への対処が続く | [1-2](https://www.youtube.com/watch?v=wg9YCQxUqSE) | [出撃前とBの目標案内](mission-1-2.md)。達成分岐は未検証 |
 | 1-3 | Convoy／輸送部隊 | 駐機場でIFFを取得し、Darkenの輸送部隊へ識別信号を送って合流。Chansk司令部へ潜入し、キリーの情報を回収する | [1-3](https://www.youtube.com/watch?v=y0q9DCsQBw8) | 原作のIFF変更条件は要画面照合 |
 | 1-4 | LATLON／ラットロン通信基地 | Darkenの通信施設を無力化し、後続のキリーとの合流に備える。FAQの目標には防衛部隊・シールドジェネレーターの排除、施設破壊と退避がある | [1-4](https://www.youtube.com/watch?v=0OiVKh6pmJM) | 潜入後の破壊判定は未検証 |
 | 1-5 | Rescue!／救出！ | Darken領域の最後の任務。Merc領域との境界付近で待つキリーとの合流へ向かう | [1-5](https://www.youtube.com/watch?v=eYHjjhCqb1c) | [任務資料](mission-1-5.md)。原作画面の4目標と、東側スタート・左手の川・対岸のロケットタワー・橋の北のメソンタワーと施設を確認。川と尾根の形は選択画面から写し、メートル換算と時刻は仮値 |
@@ -31,7 +31,7 @@
 
 | 番号 | 英語名（動画表記）／日本語の参照名 | 目的・進行の概要 | 参照動画 | 確認を残す内容 |
 | --- | --- | --- | --- | --- |
-| 2-1 | Dropship Rendezvous／輸送船との合流 | ガントとキリーがMerc領域で合流。移動手段を確保してターン博士の捜索を進める | [2-1](https://www.youtube.com/watch?v=vNgoatLZvms) | 武器庫襲撃・護衛・輸送船到着のイベント条件 |
+| 2-1 | Dropship Rendezvous／輸送船との合流 | ガントとキリーがMerc領域で合流。移動手段を確保してターン博士の捜索を進める | [2-1](https://www.youtube.com/watch?v=vNgoatLZvms) | 武器庫襲撃・護衛・輸送船到着のイベント条件。原作とは別の[仮の簡素な2-1](mission-2-1.md)はメモのみで未実装 |
 | 2-2 | River Race／河岸の戦い | ターンの所在地が判明するが、先にMercのLATLON通信施設を無力化する | [前半](https://www.youtube.com/watch?v=GJZ4i0cU9c0)・[後半](https://www.youtube.com/watch?v=GmWoM0gYZz8) | 橋の破壊・昇降、増援の停止条件 |
 | 2-3 | Canyon Maze／峡谷の迷宮 | Mercのフォースフィールドを解除しながら氷の峡谷を通り、ターンを救出する。通信施設破壊による通信断が背景にある | [2-3](https://www.youtube.com/watch?v=CCP3cgzaxgw) | 電源施設とフェンスの対応、ターンの生存・接近判定 |
 | 2-4 | Egger／エッガー | ターンの移動と偽装に使うため、敵修理基地付近のMerc巡回HAWCを奪取する | [2-4](https://www.youtube.com/watch?v=jJkqkfm4Zuo) | 誘引・EGGER・ターン搭乗の原作判定。[現在の試作](mission-2-4.md)は移動確認用 |

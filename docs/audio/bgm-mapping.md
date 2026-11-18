@@ -5,7 +5,7 @@
 - 対象：曲目、ミッション内の複数曲、切り替わる場面と再生条件
 - 状態：ユーザー指定のMerc領域・Scorp領域・3-3・1-1の開始曲と戦闘開始曲を登録。1-1は開始時と敵Sentry HAWCとの戦闘開始時の曲を区別する。3-3開始曲とUnion MarchのMP3を配置し、自動再生と搭乗時の切り替えを実装。他の音源ファイル、正式曲名、その他の再生・切り替え条件は未確認
 - 記録日：2026-10-22
-- 更新日：2026-11-12
+- 更新日：2026-11-18
 - 関連：[1-1](../missions/mission-1-1.md)、[音の制作方針](mission-controls-and-audio.md)、[設定](../gameplay/settings.md)、[原作資料](../reference/sources-and-macos.md)
 
 ## 1ミッションに複数曲を対応させる
@@ -20,14 +20,25 @@
 
 | 曲ID | 正式名・仮名 | CD番号・版 | 長さ・ループ | 音源・確認元 |
 | --- | --- | --- | --- | --- |
-| `bgm-merc-region` | Merc領域のテーマ（用途による仮名） | 未確認 | 未確認 | [ユーザー指定動画](https://www.youtube.com/watch?v=8I_7gl0ar3M&list=PLCC2B142A186B59C9&index=4) |
-| `bgm-scorp-region` | Scorp領域のテーマ（用途による仮名） | 未確認 | 未確認 | [ユーザー指定動画](https://www.youtube.com/watch?v=TYoTK2whgvw&list=PLCC2B142A186B59C9&index=5) |
+| `bgm-merc-region` | Merc領域のテーマ（用途による仮名） | 未確認 | MP3全長85.333秒・原作のループ位置は未確認 | [ユーザー指定動画](https://www.youtube.com/watch?v=8I_7gl0ar3M&list=PLCC2B142A186B59C9&index=4) |
+| `bgm-scorp-region` | Scorp領域のテーマ（用途による仮名） | 未確認。投稿動画の題は Track 06: Credits | MP3全長134.613秒・原作のループ位置は未確認 | [ユーザー指定動画](https://www.youtube.com/watch?v=TYoTK2whgvw&list=PLCC2B142A186B59C9&index=5) |
 | `bgm-mission-3-3` | 3-3のBGM（用途による仮名） | 未確認 | MP3全長163.016秒・ファイル全体をループ | [ユーザー指定動画](https://www.youtube.com/watch?v=WRgu6a3aclo&list=PLCC2B142A186B59C9&index=7) |
 | `bgm-mission-1-1-start` | 1-1の開始曲（用途による仮名） | 未確認 | MP3全長136.149秒・原作のループ位置は未確認 | [ユーザー指定動画](https://www.youtube.com/watch?v=dHo6FxhftxM&list=PLCC2B142A186B59C9&index=16) |
 | `bgm-union-march` | Track 02: Union March（投稿動画の表記） | 投稿動画ではTrack 02、原作CD番号は未照合 | MP3全長59.477秒・ファイル全体をループ | [ユーザー指定動画](https://www.youtube.com/watch?v=i352EcsT5Vg&list=PLCC2B142A186B59C9&index=1) |
 | `bgm-mission-1-1-sentry-combat` | 1-1の敵Sentry HAWC戦闘開始曲（用途による仮名） | 未確認 | MP3全長49.609秒・ファイル全体をループ | [ユーザー指定動画](https://www.youtube.com/watch?v=6P2ZOLtGAXA&list=PLCC2B142A186B59C9&index=9) |
 | `bgm-fighting-on-the-tundra` | Track 12: Fighting on the Tundra（投稿動画の表記） | 投稿動画ではTrack 12、原作CDの正式曲名・番号・版は未照合 | MP3全長84.160秒・2-6ではファイル全体をループ（原作条件は未確認） | [ユーザー指定動画](https://www.youtube.com/watch?v=4OuRkv-MxXE) |
 | `bgm-credits` | Credits（配布ページの表記） | 原作CDの正式表記・番号は未照合 | 全長138秒・4-2では全長をループ | [G-Nome gameripのCredits](https://downloads.khinsider.com/game-soundtracks/album/gnome-windows-gamerip-1997/01.%2520Credits.mp3) |
+| `bgm-barren-landscape` | Track 03: Barren Landscape（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長80.064秒・用途未指定 | [動画](https://www.youtube.com/watch?v=ZJb2W-SxDAo) |
+| `bgm-infiltrating-darken-territory` | Track 04: Infiltrating Darken Territory（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長118.485秒・用途未指定 | [動画](https://www.youtube.com/watch?v=j_oylgkm3Fo) |
+| `bgm-sneaking-in` | Track 07: Sneaking In（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長92.011秒・用途未指定 | [動画](https://www.youtube.com/watch?v=mziZW_QQPJI) |
+| `bgm-rescuing-kylie` | Track 09: Rescuing Kylie（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長125.333秒・用途未指定 | [動画](https://www.youtube.com/watch?v=FB664mAqM28) |
+| `bgm-sheridan` | Track 11: Sheridan（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長121.173秒・用途未指定 | [動画](https://www.youtube.com/watch?v=ckEY6gEo_2A) |
+| `bgm-merc-ambush` | Track 13: Merc Ambush（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長55.168秒・用途未指定 | [動画](https://www.youtube.com/watch?v=1JM8Vrm8TX8) |
+| `bgm-undercover-operations` | Track 14: Undercover Operations（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長110.827秒・用途未指定 | [動画](https://www.youtube.com/watch?v=TxUlQ-EEK1o) |
+| `bgm-betrayal` | Track 16: Betrayal（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長201.301秒・用途未指定 | [動画](https://www.youtube.com/watch?v=uWpTUXuLG_g) |
+| `bgm-defeated` | Track 18: Defeated（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長26.958秒・用途未指定 | [動画](https://www.youtube.com/watch?v=4XJIibD6gr8) |
+| `bgm-crossing-the-war-zone` | Track 19: Crossing the War Zone（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長140.224秒・用途未指定 | [動画](https://www.youtube.com/watch?v=BROWgPMUPDg) |
+| `bgm-passenger` | Track 20: Passenger（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長64.939秒・用途未指定 | [動画](https://www.youtube.com/watch?v=icXcc3u4Po4) |
 
 同じ曲が日本語版・英語版で同じ位置に流れるかは未確認。曲データと再生ルールに版・言語の確認状況を持たせるが、BGMを言語だけで別曲へ変更する前提にはしない。
 
@@ -35,7 +46,7 @@
 
 最初に指定された[参照動画](https://www.youtube.com/watch?v=i352EcsT5Vg&list=PLCC2B142A186B59C9)と、共通の[再生リスト](https://www.youtube.com/playlist?list=PLCC2B142A186B59C9)を記録する。最初の動画は、追加指定によりTrack 02: Union Marchとして3-3の敵Scorp ASV搭乗後へ割り当てる。投稿者の説明では曲名は投稿者が付けた名称であり、公式曲名とは区別する。
 
-各曲の用途と、1-1の開始時および敵Sentry HAWCとの戦闘開始時に再生する条件は、ユーザー指定の確定情報とする。Scorpはユーザーの「scope領域」に対応する。正式曲名、投稿者、動画の尺、原作CDの番号、ループ位置、使用する版は未確認。曲の用途はユーザー指定による。Union Marchについてはブラウザで動画の題名と説明を確認した。その他の動画はページ内容を取得できず、曲の内容の独立した照合は未実施。3-3開始曲はユーザーが抽出・再生確認したMP3を`assets/audio/bgm/mission-3-3.mp3`へ配置済み。追加のUnion Marchも、ユーザーが抽出したMP3を`assets/audio/bgm/union-march.mp3`へ配置済み。1-1開始曲とUnion Marchも配置済み。Merc・Scorp領域曲と1-1戦闘曲は未取得。
+各曲の用途と、1-1の開始時および敵Sentry HAWCとの戦闘開始時に再生する条件は、ユーザー指定の確定情報とする。Scorpはユーザーの「scope領域」に対応する。正式曲名、投稿者、動画の尺、原作CDの番号、ループ位置、使用する版は未確認。曲の用途はユーザー指定による。Union Marchについてはブラウザで動画の題名と説明を確認した。その他の動画はページ内容を取得できず、曲の内容の独立した照合は未実施。3-3開始曲はユーザーが抽出・再生確認したMP3を`assets/audio/bgm/mission-3-3.mp3`へ配置済み。追加のUnion Marchも、ユーザーが抽出したMP3を`assets/audio/bgm/union-march.mp3`へ配置済み。1-1開始曲とUnion Marchも配置済み。1-1戦闘曲は同日中に配置した。Merc領域曲とScorp領域曲は2026-11-18に配置した。Scorp領域曲は、以前はユーザーが取得済みと指定していたが、当時このリポジトリには無かった。
 
 ## 動画・実機の観察表
 
@@ -56,8 +67,8 @@
 | --- | --- | --- | --- | --- |
 | 1-1・開始 | ミッション開始時 | `bgm-mission-1-1-start` | 未確認 | 曲と開始場面はユーザー指定。フェード・ループ・戦闘曲への切り替え方法は未確認 |
 | 1-1・敵Sentry HAWCとの戦闘 | Merc Sentry HAWCがプレイヤーを初めて視認したとき | `bgm-mission-1-1-sentry-combat` | 未確認 | 切替条件と音源を配置済み。フェード・ループ・終了条件は未確認 |
-| Merc領域 | 未確認 | `bgm-merc-region` | 未確認 | 曲の対応はユーザー指定。切り替え条件は未観察 |
-| Scorp領域 | 未確認 | `bgm-scorp-region` | 未確認 | 曲の対応はユーザー指定。3-3専用曲との関係は未確認 |
+| Merc領域 | 未確認 | `bgm-merc-region` | 未確認 | 曲の対応はユーザー指定。音源は配置済み。2026-11-18のメモでは、原作2-1とは別の仮任務のBGMにする。未実装。[仮の2-1](../missions/mission-2-1.md) |
+| Scorp領域 | 未確認 | `bgm-scorp-region` | 未確認 | 曲の対応はユーザー指定。音源は配置済みで、任務へは未接続。3-3専用曲との関係は未確認 |
 | 3-3・任務開始 | 任務の進行時間が3秒に達したとき | `bgm-mission-3-3` | 敵Scorp ASVへ操縦者として搭乗したときにUnion Marchへ切り替え | ユーザー指定。ファイル全体をループし、切り替え時は前曲を止めて新曲を先頭から再生 |
 | 3-3・敵Scorp ASV搭乗後 | 対象機`scorp-asv`へプレイヤーが操縦者として搭乗 | `bgm-union-march` | 任務の中断・終了で停止 | ユーザー指定の曲。ファイル全体をループし、再搭乗では再生位置を維持 |
 | 2-6・ミーゾンタワー防衛 | 出撃直後 | `bgm-fighting-on-the-tundra` | 任務の中断・終了で停止 | 2-6にもBGMを流すという追加指定により接続。開始直後からファイル全体をループする設定は実装上の仮設定。原作条件は未照合 |
@@ -112,7 +123,7 @@ yt-dlp --no-playlist -x --audio-format mp3 --audio-quality 0 \
 
 `--no-playlist`は指定された動画だけを対象にし、再生リスト全体の取得を防ぐ。`-x`で音声を抽出し、`--audio-format mp3`でMP3へ変換する。`--audio-quality 0`はMP3変換のVBR品質を指定する値で、元の動画より音質が良くなる指定ではない。
 
-作成するファイルは`merc-region.mp3`、`scorp-region.mp3`、`mission-3-3.mp3`。抽出後に内容と音量、曲頭・曲末を確認し、ループ位置やゲーム内の再生条件を決める。ファイルを配置することと、ミッション開始時に自動再生する処理の実装は別の作業とする。現在のファイル選択式BGM再生でも、作成したMP3を選択できる。
+作成するファイルは`merc-region.mp3`、`scorp-region.mp3`、`mission-3-3.mp3`。3つとも配置済み。抽出後に内容と音量、曲頭・曲末を確認し、ループ位置やゲーム内の再生条件を決める。ファイルを配置することと、ミッション開始時に自動再生する処理の実装は別の作業とする。現在のファイル選択式BGM再生でも、作成したMP3を選択できる。
 
 ## 配置済みの3-3音源（2026-10-24）
 
@@ -192,3 +203,53 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 - 検査値：MP3、48000Hz、ステレオ、110.485333秒、3,509,852バイト。FFmpegで全体のデコードに成功。
 - SHA-256：`b78f13830baec1b0720954debb738ece16a4f7526bb02d05f4e82c6152362956`
 - 検証ログ：`.artifacts/mission-4-2-bgm-elimination/`、音源差し替えの記録は`.artifacts/snow-maze-source-correction/`。再生APIの成功と聴感確認は分けて扱う。
+
+## 配置済みのMerc領域曲（2026-11-18）
+
+- 曲ID：`bgm-merc-region`
+- 配置先：[assets/audio/bgm/merc-region.mp3](../../assets/audio/bgm/merc-region.mp3)
+- 出典：[ユーザー指定動画](https://www.youtube.com/watch?v=8I_7gl0ar3M&list=PLCC2B142A186B59C9&index=4)。再生リストは付けず、この動画1本を補助スクリプトでMP3にした
+- 検査値：MP3、48kHz、ステレオ、全長85.333秒、2,660,060バイト。FFmpegで全体のデコードに成功
+- SHA-256：`0c5f3d6eaa8186133110e250f4702df46476d54858c1a13e4f3863b8774907e8`
+- 再生条件：未接続。2026-11-18のユーザー指定では、原作2-1とは別の仮任務で、Merc Tactical Defense HAWCにキリーと乗り込むだけの場面のBGMにする。ユーザーはこの曲をMercの戦闘曲と呼んだ。正式曲名、原作のループ位置、開始の待ち時間は未確認。[メモ](../missions/mission-2-1.md)
+- 検証ログ：`.artifacts/merc-region-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない
+
+## 配置済みのScorp領域曲（2026-11-18）
+
+- 曲ID：`bgm-scorp-region`
+- 配置先：[assets/audio/bgm/scorp-region.mp3](../../assets/audio/bgm/scorp-region.mp3)
+- 出典：[ユーザー指定動画](https://www.youtube.com/watch?v=TYoTK2whgvw&list=PLCC2B142A186B59C9&index=5)。再生リストは付けず、この動画1本を補助スクリプトでMP3にした
+- 投稿動画の題は「Track 06: Credits」。既存の `bgm-credits`（別出典の Credits）とは別ファイルのまま置く。ユーザー指定の用途は Scorp 領域のテーマであり、題名だけで曲の割り当ては変えない
+- 検査値：MP3、48kHz、ステレオ、全長134.613秒、4,277,684バイト。FFmpegで全体のデコードに成功
+- SHA-256：`077a15c1dc6ea257fc94caee6bf0a2f36c8771fced991507de9da55129c17353`
+- 再生条件：未接続。Scorp領域で鳴らす場面、正式曲名、原作のループ位置は未確認
+- 検証ログ：`.artifacts/scorp-region-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない
+
+## 未配置曲の前半（2026-11-18）
+
+ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。任務へは未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+
+| 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
+| --- | --- | --- | ---: | --- |
+| `bgm-barren-landscape` | [barren-landscape-ZJb2W-SxDAo.mp3](../../assets/audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3) | 80.064秒 | 2,599,436 | `472e85e05421bc66af40eab6abd503c74295aab80c6c01c8303ea2fcc6054c70` |
+| `bgm-infiltrating-darken-territory` | [infiltrating-darken-territory-j_oylgkm3Fo.mp3](../../assets/audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3) | 118.485秒 | 3,862,604 | `63d2c50a68d47aa1f8f453f298881af8a3fc731d4fa145891b809ddc57ceaac1` |
+| `bgm-sneaking-in` | [sneaking-in-mziZW_QQPJI.mp3](../../assets/audio/bgm/sneaking-in-mziZW_QQPJI.mp3) | 92.011秒 | 2,791,244 | `5a1160b870d2b82730376eb0d237220b5c6f41085541fa098987fffe55861053` |
+| `bgm-rescuing-kylie` | [rescuing-kylie-FB664mAqM28.mp3](../../assets/audio/bgm/rescuing-kylie-FB664mAqM28.mp3) | 125.333秒 | 3,817,700 | `9ed1219f858efc420d51a2fbec8586f8953231e817f3113f6c87ef18c30d8d7b` |
+| `bgm-sheridan` | [sheridan-ckEY6gEo_2A.mp3](../../assets/audio/bgm/sheridan-ckEY6gEo_2A.mp3) | 121.173秒 | 3,945,572 | `b7e77b3ad58237bb293b0a6df830daab37ae47f5855fcb6cdc872965d25620cd` |
+| `bgm-merc-ambush` | [merc-ambush-1JM8Vrm8TX8.mp3](../../assets/audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3) | 55.168秒 | 1,794,548 | `22fa2de91fb40afdff15191f28ea6d54a6afd54a229a36aaccec6edd1ad5b52c` |
+
+いずれも MP3、48kHz、ステレオ。FFmpegで全体のデコードに成功。残りの5曲は [未配置曲の残り](#未配置曲の残り2026-11-18) に置いた。
+
+## 未配置曲の残り（2026-11-18）
+
+ユーザー指定により、同じ再生リストで残っていた5曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。任務へは未接続。検査ログは `.artifacts/bgm-rest-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+
+| 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
+| --- | --- | --- | ---: | --- |
+| `bgm-undercover-operations` | [undercover-operations-TxUlQ-EEK1o.mp3](../../assets/audio/bgm/undercover-operations-TxUlQ-EEK1o.mp3) | 110.827秒 | 3,375,404 | `3eae56cc0a80f6fb087a6d6e9f3515fff466fa8298a9ce3b76c465dbf997a0de` |
+| `bgm-betrayal` | [betrayal-uWpTUXuLG_g.mp3](../../assets/audio/bgm/betrayal-uWpTUXuLG_g.mp3) | 201.301秒 | 6,054,860 | `fb90e4d83d5cc4d4bc2624b8c750d264a84d6487347bb2c25d4a769c5a39578b` |
+| `bgm-defeated` | [defeated-4XJIibD6gr8.mp3](../../assets/audio/bgm/defeated-4XJIibD6gr8.mp3) | 26.958秒 | 753,176 | `bd3608d892b16bf99b1e66ea9df4aa14c2667b9ad35910b749efe23c9adc0954` |
+| `bgm-crossing-the-war-zone` | [crossing-the-war-zone-BROWgPMUPDg.mp3](../../assets/audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3) | 140.224秒 | 4,271,276 | `60f15bf50668924a543edc039261aec0dc23084d1ea8f91d932973bbc33e65bb` |
+| `bgm-passenger` | [passenger-icXcc3u4Po4.mp3](../../assets/audio/bgm/passenger-icXcc3u4Po4.mp3) | 64.939秒 | 1,583,972 | `26c07037573021eb1dc25e92d21325a805b60199346c86fa56dca93f90f9bd71` |
+
+いずれも MP3、48kHz、ステレオ。FFmpegで全体のデコードに成功。この再生リストで未配置だった曲はここまで。

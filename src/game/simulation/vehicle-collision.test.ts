@@ -237,11 +237,14 @@ test('4-3 Union ASV follows through the east bridge instead of stopping against 
 });
 test('hostile HAWC crosses the lowered 4-3 bridge to pursue its target',async()=>{
  const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts'),mission=structuredClone(MISSION_4_3);
- mission.units=[{id:'own',kind:'union-tactical',x:-100,z:480,pilot:true},{id:'enemy',kind:'darken-sentry',x:-130,z:780,pilot:true}];mission.startMountedUnitId='own';mission.assignedUnitId='own';mission.player={x:-100,z:480};mission.companions=[];mission.garrison=[];mission.assaults=[{unitId:'enemy',targetId:'own',startAt:0}];mission.base=undefined;mission.minefields=[];mission.rocks=[];mission.terrain.cliffs=[];mission.terrain.peaks=[];mission.objectives=[];mission.completionEnabled=false;
+ const river=mission.terrain.rivers!.find(r=>r.bridgeId==='war-north-bridge')!,bridge=riverFrameAtZ(river,river.bridgeZ),normal={x:bridge.tz,z:-bridge.tx};
+ const spawn=Math.sign((mission.player.x-bridge.x)*normal.x+(mission.player.z-bridge.z)*normal.z),at=(side:number,distance:number)=>({x:bridge.x+normal.x*spawn*side*distance,z:bridge.z+normal.z*spawn*side*distance});
+ const own=at(-1,85),enemyStart=at(1,85);
+ mission.units=[{id:'own',kind:'union-tactical',...own,pilot:true},{id:'enemy',kind:'darken-sentry',...enemyStart,pilot:true}];mission.startMountedUnitId='own';mission.assignedUnitId='own';mission.player=own;mission.companions=[];mission.garrison=[];mission.assaults=[{unitId:'enemy',targetId:'own',startAt:0}];mission.base=undefined;mission.minefields=[];mission.rocks=[];mission.terrain.cliffs=[];mission.terrain.peaks=[];mission.objectives=[];mission.completionEnabled=false;
  const s=new Simulation('Easy',mission),enemy=s.units[1]!;s.raisedBridges.delete('war-north-bridge');enemy.cooldown=9999;
- const river=mission.terrain.rivers!.find(r=>r.bridgeId==='war-north-bridge')!,bridge=riverFrameAtZ(river,river.bridgeZ);let crossed=false;
+ let crossed=false;
  for(let i=0;i<320;i++){s.tick(.05,idle);if(riverDistance(river,enemy.x,enemy.z)<river.width/2){const along=(enemy.x-bridge.x)*bridge.tx+(enemy.z-bridge.z)*bridge.tz;if(Math.abs(along)<river.bridgeWidth/2+5)crossed=true;}}
- assert.ok(crossed);assert.ok(enemy.z<620,`${enemy.x}, ${enemy.z}`);
+ assert.ok(crossed);assert.ok((enemy.x-bridge.x)*normal.x*spawn+(enemy.z-bridge.z)*normal.z*spawn<0,`${enemy.x}, ${enemy.z}`);
 });
 test('hostile HAWC routes around a building instead of driving into its wall',async()=>{
  const {DEFAULT_MISSION}=await import('../content/missions/index.ts'),mission=structuredClone(DEFAULT_MISSION);

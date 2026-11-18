@@ -520,16 +520,19 @@ test('2-6 plays Tundra once at launch, loops, pauses, resumes and starts fresh o
 
 test('4-3 starts Barren Landscape and switches once to Merc region after the north bridge is crossed',async()=>{
  const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts');const {Simulation}=await import('../simulation/simulation.ts');
+ const {riverFrameAtZ}=await import('../content/missions/river.ts');
  const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
  const sim=new Simulation('Easy',def);
+ const river=def.terrain.rivers!.find(r=>r.bridgeId==='war-north-bridge')!,frame=riverFrameAtZ(river,river.bridgeZ),normal={x:frame.tz,z:-frame.tx};
+ const spawn=Math.sign((def.player.x-frame.x)*normal.x+(def.player.z-frame.z)*normal.z),side=(sign:number,distance:number)=>({x:frame.x+normal.x*spawn*sign*distance,z:frame.z+normal.z*spawn*sign*distance});
  await musicFixture(async(audio,tracks)=>{
   const update=(paused=false)=>audio.updateMissionMusic(sim.time,paused,sim.missionMusicUnits,sim.missionMusicAssaultReady,sim.ionAnnouncementAt,sim.missionMusicBridgeCrossed);
   audio.beginMissionMusic(MISSION_4_3);update();await Promise.resolve();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'barren-landscape.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].paused,false);assert.equal(tracks[0].volume,audio.settings.music);
-  sim.mounted!.x=-50;sim.mounted!.z=650;update();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'barren-landscape.mp3');
-  sim.mounted!.z=600;update(true);assert.equal(tracks.length,1);assert.equal(tracks[0].paused,true);
+  Object.assign(sim.mounted!,side(1,river.width/2+20));update();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'barren-landscape.mp3');
+  Object.assign(sim.mounted!,side(-1,river.width/2+20));update(true);assert.equal(tracks.length,1);assert.equal(tracks[0].paused,true);
   update();await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[0].paused,true);assert.equal(tracks[1].src,'merc-region.mp3');assert.equal(tracks[1].loop,true);assert.equal(tracks[1].paused,false);
-  tracks[1].currentTime=5;sim.mounted!.z=400;update();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,5);assert.equal(sim.missionMusicBridgeCrossed,false);
-  sim.mounted!.x=200;sim.mounted!.z=560;audio.beginMissionMusic(MISSION_4_3);update();await Promise.resolve();assert.equal(tracks.at(-1).src,'barren-landscape.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(sim.missionMusicBridgeCrossed,false);
+  tracks[1].currentTime=5;Object.assign(sim.mounted!,{x:frame.x+frame.tx*80,z:frame.z+frame.tz*80});update();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,5);assert.equal(sim.missionMusicBridgeCrossed,false);
+  Object.assign(sim.mounted!,side(1,river.width/2+20));audio.beginMissionMusic(MISSION_4_3);update();await Promise.resolve();assert.equal(tracks.at(-1).src,'barren-landscape.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(sim.missionMusicBridgeCrossed,false);
  });
 });
 

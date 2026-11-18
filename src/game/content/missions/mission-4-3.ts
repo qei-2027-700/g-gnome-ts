@@ -1,11 +1,12 @@
 import type {MissionDefinition} from './types.ts';
-const originalMap=new URL('../../../../assets/ui/mission-4-3-map.png',import.meta.url).href;
+import {MAP_4_3_POINTS,MAP_4_3_SOURCE,MAP_4_3_TERRAIN,map43PixelToWorld as p} from './mission-4-3-map.ts';
+const originalMap=new URL('../../../../assets/map/4-3/4-3,ap.png',import.meta.url).href;
 
 // The route, force size, IFF codes and supply values are provisional; see docs/missions/mission-4-3.md.
 export const MISSION_4_3:MissionDefinition={
  id:'4-3',title:'War Zone',playerFaction:'union',initialIff:'2620',factionCodes:{union:'2620',merc:'6707',darken:'5142'},
  bgm:{start:{trackId:'bgm-barren-landscape',delay:0},afterBridge:{bridgeId:'war-north-bridge',trackId:'bgm-merc-region'}},
- briefingPresentation:{mapPreview:{src:originalMap,width:134,height:132,viewBox:'0 0 134 132',label:{ja:'原作4-3の任務地図',en:'Original Mission 4-3 map'}},entries:[
+ briefingPresentation:{mapPreview:{src:originalMap,width:786,height:738,viewBox:`${MAP_4_3_SOURCE.x} ${MAP_4_3_SOURCE.y} ${MAP_4_3_SOURCE.width} ${MAP_4_3_SOURCE.height}`,label:{ja:'原作4-3の任務地図',en:'Original Mission 4-3 map'},mapProjection:{pixelOrigin:{x:220,y:100},worldOrigin:MAP_4_3_POINTS.start,pixelPerWorldX:{x:1/3,y:0},pixelPerWorldZ:{x:0,y:-1/3}}},entries:[
   {label:{ja:'戦域を横断してWP3へ',en:'Cross the war zone to WP3'},detail:{ja:'出撃位置は地図の上側。まず橋制御施設で橋を下ろす。',en:'Start near the top of the map. Lower the first bridge at its control building.'}},
   {label:{ja:'Union HAWCと航空支援を利用',en:'Use the Union HAWC and one airstrike'},detail:{ja:'航空支援は搭乗中にVで1回呼び出す。操作と効果は試作設定。',en:'Press V while mounted to call support once. The control and effect are provisional.'}},
   {label:{ja:'WP1で弾薬を補給',en:'Ammunition supply at WP1'},detail:{ja:'右側のDarken武器庫で弾薬を補給する。',en:'Replenish ammunition at the Darken weapons depot on the right.'}},
@@ -17,19 +18,19 @@ export const MISSION_4_3:MissionDefinition={
  startHint:{ja:'KylieとThaneが近くにいる。襲撃を退け、橋制御施設で橋を下ろす。Vで航空支援を1回呼べる。',en:'Kylie and Thane are nearby. Defeat the attacker and lower the bridge at its control building. Press V for one airstrike.'},
  success:{ja:'戦域の端へ到達した。',en:'Reached the far edge of the war zone.'},
  radio:{ja:'交戦を避けながらWP3へ向かえ。',en:'Proceed to WP3 through the contested area.'},
- player:{x:0,z:860},initialYaw:Math.PI,assignedUnitId:'union-player',startMountedUnitId:'union-player',
+ player:MAP_4_3_POINTS.start,initialYaw:Math.PI,assignedUnitId:'union-player',startMountedUnitId:'union-player',
  units:[
-  {id:'union-player',kind:'union-tactical',x:0,z:860,yaw:Math.PI,pilot:true},
-  {id:'kylie-asv',kind:'union-asv',x:-35,z:875,yaw:Math.PI,personId:'kylie',pilot:true},
-  {id:'thane-sentry',kind:'union-sentry',x:35,z:875,yaw:Math.PI,personId:'thane',pilot:true},
-  {id:'union-support',kind:'union-aip',x:0,z:950,pilot:false},
-  {id:'darken-opening-sentry',kind:'darken-sentry',x:160,z:780,yaw:-Math.PI/2,pilot:true},
-  {id:'merc-tactical',kind:'merc-tactical',x:-70,z:525,yaw:Math.PI/2,pilot:true},
-  {id:'darken-aip',kind:'darken-aip',x:40,z:525,yaw:-Math.PI/2,pilot:true},
-  {id:'darken-asv',kind:'darken-asv',x:95,z:495,yaw:-Math.PI/2,pilot:true},
-  {id:'merc-cruiser',kind:'merc-cruiser',x:85,z:455,yaw:Math.PI/2,pilot:true},
-  {id:'darken-tactical',kind:'darken-tactical',x:230,z:420,yaw:-Math.PI/2,pilot:true},
-  {id:'depot-unoccupied',kind:'darken-sentry',x:292,z:475,pilot:false},
+  {id:'union-player',kind:'union-tactical',...MAP_4_3_POINTS.start,yaw:Math.PI,pilot:true},
+  {id:'kylie-asv',kind:'union-asv',...p(206,96),yaw:Math.PI,personId:'kylie',pilot:true},
+  {id:'thane-sentry',kind:'union-sentry',...p(234,96),yaw:Math.PI,personId:'thane',pilot:true},
+  {id:'union-support',kind:'union-aip',...p(220,64),pilot:false},
+  {id:'darken-opening-sentry',kind:'darken-sentry',...p(275,140),yaw:-Math.PI/2,pilot:true},
+  {id:'merc-tactical',kind:'merc-tactical',...p(215,184),yaw:Math.PI/2,pilot:true},
+  {id:'darken-aip',kind:'darken-aip',...p(251,185),yaw:-Math.PI/2,pilot:true},
+  {id:'darken-asv',kind:'darken-asv',...p(275,184),yaw:-Math.PI/2,pilot:true},
+  {id:'merc-cruiser',kind:'merc-cruiser',...p(268,207),yaw:Math.PI/2,pilot:true},
+  {id:'darken-tactical',kind:'darken-tactical',...p(331,227),yaw:-Math.PI/2,pilot:true},
+  {id:'depot-unoccupied',kind:'darken-sentry',...p(321,248),pilot:false},
  ],
  garrison:['union-support'],
  companions:[{personId:'kylie',unitId:'kylie-asv',name:{ja:'キリー',en:'Kylie'},key:'F2'},{personId:'thane',unitId:'thane-sentry',name:{ja:'ターン',en:'Thane'},key:'F3'}],
@@ -40,25 +41,18 @@ export const MISSION_4_3:MissionDefinition={
  ],
  airSupport:{unitId:'union-support'},
  supplies:[{waypointId:1,kind:'ammunition'},{waypointId:2,kind:'shield-doubler',duration:60}],
- waypoints:[{id:1,x:255,z:470,radius:25},{id:2,x:-290,z:320,radius:25},{id:3,x:265,z:-175,radius:35}],
+ waypoints:[{id:1,...MAP_4_3_POINTS.waypoint1,radius:25},{id:2,...MAP_4_3_POINTS.waypoint2,radius:25},{id:3,...MAP_4_3_POINTS.waypoint3,radius:35}],
  objectives:[{id:'cross-war-zone',type:'reach',waypointId:3,label:{ja:'戦域を横断してWP3へ到達',en:'Cross the war zone and reach WP3'}}],
  initialRaisedBridges:['war-north-bridge'],
- minefields:[{id:'east-minefield',x:110,z:480,width:70,depth:70,triggerRadius:7,warningRange:90,mines:[{id:'east-mine-1',x:85,z:490},{id:'east-mine-2',x:120,z:465},{id:'east-mine-3',x:135,z:505}]}],
- base:{name:'War Zone facilities',faction:'darken',x:0,z:530,width:700,depth:600,buildings:[
-  {id:'north-bridge-control',kind:'bridge-control',bridgeId:'war-north-bridge',name:'North Bridge Control',x:-40,z:725,width:24,depth:20,height:8,iff:'2620',boardable:true},
-  {id:'minefield-control',kind:'mine-control',name:'Minefield Control',x:75,z:485,width:22,depth:18,height:7},
-  {id:'wp1-depot',kind:'command',name:'Darken Weapons Depot',x:265,z:480,width:22,depth:18,height:7,boardable:false},
-  {id:'wp2-depot',kind:'command',name:'WP2 Shield Doubler Depot',x:-320,z:335,width:22,depth:18,height:7,boardable:false},
+ minefields:[{id:'east-minefield',...p(273,192),width:60,depth:60,triggerRadius:7,warningRange:90,mines:[{id:'east-mine-1',...p(265,186)},{id:'east-mine-2',...p(278,190)},{id:'east-mine-3',...p(272,200)}]}],
+ base:{name:'War Zone facilities',faction:'darken',...p(200,215),width:1000,depth:850,buildings:[
+  {id:'north-bridge-control',kind:'bridge-control',bridgeId:'war-north-bridge',name:'North Bridge Control',...p(226,137),width:24,depth:20,height:8,iff:'2620',boardable:true},
+  {id:'minefield-control',kind:'mine-control',name:'Minefield Control',...p(310,196),width:22,depth:18,height:7},
+  {id:'wp1-depot',kind:'command',name:'Darken Weapons Depot',...p(316,244),width:22,depth:18,height:7,boardable:false},
+  {id:'wp2-depot',kind:'command',name:'WP2 Shield Doubler Depot',...p(68,236),width:22,depth:18,height:7,boardable:false},
  ]},
- terrain:{biome:'volcanic',skyPalette:'amber',ridgeStyle:'rocky',weather:'clear',halfWidth:430,minZ:-300,maxZ:1000,ridgeHeight:50,ridgeVariation:25,seed:43,
-  rivers:[
-   {bridgeId:'war-north-bridge',x:-50,z:650,width:30,length:250,bridgeZ:650,bridgeWidth:30,surface:'lava',path:[{x:-175,z:680},{x:75,z:620}]},
-   {bridgeId:'war-east-bridge',x:165,z:420,width:30,length:545,bridgeZ:420,bridgeWidth:30,surface:'lava',path:[{x:75,z:620},{x:150,z:540},{x:180,z:300},{x:160,z:75}]},
-   {bridgeId:'war-south-bridge',x:10,z:100,width:30,length:300,bridgeZ:100,bridgeWidth:30,surface:'lava',path:[{x:-140,z:125},{x:160,z:75}]},
-   {bridgeId:'war-west-bridge',x:-230,z:320,width:30,length:555,bridgeZ:320,bridgeWidth:30,surface:'lava',path:[{x:-175,z:680},{x:-235,z:450},{x:-225,z:190},{x:-140,z:125}]},
-  ],
-  peaks:[{x:0,z:410,width:120,depth:180,height:145},{x:-345,z:480,width:125,depth:180,height:120},{x:340,z:470,width:80,depth:170,height:135},{x:-350,z:40,width:140,depth:180,height:145},{x:90,z:-80,width:180,depth:120,height:110}],
-  cliffs:[{id:'war-center-north',x:0,z:455,width:95,depth:75,height:120},{id:'war-center-south',x:25,z:235,width:90,depth:75,height:110},{id:'war-west-north',x:-350,z:620,width:95,depth:100,height:120},{id:'war-east-center',x:350,z:440,width:100,depth:100,height:135},{id:'war-west-south',x:-345,z:60,width:100,depth:105,height:140}]},
- rocks:[{x:-160,z:690,r:12},{x:165,z:380,r:15},{x:-145,z:-80,r:14}],
+ terrain:{biome:'volcanic',skyPalette:'amber',ridgeStyle:'rocky',weather:'clear',halfWidth:600,minZ:-160,maxZ:1050,ridgeHeight:50,ridgeVariation:25,seed:43,
+  ...MAP_4_3_TERRAIN},
+ rocks:[{...p(146,181),r:12},{...p(313,200),r:15},{...p(147,357),r:14}],
  tuning:{Easy:{interval:2.2},Medium:{interval:1.6},Hard:{interval:1.1}},
 };

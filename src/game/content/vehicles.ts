@@ -635,7 +635,7 @@ export const VEHICLES={...BASE_VEHICLES,
  'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1.05,h:1.8,d:1.05,y:.4,z:.05},cockpit:{w:.58,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:1.5,y:.7,z:.35},legX:1.5,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:1.15,h:3.5,d:3.4,y:1.75,z:.85}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
- 'scorp-aip':{...BASE_VEHICLES['merc-aip'],name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
+ 'scorp-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
  'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
   shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.5,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-.95,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.75,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
 } as const satisfies Record<string,VehicleDefinition>;

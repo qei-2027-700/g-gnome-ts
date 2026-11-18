@@ -6,6 +6,15 @@ import {MISSION_3_3} from './mission-3-3.ts';
 import {MISSION_3_2} from './mission-3-2.ts';
 import {MISSION_3_4} from './mission-3-4.ts';
 import {MISSION_3_5} from './mission-3-5.ts';
+import {MISSION_2_2} from './mission-2-2.ts';
+
+test('2-2 reinforcement requires an existing defeated unit and bridge',()=>{
+ const mission=structuredClone(MISSION_2_2);
+ mission.assaults=[{...mission.assaults![0]!,afterEliminateUnitId:'missing-sentry',stopWhenBridgeRaisedId:'missing-bridge'}];
+ const errors=validateMissions([mission]).join('\n');
+ assert.ok(errors.includes('missing-sentry'));
+ assert.ok(errors.includes('missing-bridge'));
+});
 
 test('ion strike requires valid targets, radio cues and positive timing',()=>{
  const mission=structuredClone(MISSION_3_5);

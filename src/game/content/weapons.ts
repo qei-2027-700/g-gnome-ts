@@ -7,7 +7,7 @@ export const LASERS = {
   TAR12:{range:500.5,minRange:50.05,recharge:1,movingRechargeFactor:.5,interval:1,energy:0,damage:10,speed:LASER_FLIGHT_SPEED},
   // Darken Tactical Defense HAWC card and W1 weapon table. Recharge and interval are provisional; visible bolt speed follows the other lasers.
   HOMP11:{range:635,minRange:62.5,recharge:1,movingRechargeFactor:.5,interval:.25,energy:3,damage:10,speed:LASER_FLIGHT_SPEED},
-  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:180},
+  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:90},
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
   RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:12,speed:LASER_FLIGHT_SPEED},
   // Manual p.57 lists 800 m range and 1000 m/s; current requested tuning widens range/hit width and slows flight.

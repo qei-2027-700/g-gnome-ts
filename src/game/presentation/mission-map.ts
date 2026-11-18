@@ -17,6 +17,7 @@ export function missionMapObjectives(sim:Simulation,locale:'ja'|'en'){
  if(sim.mission.completionEnabled===false)return `<div class="mission-objective-list"><p>${escapeMissionText(sim.mission.briefing[locale])}</p></div>`;
  if(sim.mission.briefingPresentation?.mapPreview){
   const entries=sim.mission.briefingPresentation.entries;
+  if(entries.length===sim.objectiveStates.length)return missionObjectiveList(sim.objectiveStates.map((state,i)=>({label:entries[i]!.label[locale],done:state.done})));
   return missionObjectiveList(entries.map((entry,i)=>({label:entry.label[locale],done:i===0||i===4?sim.reachedWaypoints.has(3):i===1?sim.airSupportUsed>0:sim.reachedWaypoints.has(i-1)})));
  }
  if(!sim.objectiveStates.length)return `<div class="mission-objective-list"><p>${escapeMissionText(sim.mission.briefing[locale])}</p></div>`;
@@ -40,7 +41,7 @@ function mapPreview(sim:Simulation){
 }
 function missionMapLegend(sim:Simulation,locale:'ja'|'en'){
  if(sim.mission.id==='3-4')return locale==='ja'?'丸囲みX：現在地　青：川と橋　緑：ウェイポイント　黄：最終地点':'Circled X: You · Blue: River and bridge · Green: Waypoints · Yellow: Endpoint';
- if(sim.mission.briefingPresentation?.mapPreview)return locale==='ja'?'X：現在地　青：橋　緑：ウェイポイント　赤：マグマ':'X: You · Blue: Bridges · Green: Waypoints · Red: Lava';
+ if(sim.mission.briefingPresentation?.mapPreview)return locale==='ja'?'X：現在地　地形と記号は原作画像を表示':'X: You · Terrain and symbols use the reference image';
  return locale==='ja'?'X：現在地　数字：ウェイポイント　赤：敵　青：無人機　緑：味方':'X: You · Numbers: Waypoints · Red: Enemy · Blue: Empty · Green: Friendly';
 }
 export function drawMissionMap(sim:Simulation,c:HTMLCanvasElement){

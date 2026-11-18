@@ -543,7 +543,9 @@ export class Simulation {
     return unit.kind==='scorp-asv'&&unit.lured&&!this.mounted&&!this.passenger&&this.isHostile(unit)&&!!this.mission.lures?.some(rule=>rule.unitId===unit.id&&rule.weapon==='VISOM'&&rule.onFootResponse==='ram-player');
   }
   private waitingForLure(unit:Unit){return !unit.lured&&!!this.mission.lures?.some(rule=>rule.unitId===unit.id);}
-  private assaultBegun(assault:{startAt:number;engageRange?:number;targetId:string},unit:Unit){
+  private assaultBegun(assault:{startAt:number;engageRange?:number;targetId:string;afterEliminateUnitId?:string;stopWhenBridgeRaisedId?:string},unit:Unit){
+    if(assault.stopWhenBridgeRaisedId&&this.raisedBridges.has(assault.stopWhenBridgeRaisedId))return false;
+    if(assault.afterEliminateUnitId&&!this.eliminated(assault.afterEliminateUnitId))return false;
     if(this.time<assault.startAt)return false;
     const range=assault.engageRange;if(range===undefined)return true;
     return distance(this.player,unit)<=range||this.selectionTargets.some(target=>target.id===assault.targetId&&distance(this.player,target)<=range)||this.combatTargets.some(target=>target!==unit&&target.alive&&target.iff!==unit.iff&&(!isVehicle(target)||target.pilot)&&distance(unit,target)<unit.spec.ai.detection&&this.attackVisible(unit,target));
@@ -1259,6 +1261,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(unit===u)continue;if(!unit.pilot){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       const wasAlert=unit.alert;
       const assault=this.mission.assaults?.find(a=>a.unitId===unit.id);
+      if(assault?.stopWhenBridgeRaisedId&&this.raisedBridges.has(assault.stopWhenBridgeRaisedId)){unit.alert=false;unit.speed=0;this.aiFocus.delete(unit.id);continue;}
+      if(assault?.afterEliminateUnitId&&!this.eliminated(assault.afterEliminateUnitId)){this.coastVehicle(unit,dt);continue;}
       if(assault&&!this.assaultBegun(assault,unit)&&!this.activeAggressor(unit)){this.coastVehicle(unit,dt);continue;}
       const assaultTarget=assault?this.selectionTargets.find(t=>t.id===assault.targetId&&t.alive&&t.iff!==unit.iff):undefined;
       if(assaultTarget)unit.alert=true;

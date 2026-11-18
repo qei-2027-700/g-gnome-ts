@@ -1,8 +1,9 @@
 import type {BriefingPresentation} from './types.ts';
 const reference=new URL('../../../../assets/ui/mission-console.png',import.meta.url).href;
+const originalMap=new URL('../../../../assets/map/3-3/3-3map.png',import.meta.url).href;
 export const BRIEFING_3_3:BriefingPresentation={
  title:'Raid on Ur-Ulit',
- mapPreview:{src:reference,width:1442,height:1034,viewBox:'305 102 447 420',label:{ja:'Ur-Ulit terrain preview',en:'Ur-Ulit terrain preview'}},
+ mapPreview:{src:originalMap,width:724,height:671,viewBox:'24 32 356 357',label:{ja:'原作3-3の任務地図',en:'Original mission 3-3 map'},mapProjection:{pixelOrigin:{x:284,y:271},worldOrigin:{x:0,z:0},pixelPerWorldX:{x:.21,y:0},pixelPerWorldZ:{x:0,y:-.21}}},
  vehiclePreview:{src:reference,width:1442,height:1034,viewBox:'768 102 389 420',label:{ja:'Armored Support Vehicle',en:'Armored Support Vehicle'}},
  entries:[
   {

@@ -1,4 +1,4 @@
-import {MACHINE_GUNS,weaponMountCount} from '../content/weapons.ts';
+import {LASERS,MACHINE_GUNS,weaponMountCount} from '../content/weapons.ts';
 import {TOWER_MINIMUM_ATTACK_RANGE} from '../content/vehicles.ts';
 import {test} from 'node:test';import assert from 'node:assert/strict';import {Simulation,makeUnit,distance,type Input} from './simulation.ts';import {MISSION_3_3} from '../content/missions/mission-3-3.ts';import {crossesBuilding,buildingContact} from './battlefield.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};const step=(s:Simulation,n:number,input=idle)=>{for(let i=0;i<n;i++)s.tick(1/60,input);};
@@ -13,13 +13,46 @@ test('Scorp rocket tower notices a target within 240 m across missions',()=>{
   assert.equal(sim.events.some(event=>event.type==='enemy-detected'&&event.unit===tower),range<240);
  }
 });
-test('3-3 base lies beyond red minefield, with two functional towers and three empty Scorp HAWCs',()=>{const s=new Simulation('Easy',MISSION_3_3);assert.ok(s.mission.base!.x<s.mission.minefields![0].x-s.mission.minefields![0].width/2);assert.equal(s.units.filter(u=>u.kind==='scorp-rocket-tower').length,2);assert.deepEqual(s.mission.base!.buildings.map(b=>b.kind),['command','mine-control']);assert.ok(s.units.filter(u=>u.kind==='scorp-rocket-tower').every(u=>u.x>Math.max(...s.mission.base!.buildings.map(b=>b.x))));assert.equal(s.units.filter(u=>u.kind==='scorp-sentry'&&!u.pilot).length,1);assert.equal(s.units.filter(u=>u.kind==='scorp-tactical'&&!u.pilot).length,2);assert.ok(s.mines.length>70);assert.equal(new Simulation().mines.length,0);assert.equal(new Simulation().mission.base,undefined);
- const tower=s.units.find(u=>u.spec.category==='tower')!;s.units=[s.mounted!,tower];s.mounted!.x=tower.x;s.mounted!.z=tower.z-210;const at={x:tower.x,z:tower.z};step(s,180);assert.deepEqual({x:tower.x,z:tower.z},at);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower));s.damage(tower,9999);assert.equal(s.soldiers.length,1);assert.equal(s.soldiers[0].sourceVehicle,tower.id);assert.equal(s.soldiers[0].faction,'scorp');
+test('3-3 base lies beyond red minefield, with two towers and three empty Scorp HAWCs',()=>{const s=new Simulation('Easy',MISSION_3_3);assert.ok(s.mission.base!.x<s.mission.minefields![0].x-s.mission.minefields![0].width/2);assert.equal(s.units.filter(u=>u.kind==='scorp-rocket-tower').length,2);assert.deepEqual(s.mission.base!.buildings.map(b=>b.kind),['command','mine-control']);assert.ok(s.units.filter(u=>u.kind==='scorp-rocket-tower').every(u=>u.x>Math.max(...s.mission.base!.buildings.map(b=>b.x))));assert.equal(s.units.filter(u=>u.kind==='scorp-sentry'&&!u.pilot).length,1);assert.equal(s.units.filter(u=>u.kind==='scorp-tactical'&&!u.pilot).length,2);assert.ok(s.mines.length>70);assert.equal(new Simulation().mines.length,0);assert.equal(new Simulation().mission.base,undefined);
+ const tower=s.units.find(u=>u.id==='rocket-tower-west')!;s.units=[s.mounted!,tower];s.mines=[];s.mounted!.x=tower.x+90;s.mounted!.z=tower.z;const at={x:tower.x,z:tower.z};step(s,180);assert.deepEqual({x:tower.x,z:tower.z},at);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===tower));s.damage(tower,9999);assert.equal(s.soldiers.length,1);assert.equal(s.soldiers[0].sourceVehicle,tower.id);assert.equal(s.soldiers[0].faction,'scorp');
+});
+test('3-3 southwest waypoint marks the base and the right tower has a timed boarding chance',async()=>{
+ const {projectMapImagePoint}=await import('../presentation/mission-map.ts');
+ const s=new Simulation('Easy',MISSION_3_3),base=s.mission.base!,left=s.units.find(u=>u.id==='rocket-tower-west')!,right=s.units.find(u=>u.id==='rocket-tower-east')!;
+ const map=s.mission.briefingPresentation!.mapPreview!,start=projectMapImagePoint(map,s.player)!,waypoint=projectMapImagePoint(map,s.mission.waypoints[0])!;
+ assert.ok(Math.abs(start.x-(284-24)/356)<.005&&Math.abs(start.y-(271-32)/357)<.005);
+ assert.ok(Math.abs(waypoint.x-(93-24)/356)<.01&&Math.abs(waypoint.y-(300-32)/357)<.01);
+ assert.deepEqual({x:s.mission.waypoints[0].x,z:s.mission.waypoints[0].z},{x:base.x,z:base.z});
+ const mapPoint=(x:number,y:number)=>({x:(x-284)/.21,z:(271-y)/.21});
+ const bright=mapPoint(269,267),dark=mapPoint(255,265);
+ assert.equal(s.mission.terrain.cliffs!.some(c=>Math.abs(bright.x-c.x)<c.width/2&&Math.abs(bright.z-c.z)<c.depth/2),true);
+ assert.equal(s.mission.terrain.cliffs!.some(c=>Math.abs(dark.x-c.x)<c.width/2&&Math.abs(dark.z-c.z)<c.depth/2),false);
+ const crossing=new Simulation('Easy',MISSION_3_3),traveler=crossing.mounted!;crossing.units=[traveler];crossing.mines=[];
+ const goal=mapPoint(250,260);crossing.move(traveler,Math.atan2(goal.x-traveler.x,goal.z-traveler.z),Math.hypot(goal.x-traveler.x,goal.z-traveler.z));
+ assert.ok(Math.hypot(traveler.x-goal.x,traveler.z-goal.z)>40);
+ const gap=mapPoint(255,265),clear=new Simulation('Easy',MISSION_3_3),walker=clear.mounted!;clear.units=[walker];clear.mines=[];
+ Object.assign(walker,mapPoint(255,255));clear.move(walker,Math.PI,Math.hypot(gap.x-walker.x,gap.z-walker.z));
+ assert.ok(Math.hypot(walker.x-gap.x,walker.z-gap.z)<5);
+ assert.ok(left.z<base.z&&right.z>base.z);assert.equal(left.pilot,true);assert.equal(right.pilot,false);
+ const ridges=s.mission.terrain.cliffs!.filter(c=>c.id.startsWith('base-'));assert.equal(ridges.length,2);
+ assert.ok(ridges.some(c=>c.z>right.z)&&ridges.some(c=>c.z<left.z));
+ assert.equal(s.lineOfSight({x:base.x,z:base.z},{x:base.x,z:95}),false);
+ assert.equal(s.lineOfSight({x:base.x+140,z:base.z},{x:base.x-140,z:base.z}),true);
+ const path=new Simulation('Easy',MISSION_3_3),vehicle=path.mounted!;path.units=[vehicle];path.mines=[];vehicle.x=base.x;vehicle.z=base.z;path.move(vehicle,0,300);assert.ok(vehicle.z<45&&vehicle.z>base.z);
+ vehicle.x=base.x;vehicle.z=base.z;path.move(vehicle,-Math.PI/2,120);assert.ok(vehicle.x<base.x-100);
+ s.units=[s.mounted!,right];s.mines=[];s.mounted!.x=base.x+219;s.mounted!.z=base.z;s.tick(1/60,idle);step(s,899);assert.equal(s.soldiers.some(p=>p.id.startsWith('tower-crew-')),false);assert.equal(right.pilot,false);
+ s.tick(1/60,idle);assert.equal(s.soldiers.filter(p=>p.id.startsWith('tower-crew-')).length,1);step(s,400);assert.equal(right.pilot,true);
+ const quick=new Simulation('Easy',MISSION_3_3),empty=quick.units.find(u=>u.id==='rocket-tower-east')!;quick.units=[quick.mounted!,empty];quick.mines=[];quick.mounted!.x=base.x+219;quick.mounted!.z=base.z;quick.tick(1/60,idle);quick.eject('ground');quick.human={x:empty.x,z:empty.z};assert.ok(quick.board());assert.equal(quick.mounted,empty);step(quick,1300);assert.equal(quick.soldiers.some(p=>p.id.startsWith('tower-crew-')),false);
+});
+test('3-3 map ridges keep alert simulation ticks within the dense-terrain budget',()=>{
+ const s=new Simulation('Easy',MISSION_3_3);s.mines=[];s.mounted!.x=s.mission.base!.x+190;s.mounted!.z=s.mission.base!.z;s.mounted!.shield=100000;
+ let worst=0;for(let i=0;i<120&&s.status==='running';i++){const start=performance.now();s.tick(1/60,idle);worst=Math.max(worst,performance.now()-start);}
+ assert.ok(worst<250,`3-3 tick took ${worst.toFixed(0)}ms`);
 });
 test('mines detonate once on swept vehicle movement; detector reveals mines without immunity; retry restores them',()=>{for(const kind of ['union-asv','scorp-asv'] as const){const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind,x:0,z:0,pilot:false}];def.startMountedUnitId='own';def.minefields=[{id:'test',x:0,z:0,width:30,depth:30,triggerRadius:2,mines:[{id:'one',x:0,z:3}]}];const s=new Simulation('Easy',def);assert.equal(s.detectedMines.length,kind==='scorp-asv'?1:0);s.tick(.05,{...idle,boost:true});assert.equal(s.mines[0].spent,true);assert.equal(s.status,'running');assert.ok(s.flight);assert.equal(s.soldiers.length,0);assert.equal(s.events.filter(e=>e.type==='mine').length,1);step(s,10);assert.equal(s.events.filter(e=>e.type==='mine').length,1);assert.equal(new Simulation('Easy',def).mines[0].spent,false);}}
 );
 test('empty base vehicles and unoccupied rocket towers can be boarded',()=>{const s=new Simulation('Easy',MISSION_3_3);s.eject('ground');const parked=s.units.find(u=>u.id==='base-sentry')!;s.human={x:parked.x,z:parked.z};assert.ok(s.board());assert.equal(s.mounted!.kind,'scorp-sentry');const t=new Simulation('Easy',MISSION_3_3),tower=t.units.find(u=>u.spec.category==='tower')!;t.eject('ground');tower.pilot=false;t.human={x:tower.x,z:tower.z};assert.equal(t.board(),true);assert.equal(t.mounted,tower);assert.equal(t.forceEject(tower),null);});
-test('TCREAP consumes ammunition and launches a moving tracer instead of instant damage',()=>{const s=new Simulation('Easy',MISSION_3_3);s.units=s.units.slice(0,1);const target=makeUnit('target','scorp-asv',0,70,false);s.units.push(target);s.lookBy(s.targetElevation(target));s.tick(1/60,{...idle,fire1:true});assert.equal(s.mounted!.ammunition.TCREAP,299);assert.equal(s.mounted!.energy,800);assert.equal(target.shield,24);const bolt=s.missiles.find(p=>p.weapon==='TCREAP')!;assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-60)<1e-8);step(s,90);assert.ok(target.shield<24);});
+test('3-3 Union ASV has P2MEC laser in slot 1 and ten VISOMs in slot 2',()=>{const s=new Simulation('Easy',MISSION_3_3);s.units=s.units.slice(0,1);const asv=s.mounted!;assert.deepEqual(asv.spec.weapons,['P2MEC','VISOM']);assert.equal(asv.ammunition.VISOM,10);const target=makeUnit('target','scorp-asv',0,70,false);s.units.push(target);s.lookBy(s.targetElevation(target));s.tick(1/60,{...idle,fire1:true});assert.ok(asv.energy>798&&asv.energy<799);assert.ok(asv.laserCharge<0.1);assert.equal(target.shield,24);const bolt=s.missiles.find(p=>p.weapon==='P2MEC')!;assert.ok(bolt);assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-LASERS.P2MEC.speed)<1e-8);step(s,90);assert.ok(target.shield<24);assert.equal(asv.ammunition.VISOM,10);});
 test('building collision blocks ground movement and bullets but permits shots over the roof',()=>{const b={x:0,z:10,width:6,depth:6,height:10};assert.ok(crossesBuilding({x:0,z:0},{x:0,z:30},b));assert.ok(buildingContact({x:0,y:3,z:0},{x:0,y:3,z:30},b)!<1);assert.equal(buildingContact({x:0,y:30,z:0},{x:0,y:30,z:30},b),null);});
 
 test('a vehicle cannot skip a mine by crossing its entire trigger circle in one frame',()=>{const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:-8,pilot:false}];def.startMountedUnitId='own';def.minefields=[{id:'sweep',x:0,z:0,width:30,depth:30,triggerRadius:2,mines:[{id:'one',x:0,z:0}]}];const s=new Simulation('Easy',def);s.speed=400;s.throttle=1;s.tick(.05,idle);assert.equal(s.status,'running');assert.ok(s.flight);assert.ok(s.mines[0].spent);});
@@ -73,17 +106,20 @@ test('lethal missile impact ejects a living tower operator once; empty towers ej
 });
 
 
-test('3-3 launch layout has Sheridan in a distinct Union Tactical on the left, and the base and enemy approach off the left flank',()=>{
+test('3-3 launch layout places Sheridan to the right ahead of the ASV and the other HAWCs farther right',()=>{
  const s=new Simulation('Easy',MISSION_3_3),sheridan=s.radioMembers.find(m=>m.personId==='sheridan')!.unit!;
- assert.equal(sheridan.kind,'union-tactical');assert.equal(sheridan.spec.faction,'union');assert.ok(sheridan.x<s.player.x&&sheridan.z>s.player.z);assert.ok(Math.cos(sheridan.yaw)<0);
- assert.equal(s.radioMembers.find(m=>m.personId==='kylie')!.unit!.kind,'union-sentry');assert.ok(s.units.find(u=>u.id==='thane')!.x>s.player.x);
- assert.ok(s.mission.base!.x<s.player.x-500);assert.ok(Math.abs(s.mission.base!.z-s.player.z)<100);
- const enemy=s.units.find(u=>u.id==='scorp-asv')!;assert.ok(enemy.x<s.player.x-200);assert.ok(Math.abs(enemy.z)<100);assert.ok(Math.abs(Math.atan2(enemy.x-s.player.x,enemy.z-s.player.z))>Math.PI/3);
+ assert.equal(sheridan.kind,'union-tactical');assert.equal(sheridan.spec.faction,'union');assert.ok(sheridan.x>s.player.x&&sheridan.z>s.player.z);assert.equal(sheridan.yaw,s.player.yaw);
+ const kylie=s.radioMembers.find(m=>m.personId==='kylie')!.unit!,thane=s.units.find(u=>u.id==='thane')!;
+ assert.equal(kylie.kind,'union-sentry');assert.ok(kylie.x>sheridan.x&&kylie.z>sheridan.z);assert.equal(kylie.yaw,s.player.yaw);
+ assert.equal(thane.kind,'union-sentry');assert.ok(thane.x>kylie.x&&thane.z>kylie.z);assert.ok(Math.sin(thane.yaw)<-0.99&&Math.abs(Math.cos(thane.yaw))<1e-10);
+ for(const ally of [sheridan,kylie,thane])assert.ok(s.mission.terrain.cliffs!.every(c=>Math.abs(ally.x-c.x)>c.width/2+5||Math.abs(ally.z-c.z)>c.depth/2+5));
+ assert.ok(s.mission.base!.x<s.player.x-500);assert.ok(s.mission.base!.z<s.player.z-100);
+ const enemy=s.units.find(u=>u.id==='scorp-asv')!;assert.ok(enemy.x<s.player.x-200);assert.ok(enemy.z<0);assert.ok(Math.abs(Math.atan2(enemy.x-s.player.x,enemy.z-s.player.z))>Math.PI/3);
  const before=s.units.map(u=>({id:u.id,x:u.x,z:u.z,yaw:u.yaw}));step(s,120);assert.deepEqual(s.units.map(u=>({id:u.id,x:u.x,z:u.z,yaw:u.yaw})),before);
  assert.deepEqual(new Simulation('Easy',MISSION_3_3).units.map(u=>({id:u.id,x:u.x,z:u.z,yaw:u.yaw})),before);
 });
 test('left launch cliff blocks ground travel, sight and physical missiles, while paths around its ends remain open',()=>{
- const s=new Simulation('Easy',MISSION_3_3),cliff=s.mission.terrain.cliffs![0],u=s.mounted!;s.units=[u];s.mines=[];
+ const s=new Simulation('Easy',MISSION_3_3),cliff=s.mission.terrain.cliffs!.find(c=>c.id==='start-left-cliff')!,u=s.mounted!;s.units=[u];s.mines=[];s.mission.terrain.cliffs=[cliff];
  const right={x:cliff.x+cliff.width/2+5,z:cliff.z},left={x:cliff.x-cliff.width/2-5,z:cliff.z};
  assert.equal(s.lineOfSight(right,left),false);assert.equal(s.lineOfSight({...right,z:cliff.z-cliff.depth},{...left,z:cliff.z-cliff.depth}),true);
  Object.assign(u,right);s.move(u,-Math.PI/2,cliff.width+10);assert.ok(u.x>=cliff.x+cliff.width/2+2);assert.ok(u.x<right.x);assert.equal(u.z,right.z);
@@ -227,7 +263,7 @@ test('Sheridan greets Gant once on piloting a Scorp ASV, not as a passenger, and
 });
 test('Scorp ASV base approach warns about infantry once and releases Scorp soldiers one by one; pause freezes the schedule',async()=>{
  const {advanceSimulation}=await import('../session.ts');const s=new Simulation('Easy',MISSION_3_3),base=s.mission.base!;
- s.mission.completionEnabled=false;s.mines=[];const towers=s.units.filter(u=>u.spec.category==='tower');assert.equal(towers.length,2);assert.ok(towers.every(u=>u.pilot));assert.equal(s.soldiers.length,0);s.units=s.units.filter(u=>u.spec.category!=='tower');
+ s.mission.completionEnabled=false;s.mines=[];const towers=s.units.filter(u=>u.spec.category==='tower');assert.equal(towers.length,2);assert.equal(towers.filter(u=>u.pilot).length,1);assert.equal(s.soldiers.length,0);s.units=s.units.filter(u=>u.spec.category!=='tower');
  s.mounted!.x=base.x+270;s.tick(.01,idle);assert.equal(s.events.filter(e=>e.radioId==='sheridan-infantry-warning').length,0);assert.equal(s.soldiers.length,0);
  s.eject('ground');const asv=s.units.find(u=>u.id==='scorp-asv')!;asv.pilot=false;asv.x=base.x+281;asv.z=base.z;s.human={x:asv.x,z:asv.z};assert.ok(s.board());s.tick(.01,idle);assert.equal(s.events.filter(e=>e.radioId==='sheridan-infantry-warning').length,0);
  asv.x=base.x+279;s.tick(.05,idle);assert.equal(s.events.filter(e=>e.radioId==='sheridan-infantry-warning').length,1);

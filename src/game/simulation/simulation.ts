@@ -175,6 +175,18 @@ export class Simulation {
     this.emit({type:'mission-radio',text:'rendezvous'});
   }
   private sortieProgress=new Map<string,{nextAt:number;emerged:number}>();
+  private towerCrewProgress=new Map<string,number>();
+  private tickTowerCrewArrivals(){
+    for(const cue of this.mission.towerCrewArrivals??[]){
+      const tower=this.units.find(unit=>unit.id===cue.towerId);
+      if(!tower?.alive||tower.pilot||!this.mission.base)continue;
+      let readyAt=this.towerCrewProgress.get(cue.id);
+      if(readyAt===undefined){if(distance(this.player,this.mission.base)>cue.range)continue;readyAt=this.time+cue.delay;this.towerCrewProgress.set(cue.id,readyAt);}
+      if(this.time+1e-8<readyAt)continue;
+      this.towerCrewProgress.set(cue.id,Infinity);
+      this.soldiers.push({id:`tower-crew-${cue.id}`,sourceVehicle:tower.id,boardingTarget:tower.id,boardingRole:'pilot',automaticBoarding:true,iff:tower.iff,faction:tower.spec.faction,...cue.spawn,yaw:Math.atan2(tower.x-cue.spawn.x,tower.z-cue.spawn.z),health:35,alive:true,alert:false,cooldown:0,flight:null,aggressorId:null,aggressorUntil:0});
+    }
+  }
   private tickInfantrySorties(){
     for(const cue of this.mission.infantrySorties??[]){
       const facility=this.facilities.find(f=>f.id===cue.facilityId);if(!facility?.alive)continue;
@@ -1222,7 +1234,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   }
   tick(dt:number,input:Input){if(this.status!=='running')return;this.brakingUnits.clear();if(this.passenger)input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:input.fire1,fire2:input.fire2,fire3:input.fire3,fire4:input.fire4};dt=Math.min(dt,.05);this.time+=dt;
     for(const unit of this.units)if(unit.spec.category==='hovercraft'){const shape=VEHICLE_SHAPES[unit.kind],landed=-(unit.spec.height*.6+shape.hull.y-shape.hull.h/2),goal=unit.hoverDisabled?landed:unit.spec.hoverHeight??0;unit.hoverHeight+=Math.sign(goal-unit.hoverHeight)*Math.min(Math.abs(goal-unit.hoverHeight),dt*.6);}
-    this.tickPickups();this.tickInfantrySorties();
+    this.tickPickups();this.tickInfantrySorties();this.tickTowerCrewArrivals();
     const fireDown=[input.fire1,input.fire2,!!input.fire3,!!input.fire4],firePressed=fireDown.map((down,i)=>down&&!this.fireHeld[i]);this.fireHeld=fireDown;
     for(const soldier of this.soldiers)if(soldier.insideFacility){const facility=this.facilities.find(f=>f.id===soldier.insideFacility);if(facility?.alive){soldier.x=facility.x;soldier.z=facility.z;}else if(soldier.alive){soldier.health=0;soldier.alive=false;}}
     for(const soldier of this.soldiers)if(soldier.boardingTarget){const carrier=this.units.find(u=>u.id===soldier.boardingTarget);if(!this.validBoarding(soldier,carrier))this.cancelBoarding(soldier);}

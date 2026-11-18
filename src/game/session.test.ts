@@ -72,7 +72,7 @@ test('briefing artwork and review text follow mission data rather than a mission
  const copy=structuredClone(MISSION_3_3);copy.id='future-mission';
  const original=missionBriefing(MISSION_3_3,[MISSION_3_3],'ja');
  const copied=missionBriefing(copy,[copy],'ja');
- assert.equal(copied,original.replaceAll('3-3','future-mission'));
+ assert.equal(copied.replaceAll('future-mission','3-3'),original);
  assert.equal(briefingDetail(copy,0,'ja'),briefingDetail(MISSION_3_3,0,'ja'));
  copy.briefingPresentation=undefined;
  const generic=missionBriefing(copy,[copy],'ja');

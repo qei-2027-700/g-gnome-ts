@@ -663,7 +663,7 @@ test('launch-view Union ASV and Sheridan Rampage render distinct rear, armor and
  assert.ok(sheridan.root.getChildMeshes().some(m=>m.name==='rampage armored brow'));assert.ok(sheridan.root.getChildMeshes().some(m=>m.name==='rampage central window'));
  assert.ok(asv.root.getChildMeshes().some(m=>m.name==='rear observation slit'));assert.ok(asv.root.getChildMeshes().some(m=>m.name==='engine grille slat'));
  assert.notEqual(VEHICLES['union-tactical'].height,VEHICLES['union-sentry'].height);assert.ok(VEHICLES['union-tactical'].weapons.includes('P2MEC'));
- assert.ok(world.scene.getMeshByName('start-left-cliff'));assert.ok(sheridan.root.rotation.y!==0);engine.dispose();
+ assert.ok(world.scene.getMeshByName('start-left-cliff'));assert.equal(sheridan.root.rotation.y,s.units.find(u=>u.id==='sheridan')!.yaw);engine.dispose();
 });
 
 test('selected command facility has a building hologram, projects onto the HUD, and shares its scene bounds',async()=>{

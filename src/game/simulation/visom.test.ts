@@ -9,7 +9,7 @@ const tick=(s:Simulation,n=1,input:Partial<Input>={})=>{for(let i=0;i<n;i++)s.ti
 function setup(){const s=new Simulation('Easy',MISSION_3_3);s.mission.terrain.cliffs=[];for(const [i,p] of [{x:-22,z:30},{x:10,z:65},{x:26,z:100}].entries())Object.assign(s.units[i+1],p);for(const u of s.units){u.yaw=0;u.aim=0;}Object.assign(s.units.find(u=>u.id==='scorp-asv')!,{x:0,z:350});return {s,own:s.mounted!,enemy:s.units.find(u=>u.id==='scorp-asv')!};}
 function shoot(s:Simulation){tick(s,1,{fire2:true});assert.ok(s.guidedMissile);for(let i=0;i<700&&s.guidedMissile;i++)tick(s);assert.equal(s.guidedMissileId,null);}
 test('3-3 starts mounted with three nearby Union allies and resets independently from 1-1',()=>{
- const {s,own}=setup();assert.equal(own.kind,'union-asv');assert.equal(s.units.filter(u=>u.spec.faction==='union').length,4);assert.equal(own.ammunition.VISOM,10);assert.equal(s.enemies.length,3);
+ const {s,own}=setup();assert.equal(own.kind,'union-asv');assert.equal(s.units.filter(u=>u.spec.faction==='union').length,4);assert.deepEqual(own.spec.weapons,['P2MEC','VISOM']);assert.equal(own.ammunition.VISOM,10);assert.equal(s.enemies.length,2);
  assert.equal(new Simulation().mounted,null);const retry=setup();assert.equal(retry.own.ammunition.VISOM,10);assert.equal(retry.enemy.lureHits,0);assert.equal(retry.s.guidedMissileId,null);
 });
 test('launch, keyboard and mouse steering consume one missile and leave the carrier stationary',()=>{

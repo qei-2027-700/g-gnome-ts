@@ -663,14 +663,13 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     return this.time+1e-8>=this.aiFocus.get(unit.id)!.readyAt;
   }
   private activeAggressor(actor:CombatTarget){
-    if(actor.aggressorId==='player'){if(this.humanHealth>0)return this.mounted??this.passenger??this.human;}
+    if(actor.aggressorId==='player'){if(this.humanHealth>0&&this.iff!==actor.iff)return this.mounted??this.passenger??this.human;}
     else if(actor.aggressorId){const target=this.combatTargets.find(t=>t.id===actor.aggressorId&&t.alive&&t.iff!==actor.iff&&(!isVehicle(t)||t.pilot));if(target)return target;}
     actor.aggressorId=null;actor.aggressorUntil=0;return null;
   }
-  private friendlyCombatant(actor:CombatTarget){return isVehicle(actor)?this.friendlyVehicle(actor):this.friendlySoldier(actor);}
   private rememberAggressor(actor:CombatTarget,attacker:CombatTarget|null){
     if(attacker&&(!attacker.alive||isVehicle(attacker)&&!attacker.pilot||!isVehicle(attacker)&&isEmbarked(attacker)))return;
-    const player=!attacker||attacker===this.mounted;if(attacker===actor||this.friendlyCombatant(actor)===(player?true:this.friendlyCombatant(attacker!)))return;
+    const player=!attacker||attacker===this.mounted;if(attacker===actor||actor.iff===(player?this.iff:attacker!.iff))return;
     const current=this.activeAggressor(actor);if(current&&this.time<actor.aggressorUntil)return;
     actor.aggressorId=player?'player':attacker!.id;actor.aggressorUntil=this.time+AGGRO_LOCK_SECONDS;
   }
@@ -1260,7 +1259,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(unit===u)continue;if(!unit.pilot){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       const wasAlert=unit.alert;
       const assault=this.mission.assaults?.find(a=>a.unitId===unit.id);
-      if(assault&&!this.assaultBegun(assault,unit)){this.coastVehicle(unit,dt);continue;}
+      if(assault&&!this.assaultBegun(assault,unit)&&!this.activeAggressor(unit)){this.coastVehicle(unit,dt);continue;}
       const assaultTarget=assault?this.selectionTargets.find(t=>t.id===assault.targetId&&t.alive&&t.iff!==unit.iff):undefined;
       if(assaultTarget)unit.alert=true;
       this.activeAggressor(unit);

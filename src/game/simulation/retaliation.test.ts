@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
 import {MISSION_3_3} from '../content/missions/mission-3-3.ts';
+import {MISSION_4_2} from '../content/missions/mission-4-2.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function setup(){const s=new Simulation('Easy',MISSION_3_3);s.mission.terrain.cliffs=[];for(const [i,p] of [{x:-22,z:30},{x:10,z:65},{x:26,z:100}].entries())Object.assign(s.units[i+1],p);for(const u of s.units){u.yaw=0;u.aim=0;}Object.assign(s.units.find(u=>u.id==='scorp-asv')!,{x:0,z:350});return {s,enemy:s.units.find(u=>u.id==='scorp-asv')!};}
 function tick(s:Simulation,seconds:number,input=idle){for(let i=0;i<seconds*60;i++)s.tick(1/60,input);}
@@ -52,11 +53,30 @@ test('enemy Union Sentry keeps firing from a clear position',()=>{
  const shots:number[]=[];for(let i=0;i<600;i++){s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===enemy))shots.push(s.time);s.events=[];}
  assert.ok(shots.length>=3,`shots: ${shots.length}`);assert.ok(shots[2]-shots[0]<3,`first three shots span ${(shots[2]-shots[0]).toFixed(2)}s`);
 });
-test('a disguised player can provoke weapon fire from the original enemy',()=>{
+test('matching IFF damage does not trigger retaliation',()=>{
  const {s,enemy}=setup();s.mounted!.x=0;s.mounted!.z=245;enemy.z=300;enemy.yaw=enemy.aim=Math.PI;enemy.iff='1234';
  assert.ok(s.changeIff(enemy.iff));tick(s,.1);assert.equal(enemy.alert,false);
- s.damage(enemy,2,'hull',undefined,s.mounted,'RAID');assert.equal(enemy.aggressorId,'player');tick(s,3);
- assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy));
+ s.damage(enemy,2,'hull',undefined,s.mounted,'RAID');assert.equal(enemy.aggressorId,null);tick(s,3);
+ assert.ok(!s.events.some(event=>event.type==='shot'&&event.unit===enemy));
+});
+test('different IFF triggers retaliation even between vehicles of the same faction',()=>{
+ const {s,enemy}=setup(),attacker=makeUnit('other-scorp','scorp-sentry',0,270,true);
+ s.units.push(attacker);attacker.iff=enemy.iff;s.damage(enemy,1,'hull',undefined,attacker,'zWASP');assert.equal(enemy.aggressorId,null);
+ attacker.iff='7777';s.damage(enemy,1,'hull',undefined,attacker,'zWASP');assert.equal(enemy.aggressorId,attacker.id);
+});
+
+test('4-2 delayed assault retaliates after an actual hostile shot before its start time',()=>{
+ const mission=structuredClone(MISSION_4_2);
+ mission.units=mission.units.filter(unit=>['scorp-asv-guard','sheridan-union-1'].includes(unit.id));
+ mission.assignedUnitId='scorp-asv-guard';mission.startMountedUnitId='scorp-asv-guard';
+ mission.garrison=[];mission.companions=[];mission.personnel=[];mission.objectives=[];mission.completionEnabled=false;
+ mission.base=undefined;mission.rocks=[];mission.terrain.river=undefined;mission.terrain.cliffs=[];mission.terrain.peaks=[];
+ const s=new Simulation('Easy',mission),own=s.mounted!,enemy=s.units.find(unit=>unit.id==='sheridan-union-1')!;
+ enemy.x=own.x;enemy.z=own.z-80;own.yaw=own.aim=Math.PI;
+ const start={x:enemy.x,z:enemy.z};tick(s,.25);assert.equal(enemy.aggressorId,null);assert.deepEqual({x:enemy.x,z:enemy.z},start);
+ s.tick(1/60,{...idle,fire1:true});
+ assert.ok(enemy.shield<enemy.spec.shield);assert.equal(enemy.aggressorId,'player');assert.ok(s.time<12);
+ tick(s,5);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy));assert.ok(s.time<12);
 });
 
 test('IFF editing preserves leading zeroes and reset restores mission IFF without changing allies or vehicle resources',()=>{

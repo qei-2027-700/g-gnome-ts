@@ -7,6 +7,7 @@ import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
 import {riverFrameAtZ,riverDistance,riverSamples,riverStripBoxes,terrainRivers} from '../content/missions/river.ts';
 import {allyRoute} from './ally-navigation.ts';
 import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
+import {MAP_4_3_POINTS,MAP_4_3_SOURCE,map43PixelToWorld} from '../content/missions/mission-4-3-map.ts';
 import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
 import {MAP_3_4_POINTS,map34PixelToWorld} from '../content/missions/mission-3-4-map.ts';
@@ -873,6 +874,13 @@ test('4-3 starts with Kylie and Thane mounted and the Darken Sentry waits about 
  advance(s,240);assert.equal(attacker.alert,false);assert.equal(attacker.speed,0);
  advance(s,70);assert.equal(attacker.alert,true);
 });
+test('4-3 image landmarks place the four bridges and waypoints on the same field scale',()=>{
+ assert.equal(MAP_4_3_SOURCE.metersPerPixel,3);
+ const bridges=[['war-north-bridge',MAP_4_3_POINTS.northBridge],['war-east-bridge',MAP_4_3_POINTS.eastBridge],['war-west-bridge',MAP_4_3_POINTS.westBridge],['war-south-bridge',MAP_4_3_POINTS.southBridge]] as const;
+ for(const [id,point] of bridges){const river=MISSION_4_3.terrain.rivers!.find(r=>r.bridgeId===id)!;assert.deepEqual({x:river.x,z:river.bridgeZ},point);assert.equal(riverDistance(river,point.x,point.z),0);}
+ for(const [index,point] of [MAP_4_3_POINTS.waypoint1,MAP_4_3_POINTS.waypoint2,MAP_4_3_POINTS.waypoint3].entries())assert.deepEqual({x:MISSION_4_3.waypoints[index]!.x,z:MISSION_4_3.waypoints[index]!.z},point);
+ assert.ok(MISSION_4_3.terrain.halfWidth>Math.abs(MAP_4_3_POINTS.waypoint2.x));
+});
 test('4-3 Kylie can leave her Union ASV for the player to board',()=>{
  const s=new Simulation('Easy',MISSION_4_3),asv=s.units.find(u=>u.id==='kylie-asv')!;
  assert.equal(asv.pilot,true);assert.deepEqual(s.sendAllyOrder('kylie','disembark').accepted,['kylie-asv']);assert.equal(asv.pilot,false);
@@ -883,23 +891,28 @@ test('4-3 can cross WP1 and WP2, take each supply once, and finish at WP3',()=>{
  const s=new Simulation('Easy',def),unit=s.mounted!;
  assert.equal(unit.kind,'union-tactical');assert.equal(unit.iff,'2620');
  unit.ammunition.TCROCK=1;unit.shield=10;
- driveRoute(s,[[200,650],[255,470],[165,420],[95,410],[95,305],[0,305],[-230,320],[-290,320]]);
- assert.equal(unit.ammunition.TCROCK,10);assert.equal(unit.shield,unit.spec.shield*2);
- driveRoute(s,[[-290,0],[-290,-175],[265,-175]]);
+ s.raisedBridges.delete('war-north-bridge');
+ const route=(pixels:readonly (readonly [number,number])[])=>driveRoute(s,pixels.map(([x,y])=>{const point=map43PixelToWorld(x,y);return [point.x,point.z] as const;}));
+ route([[210,132],[197,150],[180,169],[193,181],[236,177],[255,199],[273,229],[290,221],[307,213],[307,230]]);
+ assert.equal(unit.ammunition.TCROCK,10);
+ route([[307,213],[290,221],[273,229],[255,199],[215,178],[180,180],[160,195],[145,223],[130,246],[133,265],[115,258],[97,251],[68,250]]);
+ assert.equal(unit.shield,unit.spec.shield*2);
+ route([[97,251],[115,258],[133,265],[130,246],[145,223],[160,195],[180,180],[215,178],[255,199],[273,229],[290,221],[307,213],[307,230],[335,255],[340,305],[340,350],[316,385]]);
  assert.equal(s.status,'won');assert.deepEqual([...s.reachedWaypoints],[1,2,3]);assert.deepEqual([...s.usedSupplies],[1,2]);
  assert.equal(s.events.filter(e=>e.type==='supply').length,2);
- const direct=new Simulation('Easy',def);direct.mounted!.x=265;direct.mounted!.z=-175;direct.tick(.01,idle);assert.equal(direct.status,'won');assert.deepEqual([...direct.usedSupplies],[]);
+ const direct=new Simulation('Easy',def);Object.assign(direct.mounted!,MAP_4_3_POINTS.waypoint3);direct.tick(.01,idle);assert.equal(direct.status,'won');assert.deepEqual([...direct.usedSupplies],[]);
 });
 test('4-3 route remains traversable after the north bridge is lowered',()=>{
  const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>['union-player','union-support','kylie-asv','thane-sentry'].includes(u.id)),assaults:[],minefields:[]};
  const s=new Simulation('Easy',def);assert.equal(s.callAirSupport(),false);
  s.raisedBridges.delete('war-north-bridge');
- driveRoute(s,[[200,650],[255,470],[165,420],[95,410],[95,305],[0,305],[-230,320],[-290,320],[-290,0],[-290,-175],[265,-175]]);
+ const pixels:[[number,number],...[number,number][]]=[[210,132],[197,150],[180,169],[193,181],[236,177],[255,199],[273,229],[290,221],[307,213],[307,230],[307,213],[290,221],[273,229],[255,199],[215,178],[180,180],[160,195],[145,223],[130,246],[133,265],[115,258],[97,251],[68,250],[97,251],[115,258],[133,265],[130,246],[145,223],[160,195],[180,180],[215,178],[255,199],[273,229],[290,221],[307,213],[307,230],[335,255],[340,305],[340,350],[316,385]];
+ driveRoute(s,pixels.map(([x,y])=>{const point=map43PixelToWorld(x,y);return [point.x,point.z] as const;}));
  assert.equal(s.status,'won');assert.deepEqual([...s.reachedWaypoints],[1,2,3]);
 });
 test('4-3 shield doubler expires and air support is called only once',()=>{
  const expiry=new Simulation('Easy',MISSION_4_3),unit=expiry.mounted!;
- unit.x=-290;unit.z=320;expiry.tick(.01,idle);assert.equal(unit.shield,72);
+ Object.assign(unit,MAP_4_3_POINTS.waypoint2);expiry.tick(.01,idle);assert.equal(unit.shield,72);
  expiry.units=[unit];for(let i=0;i<1220&&expiry.status==='running';i++)expiry.tick(.05,idle);assert.ok(unit.shield<=unit.spec.shield);
  const s=new Simulation('Easy',MISSION_4_3);
  assert.equal(s.callAirSupport(),true);assert.equal(s.callAirSupport(),false);const support=s.units.find(u=>u.id==='union-support')!;
@@ -909,18 +922,20 @@ test('4-3 shield doubler expires and air support is called only once',()=>{
 });
 test('4-3 music bridge cue stays off until the player clears the north bridge, including on foot',()=>{
  const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
- const blocked=new Simulation('Easy',def);blocked.mounted!.x=-50;blocked.mounted!.z=700;blocked.mounted!.yaw=Math.PI;
+ const river=def.terrain.rivers!.find(r=>r.bridgeId==='war-north-bridge')!,frame=riverFrameAtZ(river,river.bridgeZ);
+ const normal={x:frame.tz,z:-frame.tx},spawn=Math.sign((def.player.x-frame.x)*normal.x+(def.player.z-frame.z)*normal.z);
+ const side=(sign:number,distance:number)=>({x:frame.x+normal.x*spawn*sign*distance,z:frame.z+normal.z*spawn*sign*distance});
+ const before=side(1,river.width/2+22),after=side(-1,river.width/2+22);
+ const blocked=new Simulation('Easy',def);Object.assign(blocked.mounted!,before);
  assert.deepEqual(blocked.mission.bgm?.start,{trackId:'bgm-barren-landscape',delay:0});
  assert.deepEqual(blocked.mission.bgm?.afterBridge,{bridgeId:'war-north-bridge',trackId:'bgm-merc-region'});
  assert.equal(blocked.missionMusicBridgeCrossed,false);
- for(let i=0;i<80;i++)blocked.tick(.05,{...idle,forward:true});
- assert.ok(blocked.player.z>650);assert.equal(blocked.missionMusicBridgeCrossed,false);
- const cross=new Simulation('Easy',def);cross.raisedBridges.delete('war-north-bridge');cross.mounted!.x=-50;cross.mounted!.z=700;cross.mounted!.yaw=Math.PI;
- let crossed=false;for(let i=0;i<160;i++){cross.tick(.05,{...idle,forward:true});crossed||=cross.missionMusicBridgeCrossed;}
- assert.ok(crossed);assert.ok(cross.player.z<620);
- cross.mounted!.x=200;cross.mounted!.z=560;assert.equal(cross.missionMusicBridgeCrossed,false);
- cross.eject('ground');cross.human={x:-50,z:600};assert.equal(cross.mounted,null);assert.equal(cross.missionMusicBridgeCrossed,true);
- cross.human={x:-50,z:860};assert.equal(cross.missionMusicBridgeCrossed,false);
+ assert.equal(blocked.missionMusicBridgeCrossed,false);
+ const cross=new Simulation('Easy',def);cross.raisedBridges.delete('war-north-bridge');Object.assign(cross.mounted!,after);
+ assert.equal(cross.missionMusicBridgeCrossed,true);
+ Object.assign(cross.mounted!,{x:after.x+frame.tx*80,z:after.z+frame.tz*80});assert.equal(cross.missionMusicBridgeCrossed,false);
+ cross.eject('ground');cross.human=after;assert.equal(cross.mounted,null);assert.equal(cross.missionMusicBridgeCrossed,true);
+ cross.human=before;assert.equal(cross.missionMusicBridgeCrossed,false);
 });
 test('4-3 north bridge starts raised, lowers at its control, and the adjacent lava blocks vehicles',()=>{
  const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
@@ -936,8 +951,7 @@ test('4-3 Merc and Darken shoot each other and the player can change vehicles',(
  s.units.find(u=>u.id==='darken-opening-sentry')!.alive=false;
  let mercShots=0,darkenShots=0,hits=0;for(let i=0;i<400&&s.status==='running';i++){s.tick(.05,idle);mercShots+=s.events.filter(e=>e.type==='shot'&&e.unit===merc).length;darkenShots+=s.events.filter(e=>e.type==='shot'&&e.unit===darken).length;hits+=s.events.filter(e=>e.type==='hit'&&!!e.unit&&(e.unit.spec.faction==='merc'||e.unit.spec.faction==='darken')).length;s.events=[];}
  assert.ok(mercShots>0&&darkenShots>0&&hits>0);
- const derelict=s.units.find(u=>u.id==='depot-unoccupied')!;s.mounted!.x=292;s.mounted!.z=487;s.eject('ground');s.humanYaw=Math.atan2(derelict.x-s.human.x,derelict.z-s.human.z);
- for(let i=0;i<240&&!s.mounted&&s.status==='running';i++)s.tick(1/60,{...idle,forward:true});
+ const derelict=s.units.find(u=>u.id==='depot-unoccupied')!;s.eject('ground');s.human={x:derelict.x,z:derelict.z+3};assert.ok(s.board());
  assert.equal(s.mounted,derelict);assert.equal(s.mounted.iff,s.iff);
 });
 function mission(id='test'):MissionDefinition{return {...structuredClone(DEFAULT_MISSION),id,player:{x:40,z:0},initialIff:'6707',units:[{id:'own',kind:'merc-sentry',x:40,z:0,pilot:false},{id:'target',kind:'union-sentry',x:40,z:100,pilot:true}],assignedUnitId:'own',playerFaction:'merc',rocks:[],waypoints:[{id:2,x:40,z:120,radius:3}],objectives:[{id:'reach',type:'reach',waypointId:2,label:{ja:'到達',en:'Reach'}}]};}

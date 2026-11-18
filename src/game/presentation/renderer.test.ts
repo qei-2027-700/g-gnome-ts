@@ -1140,6 +1140,18 @@ test('4-3 renders four lava channels and four bridge decks',async()=>{
   for(const river of MISSION_4_3.terrain.rivers!)for(const side of [-1,1])assert.ok(world.scene.getTransformNodeByName(`bridge-hinge-${river.bridgeId}-${side}`));
  }finally{engine.dispose();}
 });
+test('4-3 current-position marker uses the briefing image landmarks',async()=>{
+ const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts');
+ const {MAP_4_3_POINTS,MAP_4_3_SOURCE}=await import('../content/missions/mission-4-3-map.ts');
+ const {projectMapImagePoint}=await import('./mission-map.ts');
+ const image=MISSION_4_3.briefingPresentation!.mapPreview!;
+ assert.equal(image.viewBox,`${MAP_4_3_SOURCE.x} ${MAP_4_3_SOURCE.y} ${MAP_4_3_SOURCE.width} ${MAP_4_3_SOURCE.height}`);
+ for(const [point,pixel] of [[MAP_4_3_POINTS.start,[220,100]],[MAP_4_3_POINTS.waypoint1,[307,230]],[MAP_4_3_POINTS.waypoint2,[68,250]],[MAP_4_3_POINTS.waypoint3,[316,385]]] as const){
+  const projected=projectMapImagePoint(image,point)!;
+  assert.ok(Math.abs(projected.x-(pixel[0]-MAP_4_3_SOURCE.x)/MAP_4_3_SOURCE.width)<1e-9);
+  assert.ok(Math.abs(projected.y-(pixel[1]-MAP_4_3_SOURCE.y)/MAP_4_3_SOURCE.height)<1e-9);
+ }
+});
 
 test('facility hits flash visibly and destroyed buildings disappear from the battlefield',()=>{
  const mission=structuredClone(MISSION);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.objectives=[];mission.waypoints=[];mission.base={name:'facility-damage',x:0,z:30,width:20,depth:20,buildings:[{id:'test-building',kind:'command',x:0,z:30,width:20,depth:20,height:10,health:100}]};

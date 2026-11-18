@@ -1177,3 +1177,23 @@ test('3-4 terrain renders both blocked color regions and projects the player ont
   assert.ok(world.scene.getMaterialByName('map-plateau'));
  }finally{engine.dispose();}
 });
+
+test('2-2 projects the original map and renders two rivers in a snowfield',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ const {MAP_2_2_POINTS}=await import('../content/missions/mission-2-2-map.ts');
+ const {projectMapImagePoint,missionMapObjectives}=await import('./mission-map.ts');
+ const preview=MISSION_2_2.briefingPresentation!.mapPreview!;
+ const start=projectMapImagePoint(preview,MAP_2_2_POINTS.player)!,target=projectMapImagePoint(preview,MAP_2_2_POINTS.latlon)!;
+ assert.ok(Math.abs(start.x-289/355)<1e-9&&Math.abs(start.y-128/355)<1e-9);
+ assert.ok(Math.abs(target.x-23/355)<1e-9&&Math.abs(target.y-126/355)<1e-9);
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation('Easy',MISSION_2_2),world=new World({} as HTMLCanvasElement,sim,engine);
+  assert.equal(sim.mission.terrain.biome,'snow');
+  assert.equal(sim.mission.terrain.rivers?.length,1);
+  assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='river-water').length,2);
+  assert.ok(world.scene.getMeshByName('2-2-slope-1'));
+  assert.ok(world.scene.getMaterialByName('snow'));
+  assert.ok(missionMapObjectives(sim,'ja').includes('MercのLatlon通信基地を破壊'));
+ }finally{engine.dispose();}
+});

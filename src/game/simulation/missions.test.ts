@@ -4,7 +4,8 @@ import {Simulation,makeUnit,distance,AI_TARGET_SETTLE,type Input} from './simula
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
-import {riverFrameAtZ,riverDistance,riverSamples} from '../content/missions/river.ts';
+import {riverFrameAtZ,riverDistance,riverSamples,riverStripBoxes,terrainRivers} from '../content/missions/river.ts';
+import {allyRoute} from './ally-navigation.ts';
 import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
 import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
@@ -981,6 +982,21 @@ test('2-2 western sentry activates the bridge reinforcement, raising the bridge 
  for(let i=0;i<90;i++)s.tick(1/60,idle);
  assert.ok(Math.hypot(reinforcement.x-stopped.x,reinforcement.z-stopped.z)<1,'raised bridge should halt the reinforcement');
  assert.equal(s.status,'running','bridge control alone is not the victory condition');
+});
+test('2-2 snowy map keeps both channels, mapped landmarks and a route to the western array',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ const {MAP_2_2_POINTS,map22PixelToWorld}=await import('../content/missions/mission-2-2-map.ts');
+ const {terrain,base,player,waypoints}=MISSION_2_2,rivers=terrainRivers(terrain);
+ assert.equal(terrain.biome,'snow');assert.equal(rivers.length,2);
+ assert.deepEqual(player,map22PixelToWorld(514,193));
+ const latlon=base!.buildings.find(b=>b.id==='merc-latlon')!;
+ assert.deepEqual({x:latlon.x,z:latlon.z},map22PixelToWorld(248,191));
+ assert.ok(latlon.x<player.x);
+ for(const [river,first,last] of [[rivers[0]!,map22PixelToWorld(356,245),map22PixelToWorld(572,240)],[rivers[1]!,map22PixelToWorld(348,70),map22PixelToWorld(327,402)]] as const){
+  assert.deepEqual(river.path![0],first);assert.deepEqual(river.path!.at(-1),last);
+ }
+ const boxes=[...terrain.cliffs!.map(c=>({...c,width:c.width+10,depth:c.depth+10})),...rivers.flatMap(r=>riverStripBoxes(r,false,5))];
+ for(const goal of [...waypoints,{x:MAP_2_2_POINTS.latlon.x+60,z:MAP_2_2_POINTS.latlon.z}])assert.ok(allyRoute(player,goal,terrain,[],boxes),`route to ${'id' in goal?goal.id:'Latlon'}`);
 });
 test('mission objectives support multiple waypoints and targeted elimination without Merc or enemy-count assumptions',()=>{
  const def=mission();def.waypoints=[{id:2,x:40,z:20,radius:2},{id:3,x:40,z:50,radius:2}];

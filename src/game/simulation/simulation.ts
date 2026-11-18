@@ -845,7 +845,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
         for(const rock of this.mission.rocks){const contact=circleMotionContact(position,end,rock,rock.r+2);if(contact&&(!first||contact.t<first.t))first=contact;}
         for(const peak of terrain.peaks??[]){const contact=peakMotionContact(position,end,peak,2);if(contact&&(!first||contact.t<first.t))first=contact;}
         if(!first){Object.assign(position,end);break;}
-        if(first.unit?.pilot&&(soldier?this.friendlyVehicle(first.unit)!==this.friendlySoldier(soldier):u===this.human&&!this.friendlyVehicle(first.unit))){if(soldier)this.damageSoldier(soldier,soldier.health,{...position,y:0},first.unit);else if(u===this.human&&!this.occupiedContact(first.unit,false))this.damage(null,this.humanHealth);}
+        if(first.unit?.pilot&&(soldier?soldier.iff!==first.unit.iff&&this.friendlyVehicle(first.unit)!==this.friendlySoldier(soldier):u===this.human&&!this.friendlyVehicle(first.unit))){if(soldier)this.damageSoldier(soldier,soldier.health,{...position,y:0},first.unit);else if(u===this.human&&!this.occupiedContact(first.unit,false))this.damage(null,this.humanHealth);}
         const fraction=Math.max(0,first.t-.001);position.x+=remaining.x*fraction;position.z+=remaining.z*fraction;
         remaining={x:remaining.x*(1-fraction),z:remaining.z*(1-fraction)};const inward=remaining.x*first.nx+remaining.z*first.nz;
         if(inward<0){remaining.x-=inward*first.nx;remaining.z-=inward*first.nz;}if(Math.hypot(remaining.x,remaining.z)<1e-6)break;
@@ -863,7 +863,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const groundActors=[...this.soldiers.filter(s=>s.alive&&!s.flight&&!isEmbarked(s)&&(!vehicle.pilot||s.iff===vehicle.iff)),...(!this.mounted&&!this.passenger&&!this.flight&&(!vehicle.pilot||this.iff===vehicle.iff)?[this.human]:[])];
       for(const actor of groundActors){const id=actor===this.human?'player':(actor as Soldier).id;take(circleMotionContact(from,to,actor,vehicleRadius(vehicle.kind)+.35),`${vehicle.id}/infantry/${id}`,[vehicle.id,id]);}
       for(const [i,rock] of this.mission.rocks.entries())take(circleMotionContact(from,to,rock,rock.r+2),`${vehicle.id}/rock/${i}`,[vehicle.id]);
-      for(const [i,peak] of (terrain.peaks??[]).entries())take(peakMotionContact(from,to,peak,buildingClearance(vehicle)),`${vehicle.id}/peak/${i}`,[vehicle.id]);
+      for(const [i,peak] of (terrain.peaks??[]).entries()){const footprint=peakFootprint(peak),padding=Math.max(buildingClearance(vehicle),peak.width/2+3-footprint.x,peak.depth/2+3-footprint.z);take(peakMotionContact(from,to,peak,padding),`${vehicle.id}/peak/${i}`,[vehicle.id]);}
       for(const b of this.movementObstacles(vehicle))take(this.obstacleMotionContact(from,to,b,buildingClearance(vehicle)),`${vehicle.id}/wall/${b.x}/${b.z}`,[vehicle.id]);
       return hit as Contact|null;
     };

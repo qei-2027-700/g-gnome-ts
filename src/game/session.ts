@@ -8,7 +8,7 @@ export function advanceSimulation(sim:Simulation,panel:string|null,dt:number,inp
 
 // In-progress missions may show their map, never the pre-launch console.
 export function resolveMissionPanel(next:string|null,launched:boolean,ended:boolean){
- if(!launched&&next!=='settings'&&next!=='exit')return 'briefing';
- if(launched&&!ended&&next==='briefing')return 'map';
+ if(!launched&&next!=='settings'&&next!=='exit'&&next!=='lab')return 'briefing';
+ if(launched&&!ended&&(next==='briefing'||next==='lab'))return 'map';
  return next;
 }

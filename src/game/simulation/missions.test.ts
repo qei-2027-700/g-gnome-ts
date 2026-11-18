@@ -894,9 +894,10 @@ test('4-3 route remains traversable after the north bridge is lowered',()=>{
  assert.equal(s.status,'won');assert.deepEqual([...s.reachedWaypoints],[1,2,3]);
 });
 test('4-3 shield doubler expires and air support is called only once',()=>{
- const s=new Simulation('Easy',MISSION_4_3),unit=s.mounted!;
- unit.x=-290;unit.z=320;s.tick(.01,idle);assert.equal(unit.shield,72);
- unit.z=860;for(let i=0;i<1220&&s.status==='running';i++)s.tick(.05,idle);assert.ok(unit.shield<=unit.spec.shield);
+ const expiry=new Simulation('Easy',MISSION_4_3),unit=expiry.mounted!;
+ unit.x=-290;unit.z=320;expiry.tick(.01,idle);assert.equal(unit.shield,72);
+ expiry.units=[unit];for(let i=0;i<1220&&expiry.status==='running';i++)expiry.tick(.05,idle);assert.ok(unit.shield<=unit.spec.shield);
+ const s=new Simulation('Easy',MISSION_4_3);
  assert.equal(s.callAirSupport(),true);assert.equal(s.callAirSupport(),false);const support=s.units.find(u=>u.id==='union-support')!;
  assert.equal(s.airSupportUsed,1);assert.equal(support.pilot,true);assert.equal(support.iff,s.iff);
  let shots=0;for(let i=0;i<500&&s.status==='running';i++){s.tick(.05,idle);shots+=s.events.filter(e=>e.type==='shot'&&e.unit===support).length;s.events=[];}

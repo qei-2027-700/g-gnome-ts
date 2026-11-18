@@ -1269,7 +1269,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const exposedCompanion=disguise&&unit.iff===disguise.enemyIff?this.soldiers.filter(soldier=>soldier.alive&&!isEmbarked(soldier)&&soldier.iff!==unit.iff&&this.mission.companions?.some(member=>member.personId===soldier.personId)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0]:undefined;
       const nearby=this.combatTargets.filter(candidate=>candidate!==unit&&candidate.alive&&candidate.iff!==unit.iff&&(!isVehicle(candidate)||candidate.pilot)&&distance(unit,candidate)<spec.ai.detection&&this.attackVisible(unit,candidate)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0];
       const playerNearby=this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<spec.ai.detection&&this.attackVisible(unit,this.player);
-      const playerPursuit=unit.alert&&this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<(spec.ai.pursuitRange??spec.ai.detection);
+      const playerPursuit=unit.alert&&this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<(spec.ai.pursuitRange??Infinity);
       if(!this.isHostile(unit)&&!opponent&&!retaliatingToPlayer&&!assaultTarget&&!exposedCompanion&&!nearby){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       if(this.waitingForLure(unit)&&!unit.alert){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       const hostile=!!opponent||retaliatingToPlayer||!!assaultTarget||!!exposedCompanion||!!nearby||playerNearby||playerPursuit;if(!hostile){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}

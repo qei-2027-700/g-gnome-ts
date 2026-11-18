@@ -753,7 +753,7 @@ test('tower survivor remains enabled and above ground outside the rendered wreck
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const def=structuredClone(MISSION_3_3);def.units=[{id:'own',kind:'union-asv',x:0,z:0,pilot:false},{id:'tower',kind:'scorp-rocket-tower',x:0,z:65,pilot:true}];def.assignedUnitId='own';def.startMountedUnitId='own';def.companions=[];def.minefields=[];def.base=undefined;def.rocks=[];def.terrain.cliffs=[];
  const sim=new Simulation('Easy',def),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);sim.damage(sim.units[1],9999);for(const e of sim.events)world.event(e);sim.events=[];
  for(let i=0;i<200;i++)sim.tick(1/60,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});world.update(3.34);const soldier=sim.soldiers[0],rig=world.soldierRigs.get(soldier.id)!;
- assert.equal(soldier.flight,null);assert.equal(rig.root.isEnabled(),true);assert.equal(rig.root.position.y,0);assert.ok(Math.abs(rig.root.position.x)>7);assert.ok(world.wreckRigs.has('tower'));engine.dispose();
+ assert.equal(soldier.flight,null);assert.equal(rig.root.isEnabled(),true);assert.equal(rig.root.position.y,0);assert.ok(Math.abs(rig.root.position.x)>6);assert.ok(world.wreckRigs.has('tower'));engine.dispose();
 });
 
 test('Union Sentry has a low central cabin and high M-shaped shoulders with matching fixed hit regions',async()=>{

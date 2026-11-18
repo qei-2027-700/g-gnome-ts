@@ -16,7 +16,7 @@ export type BriefingPresentation={
  title?:string;mapPreview?:BriefingImage;vehiclePreview?:BriefingImage;
  entries:readonly {label:Localized;detail:Localized}[];
 };
-export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number};
+export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number;afterEliminateUnitId?:string;stopWhenBridgeRaisedId?:string};
 export type MissionDefinition={
  bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterAssault?:{boardUnitId:string;unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string};beforeIonLock?:{lead:number;trackId:string};afterBridge?:{bridgeId:string;trackId:string}};
  audioPath?:string;

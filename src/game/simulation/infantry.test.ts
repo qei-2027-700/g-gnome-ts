@@ -332,7 +332,7 @@ test('holding a trigger through automatic passenger boarding and ejection cannot
  s.tick(.02,{...idle,fire1:true});assert.equal(s.events.some(e=>e.type==='shot'),false);s.tick(.02,idle);s.tick(.02,{...idle,fire1:true});assert.equal(s.events.filter(e=>e.type==='shot').length,1);
 });
 
-for(const kind of ['merc-sentry','merc-tactical'] as const)test(`${kind} has no ejection seat even when captured; ground evacuation and destruction remain separate`,()=>{
+for(const kind of ['merc-sentry','merc-tactical','merc-assault','merc-cruiser','merc-aip'] as const)test(`${kind} has no ejection seat even when captured; ground evacuation and destruction remain separate`,()=>{
  const s=new Simulation(),unit=makeUnit('merc-no-seat',kind,0,30,false);s.units=[unit];s.human={x:0,z:30};s.board();unit.speed=8;s.speed=8;
  s.eject();assert.equal(s.flight,null);assert.equal(s.mounted,null);assert.ok(Math.hypot(s.human.x-unit.x,s.human.z-unit.z)>4);assert.equal(unit.speed,8);assert.equal(s.events.at(-1)?.launch,false);
  s.human={x:unit.x,z:unit.z};s.board();unit.shield=0;s.damage(unit,9999);assert.equal(s.status,'running');assert.equal(s.humanHealth,100);assert.equal(s.flight,null);assert.equal(s.mounted,null);
@@ -340,8 +340,8 @@ for(const kind of ['merc-sentry','merc-tactical'] as const)test(`${kind} has no 
  enemy.damage(target,9999);assert.equal(enemy.events.filter(e=>e.type==='soldier-death').length,1);
 });
 
-for(const kind of ['darken-sentry','darken-tactical','darken-asv','darken-aip'] as const)test(`${kind} ejects its pilot on destruction`,()=>{
- const s=new Simulation(),unit=makeUnit('darken-pilot',kind,0,60,true);s.units=[unit];unit.shield=0;s.damage(unit,9999,'cockpit');
+for(const kind of ['darken-sentry','darken-tactical','darken-asv','darken-aip','scorp-sentry','scorp-tactical','scorp-assault','scorp-asv','scorp-aip'] as const)test(`${kind} ejects its pilot on destruction`,()=>{
+ const s=new Simulation(),unit=makeUnit('seat-pilot',kind,0,60,true);s.units=[unit];unit.shield=0;s.damage(unit,9999,'cockpit');
  assert.equal(unit.alive,false);assert.equal(s.soldiers.length,1);assert.equal(s.soldiers[0].alive,true);assert.ok(s.soldiers[0].flight);assert.equal(s.events.filter(e=>e.type==='pilot-eject').length,1);
 });
 

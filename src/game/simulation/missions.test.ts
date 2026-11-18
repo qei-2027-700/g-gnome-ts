@@ -4,7 +4,8 @@ import {Simulation,makeUnit,distance,AI_TARGET_SETTLE,type Input} from './simula
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_WEAPONS} from '../content/weapons.ts';
-import {riverFrameAtZ,riverDistance,riverSamples} from '../content/missions/river.ts';
+import {riverFrameAtZ,riverDistance,riverSamples,riverStripBoxes,terrainRivers} from '../content/missions/river.ts';
+import {allyRoute} from './ally-navigation.ts';
 import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
 import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
@@ -967,12 +968,54 @@ test('direct infantry fire reduces facility integrity and destroys the building 
  s.events=[];s.fire(1);assert.equal(facility.health,7);advance(s,60);
  assert.equal(facility.health,0);assert.equal(facility.alive,false);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.facility===facility).length,1);
 });
-test('2-2 starts in the Merc Tactical with its configured loadout and Union IFF',async()=>{
+test('2-2 starts in the Union TD with Kylie and completes on Latlon destruction',async()=>{
  const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
  const s=new Simulation('Easy',MISSION_2_2),player=s.mounted!;
- assert.equal(player.id,'merc-player');assert.equal(player.kind,'merc-tactical');assert.equal(player.iff,'2620');
- assert.deepEqual(player.spec.weapons,['DASY','SAG5T','RAID']);
- assert.equal(player.ammunition.DASY,300);assert.equal(player.ammunition.SAG5T,40);
+ assert.equal(player.id,'player-td');assert.equal(player.kind,'union-tactical');assert.equal(player.iff,'2620');
+ assert.equal(s.units.find(u=>u.personId==='kylie')?.kind,'union-sentry');
+ assert.equal(s.units.find(u=>u.personId==='kylie')?.order?.kind,'follow');
+ assert.equal(s.mission.objectives.length,1);
+ const comm=s.facilities.find(f=>f.id==='merc-latlon')!;
+ assert.equal(comm.facilityType,'comm-array');
+ s.damageFacility(comm,comm.health,{x:comm.x,y:2,z:comm.z});
+ s.tick(1/60,idle);
+ assert.equal(s.status,'won');
+});
+test('2-2 western sentry activates the bridge reinforcement, raising the bridge halts it',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ const s=new Simulation('Easy',MISSION_2_2),guard=s.units.find(u=>u.id==='west-sentry')!,reinforcement=s.units.find(u=>u.id==='bridge-reinforcement')!;
+ const bridge=s.facilities.find(f=>f.id==='north-control-a')!;
+ const start={x:reinforcement.x,z:reinforcement.z};
+ for(let i=0;i<30;i++)s.tick(1/60,idle);
+ assert.equal(reinforcement.x,start.x);assert.equal(reinforcement.z,start.z);
+ s.damage(guard,99999);
+ for(let i=0;i<120;i++)s.tick(1/60,idle);
+ assert.ok(Math.hypot(reinforcement.x-start.x,reinforcement.z-start.z)>1,'reinforcement should advance after the western guard falls');
+ s.insideFacility=bridge;
+ assert.equal(s.raiseBridge(),true);
+ const stopped={x:reinforcement.x,z:reinforcement.z};
+ for(let i=0;i<90;i++)s.tick(1/60,idle);
+ assert.ok(Math.hypot(reinforcement.x-stopped.x,reinforcement.z-stopped.z)<1,'raised bridge should halt the reinforcement');
+ assert.equal(s.status,'running','bridge control alone is not the victory condition');
+});
+test('2-2 snowy map keeps both channels, mapped landmarks and a route to the western array',async()=>{
+ const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
+ const {MAP_2_2_POINTS,map22PixelToWorld}=await import('../content/missions/mission-2-2-map.ts');
+ const {terrain,base,player,waypoints}=MISSION_2_2,rivers=terrainRivers(terrain);
+ assert.equal(terrain.biome,'snow');assert.equal(rivers.length,2);
+ assert.deepEqual(player,map22PixelToWorld(514,193));
+ const latlon=base!.buildings.find(b=>b.id==='merc-latlon')!;
+ assert.deepEqual({x:latlon.x,z:latlon.z},map22PixelToWorld(248,191));
+ assert.ok(latlon.x<player.x);
+ for(const [river,first,last] of [[rivers[0]!,map22PixelToWorld(356,245),map22PixelToWorld(572,240)],[rivers[1]!,map22PixelToWorld(348,70),map22PixelToWorld(327,402)]] as const){
+  assert.deepEqual(river.path![0],first);assert.deepEqual(river.path!.at(-1),last);
+ }
+ const tower=MISSION_2_2.units.find(unit=>unit.id==='north-guard-tower')!,bridgeFrames=rivers.map(river=>riverFrameAtZ(river,river.bridgeZ));
+ const between={x:(bridgeFrames[0]!.x+bridgeFrames[1]!.x)/2,z:(bridgeFrames[0]!.z+bridgeFrames[1]!.z)/2};
+ assert.ok(distance(tower,between)<15,'the unoccupied Mison tower sits between the two bridges');
+ for(const river of rivers)assert.ok(riverDistance(river,tower.x,tower.z)>river.width/2+10,'the tower stays on dry ground');
+ const boxes=[...terrain.cliffs!.map(c=>({...c,width:c.width+10,depth:c.depth+10})),...rivers.flatMap(r=>riverStripBoxes(r,false,5))];
+ for(const goal of [...waypoints,{x:MAP_2_2_POINTS.latlon.x+60,z:MAP_2_2_POINTS.latlon.z}])assert.ok(allyRoute(player,goal,terrain,[],boxes),`route to ${'id' in goal?goal.id:'Latlon'}`);
 });
 test('mission objectives support multiple waypoints and targeted elimination without Merc or enemy-count assumptions',()=>{
  const def=mission();def.waypoints=[{id:2,x:40,z:20,radius:2},{id:3,x:40,z:50,radius:2}];

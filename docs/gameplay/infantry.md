@@ -320,7 +320,9 @@ Union兵の装備は全身白とし、ヘルメット・顔の覆い・服・手
 
 ## Merc機の脱出装置と歩兵の配色（共通仕様・2026-10-24）
 
-ユーザー指定により、Merc Sentry・Merc Tactical Defense HAWCは脱出装置を持たない。共通機体定義の`ejectionSeat: false`で指定し、鹵獲やIFF変更で装備の有無を変えない。
+ユーザー指定により、Mercの全HAWC（Sentry・Tactical Defense・Assault・Cruiser）は脱出装置を持たない。Merc AIPも脱出装置を持たない。共通機体定義の`ejectionSeat: false`で指定し、鹵獲やIFF変更で装備の有無を変えない。
+
+Scorp AIPはMerc AIPの機体定義から派生するが、脱出装置を持つ。ScorpのほかのHAWCとASVも脱出装置を持つ。機体破壊時には搭乗員が射出される。
 
 DarkenのSentry、Tactical Defense、ASV、AIPは脱出装置を持つ。Darken Tactical DefenseとAIPはMerc機の暫定定義から派生しているが、脱出装置の有無はDarken機として明示する。
 

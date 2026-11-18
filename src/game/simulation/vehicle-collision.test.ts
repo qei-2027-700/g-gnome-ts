@@ -197,12 +197,14 @@ test('lowered bridges admit people and HAWCs, while raised bridges block ground 
 });
 test('2-2 bridge lies across its river and raising it closes the crossing',async()=>{
  const {MISSION_2_2}=await import('../content/missions/mission-2-2.ts');
- for(const raised of [false,true]){
-  const mission=structuredClone(MISSION_2_2);mission.startMountedUnitId=undefined;mission.terrain.cliffs=[];mission.base=undefined;mission.rocks=[];
-  const s=new Simulation('Easy',mission),river=mission.terrain.river!;s.human={x:river.x-river.width/2-20,z:river.bridgeZ};
+ for(const source of [MISSION_2_2.terrain.river!,...MISSION_2_2.terrain.rivers!])for(const raised of [false,true]){
+  const mission=structuredClone(MISSION_2_2);mission.startMountedUnitId=undefined;mission.terrain.cliffs=[];mission.terrain.river=structuredClone(source);mission.terrain.rivers=[];mission.base=undefined;mission.rocks=[];
+  const s=new Simulation('Easy',mission),river=mission.terrain.river!,frame=riverFrameAtZ(river,river.bridgeZ),nx=frame.tz,nz=-frame.tx;
+  s.human={x:frame.x+nx*(river.width/2+20),z:frame.z+nz*(river.width/2+20)};
   if(raised)s.raisedBridges.add(river.bridgeId);
-  s.move(s.human,Math.PI/2,river.width+40);
-  assert.equal(s.human.x>river.x+river.width/2+19,!raised,`raised=${raised}`);
+  s.move(s.human,Math.atan2(-nx,-nz),river.width+40);
+  const across=(s.human.x-frame.x)*nx+(s.human.z-frame.z)*nz;
+  assert.equal(across<-(river.width/2+19),!raised,`${river.bridgeId}, raised=${raised}`);
  }
 });
 

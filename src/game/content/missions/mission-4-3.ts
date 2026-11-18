@@ -23,7 +23,7 @@ export const MISSION_4_3:MissionDefinition={
   {id:'union-player',kind:'union-tactical',...MAP_4_3_POINTS.start,yaw:Math.PI,pilot:true},
   {id:'kylie-asv',kind:'union-asv',...p(206,96),yaw:Math.PI,personId:'kylie',pilot:true},
   {id:'thane-sentry',kind:'union-sentry',...p(234,96),yaw:Math.PI,personId:'thane',pilot:true},
-  {id:'union-support',kind:'union-aip',...p(220,64),pilot:false},
+  {id:'union-support',kind:'union-aip',...p(245,98),pilot:false},
   {id:'darken-opening-sentry',kind:'darken-sentry',...p(275,140),yaw:-Math.PI/2,pilot:true},
   {id:'merc-tactical',kind:'merc-tactical',...p(215,184),yaw:Math.PI/2,pilot:true},
   {id:'darken-aip',kind:'darken-aip',...p(251,185),yaw:-Math.PI/2,pilot:true},

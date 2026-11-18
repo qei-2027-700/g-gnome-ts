@@ -1153,16 +1153,26 @@ test('4-2 starts on foot, boards a dedicated Scorp Meson tower and records occup
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;
  const hq=s.facilities.find(f=>f.id==='ur-kinsk-hq')!,backCliff=s.mission.terrain.cliffs!.find(c=>c.id==='urkinsk-back-left-cliff')!;
  const screenRight=(point:{x:number;z:number})=>(point.x-s.player.x)*Math.cos(s.humanYaw)-(point.z-s.player.z)*Math.sin(s.humanYaw);
- assert.equal(s.mounted,null);assert.equal(s.mission.terrain.biome,'grassland');assert.equal(s.mission.terrain.skyPalette,'amber');assert.equal(s.human.z,840);assert.equal(s.humanYaw,Math.PI);assert.ok(screenRight(s.units.find(u=>u.id==='scorp-rocket')!)>0);assert.ok(screenRight(tower)<0);assert.ok(tower.z>hq.z&&hq.z>backCliff.z);assert.equal(s.mission.terrain.cliffs!.length,7);assert.equal(s.mission.terrain.peaks!.length,7);assert.ok(s.terrainObstacles.includes(backCliff));assert.ok(!s.objectiveStates[0].done);
+ assert.equal(s.mounted,null);assert.equal(s.mission.terrain.biome,'grassland');assert.equal(s.mission.terrain.skyPalette,'amber');assert.equal(s.human.z,840);assert.equal(s.humanYaw,Math.PI);assert.ok(screenRight(s.units.find(u=>u.id==='scorp-rocket')!)>0);assert.ok(screenRight(tower)<0);assert.ok(tower.z>hq.z&&hq.z>backCliff.z);assert.ok(s.mission.terrain.cliffs!.length>20);assert.equal(s.mission.terrain.peaks!.length,8);assert.ok(s.terrainObstacles.includes(backCliff));assert.ok(!s.objectiveStates[0].done);
  const river=s.mission.terrain.river!,path=river.path!,bank=(point:{x:number;z:number})=>riverBank(path,point.x,point.z),playerBank=bank(s.player);
- assert.ok(path[0]!.z>s.player.z&&path[0]!.x>s.player.x,'the river enters above and to the right of the start');
- assert.ok(path.at(-1)!.z<s.player.z&&path.at(-1)!.x>s.player.x&&path.at(-1)!.x>0,'the river leaves below the start and stays on the right');
- for(const cliff of s.mission.terrain.cliffs!)assert.ok(playerBank*bank(cliff)>0&&riverDistance(river,cliff.x,cliff.z)>river.width/2,`${cliff.id} stays on the start side of the river`);
+ assert.ok(path[0]!.z<s.player.z&&path[0]!.x>s.player.x,'the river starts to the right of the northern base');
+ assert.ok(path.at(-1)!.z<s.player.z&&path.at(-1)!.x>s.player.x&&path.at(-1)!.x>0,'the river ends in the southern half, right of the start');
+ for(const cliff of s.mission.terrain.cliffs!)assert.ok(riverDistance(river,cliff.x,cliff.z)>river.width/2,`${cliff.id} is outside the water`);
+ assert.ok(s.mission.terrain.cliffs!.some(cliff=>playerBank*bank(cliff)<0),'the eastern green islands are across the river');
  assert.ok(Math.min(...s.mission.terrain.cliffs!.map(cliff=>Math.hypot(cliff.x-s.player.x,cliff.z-s.player.z)))<riverDistance(river,s.player.x,s.player.z),'the start sits nearer the ridge field than the river');
  for(let i=0;i<800&&!s.mounted;i++){s.humanYaw=Math.atan2(tower.x-s.human.x,tower.z-s.human.z);s.tick(1/60,{...idle,forward:true});}
  assert.equal(s.units.find(u=>u.id==='scorp-rocket')!.personId,'kylie');assert.equal(s.units.find(u=>u.id==='thane-meson')!.personId,'thane');assert.equal(s.mounted?.id,tower.id);assert.equal(tower.kind,'scorp-meson-tower');assert.ok(s.objectiveStates[0].done);s.fire(1);assert.ok(s.events.some(e=>e.type==='shot'&&e.weapon==='GAUS30'&&e.unit===tower));
  const start={x:tower.x,z:tower.z};for(let i=0;i<30;i++)s.tick(1/60,{...idle,forward:true,boost:true});assert.deepEqual({x:tower.x,z:tower.z},start);assert.equal(s.throttle,0);
  s.eject();assert.equal(s.flight,null);assert.ok(s.objectiveStates[0].done);const retry=new Simulation('Easy',MISSION_4_2);assert.ok(!retry.objectiveStates[0].done);assert.equal(retry.mounted,null);
+});
+test('4-2 dark land remains walkable and the green central island stops a walker',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ const mission=structuredClone(MISSION_4_2);mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.base=undefined;mission.rocks=[];
+ const s=new Simulation('Easy',mission),at=(x:number,y:number)=>({x:(x-225)*3,z:1000-(y-50)*3});
+ s.human=at(190,250);s.move(s.human,Math.PI,90);
+ assert.ok(distance(s.human,at(190,280))<2,'the black corridor south of the central island stays open');
+ s.human=at(190,254);s.move(s.human,-Math.PI/2,135);
+ assert.ok(s.human.x>at(145,254).x,'the pale island blocks movement before its center');
 });
 test('4-2 Scorp garrison engages Union without shooting the player and the defense can win or fail once',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;s.human={x:tower.x,z:tower.z};assert.ok(s.board());
@@ -1210,7 +1220,7 @@ test('4-2 clears immediately on its bridge switch, not on entering the control b
   const bridge=riverFrameAtZ(r,r.bridgeZ),normal={x:bridge.tz,z:-bridge.tx},point=(across:number,along=0)=>({x:bridge.x+normal.x*across+bridge.tx*along,z:bridge.z+normal.z*across+bridge.tz*along});
   const occupied=s.units.find(u=>u.id==='bridge-union-sentry')!,empty=s.units.find(u=>u.id==='scorp-asv-guard')!,safe=s.units.find(u=>u.id==='scorp-sentry-guard')!;Object.assign(occupied,point(0));Object.assign(empty,point(12));empty.pilot=false;Object.assign(safe,point(r.width/2+20));
   const pedestrian=s.soldiers.find(v=>v.personId==='kylie')!,bank=s.soldiers.find(v=>v.personId==='thane')!;pedestrian.boardingTarget=undefined;Object.assign(pedestrian,point(0));bank.boardingTarget=undefined;Object.assign(bank,point(0,r.bridgeWidth/2+10));
- const reserve=s.units.find(u=>u.id==='bridge-rocket')!;assert.equal(reserve.pilot,false);assert.ok(reserve.x<r.x-r.width/2);assert.ok(MISSION_4_2.units.find(u=>u.id===occupied.id)!.x>r.x+r.width/2);assert.ok(Math.hypot(control.x-bridge.x,control.z-bridge.z)>150);
+ const reserve=s.units.find(u=>u.id==='bridge-rocket')!;assert.equal(reserve.pilot,false);assert.ok(reserve.x<r.x-r.width/2);assert.ok(MISSION_4_2.units.find(u=>u.id===occupied.id)!.x>r.x+r.width/2);assert.ok(Math.hypot(control.x-bridge.x,control.z-bridge.z)>60);
  s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.ok(!occupied.alive&&!empty.alive&&!pedestrian.alive);assert.ok(safe.alive&&bank.alive);assert.ok(!s.soldiers.some(v=>v.alive&&v.sourceVehicle===occupied.id));
  const deathEvents=s.events.filter(e=>e.type==='soldier-death').length;assert.equal(s.raiseBridge(),false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,deathEvents);
 });

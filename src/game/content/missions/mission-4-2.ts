@@ -1,4 +1,8 @@
 import type {MissionDefinition,Spawn} from './types.ts';
+const originalMap=new URL('../../../../assets/map/4-2/4-2map.png',import.meta.url).href;
+// The crop is x=14..435, y=50..474. One source pixel is three provisional world units.
+const mapPoint=(x:number,y:number)=>({x:(x-225)*3,z:(50-y)*3+1000});
+const ridge=(id:string,x:number,y:number,width:number,depth:number)=>({id,...mapPoint(x,y),width:width*3,depth:depth*3,height:120});
 // User-confirmed scenario; coordinates, roster, timings and IFF are provisional.
 const groundAttackers:Spawn[]=Array.from(
   {length:8},(_,i)=>(
@@ -19,6 +23,11 @@ const attackers=[...groundAttackers,...airAttackers];
 
 export const MISSION_4_2:MissionDefinition={
  id:'4-2',title:'Scorp Defense',playerFaction:'union',friendlyFactions:['scorp'],initialIff:'3317',factionCodes:{scorp:'3317',union:'2620'},
+ briefingPresentation:{mapPreview:{src:originalMap,width:824,height:818,viewBox:'14 50 421 424',label:{ja:'原作4-2の任務地図',en:'Original Mission 4-2 map'},mapProjection:{pixelOrigin:{x:225,y:50},worldOrigin:{x:0,z:1000},pixelPerWorldX:{x:1/3,y:0},pixelPerWorldZ:{x:0,y:-1/3}}},entries:[
+  {label:{ja:'Ur-Kinskを防衛せよ',en:'Defend Ur-Kinsk'}},
+  {label:{ja:'ガードタワーを占拠せよ',en:'Occupy guard towers'}},
+  {label:{ja:'橋を上げよ',en:'Raise the bridge'}}
+ ]},
  bgm:{volumeScale:.8,start:{trackId:'bgm-credits',delay:0},afterEliminate:{unitIds:attackers.map(u=>u.id),trackId:'bgm-snow-maze'}},
  subtitle:{ja:'ScorpとともにシェリダンのUnion軍を迎撃',en:'Defend Ur-Kinsk alongside Scorp against Sheridan’s Union forces'},
  briefing:{ja:'シェリダン率いるUnion軍がUr-Kinskへ迫っている。徒歩の開始地点から左手のScorpミーゾン・ガードタワーへ搭乗し、友軍Scorpとともに基地を守れ。キリーは右手のロケットタワー、ターンはもう1基のミーゾンタワーへ搭乗する。Union AIP2機が電力プラントを狙うため優先して迎撃せよ。最後は川辺のBridge Control Buildingへ入り、スイッチで橋を上げると即座に完了する。地上編成・配置・数値は試作設定。',en:'Sheridan’s Union forces are approaching Ur-Kinsk. Occupy the Scorp Meson tower to your left and defend the base alongside Scorp. Kylie boards the right rocket tower; Thane boards the second Meson tower. Two Union AIPs attack the power plant: intercept them before both Meson towers lose power. Finish by entering the riverside Bridge Control Building and raising the bridge. Ground roster, positions and statistics are provisional.'},
@@ -44,9 +53,9 @@ export const MISSION_4_2:MissionDefinition={
   {id:'scorp-tactical-guard',kind:'scorp-tactical',x:-130,z:730,pilot:true},
   {id:'scorp-tactical-guard2',kind:'scorp-tactical',x:-90,z:715,pilot:true},
   // {id:'scorp-tactical-guard3',kind:'scorp-tactical',x:-600,z:5,pilot:true},
-  {id:'bridge-rocket',kind:'scorp-rocket-tower',x:80,z:620,pilot:false},
+  {id:'bridge-rocket',kind:'scorp-rocket-tower',x:170,z:610,pilot:false},
   {id:'bridge-union-sentry',kind:'union-sentry',x:350,z:420,yaw:-Math.PI/2,pilot:true},
-  {id:'bridge-union-asv',kind:'union-asv',x:300,z:440,yaw:-Math.PI/2,pilot:true},
+  {id:'bridge-union-asv',kind:'union-asv',x:390,z:440,yaw:-Math.PI/2,pilot:true},
   ...attackers
  ],
  personnel:[
@@ -69,10 +78,10 @@ export const MISSION_4_2:MissionDefinition={
    {id:'ur-kinsk-hq',kind:'command',name:'Ur-Kinsk HQ · 司令部',x:0,z:700,width:45,depth:35,height:18,health:1600,color:'#466b4c',boardable:false},
    {id:'ur-kinsk-power',kind:'power-plant',name:'Scorp Power Plant · 電力プラント',x:-105,z:700,width:38,depth:35,height:15,health:500,boardable:false},
   //  {id:'ur-kinsk-latlon',kind:'comm-array',name:'Scorp Latlon COMM Array',x:105,z:700,width:35,depth:30,height:15,health:500,boardable:false},
-   {id:'bridge-control',kind:'bridge-control',bridgeId:'ur-kinsk-bridge',name:'Bridge Control Building',x:20,z:550,width:32,depth:25,height:12,health:800,boardable:true}
+   {id:'bridge-control',kind:'bridge-control',bridgeId:'ur-kinsk-bridge',name:'Bridge Control Building',x:205,z:517,width:32,depth:25,height:12,health:800,boardable:true}
   ]
  },
- waypoints:[{id:1,x:20,z:800,radius:5},{id:2,x:20,z:550,radius:15}],
+ waypoints:[{id:1,x:20,z:800,radius:5},{id:2,x:205,z:517,radius:15}],
  objectives:[
   {id:'occupy-meson',optional:true,type:'board-unit',unitId:'scorp-meson',label:{ja:'Scorpミーゾン・ガードタワーに搭乗',en:'Occupy the Scorp Meson Guard Tower'}},
   {id:'defend-ur-kinsk',type:'defend',untilBridgeId:'ur-kinsk-bridge',targetIds:['ur-kinsk-hq'],attackerIds:attackers.map(u=>u.id),label:{ja:'橋を上げるまでUr-Kinsk司令部を守る',en:'Protect Ur-Kinsk headquarters until the bridge is raised'}},
@@ -81,33 +90,38 @@ export const MISSION_4_2:MissionDefinition={
  terrain:{
   river:{
     bridgeId:'ur-kinsk-bridge',
-    x:210,
-    z:360,
-    width:70,
-    length:1280,
-    bridgeZ:560,
+    x:294,
+    z:517,
+    width:30,
+    length:770,
+    bridgeZ:517,
     bridgeWidth:24,
     path:[
-      {x:460,z:1000},{x:420,z:860},{x:370,z:720},{x:340,z:620},{x:290,z:560},
-      {x:250,z:480},{x:240,z:400},{x:300,z:280},{x:350,z:160},{x:320,z:40},
-      {x:370,z:-90},{x:340,z:-190},{x:380,z:-280}
+      mapPoint(374,113),mapPoint(356,131),mapPoint(347,166),mapPoint(337,190),mapPoint(323,211),
+      mapPoint(316,241),mapPoint(300,270),mapPoint(278,303),mapPoint(271,325),mapPoint(287,350),mapPoint(246,367)
     ]
   },
-  biome:'grassland',weather:'overcast',skyPalette:'amber',ridgeStyle:'rocky',halfWidth:620,minZ:-280,maxZ:1000,ridgeHeight:34,ridgeVariation:22,seed:42,
+  biome:'grassland',weather:'overcast',skyPalette:'amber',ridgeStyle:'rocky',halfWidth:630,minZ:-272,maxZ:1000,ridgeHeight:34,ridgeVariation:22,seed:42,
   peaks:[
-    {x:-240,z:780,width:150,depth:110,height:125},{x:-420,z:300,width:160,depth:130,height:120},
-    {x:-200,z:460,width:160,depth:110,height:140},{x:-160,z:80,width:150,depth:120,height:120},
-    {x:160,z:450,width:130,depth:100,height:135},{x:40,z:180,width:130,depth:110,height:120},
-    {x:190,z:800,width:130,depth:100,height:105}
+    {...mapPoint(156,75),width:90,depth:48,height:125},{...mapPoint(77,185),width:105,depth:60,height:120},
+    {...mapPoint(75,323),width:70,depth:130,height:120},{...mapPoint(145,254),width:100,depth:100,height:140},
+    {...mapPoint(175,385),width:85,depth:125,height:120},{...mapPoint(257,235),width:50,depth:100,height:135},
+    {...mapPoint(370,276),width:80,depth:145,height:120},{...mapPoint(380,170),width:50,depth:90,height:105}
   ],
   cliffs:[
-    {id:'urkinsk-west-north-cliff',x:-240,z:780,width:120,depth:90,height:130},
-    {id:'urkinsk-west-south-cliff',x:-420,z:300,width:120,depth:100,height:125},
-    {id:'urkinsk-back-left-cliff',x:-200,z:460,width:120,depth:90,height:130},
-    {id:'urkinsk-center-south-cliff',x:-160,z:80,width:110,depth:90,height:120},
-    {id:'urkinsk-east-north-cliff',x:190,z:800,width:100,depth:80,height:115},
-    {id:'urkinsk-east-center-cliff',x:160,z:450,width:90,depth:80,height:135},
-    {id:'urkinsk-east-south-cliff',x:40,z:180,width:100,depth:80,height:120}
+    ridge('urkinsk-northwest',150,74,36,19),ridge('urkinsk-north',219,66,99,15),
+    ridge('urkinsk-northeast',278,87,20,44),ridge('urkinsk-northeast-hook',310,129,39,17),
+    ridge('urkinsk-west-north-cliff',143,115,16,66),
+    ridge('urkinsk-west-upper',61,181,51,19),ridge('urkinsk-west-upper-hook',125,171,40,17),
+    ridge('urkinsk-west-middle',68,250,19,94),ridge('urkinsk-west-lower',79,327,20,80),
+    ridge('urkinsk-west-south-cliff',61,386,25,55),ridge('urkinsk-west-tip',55,426,20,28),
+    ridge('urkinsk-inner-island',145,254,35,38),
+    ridge('urkinsk-center-north',246,183,17,26),ridge('urkinsk-center-middle',263,228,17,53),
+    ridge('urkinsk-center-south',239,284,19,47),
+    ridge('urkinsk-back-left-cliff',179,350,49,26),ridge('urkinsk-bottom-middle',167,388,24,56),
+    ridge('urkinsk-bottom-tip',185,418,41,20),ridge('urkinsk-bottom-hook',214,336,30,16),
+    ridge('urkinsk-east-upper',378,170,18,39),ridge('urkinsk-east-hook',401,193,24,19),
+    ridge('urkinsk-east-island',369,276,31,67),ridge('urkinsk-east-tip',386,302,18,31)
   ]
  },
  rocks:[{x:-220,z:220,r:10},{x:220,z:250,r:13},{x:-300,z:440,r:15}],

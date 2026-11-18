@@ -175,7 +175,7 @@ test('4-2 river follows the mapped bends and confines the open bridge crossing t
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts'),mission=structuredClone(MISSION_4_2);
  mission.units=[];mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];
  const river=mission.terrain.river!,path=river.path!,north=riverFrameAtZ(river,900),south=riverFrameAtZ(river,-180);
- assert.ok(north.x>river.x&&south.x>river.x,'the mapped river stays right of the straight center');
+ assert.ok(north.x>river.x&&south.x<river.x,'the river flows from the upper right toward the lower center');
  assert.ok(Math.max(...path.map(point=>point.x))-Math.min(...path.map(point=>point.x))>150,'the mapped river still bends');
  for(const raised of [false,true]){
   const s=new Simulation('Easy',mission),start=riverSide(river,river.bridgeZ,-1,river.width/2+20);s.human={...start.point};if(raised)s.raisedBridges.add(river.bridgeId);

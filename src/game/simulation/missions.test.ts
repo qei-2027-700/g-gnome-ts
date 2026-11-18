@@ -27,7 +27,7 @@ test('3-1 foot travel stays on the dark ground and stops on the pale bands',()=>
  assert.deepEqual(s.units.map(u=>u.id),['field-anchor','recon-asv','plaza-rocket','plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv','border-meson-north','border-meson-east','border-meson-south','border-sentry-west','border-sentry-south']);
  const recon=s.units.find(u=>u.id==='recon-asv')!,tower=s.units.find(u=>u.id==='plaza-rocket')!,enemyIff=mission.factionCodes.scorp;
  assert.equal(enemyIff,'0701');
- assert.equal(recon.pilot,true);assert.equal(recon.iff,enemyIff);assert.equal(recon.spec.ai.stopDistance,800);assert.equal(tower.iff,enemyIff);
+ assert.equal(recon.pilot,true);assert.equal(recon.iff,enemyIff);assert.equal(recon.spec.ai.stopDistance,8);assert.equal(recon.spec.ai.pursuitRange,500);assert.equal(tower.iff,enemyIff);
  assert.equal(tower.pilot,false);assert.equal(tower.kind,'scorp-rocket-tower');
  const plazaScorp=['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical'].map(id=>s.units.find(u=>u.id===id)!);
  const plazaUnion=['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'].map(id=>s.units.find(u=>u.id===id)!);
@@ -133,7 +133,7 @@ test('3-1 foot travel stays on the dark ground and stops on the pale bands',()=>
  fight.human={x:gunner.x+70,z:gunner.z+40};
  let worstAlert=0,sawAlert=false;
  for(let i=0;i<40;i++){const t=performance.now();fight.tick(1/60,idle);worstAlert=Math.max(worstAlert,performance.now()-t);sawAlert||=gunner.alert;}
- assert.equal(sawAlert,true);assert.equal(gunner.speed,0);
+ assert.equal(sawAlert,true);assert.ok(gunner.speed>0);
  assert.ok(worstAlert<250,`alert tick took ${worstAlert.toFixed(0)}ms`);
 });
 test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provisional IFF and the plaza fight follow',()=>{
@@ -229,9 +229,17 @@ test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provis
  assert.equal(plaza.events.filter(event=>event.radioId==='thane-union-hold').length,0);
  assert.ok(worst<250,`plaza tick took ${worst.toFixed(0)}ms`);
 });
+test('3-1 Scorp reacts when a Union ally approaches before the player',()=>{
+ const s=new Simulation('Easy',MISSION_3_1),enemy=s.units.find(unit=>unit.id==='plaza-scorp-sentry')!,ally=s.units.find(unit=>unit.id==='plaza-union-sentry')!;
+ s.units=[enemy,ally];s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];
+ ally.x=enemy.x+75;ally.z=enemy.z;s.human={x:enemy.x+500,z:enemy.z+500};
+ for(let i=0;i<360;i++)s.tick(1/60,idle);
+ assert.equal(enemy.alert,true);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy),'the Scorp fires at the Union ally');
+ assert.equal(s.humanHealth,100);
+});
 test('3-1 recon ASV waits after first sight before the machine gun, and the missile is later',()=>{
  const s=new Simulation('Easy',MISSION_3_1),asv=s.units.find(unit=>unit.id==='recon-asv')!;
- s.human={x:asv.x+18,z:asv.z+18};
+ s.human={x:asv.x+70,z:asv.z+40};
  const shots=()=>s.events.filter(event=>event.type==='shot'&&event.unit===asv);
  for(let i=0;i<Math.floor((AI_TARGET_SETTLE-.1)*60);i++)s.tick(1/60,idle);
  assert.equal(asv.alert,true);
@@ -242,6 +250,37 @@ test('3-1 recon ASV waits after first sight before the machine gun, and the miss
  assert.ok(shots().length>0,`no shot by ${s.time.toFixed(2)}s, health ${s.humanHealth}`);
  assert.ok(firedAt>=AI_TARGET_SETTLE);
  assert.equal(shots()[0].weapon,'zWASP');
+});
+test('3-1 recon ASV keeps pursuing after the player leaves detection range',()=>{
+ const s=new Simulation('Easy',MISSION_3_1),asv=s.units.find(unit=>unit.id==='recon-asv')!;
+ s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.base=undefined;
+ s.human={x:asv.x+80,z:asv.z};for(let i=0;i<20;i++)s.tick(1/60,idle);
+ assert.equal(asv.alert,true);
+ s.human={x:asv.x+260,z:asv.z};const before=distance(asv,s.human);
+ for(let i=0;i<180;i++)s.tick(1/60,idle);
+ assert.ok(distance(asv,s.human)<before-15,`the ASV stopped ${distance(asv,s.human).toFixed(1)}m from the player`);
+ assert.equal(asv.alert,true);
+});
+test('3-1 recon ASV can drive into a player who stands in its path',()=>{
+ const s=new Simulation('Easy',MISSION_3_1),asv=s.units.find(unit=>unit.id==='recon-asv')!;
+ s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.base=undefined;
+ s.human={x:asv.x+25,z:asv.z};
+ for(let i=0;i<240&&s.humanHealth>0;i++)s.tick(1/60,idle);
+ assert.equal(s.humanHealth,0);
+});
+test('3-1 recon ASV waits for a clear line again after cover blocks its target',()=>{
+ const s=new Simulation('Easy',MISSION_3_1),asv=s.units.find(unit=>unit.id==='recon-asv')!;
+ s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.base=undefined;
+ s.human={x:asv.x+130,z:asv.z};for(let i=0;i<20;i++)s.tick(1/60,idle);
+ assert.equal(asv.alert,true);
+ s.mission.terrain.cliffs=[{id:'cover',x:asv.x+65,z:asv.z,width:12,depth:300,height:75}];
+ for(let i=0;i<60;i++)s.tick(1/60,idle);
+ assert.equal(s.events.some(event=>event.type==='shot'&&event.unit===asv),false);
+ s.mission.terrain.cliffs=[];s.events=[];
+ for(let i=0;i<Math.floor((AI_TARGET_SETTLE-.1)*60);i++)s.tick(1/60,idle);
+ assert.equal(s.events.some(event=>event.type==='shot'&&event.unit===asv),false);
+ for(let i=0;i<120&&s.events.every(event=>event.type!=='shot'||event.unit!==asv);i++)s.tick(1/60,idle);
+ assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===asv));
 });
 test('3-5 keeps a walkable black-ground route from the northern X to waypoint 1 and places the laboratory southeast',()=>{
  const mission=MISSION_3_5,field=new Simulation('Easy',mission),slopes=mission.terrain.cliffs!,laboratory=field.facilities.find(f=>f.id==='g-nome-laboratory')!;
@@ -532,6 +571,20 @@ test('3-2 Thane moves on his own, the conversation starts after five seconds, an
  const stoppedAt={x:heldThane.x,z:heldThane.z};
  for(let i=0;i<100;i++)held.tick(.05,idle);
  assert.ok(Math.hypot(heldThane.x-stoppedAt.x,heldThane.z-stoppedAt.z)<15,'a player hold order cancels the scripted route');
+});
+test('3-2 Kylie does not spend TCREAP ammunition into a cliff between her and the plant',()=>{
+ const s=new Simulation('Easy',MISSION_3_2),kylie=s.units.find(unit=>unit.id==='kylie-tactical')!,plant=s.facilities.find(facility=>facility.id==='scorp-power-plant')!;
+ s.units=s.units.filter(unit=>unit===s.mounted||unit===kylie);kylie.x=plant.x;kylie.z=plant.z-90;kylie.yaw=kylie.aim=0;kylie.spec.speed=0;
+ s.mission.unitRoutes=[{unitId:kylie.id,x:kylie.x,z:kylie.z,startAt:0,attackTargetIds:[plant.id],attackPositions:[{x:kylie.x,z:kylie.z}]}];
+ s.mission.terrain.cliffs=[{id:'cliff-cover',x:plant.x,z:plant.z-45,width:60,depth:12,height:75}];s.mission.rocks=[];
+ assert.equal(s.lineOfSight(kylie,plant),false);
+ const ammo=kylie.ammunition.TCREAP;for(let i=0;i<360;i++)s.tick(1/60,idle);
+ assert.equal(s.events.filter(event=>event.type==='shot'&&event.unit===kylie&&event.weapon==='TCREAP').length,0);
+ assert.equal(kylie.ammunition.TCREAP,ammo);
+ s.mission.terrain.cliffs=[];s.events=[];const times:number[]=[];
+ for(let i=0;i<360;i++){s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===kylie&&event.weapon==='TCREAP'))times.push(s.time);s.events=[];}
+ assert.ok(times.length>0,'Kylie resumes TCREAP fire when the cliff is removed');
+ assert.ok(times.every((time,index)=>index===0||time-times[index-1]>=.1),'each TCREAP burst respects the weapon interval');
 });
 test('3-2 allies destroy their assigned facilities in sequence when enemy vehicles are absent',()=>{
  const s=new Simulation('Easy',MISSION_3_2),plant=s.facilities.find(f=>f.id==='scorp-power-plant')!,comm=s.facilities.find(f=>f.id==='ur-kinsk-comm')!,generator=s.facilities.find(f=>f.id==='scorp-shield-generator')!;

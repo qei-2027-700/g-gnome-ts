@@ -22,7 +22,7 @@ export const MISSION_3_1:MissionDefinition={
  player:start,initialYaw:yaw,assignedUnitId:'field-anchor',initialView:'first-person',
  units:[
   {id:'field-anchor',kind:'scorp-asv',x:1200,z:0,pilot:false,iff:'0000'},
-  {id:'recon-asv',kind:'scorp-asv',...asv,yaw:Math.PI/2,pilot:true,overrides:{ai:{stopDistance:800}}},
+  {id:'recon-asv',kind:'scorp-asv',...asv,yaw:Math.PI/2,pilot:true,overrides:{ai:{stopDistance:8,pursuitRange:500,waitForClearShot:true}}},
   {id:'plaza-rocket',kind:'scorp-rocket-tower',...MAP_3_1_POINTS.plazaRocket,pilot:false},
   {id:'plaza-scorp-assault',kind:'scorp-assault',...MAP_3_1_POINTS.plazaScorpAssault,yaw:east,pilot:true},
   {id:'plaza-scorp-sentry',kind:'scorp-sentry',...MAP_3_1_POINTS.plazaScorpSentry,yaw:east,pilot:true},

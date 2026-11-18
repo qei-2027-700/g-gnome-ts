@@ -214,13 +214,13 @@ function maneuverSetup(distanceToTarget:number){
  const s=setup(),ally=s.units[1],target=s.units.find(u=>u.id==='scorp-asv')!;
  s.mission.rocks=[];s.mission.base=undefined;s.mission.minefields=[];s.mission.completionEnabled=false;
  s.units=s.units.filter(u=>u===s.mounted||u===ally||u===target);s.mounted!.x=-180;s.mounted!.z=-80;
- ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;target.x=0;target.z=distanceToTarget;target.cooldown=999;target.spec.speed=0;target.shield=10000;
+ ally.x=0;ally.z=0;ally.yaw=0;ally.aim=0;target.x=0;target.z=distanceToTarget;target.cooldown=999;target.spec={...target.spec,speed:0,shield:10000};target.shield=10000;
  assert.deepEqual(s.sendAllyOrder('kylie','attack').accepted,['kylie']);return {s,ally,target};
 }
-test('attack order closes to fighting distance and keeps moving and firing inside weapon range',()=>{
+test('attack order closes to fighting distance and holds position while firing',()=>{
  const {s,ally,target}=maneuverSetup(210);run(s,8);assert.ok(distance(ally,target)<120);
  const start={x:ally.x,z:ally.z};s.events=[];run(s,6);
- assert.ok(distance(ally,start)>8);assert.ok(distance(ally,target)>30);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.equal(ally.order?.kind,'attack');
+ assert.ok(distance(ally,start)<8);assert.ok(distance(ally,target)>30);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.equal(ally.order?.kind,'attack');
 });
 test('close enemy causes reverse movement while retaining the attack order; moving target is pursued',()=>{
  const {s,ally,target}=maneuverSetup(22);let reversed=false;for(let i=0;i<180;i++){s.tick(1/60,idle);if(ally.speed<-.5)reversed=true;}
@@ -244,11 +244,18 @@ for(const obstacle of ['rock','building'] as const)test(`attack order routes aro
  assert.ok(lateral>30);assert.ok(shots>0);assert.ok(distance(ally,target)<120);assert.equal(ally.order?.kind,'attack');
 });
 
-test('fixed forward weapons get firing pauses between maneuvers rather than orbiting without shooting',()=>{
+test('fixed forward weapons hold a clear firing position instead of orbiting between shots',()=>{
  const {s,ally,target}=maneuverSetup(65);ally.spec.torsoLimit=0;s.events=[];
  let traveled=0,previous={x:ally.x,z:ally.z};
  for(let i=0;i<900;i++){s.tick(1/60,idle);traveled+=distance(previous,ally);previous={x:ally.x,z:ally.z};}
- assert.ok(traveled>20);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.ok(distance(ally,target)>25);
+ assert.ok(traveled<20);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===ally));assert.ok(distance(ally,target)>25);
+});
+test('Union Sentry holds a clear firing position and keeps attacking after its first shot',()=>{
+ const {s,ally,target}=maneuverSetup(75);target.shield=10000;
+ const shots:number[]=[];for(let i=0;i<600;i++){s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===ally))shots.push(s.time);s.events=[];}
+ assert.ok(shots.length>=3,`shots: ${shots.length}`);
+ assert.ok(shots[2]-shots[0]<3,`first three shots span ${(shots[2]-shots[0]).toFixed(2)}s`);
+ assert.ok(distance(ally,target)<100);
 });
 
 test('individual F5 follows the selected moving unit, keeps that identity after selection changes and stops on target loss',()=>{
@@ -322,7 +329,7 @@ test('2-6 F2 addresses Kylie before and after tower boarding; F1 attacks the sel
 
 
 function orderedFootSetup(){const {s,people}=footSquad();s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.completionEnabled=false;s.mines=[];s.units=[s.mounted!];s.mounted!.x=-80;s.mounted!.z=-60;
- const target=makeUnit('foot-order-target','merc-sentry',0,260,true);target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=9999;s.units.push(target);people[0].x=0;people[0].z=0;people[0].yaw=0;people.slice(1).forEach((p,i)=>{p.x=-50-i*10;p.z=-50;p.cooldown=999;});s.selected=target.id;return {s,people,target};}
+ const target=makeUnit('foot-order-target','merc-sentry',0,260,true);target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=9999;s.units.push(target);people[0].x=0;people[0].z=0;people[0].yaw=0;people[0].gashrAmmo=0;people.slice(1).forEach((p,i)=>{p.x=-50-i*10;p.z=-50;p.cooldown=999;});s.selected=target.id;return {s,people,target};}
 
 test('dismounted F2/F1 attack advances into common PRIF44 range, fires and damages the selected enemy; invalid target clears once',()=>{
  const {s,people,target}=orderedFootSetup(),soldier=people[0],menu=new RadioMenu();key(s,menu,'F2');assert.deepEqual(key(s,menu,'F1')!.accepted,['kylie']);assert.deepEqual(soldier.order,{kind:'attack',targetId:target.id});const shield=target.shield;

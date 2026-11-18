@@ -84,13 +84,13 @@ test('turning and advancing in external view changes the path while the turret f
  assert.ok(s.player.x>1);assert.ok(Math.hypot(s.player.x,s.player.z)>1);assert.ok(s.yaw>0);assert.equal(s.mounted!.aim,s.mounted!.yaw);assert.equal(s.pitch,0);
 });
 
-test('held custom keys and mouse repeat at controlled intervals while releases and presses keep weapon cooldowns',async()=>{
+test('held custom keys and mouse repeat at weapon intervals while releases and presses keep weapon cooldowns',async()=>{
  const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');const {weaponMountCount}=await import('./content/weapons.ts');const settings=defaults();settings.bindings.fire1='KeyH';settings.bindings.fire2='KeyK';settings.bindings.fire3='KeyL';
  for(const [key,weapon] of [['KeyH','DASY'],['KeyK','SAG5T'],['KeyL','RAID']] as const){const s=new Simulation('Easy',MISSION_2_4),count=()=>s.events.filter(e=>e.type==='shot'&&e.unit===s.mounted&&e.weapon===weapon).length,times:number[]=[];
-  for(let i=0;i<300;i++){const before=count();s.tick(1/60,readInput(settings,new Set([key])));if(count()>before)times.push(s.time);}assert.ok(times.length>=2&&times.length<=11,weapon);for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.5-1e-8,weapon);
+  for(let i=0;i<300;i++){const before=count();s.tick(1/60,readInput(settings,new Set([key])));if(count()>before)times.push(s.time);}const interval=weapon==='DASY'?s.weapons.guns.DASY.interval:weapon==='SAG5T'?s.weapons.missiles.SAG5T.interval:Math.max(.5,s.weapons.lasers.RAID.interval);assert.ok(times.length>=2,weapon);for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=interval-1e-8&&times[i]-times[i-1]<interval+1/60+1e-8,weapon);
   for(let i=0;i<120;i++)s.tick(1/60,readInput(settings,new Set()));const before=count();s.tick(1/60,readInput(settings,new Set([key])));assert.equal(count(),before+weaponMountCount(s.mounted!.kind,weapon));s.tick(1/60,readInput(settings,new Set()));s.tick(1/60,readInput(settings,new Set([key])));assert.equal(count(),before+weaponMountCount(s.mounted!.kind,weapon),'repress cannot bypass weapon cooldown');
  }
- const mouse=new Simulation('Easy',MISSION_2_4);for(let i=0;i<120;i++)mouse.tick(1/60,readInput(settings,new Set(),true));assert.ok(mouse.mounted!.ammunition.DASY!<=296);assert.ok(mouse.mounted!.ammunition.DASY!>=295);
+ const mouse=new Simulation('Easy',MISSION_2_4);for(let i=0;i<120;i++)mouse.tick(1/60,readInput(settings,new Set(),true));assert.ok(mouse.mounted!.ammunition.DASY!<=284);assert.ok(mouse.mounted!.ammunition.DASY!>=282);
 });
 test('holding a firearm while boarding does not trigger another shot from the new chassis',async()=>{
  const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');const s=new Simulation('Easy',MISSION_2_4),u=s.mounted!,keys=new Set(['Digit1']),settings=defaults();s.eject('ground');s.units=[u];s.human={x:0,z:-10};

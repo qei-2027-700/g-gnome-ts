@@ -30,26 +30,28 @@ export const INFANTRY_WEAPONS={
 } as const;
 // VISOM flight speed in m/s; lifetime below preserves the 1000 m range.
 export const VISOM_SPEED=96;
+// Provisional shared firing intervals; individual mission weapon overrides can replace them.
+export const MACHINE_GUN_INTERVAL=.11;
+export const MISSILE_INTERVAL=2;
 // Manual p.46: PUG range/velocity/armor damage; radius and homing remain provisional.
 export const MISSILES={
-  PUG:{speed:100,damage:20,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},
-  HSSO:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  CHUM:{speed:94,damage:18,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
-  SAG5T:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  TCROCK:{speed:94,damage:18,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
-  SREM:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  UNKPA:{speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
-  VISOM:{speed:VISOM_SPEED,damage:4,radius:.45,lifetime:1000/VISOM_SPEED}
+  PUG:{interval:MISSILE_INTERVAL,speed:100,damage:20,radius:.45,infantryBlastRadius:7,infantryBlastDamage:35,lifetime:625/700},
+  HSSO:{interval:MISSILE_INTERVAL,speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  CHUM:{interval:MISSILE_INTERVAL,speed:94,damage:18,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
+  SAG5T:{interval:MISSILE_INTERVAL,speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  TCROCK:{interval:MISSILE_INTERVAL,speed:94,damage:18,radius:.45,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:425/94},
+  SREM:{interval:MISSILE_INTERVAL,speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  UNKPA:{interval:MISSILE_INTERVAL,speed:110,damage:18,radius:.5,infantryBlastRadius:5,infantryBlastDamage:28,lifetime:600/110},
+  VISOM:{interval:MISSILE_INTERVAL,speed:VISOM_SPEED,damage:4,radius:.45,lifetime:1000/VISOM_SPEED}
 };
 
-export const MACHINE_GUNS={FLECH:{range:150,interval:.11,damage:3,infantryDamage:4.5},DASY:{range:180,interval:.11,damage:4,infantryDamage:6},TCREAP:{range:160,interval:.11,damage:3,infantryDamage:4.5,projectileSpeed:60},'3cREAP':{range:160,interval:.11,damage:3,infantryDamage:4.5,projectileSpeed:60},zWASP:{range:180,interval:.11,damage:3,infantryDamage:4.5}};
+export const MACHINE_GUNS={FLECH:{range:150,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5},DASY:{range:180,interval:MACHINE_GUN_INTERVAL,damage:4,infantryDamage:6},TCREAP:{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},'3cREAP':{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},zWASP:{range:180,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5}};
 export type MachineGun=keyof typeof MACHINE_GUNS;
 export type MissileWeapon=keyof typeof MISSILES;
 export type VehicleWeapon=LaserWeapon|MachineGun|MissileWeapon;
-export const MISSILE_INTERVAL=.4;
 export type LaserSpec={hitPadding?:number;range:number;minRange:number;recharge:number;movingRechargeFactor:number;interval:number;energy:number;damage:number;speed:number};
 export type GunSpec={projectileSpeed?:number;infantryDamage?:number;range:number;interval:number;damage:number};
-export type MissileSpec={infantryBlastDamage?:number;infantryBlastRadius?:number;speed:number;damage:number;radius:number;lifetime:number};
+export type MissileSpec={interval:number;infantryBlastDamage?:number;infantryBlastRadius?:number;speed:number;damage:number;radius:number;lifetime:number};
 export type WeaponOverrides={lasers?:Partial<Record<LaserWeapon,Partial<LaserSpec>>>;guns?:Partial<Record<MachineGun,Partial<GunSpec>>>;missiles?:Partial<Record<MissileWeapon,Partial<MissileSpec>>>};
 export function resolveWeapons(overrides:WeaponOverrides={}){
  const lasers=Object.fromEntries(Object.entries(LASERS).map(([id,p])=>[id,{...p,...overrides.lasers?.[id as LaserWeapon]}])) as Record<LaserWeapon,LaserSpec>;

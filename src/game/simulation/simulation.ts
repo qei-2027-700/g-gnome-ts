@@ -13,7 +13,7 @@ import {PARTS,PART_DAMAGE_THRESHOLDS,freshParts,applyPartDamage,intersectParts,m
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import type {River,Spawn} from '../content/missions/types.ts';
 import {pitchDarkenTactical,resolveVehicle,type Faction,type VehicleKind,type VehicleOverride,type VehicleSpec} from '../content/vehicles.ts';
-import {resolveWeapons,allowsLaserHoldFire,HELD_TRIGGER_INTERVAL,MISSILE_INTERVAL,MISSILE_HOMING,AI_MISSILE_ACCURACY,ROCKET_TOWER_STILL_SPEED,weaponMountCount,type VehicleWeapon,type LaserWeapon,type MachineGun,type MissileWeapon,VISOM_GUIDANCE} from '../content/weapons.ts';
+import {resolveWeapons,allowsLaserHoldFire,HELD_TRIGGER_INTERVAL,MISSILE_HOMING,AI_MISSILE_ACCURACY,ROCKET_TOWER_STILL_SPEED,weaponMountCount,type VehicleWeapon,type LaserWeapon,type MachineGun,type MissileWeapon,VISOM_GUIDANCE} from '../content/weapons.ts';
 import {steerMissile,homeMissile} from './guided-flight.ts';
 import {isLaser,isMissile,laserRange} from './weapons.ts';
 import {type Difficulty} from '../settings.ts';
@@ -490,14 +490,14 @@ export class Simulation {
         unit.slotAmmo[slot]!--;const missile=this.fireMissile(unit,weapon,side,aimPoint,target);
         missile.aiGuidance={point:aimPoint,offset,refreshAt:this.time+accuracy.updateInterval};fired=true;
       }
-      if(fired)unit.cooldown=Math.max(MISSILE_INTERVAL,this.mission.tuning[this.difficulty].interval);return;
+      if(fired)unit.cooldown=this.weapons.missiles[weapon].interval;return;
     }
     const profile=isLaser(weapon)?this.weapons.lasers[weapon]:this.weapons.guns[weapon],range=isLaser(weapon)?laserRange(weapon,unit.laserCharge,this.weapons.lasers[weapon]):profile.range;
     if(isLaser(weapon)?unit.energy<this.laserEnergyCost(unit,weapon):(unit.slotAmmo[slot]??0)<=0)return;
     const origin=this.sentryMuzzle(unit,weapon,{x:unit.x,y:unit.hoverHeight+spec.height*.6,z:unit.z});
     const length=Math.hypot(point.x-origin.x,point.y-origin.y,point.z-origin.z),fraction=Math.min(1,range/(length||1)),endpoint={x:origin.x+(point.x-origin.x)*fraction,y:origin.y+(point.y-origin.y)*fraction,z:origin.z+(point.z-origin.z)*fraction};
     if(isLaser(weapon)&&this.mission.companions?.some(member=>member.personId===unit.personId)&&this.weaponOrigins(unit,weapon,origin).some(muzzle=>!this.clearAIShot(unit,muzzle,point,target)))return;
-    unit.cooldown=Math.max(profile.interval,this.mission.tuning[this.difficulty].interval);
+    unit.cooldown=isLaser(weapon)?Math.max(profile.interval,this.mission.tuning[this.difficulty].interval):profile.interval;
     if(isLaser(weapon)){unit.energy-=this.laserEnergyCost(unit,weapon);unit.laserCharge=0;this.laserRechargePending.add(unit);this.fireLaser(unit,weapon,origin,endpoint,range);}
     else{unit.slotAmmo[slot]!--;if(weapon==='TCREAP'){this.fireReapTracer(unit,origin,endpoint);return;}const gun=this.weapons.guns[weapon as MachineGun];for(const muzzle of this.weaponOrigins(unit,weapon,origin,slot))if(unit.iff!==this.iff||this.clearAIShot(unit,muzzle,point,target))this.fireAIBullet(unit,muzzle,endpoint,weapon as MachineGun,gun.damage,gun.infantryDamage??gun.damage);}
   }
@@ -891,7 +891,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   fire(slot:number){if(this.passenger||this.insideFacility||this.guidedMissile)return;const u=this.mounted;if(u&&(!this.unitPowered(u)||u.cooldown>0))return;if(!u){if(slot<=2)this.fireFoot(slot);return;}
     const weapon=u.spec.weapons[slot-1];if(!weapon)return;const profile=isLaser(weapon)?this.weapons.lasers[weapon]:null;
     if(profile?u.energy<this.laserEnergyCost(u,weapon as LaserWeapon):(u.slotAmmo[slot-1]??0)<=0)return;
-    if(isMissile(weapon)){const volley=u.kind==='darken-sentry'?Math.min(2,u.slotAmmo[slot-1]??0):1;u.slotAmmo[slot-1]!-=volley;u.cooldown=MISSILE_INTERVAL;for(let i=0;i<volley;i++)this.fireMissile(u,weapon,volley===1?1:i===0?-1:1);return;}
+    if(isMissile(weapon)){const volley=u.kind==='darken-sentry'?Math.min(2,u.slotAmmo[slot-1]??0):1;u.slotAmmo[slot-1]!-=volley;u.cooldown=this.weapons.missiles[weapon].interval;for(let i=0;i<volley;i++)this.fireMissile(u,weapon,volley===1?1:i===0?-1:1);return;}
     const range=profile?laserRange(weapon as LaserWeapon,u.laserCharge,profile):this.weapons.guns[weapon as MachineGun].range;
     const sight={x:this.player.x,y:this.eyeHeight,z:this.player.z},from=this.sentryMuzzle(u,weapon,sight);
     const sightEnd={x:sight.x+Math.sin(this.aim)*Math.cos(this.pitch)*range,y:sight.y+Math.sin(this.pitch)*range,z:sight.z+Math.cos(this.aim)*Math.cos(this.pitch)*range};
@@ -1239,7 +1239,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!guiding)for(let i=0;i<firePressed.length;i++){
       const weapon=u?.spec.weapons[i],rapidLaser=!!u&&!!weapon&&allowsLaserHoldFire(u.kind,weapon),charged=!weapon||!isLaser(weapon)||rapidLaser||u!.laserCharge>=1;
       if(!fireDown[i]||this.fireReleaseRequired[i]||!firePressed[i]&&(!charged||!rapidLaser&&this.time<this.fireRepeatAt[i]))continue;
-      const before=this.events.length;this.fire(i+1);if(this.events.length>before)this.fireRepeatAt[i]=this.time+HELD_TRIGGER_INTERVAL;
+      const before=this.events.length;this.fire(i+1);if(this.events.length>before)this.fireRepeatAt[i]=this.time+(weapon&&isMissile(weapon)?this.weapons.missiles[weapon].interval:weapon&&!isLaser(weapon)?this.weapons.guns[weapon as MachineGun].interval:HELD_TRIGGER_INTERVAL);
     }
     for(const unit of this.units){if(!unit.alive)continue;unit.cooldown=Math.max(0,unit.cooldown-dt);const spec=unit.spec,shieldCap=this.time<(this.shieldDoublerUntil.get(unit.id)??0)?spec.shield*2:spec.shield;unit.shield=Math.min(shieldCap,unit.shield);if(this.time-unit.lastHit>7&&this.unitPowered(unit)){unit.shield=Math.min(shieldCap,unit.shield+dt*1.5);unit.energy=Math.min(spec.energy,unit.energy+dt*4);}
       if(unit===u)continue;if(!unit.pilot){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}

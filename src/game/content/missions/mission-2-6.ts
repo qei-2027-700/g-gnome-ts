@@ -7,6 +7,8 @@ const pickupKills=4; // Original count unverified.
 // aircraft loadout and the defense completion condition remain provisional.
 export const MISSION_2_6:MissionDefinition={
  id:'2-6',title:'Battle of Clouds',playerFaction:'union',initialIff:'2620',factionCodes:{union:'2620',merc:'5031'},
+ // The eight Merc AIPs otherwise destroy the defense tower before four can be defeated.
+ weaponOverrides:{guns:{TCREAP:{interval:2.6},DASY:{interval:2.6}}},
  bgm:{volumeScale:.8,start:{trackId:'bgm-fighting-on-the-tundra',delay:0}},
  subtitle:{ja:'中央要塞を2基のミーゾンタワーで防衛',en:'Defend the central fortress with two Meson towers'},
  briefing:{ja:'ターンは中央の巨大要塞内で作業中。キリーはもう1基のミーゾンタワーへ向かう。主人公も敵飛行機の攻撃が始まる前に手前の塔へ搭乗し、四方八方から来るMerc AIPの襲撃から要塞を守れ。',en:'Thane is working inside the central fortress. Kylie heads for the second Meson tower. Reach your tower before Merc aircraft attack and defend the fortress from Merc AIPs approaching from all directions.'},

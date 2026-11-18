@@ -1,4 +1,4 @@
-import {LASERS,weaponMountCount} from '../content/weapons.ts';
+import {LASERS,MACHINE_GUN_INTERVAL,MISSILE_INTERVAL,weaponMountCount} from '../content/weapons.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,angle,AI_TARGET_SETTLE,type Input} from './simulation.ts';
@@ -13,6 +13,25 @@ const mounted=()=>{const s=new Simulation();s.human={...MISSION.vehicle};assert.
 test('walk, auto-board, name event, eject and reboard retain unit damage/ammo',()=>{const s=new Simulation();assert.equal(s.iff,'2620');assert.equal(s.mounted,null);step(s,3.5,{forward:true});assert.equal(s.mounted?.kind,'union-sentry');assert.equal(s.events.filter(e=>e.type==='board').length,1);s.mounted!.ammo=390;s.mounted!.armor=77;s.eject();assert.equal(s.mounted,null);s.tick(1/60,idle);assert.equal(s.mounted,null);step(s,3);s.human={x:0,z:18};assert.ok(s.board());assert.equal(s.mounted!.ammo,390);assert.equal(s.mounted!.armor,77);});
 test('throttle reaches 70 km/h, persists, stop brakes, torso obeys limits',()=>{const s=mounted();s.units=s.units.slice(0,1);step(s,5,{boost:true});assert.ok(Math.abs(s.speed*3.6-70)<.1);assert.equal(s.events.filter(e=>e.type==='boost').length,1);const before=s.player.z;step(s,1);assert.ok(s.player.z>before);step(s,4,{stop:true});assert.ok(Math.abs(s.speed)<.1);s.aimBy(100);assert.ok(Math.abs(s.mounted!.aim-s.mounted!.yaw)<=VEHICLES['union-sentry'].torsoLimit);});
 test('machine gun consumes ammunition, laser consumes energy, empty weapons do not fire',()=>{const s=mounted();s.units=s.units.slice(0,1);const u=s.mounted!;s.fire(1);assert.equal(u.ammo,399);assert.equal(u.energy,1600);u.cooldown=0;s.fire(2);assert.equal(u.energy,1598);u.cooldown=0;u.ammo=0;const count=s.events.length;s.fire(1);assert.equal(s.events.length,count);u.energy=0;s.fire(2);assert.equal(s.events.length,count);});
+test('machine guns and missiles use shared intervals across chassis and missions, with per-mission overrides',async()=>{
+ const {MISSION_2_4}=await import('../content/missions/mission-2-4.ts');
+ for(const [mission,kind,weapon] of [[DEFAULT_MISSION,'union-sentry','FLECH'],[MISSION_2_4,'merc-tactical','DASY'],[MISSION_2_4,'merc-tactical','SAG5T']] as const){
+  const s=new Simulation('Easy',mission),u=makeUnit('shooter',kind,0,0,false,{weapons:[weapon]});if(s.mounted)s.eject('ground');s.units=[u];s.human={x:0,z:0};assert.ok(s.board());s.fire(1);assert.equal(u.cooldown,weapon==='SAG5T'?MISSILE_INTERVAL:MACHINE_GUN_INTERVAL,`${mission.id}/${kind}/${weapon}`);
+ }
+ const mission=structuredClone(MISSION_2_4);mission.weaponOverrides={guns:{DASY:{interval:.2}},missiles:{SAG5T:{interval:3}}};
+ const s=new Simulation('Easy',mission),u=s.mounted!;s.fire(1);assert.equal(u.cooldown,.2);u.cooldown=0;s.fire(2);assert.equal(u.cooldown,3);
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const defense=new Simulation('Easy',MISSION_2_6);assert.equal(defense.weapons.guns.DASY.interval,2.6);assert.equal(defense.weapons.guns.TCREAP.interval,2.6);
+});
+test('AI machine gun and missile cooldowns use weapon intervals instead of mission difficulty',()=>{
+ for(const weapon of ['DASY','SAG5T'] as const){
+  const s=mounted(),own=s.mounted!,enemy=makeUnit('enemy','merc-tactical',0,80,true,{weapons:[weapon],speed:0,ai:{detection:200,strafe:0,keepMoving:false,stopDistance:80,missileVolley:1}});
+  s.units=[own,enemy];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.tuning.Easy.interval=9;enemy.iff='enemy';enemy.yaw=enemy.aim=Math.PI;enemy.alert=true;
+  for(let i=0;i<120&&!s.events.some(e=>e.type==='shot'&&e.unit===enemy);i++)s.tick(1/60,idle);
+  assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===enemy),weapon);
+  const expected=weapon==='DASY'?MACHINE_GUN_INTERVAL:MISSILE_INTERVAL;
+  assert.ok(enemy.cooldown>0&&enemy.cooldown<=expected,weapon);
+ }
+});
 test('aim, range and rocks block laser hits; damage arrives on contact and shields protect armor',()=>{
  for(const [x,z,hit] of [[0,100,true],[100,100,false],[0,450,false]] as const){
   const s=mounted();s.iff='6707';const target=s.units[1];target.x=x;target.z=z;const shield=target.shield,armor=target.armor;

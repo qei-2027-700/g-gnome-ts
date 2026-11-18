@@ -54,7 +54,7 @@ export const MAP_2_2_POINTS={
  southCruiser:map22PixelToWorld(425,330),
  bridgeControlA:map22PixelToWorld(366,205),
  bridgeControlB:map22PixelToWorld(383,213),
- northGuardTower:map22PixelToWorld(399,205),
+ northGuardTower:map22PixelToWorld(365,228),
  latlon:map22PixelToWorld(248,191),
  latlonAssault:map22PixelToWorld(272,183),
  latlonAsv:map22PixelToWorld(288,200),

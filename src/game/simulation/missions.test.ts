@@ -995,6 +995,10 @@ test('2-2 snowy map keeps both channels, mapped landmarks and a route to the wes
  for(const [river,first,last] of [[rivers[0]!,map22PixelToWorld(356,245),map22PixelToWorld(572,240)],[rivers[1]!,map22PixelToWorld(348,70),map22PixelToWorld(327,402)]] as const){
   assert.deepEqual(river.path![0],first);assert.deepEqual(river.path!.at(-1),last);
  }
+ const tower=MISSION_2_2.units.find(unit=>unit.id==='north-guard-tower')!,bridgeFrames=rivers.map(river=>riverFrameAtZ(river,river.bridgeZ));
+ const between={x:(bridgeFrames[0]!.x+bridgeFrames[1]!.x)/2,z:(bridgeFrames[0]!.z+bridgeFrames[1]!.z)/2};
+ assert.ok(distance(tower,between)<15,'the unoccupied Mison tower sits between the two bridges');
+ for(const river of rivers)assert.ok(riverDistance(river,tower.x,tower.z)>river.width/2+10,'the tower stays on dry ground');
  const boxes=[...terrain.cliffs!.map(c=>({...c,width:c.width+10,depth:c.depth+10})),...rivers.flatMap(r=>riverStripBoxes(r,false,5))];
  for(const goal of [...waypoints,{x:MAP_2_2_POINTS.latlon.x+60,z:MAP_2_2_POINTS.latlon.z}])assert.ok(allyRoute(player,goal,terrain,[],boxes),`route to ${'id' in goal?goal.id:'Latlon'}`);
 });

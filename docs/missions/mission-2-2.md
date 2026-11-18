@@ -4,7 +4,7 @@
 
 キリーと行動し、MercのLatlon通信基地を破壊すると成功する。主人公はUnion TD HAWC、キリーはUnion Sentry HAWCに搭乗して開始する。キリーは開始時から主人公に追従し、F2で別の指示を出せる。橋を上げることは任意の戦術行動で、勝利条件には含めない。
 
-CRISC川の向こう側にはMerc Sentry HAWCとMerc HAWC Cruiserを置く。西へ進むとロケットタワーと別のMerc Sentry HAWCがいる。このSentryを倒すと橋の奥にいるMerc Sentry HAWCが進軍を始める。橋制御棟で橋を上げると、その進軍は止まる。橋の北側には制御棟を2棟と無人のMison Guard Towerを置く。西の通信基地付近にはMerc Assault HAWCとMerc ASVを置く。
+CRISC川の向こう側にはMerc Sentry HAWCとMerc HAWC Cruiserを置く。西へ進むとロケットタワーと別のMerc Sentry HAWCがいる。このSentryを倒すと橋の奥にいるMerc Sentry HAWCが進軍を始める。橋制御棟で橋を上げると、その進軍は止まる。橋の北側に制御棟を2棟置き、SPRING川とCRISC川にかかる2つの橋の中間に無人のMison Guard Towerを置く。西の通信基地付近にはMerc Assault HAWCとMerc ASVを置く。
 
 ## 原作地図との対応
 
@@ -17,6 +17,7 @@ CRISC川の向こう側にはMerc Sentry HAWCとMerc HAWC Cruiserを置く。西
 | 黄色いX | 約 (514, 193) | 雪原の開始地点 | `player (0, 0)` | 開始位置との対応は仮定。地図の右側から西へ進む |
 | SPRING川 | 約 (348, 70) から (327, 402) | 水面、橋以外は通行不可 | `terrain.rivers[0]` | 縦方向の白い水路を折れ線で近似。橋は約 (346, 213) |
 | CRISC川 | 約 (356, 245) から (572, 240)、途中で南へ曲がる | 水面、橋以外は通行不可 | `terrain.river` | SPRING川との接点から右方向へ続く水路を折れ線で近似。橋は約 (380, 247) |
+| 無人のMison Guard Tower | 約 (365, 228) | 2つの橋の中間にある陸地 | `north-guard-tower` | ユーザー指定に合わせて配置。両方の橋と川から離している |
 | 明るい頂部と周囲の斜面 | 地図左上、中央上、右上、左下、右下 | 試作では通行不可の雪山・斜面 | `mission-2-2-map.ts` の16 px格子から生成する `cliffs` | 色の境界を抽出した近似。色だけでは原作の通行可否を確定できない |
 | 左側の番号付き地点 | 約 (344, 213)、(280, 245)、(260, 211) | ウェイポイント | `waypoints` 1～3 | 画像上の位置に対応。番号と攻略順の照合は未完了 |
 | 左側の通信基地 | 約 (248, 191) | 雪原の施設付近 | `merc-latlon (-1064, 8)` | 「番号地点のさらに西」というユーザー指定に基づく仮配置。地図上に施設記号は未確認 |

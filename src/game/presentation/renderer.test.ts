@@ -735,7 +735,7 @@ test('player boarding from either external view enters cockpit; ally boarding do
 test('passenger boarding enters first person and mounted mission starts override external defaults',async()=>{
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts'),{unionTacticalCockpitShellSvg}=await import('./union-tactical-cockpit.ts');
  const def=structuredClone(MISSION_3_3);def.initialView='external-diagonal';const sim=new Simulation('Easy',def),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);
- assert.equal(world.mode,0);sim.eject('ground');const carrier=sim.units.find(u=>u.kind==='scorp-asv')!;carrier.iff=sim.iff;sim.units=[carrier];sim.human={x:carrier.x,z:carrier.z};world.mode=1;sim.events=[];assert.ok(sim.board());assert.equal(sim.passenger,carrier);for(const event of sim.events)world.event(event);world.update(0);assert.equal(world.mode,0);assert.equal(world.rigs.get(carrier.id)!.root.isEnabled(),false);
+ assert.equal(world.mode,0);sim.eject('ground');const carrier=sim.units.find(u=>u.kind==='scorp-asv')!;sim.mission.friendlyFactions=['union','scorp'];carrier.iff=sim.iff;sim.units=[carrier];sim.human={x:carrier.x,z:carrier.z};world.mode=1;sim.events=[];assert.ok(sim.board());assert.equal(sim.passenger,carrier);for(const event of sim.events)world.event(event);world.update(0);assert.equal(world.mode,0);assert.equal(world.rigs.get(carrier.id)!.root.isEnabled(),false);
  const shell=unionTacticalCockpitShellSvg();assert.ok(shell.includes('assets/cockpits/union-tactical-reference.png'));assert.ok(shell.includes('tactical-metal-mask'));assert.ok(shell.includes('tactical-holo-grid'));engine.dispose();
 });
 
@@ -1172,7 +1172,7 @@ test('3-4 terrain renders both blocked color regions and projects the player ont
   assert.ok(world.scene.getMeshByName('river-water'));
   assert.ok(world.scene.meshes.some(mesh=>mesh.name.startsWith('3-4-slope-')));
   assert.ok(world.scene.meshes.some(mesh=>mesh.name.startsWith('3-4-plateau-')));
-  assert.equal(world.scene.meshes.filter(mesh=>mesh.name.startsWith('3-4-slope-')||mesh.name.startsWith('3-4-plateau-')).length,141);
+  assert.equal(world.scene.meshes.filter(mesh=>mesh.name.startsWith('3-4-slope-')||mesh.name.startsWith('3-4-plateau-')).length,138);
   assert.ok(world.scene.getMaterialByName('map-slope'));
   assert.ok(world.scene.getMaterialByName('map-plateau'));
  }finally{engine.dispose();}

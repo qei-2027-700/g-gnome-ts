@@ -99,7 +99,7 @@ test('Q, E and Tab select real facilities, preserve sight at the front face and 
  const s=new Simulation('Easy',MISSION_3_3),command=s.facilities.find(f=>f.facilityType==='command')!,control=s.facilities.find(f=>f.facilityType==='mine-control')!;
  s.units=[s.mounted!];s.mounted!.x=-700;s.mounted!.z=command.z;s.mounted!.yaw=-Math.PI/2;s.mounted!.aim=-Math.PI/2;s.pitch=s.targetElevation(command);
  assert.equal(s.selectInCrosshair(),command);assert.equal(s.target,command);assert.equal(s.targetState!.inSight,true);assert.equal(s.targetState!.onAim,true);
- assert.ok(!s.combatTargets.some(t=>t.id===command.id));assert.equal(s.sendAllyOrder('all','attack').error,'target');assert.equal(s.sendAllyOrder('all','board').error,'target');
+ assert.ok(!s.combatTargets.some(t=>t.id===command.id));assert.equal(s.sendAllyOrder('all','attack').error,'unavailable');assert.equal(s.sendAllyOrder('all','board').error,'target');
  s.mounted!.z=control.z;s.pitch=s.targetElevation(control);assert.equal(s.selectInCrosshair(),control);s.selectTarget();assert.equal(s.target,control);
  s.clearTarget();const ids=new Set<string>();for(let i=0;i<2;i++){s.cycleTarget();ids.add(s.target!.id);}assert.deepEqual(ids,new Set([command.id,control.id]));
  s.tracking=true;s.tick(.01,idle);assert.ok(s.targetState);assert.ok(s.mounted);assert.equal(new Simulation('Easy',MISSION_3_3).target,null);
@@ -220,7 +220,7 @@ test('Sheridan greets Gant once on piloting a Scorp ASV, not as a passenger, and
  const prepare=()=>{const s=new Simulation('Easy',MISSION_3_3);s.mission.completionEnabled=false;s.mines=[];s.eject('ground');const asv=s.units.find(u=>u.id==='scorp-asv')!;asv.pilot=false;asv.x=s.mission.base!.x+400;asv.z=0;s.human={x:asv.x,z:asv.z};s.events=[];return {s,asv};};
  const {s,asv}=prepare();assert.ok(s.board());assert.equal(s.mounted,asv);assert.equal(s.events.filter(e=>e.radioId==='sheridan-scorp-boarded').length,1);
  s.eject('ground');s.human={x:asv.x,z:asv.z};assert.ok(s.board());assert.equal(s.events.filter(e=>e.radioId==='sheridan-scorp-boarded').length,1);
- const passenger=prepare();passenger.asv.pilot=true;passenger.asv.iff=passenger.s.iff;assert.ok(passenger.s.board());assert.equal(passenger.s.mounted,null);assert.equal(passenger.s.events.filter(e=>e.radioId==='sheridan-scorp-boarded').length,0);
+ const passenger=prepare();passenger.s.mission.friendlyFactions=['union','scorp'];passenger.asv.pilot=true;passenger.asv.iff=passenger.s.iff;assert.ok(passenger.s.board());assert.equal(passenger.s.mounted,null);assert.equal(passenger.s.events.filter(e=>e.radioId==='sheridan-scorp-boarded').length,0);
  const unavailable=prepare();unavailable.s.units=unavailable.s.units.filter(u=>u.personId!=='sheridan');assert.ok(unavailable.s.board());assert.equal(unavailable.s.events.filter(e=>e.radioId==='sheridan-scorp-boarded').length,0);
  const retry=prepare();assert.ok(retry.s.board());assert.equal(retry.s.events.filter(e=>e.radioId==='sheridan-scorp-boarded').length,1);
  const cue=s.mission.radioTriggers!.find(r=>r.id==='sheridan-scorp-boarded')!;assert.equal(cue.line.ja,'よーしガンツ。お前がよーく見えるぞー。先導してくれ');

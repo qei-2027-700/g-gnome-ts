@@ -39,9 +39,12 @@ export function rockyMountains(scene:Scene,terrain:Terrain){
  if(cliffs.length){
   const cliffPaint=new StandardMaterial('cliff-strata',scene);cliffPaint.diffuseColor=Color3.White();cliffPaint.specularColor=Color3.Black();
   cliffPaint.diffuseTexture=texture(scene,'cliff-strata',128,(x,y)=>{const n=noise(x*32,y*24,terrain.seed),moss=y<.35&&n>.3;return snow?(n>.46?[225+n*25,232+n*20,239+n*15]:[29+n*60,44+n*65,65+n*70]):volcanic?[48+n*87,47+n*83,44+n*72]:moss?[38+n*40,90+n*65,20+n*25]:[123+n*62,103+n*50,60+n*36];});
-  const slopePaint=new StandardMaterial('map-slope',scene);slopePaint.diffuseColor=Color3.FromHexString(terrain.rockySlopeTexture?'#ffffff':'#a9c98e');slopePaint.specularColor=Color3.Black();
-  if(terrain.rockySlopeTexture)slopePaint.diffuseTexture=texture(scene,'map-slope-grass-rock',128,(x,y)=>{const grit=noise(x*35,y*22,terrain.seed),bands=noise(x*8,y*9,terrain.seed+7),green=Math.max(0,Math.min(1,(y-.12)*2.1+grit*.5));return [45+green*(90+bands*65)+grit*30,105+green*(11+bands*32)+grit*55,25+green*(12+bands*28)+grit*23];});
-  const plateauPaint=new StandardMaterial('map-plateau',scene);plateauPaint.diffuseColor=Color3.FromHexString('#568168');plateauPaint.specularColor=Color3.Black();
+  const needsSlope=cliffs.some(cliff=>cliff.surface==='slope'),needsPlateau=cliffs.some(cliff=>cliff.surface==='plateau');
+  const slopePaint=needsSlope?new StandardMaterial('map-slope',scene):null;
+  if(slopePaint){slopePaint.diffuseColor=Color3.FromHexString(terrain.rockySlopeTexture?'#ffffff':'#a9c98e');slopePaint.specularColor=Color3.Black();
+   if(terrain.rockySlopeTexture)slopePaint.diffuseTexture=texture(scene,'map-slope-grass-rock',128,(x,y)=>{const grit=noise(x*35,y*22,terrain.seed),bands=noise(x*8,y*9,terrain.seed+7),green=Math.max(0,Math.min(1,(y-.12)*2.1+grit*.5));return [45+green*(90+bands*65)+grit*30,105+green*(11+bands*32)+grit*55,25+green*(12+bands*28)+grit*23];});}
+  const plateauPaint=needsPlateau?new StandardMaterial('map-plateau',scene):null;
+  if(plateauPaint){plateauPaint.diffuseColor=Color3.FromHexString('#568168');plateauPaint.specularColor=Color3.Black();}
   for(const cliff of cliffs){
    const wall=MeshBuilder.CreateBox(cliff.id,{width:cliff.width,height:cliff.height,depth:cliff.depth,updatable:cliff.surface==='slope'},scene);
    if(cliff.surface==='slope'){
@@ -49,7 +52,7 @@ export function rockyMountains(scene:Scene,terrain:Terrain){
     for(let i=0;i<vertices.length;i+=3)if(vertices[i+1]>0){vertices[i]*=.64;vertices[i+2]*=.64;}
     wall.updateVerticesData('position',vertices);wall.createNormals(true);
    }
-   wall.position.set(cliff.x,cliff.height/2,cliff.z);wall.material=cliff.surface==='slope'?slopePaint:cliff.surface==='plateau'?plateauPaint:cliffPaint;wall.isPickable=false;wall.metadata={terrainObstacle:cliff.id};
+   wall.position.set(cliff.x,cliff.height/2,cliff.z);wall.material=cliff.surface==='slope'?slopePaint!:cliff.surface==='plateau'?plateauPaint!:cliffPaint;wall.isPickable=false;wall.metadata={terrainObstacle:cliff.id};
   }
  }
  // Small distant trees suggest scale without changing battlefield collision geometry.

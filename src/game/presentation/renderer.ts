@@ -454,7 +454,7 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
       const original=mesh.material as StandardMaterial,material=original.clone(`${u.id}-${part}-${mesh.name}`)!;
       mesh.material=material;mesh.metadata={bodyPart:part};parts[part].meshes.push(mesh);parts[part].paint.push({material,base:original.diffuseColor.clone(),glow:original.emissiveColor.clone()});
     }
-    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();scorpCanopy?.dispose();scorpChest?.dispose();scorpArm?.dispose();scorpForearm?.dispose();scorpThigh?.dispose();scorpShin?.dispose();scorpFoot?.dispose();
+    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();scorpCanopy?.dispose();scorpChest?.dispose();scorpArm?.dispose();scorpForearm?.dispose();scorpThigh?.dispose();scorpShin?.dispose();scorpFoot?.dispose();tdSilver?.dispose();tdOrange?.dispose();tdTeal?.dispose();tdFoot?.dispose();tdBlue?.dispose();
     return {spiderLegs,cannon,root,torso,legs,knees,feet,phase:0,run:0,lastX:u.x,lastZ:u.z,recoil:0,parts} as Rig;
   }
 export function buildSoldierModel(scene:Scene,id:string,hero=false,faction:Faction='merc',heroFaction:Faction='union',material:(name:string,hex:string,glow?:boolean)=>StandardMaterial=(name,hex)=>{const m=new StandardMaterial(name,scene);m.diffuseColor=color(hex);return m;}):SoldierRig {

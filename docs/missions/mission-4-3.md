@@ -65,6 +65,8 @@ WP1では搭乗機の弾薬を初期搭載数まで補給する。WP2では搭�
 
 搭乗中はVキーでUnion AIPを1回だけ呼び出せる。選択中の敵、または最寄りの敵を攻撃対象にする。呼び出しキー、機種、出現位置、攻撃方法は仮設定。出撃前画面で確認できるのは航空支援を1回利用できるという項目までである。
 
+出撃時のBGMは Barren Landscape（`bgm-barren-landscape`、[barren-landscape-ZJb2W-SxDAo.mp3](../../assets/audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3)）。北の橋 `war-north-bridge` を渡り切り、出撃地点の対岸で橋の幅に沿った岸へ出ると、Merc領域の曲（`bgm-merc-region`、[merc-region.mp3](../../assets/audio/bgm/merc-region.mp3)）へ一度切り替える。橋の上や、溶岩の端を回り込んだ位置では切り替えない。切り替えたあとは対岸の奥へ進んでも曲を戻さない。両方ともファイル全体のループで、原作のループ位置は未確認。ユーザー指定（2026-11-19）。
+
 出撃地点には、キリーが乗るUnion ASVとターンが乗るUnion Sentryを置く。Darken Sentryは約5秒後にプレイヤーのUnion Tactical Defense HAWCを狙う。最初の橋は上がった状態で、近くの橋制御施設から下ろす。渡った先ではMerc Tactical Defense HAWCとDarken AIPが交戦する。さらにDarken ASV、地雷と制御設備、Merc HAWC Cruiser、次の橋、Darken Tactical Defense HAWC、Darken武器庫と無人機を配置した。この順序と機種はユーザーの原作プレイ記憶による。各機の配置の絶対座標とIFF、画像で確認できない兵装・外観は仮設定である。
 
 ユーザー指定によりDarken機は脱出装置を持つ。Darken Sentryのレーザーとミサイルは、それぞれ左右2門から発射する。提供された機内画像にはCHUM 50発とRUPPが表示されているため、この組み合わせを反映した。Darken Tactical Defense HAWCは機体紹介画像のHOMP11レーザー2門とDASY機銃2門に変更した。任務4-3での初期残弾と配置ごとの装備は未確認。

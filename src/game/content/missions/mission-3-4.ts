@@ -6,6 +6,7 @@ const originalMap=new URL('../../../../assets/map/3-4/3-4.png',import.meta.url).
 // Terrain scale and exact base spacing remain provisional.
 export const MISSION_3_4:MissionDefinition={
  id:'3-4',title:'Ur-Alr',playerFaction:'union',initialIff:'4033',factionCodes:{scorp:'3317',union:'4033'},
+ bgm:{start:{trackId:'bgm-sneaking-in',delay:0}},
  subtitle:{ja:'ウル・アルーへ',en:'Approach Ur-Alr'},
  briefing:{ja:'ターンとともに橋制御棟へ向かい、GASHRで敵歩兵を排出して倒す。橋を下ろし、敵IFFに合わせてErreskat川を渡る。第3ウェイポイントでキリーとシェリダンに合流する。基地右側の地雷原を避け、Ur-Alr司令部を目指す。',en:'Secure bridge control with Thane, lower the bridge and match the enemy IFF before crossing the Erreskat River. Meet Kylie and Sheridan at waypoint 3. Avoid the mines on the right side of the base approach and continue toward Ur-Alr headquarters.'},
  startHint:{ja:'ターンとScorp TD HAWCで第1ウェイポイント近くから開始する。橋制御棟は西岸、橋は東側。',en:'Start near waypoint 1 with Thane in Scorp Tactical HAWCs. Bridge control is on the west bank; the bridge is east of it.'},

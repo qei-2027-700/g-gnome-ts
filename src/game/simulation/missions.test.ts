@@ -906,6 +906,21 @@ test('4-3 shield doubler expires and air support is called only once',()=>{
  let shots=0;for(let i=0;i<500&&s.status==='running';i++){s.tick(.05,idle);shots+=s.events.filter(e=>e.type==='shot'&&e.unit===support).length;s.events=[];}
  assert.ok(shots>0);
 });
+test('4-3 music bridge cue stays off until the player clears the north bridge, including on foot',()=>{
+ const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
+ const blocked=new Simulation('Easy',def);blocked.mounted!.x=-50;blocked.mounted!.z=700;blocked.mounted!.yaw=Math.PI;
+ assert.deepEqual(blocked.mission.bgm?.start,{trackId:'bgm-barren-landscape',delay:0});
+ assert.deepEqual(blocked.mission.bgm?.afterBridge,{bridgeId:'war-north-bridge',trackId:'bgm-merc-region'});
+ assert.equal(blocked.missionMusicBridgeCrossed,false);
+ for(let i=0;i<80;i++)blocked.tick(.05,{...idle,forward:true});
+ assert.ok(blocked.player.z>650);assert.equal(blocked.missionMusicBridgeCrossed,false);
+ const cross=new Simulation('Easy',def);cross.raisedBridges.delete('war-north-bridge');cross.mounted!.x=-50;cross.mounted!.z=700;cross.mounted!.yaw=Math.PI;
+ let crossed=false;for(let i=0;i<160;i++){cross.tick(.05,{...idle,forward:true});crossed||=cross.missionMusicBridgeCrossed;}
+ assert.ok(crossed);assert.ok(cross.player.z<620);
+ cross.mounted!.x=200;cross.mounted!.z=560;assert.equal(cross.missionMusicBridgeCrossed,false);
+ cross.eject('ground');cross.human={x:-50,z:600};assert.equal(cross.mounted,null);assert.equal(cross.missionMusicBridgeCrossed,true);
+ cross.human={x:-50,z:860};assert.equal(cross.missionMusicBridgeCrossed,false);
+});
 test('4-3 north bridge starts raised, lowers at its control, and the adjacent lava blocks vehicles',()=>{
  const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
  const cross=new Simulation('Easy',def);cross.mounted!.x=-50;cross.mounted!.z=700;cross.mounted!.yaw=Math.PI;

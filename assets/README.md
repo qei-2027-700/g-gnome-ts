@@ -27,11 +27,11 @@
 | [audio/bgm/fighting-on-the-tundra.mp3](audio/bgm/fighting-on-the-tundra.mp3) | 投稿動画表記はTrack 12: Fighting on the Tundra。2-6のミーゾンタワー防衛で、出撃直後からファイル全体をループ再生する。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのmerc最終戦用音源2026-10-29) |
 | [audio/bgm/credits.mp3](audio/bgm/credits.mp3) | ユーザー指定の原作クレジット曲。4-2と3-1で再生。[出典・検査値](../docs/audio/bgm-mapping.md#原作クレジット曲と4-2への接続2026-10-30) |
 | [audio/bgm/snow-maze-D0jKDtJPqLM.mp3](audio/bgm/snow-maze-D0jKDtJPqLM.mp3) | 指定YouTube動画D0jKDtJPqLMの15 Snow Maze。4-2のUnion部隊全滅後に再生。[出典・検査値](../docs/audio/bgm-mapping.md#4-2のunion部隊全滅後の切り替え2026-10-30) |
-| [audio/bgm/merc-region.mp3](audio/bgm/merc-region.mp3) | ユーザー指定のMerc領域のテーマ。配置済み。仮の2-1のBGMにするメモがあり、任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのmerc領域曲2026-11-18) |
+| [audio/bgm/merc-region.mp3](audio/bgm/merc-region.mp3) | ユーザー指定のMerc領域のテーマ。4-3で北の橋を渡り切ったあとに再生する。仮の2-1への接続は未実装。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのmerc領域曲2026-11-18) |
 | [audio/bgm/scorp-region.mp3](audio/bgm/scorp-region.mp3) | ユーザー指定のScorp領域のテーマ。配置済み。任務へは未接続。投稿動画の題は Track 06: Credits で、既存の Credits とは別ファイル。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのscorp領域曲2026-11-18) |
-| [audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3](audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3) | 投稿動画の Track 03: Barren Landscape。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
+| [audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3](audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3) | 投稿動画の Track 03: Barren Landscape。4-3の出撃時から再生し、北の橋を渡ると Merc 領域の曲へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3](audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3) | 投稿動画の Track 04: Infiltrating Darken Territory。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
-| [audio/bgm/sneaking-in-mziZW_QQPJI.mp3](audio/bgm/sneaking-in-mziZW_QQPJI.mp3) | 投稿動画の Track 07: Sneaking In。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
+| [audio/bgm/sneaking-in-mziZW_QQPJI.mp3](audio/bgm/sneaking-in-mziZW_QQPJI.mp3) | 投稿動画の Track 07: Sneaking In。3-4の出撃時から再生する。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/rescuing-kylie-FB664mAqM28.mp3](audio/bgm/rescuing-kylie-FB664mAqM28.mp3) | 投稿動画の Track 09: Rescuing Kylie。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/sheridan-ckEY6gEo_2A.mp3](audio/bgm/sheridan-ckEY6gEo_2A.mp3) | 投稿動画の Track 11: Sheridan。3-5の出撃時から再生し、イオン砲アナウンスの2秒前に Defeated へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3](audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3) | 投稿動画の Track 13: Merc Ambush。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
@@ -39,7 +39,7 @@
 | [audio/bgm/betrayal-uWpTUXuLG_g.mp3](audio/bgm/betrayal-uWpTUXuLG_g.mp3) | 投稿動画の Track 16: Betrayal。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
 | [audio/bgm/defeated-4XJIibD6gr8.mp3](audio/bgm/defeated-4XJIibD6gr8.mp3) | 投稿動画の Track 18: Defeated。3-5でイオン砲アナウンスの2秒前から再生する。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
 | [audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3](audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3) | 投稿動画の Track 19: Crossing the War Zone。3-2の出撃時から再生し、シェリダンの遭遇無線のあと戦闘曲へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
-| [audio/bgm/passenger-icXcc3u4Po4.mp3](audio/bgm/passenger-icXcc3u4Po4.mp3) | 投稿動画の Track 20: Passenger。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
+| [audio/bgm/passenger-icXcc3u4Po4.mp3](audio/bgm/passenger-icXcc3u4Po4.mp3) | 投稿動画の Track 20: Passenger。他者が操縦するHAWCまたはScorp ASVへプレイヤーが同乗したときに再生する。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |
 | `ui/mission-console.png` | [3-3の開始画面](../docs/reference/observations/mission-3-3/3-3-launch前.png)。開始画面の枠と3-3のプレビューに使用 |
 | `ui/mission-4-3-map.png` | [4-3の出撃前画面](https://www.youtube.com/watch?v=dlIy0zh8vVk&t=92s)から切り出した原作Map。4-3の開始画面に使用。青い4点は橋、赤い流路はマグマ |
 | `ui/ui-system-end.png` | 任務成功・失敗時に閉じる扉の画面素材。成功時は完了表示後、失敗時は既存の表示時間後にフェードインする |

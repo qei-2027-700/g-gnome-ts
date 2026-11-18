@@ -107,6 +107,7 @@ test('elimination BGM rejects an empty roster, duplicate IDs and absent enemies'
  mission.bgm!.afterEliminate=undefined;mission.bgm!.afterAssault={boardUnitId:'missing',unitIds:[],trackId:'bgm-union-march'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterAssault has no units')));
  mission.bgm!.afterAssault={boardUnitId:'missing',unitIds:['missing','missing'],trackId:'bgm-union-march'};const assaultErrors=validateMissions([mission]).join('\n');assert.ok(assaultErrors.includes('duplicate BGM afterAssault unit ID'));assert.ok(assaultErrors.includes('BGM afterAssault references missing unit: missing'));assert.ok(assaultErrors.includes('BGM afterAssault has no assault: missing'));
  mission.bgm!.afterAssault=undefined;mission.bgm!.afterRadio={radioId:'missing-radio',trackId:'bgm-credits'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterRadio references missing radio: missing-radio')));
+ mission.bgm!.afterRadio=undefined;mission.bgm!.afterBridge={bridgeId:'missing-bridge',trackId:'bgm-merc-region'};assert.ok(validateMissions([mission]).some(e=>e.includes('BGM afterBridge references missing bridge: missing-bridge')));
 });
 
 test('catalog validation always reports an assigned unit reference absent from the mission',()=>{

@@ -263,6 +263,15 @@ export class Simulation {
     const cue=this.mission.bgm?.afterAssault;if(!cue||this.mounted?.id!==cue.boardUnitId)return false;
     return cue.unitIds.every(id=>{const assault=this.mission.assaults?.find(item=>item.unitId===id),unit=this.units.find(item=>item.id===id);return !!assault&&!!unit&&this.assaultBegun(assault,unit);});
   }
+  get missionMusicBridgeCrossed(){
+    const cue=this.mission.bgm?.afterBridge;if(!cue)return false;
+    const river=terrainRivers(this.mission.terrain).find(item=>item.bridgeId===cue.bridgeId);if(!river)return false;
+    const frame=riverFrameAtZ(river,river.bridgeZ),nx=frame.tz,nz=-frame.tx,side=(point:Vec)=>(point.x-frame.x)*nx+(point.z-frame.z)*nz,spawn=Math.sign(side(this.mission.player));
+    if(!spawn)return false;
+    const actor=this.player,across=side(actor),along=(actor.x-frame.x)*frame.tx+(actor.z-frame.z)*frame.tz;
+    return Math.sign(across)===-spawn&&Math.abs(across)>river.width/2&&Math.abs(along)<=river.bridgeWidth/2+8;
+  }
+  get missionMusicPassengerRide(){const unit=this.passenger;return !!unit?.alive&&unit.pilot&&(isHawc(unit.kind)||unit.kind==='scorp-asv');}
   get ionAnnouncementAt(){const strike=this.mission.ionStrike;if(!strike||this.ionStartedAt===null)return null;return this.ionStartedAt+strike.delay;}
   private eliminated(id:string){const unit=this.units.find(u=>u.id===id);return !!unit&&(!unit.alive||this.soldiers.some(s=>s.sourceVehicle===id&&!s.alive));}
   private facilityIntegrity(f:Facility){const initial=this.mission.base?.buildings.find((b,i)=>(b.id??`facility-${b.kind??'command'}-${i}`)===f.id)?.health??200;return f.health/initial;}
@@ -564,6 +573,7 @@ export class Simulation {
   private companionDisguiseBoarding(soldier:Soldier,unit:Unit|undefined){const disguise=this.mission.facilityIffDisguise;return this.facilityIffAcquired&&!!unit&&!!disguise?.vehicleIds.includes(unit.id)&&soldier.iff===disguise.footIff&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);}
   private validBoarding(soldier:Soldier,unit:Unit|undefined){return soldier.alive&&(soldier.iff===this.iff||soldier.automaticBoarding===true||!!unit&&this.companionDisguiseBoarding(soldier,unit))&&!!unit?.alive&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&(soldier.boardingRole==='pilot'?!unit.pilot&&!this.pilotReserved(unit,soldier.id):unit.iff===soldier.iff&&unit.passengers.length<unit.spec.passengerCapacity);}
   private canReserve(unit:Unit,iff:string,id:string){return unit.alive&&unit.iff===iff&&unit.spec.passengerCapacity>0&&unit.passengers.length+this.soldiers.filter(s=>s.alive&&s.iff===unit.iff&&s.id!==id&&s.boardingTarget===unit.id&&s.boardingRole!=='pilot').length<unit.spec.passengerCapacity;}
+  private playerHawkRide(unit:Unit){return isHawc(unit.kind)&&unit.pilot&&unit.passengers.length===0&&unit.iff===this.iff&&this.friendlyVehicle(unit);}
   entryShielded(target:Unit|Facility){
     const faction=isFacility(target)?target.faction:target.spec.faction;
     if(!isFacility(target)&&target.spec.category!=='tower')return false;
@@ -582,7 +592,7 @@ export class Simulation {
     if(this.entryDistance(unit)>=BOARDING_DISTANCE)return false;
     const boardable=isFacility(unit)?unit.boardable:unit.spec.boardable;
     if(entryAllowed({...unit,boardable},this.entryShielded(unit)))return isFacility(unit)||!this.pilotReserved(unit,'player');
-    return !isFacility(unit)&&unit.alive&&boardable!==false&&!this.entryShielded(unit)&&unit.pilot&&allowPassenger&&this.friendlyVehicle(unit)&&this.canReserve(unit,this.iff,'player');
+    return !isFacility(unit)&&unit.alive&&boardable!==false&&!this.entryShielded(unit)&&unit.pilot&&allowPassenger&&this.friendlyVehicle(unit)&&(this.canReserve(unit,this.iff,'player')||this.playerHawkRide(unit));
   }
   private exitPassenger(soldier?:Soldier,launch=true){
     const unit=soldier?this.units.find(u=>u.id===soldier.passengerOf):this.passenger;if(!unit)return;
@@ -854,7 +864,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const soldier=this.soldiers.find(s=>s===u),position={x:u.x,z:u.z};let remaining={x:destination.x-u.x,z:destination.z-u.z};
       for(let pass=0;pass<6;pass++){
         const end={x:position.x+remaining.x,z:position.z+remaining.z};let first:{unit?:Unit;t:number;nx:number;nz:number}|null=null;
-        for(const unit of this.units){if(!unit.alive)continue;const boarding=soldier?.boardingTarget===unit.id||u===this.human&&(!unit.pilot||this.friendlyVehicle(unit)&&unit.iff===this.iff&&unit.spec.passengerCapacity>unit.passengers.length);const radius=boarding?Math.min(vehicleRadius(unit.kind)+.35,BOARDING_DISTANCE-.15):vehicleRadius(unit.kind)+.35;const contact=circleMotionContact(position,end,unit,radius);if(contact&&(!first||contact.t<first.t))first={unit,...contact};}
+        for(const unit of this.units){if(!unit.alive)continue;const boarding=soldier?.boardingTarget===unit.id||u===this.human&&(this.playerHawkRide(unit)||!unit.pilot||this.friendlyVehicle(unit)&&unit.iff===this.iff&&unit.spec.passengerCapacity>unit.passengers.length);const radius=boarding?Math.min(vehicleRadius(unit.kind)+.35,BOARDING_DISTANCE-.15):vehicleRadius(unit.kind)+.35;const contact=circleMotionContact(position,end,unit,radius);if(contact&&(!first||contact.t<first.t))first={unit,...contact};}
         for(const obstacle of this.movementObstacles()){const contact=this.obstacleMotionContact(position,end,obstacle,2);if(contact&&(!first||contact.t<first.t))first=contact;}
         for(const rock of this.mission.rocks){const contact=circleMotionContact(position,end,rock,rock.r+2);if(contact&&(!first||contact.t<first.t))first=contact;}
         for(const peak of terrain.peaks??[]){const contact=peakMotionContact(position,end,peak,2);if(contact&&(!first||contact.t<first.t))first=contact;}

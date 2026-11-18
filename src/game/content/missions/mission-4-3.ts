@@ -4,6 +4,7 @@ const originalMap=new URL('../../../../assets/ui/mission-4-3-map.png',import.met
 // The route, force size, IFF codes and supply values are provisional; see docs/missions/mission-4-3.md.
 export const MISSION_4_3:MissionDefinition={
  id:'4-3',title:'War Zone',playerFaction:'union',initialIff:'2620',factionCodes:{union:'2620',merc:'6707',darken:'5142'},
+ bgm:{start:{trackId:'bgm-barren-landscape',delay:0},afterBridge:{bridgeId:'war-north-bridge',trackId:'bgm-merc-region'}},
  briefingPresentation:{mapPreview:{src:originalMap,width:134,height:132,viewBox:'0 0 134 132',label:{ja:'原作4-3の任務地図',en:'Original Mission 4-3 map'}},entries:[
   {label:{ja:'戦域を横断してWP3へ',en:'Cross the war zone to WP3'},detail:{ja:'出撃位置は地図の上側。まず橋制御施設で橋を下ろす。',en:'Start near the top of the map. Lower the first bridge at its control building.'}},
   {label:{ja:'Union HAWCと航空支援を利用',en:'Use the Union HAWC and one airstrike'},detail:{ja:'航空支援は搭乗中にVで1回呼び出す。操作と効果は試作設定。',en:'Press V while mounted to call support once. The control and effect are provisional.'}},

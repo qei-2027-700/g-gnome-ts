@@ -5,7 +5,7 @@
 - 対象：曲目、ミッション内の複数曲、切り替わる場面と再生条件
 - 状態：ユーザー指定のMerc領域・Scorp領域・3-3・1-1の開始曲と戦闘開始曲を登録。1-1は開始時と敵Sentry HAWCとの戦闘開始時の曲を区別する。3-3開始曲とUnion MarchのMP3を配置し、自動再生と搭乗時の切り替えを実装。他の音源ファイル、正式曲名、その他の再生・切り替え条件は未確認
 - 記録日：2026-10-22
-- 更新日：2026-11-18
+- 更新日：2026-11-19
 - 関連：[1-1](../missions/mission-1-1.md)、[音の制作方針](mission-controls-and-audio.md)、[設定](../gameplay/settings.md)、[原作資料](../reference/sources-and-macos.md)
 
 ## 1ミッションに複数曲を対応させる
@@ -28,9 +28,9 @@
 | `bgm-mission-1-1-sentry-combat` | 1-1の敵Sentry HAWC戦闘開始曲（用途による仮名） | 未確認 | MP3全長49.609秒・ファイル全体をループ | [ユーザー指定動画](https://www.youtube.com/watch?v=6P2ZOLtGAXA&list=PLCC2B142A186B59C9&index=9) |
 | `bgm-fighting-on-the-tundra` | Track 12: Fighting on the Tundra（投稿動画の表記） | 投稿動画ではTrack 12、原作CDの正式曲名・番号・版は未照合 | MP3全長84.160秒・2-6ではファイル全体をループ（原作条件は未確認） | [ユーザー指定動画](https://www.youtube.com/watch?v=4OuRkv-MxXE) |
 | `bgm-credits` | Credits（配布ページの表記） | 原作CDの正式表記・番号は未照合 | 全長138秒・4-2では全長をループ | [G-Nome gameripのCredits](https://downloads.khinsider.com/game-soundtracks/album/gnome-windows-gamerip-1997/01.%2520Credits.mp3) |
-| `bgm-barren-landscape` | Track 03: Barren Landscape（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長80.064秒・用途未指定 | [動画](https://www.youtube.com/watch?v=ZJb2W-SxDAo) |
+| `bgm-barren-landscape` | Track 03: Barren Landscape（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長80.064秒・4-3では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=ZJb2W-SxDAo) |
 | `bgm-infiltrating-darken-territory` | Track 04: Infiltrating Darken Territory（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長118.485秒・用途未指定 | [動画](https://www.youtube.com/watch?v=j_oylgkm3Fo) |
-| `bgm-sneaking-in` | Track 07: Sneaking In（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長92.011秒・用途未指定 | [動画](https://www.youtube.com/watch?v=mziZW_QQPJI) |
+| `bgm-sneaking-in` | Track 07: Sneaking In（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長92.011秒・3-4では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=mziZW_QQPJI) |
 | `bgm-rescuing-kylie` | Track 09: Rescuing Kylie（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長125.333秒・用途未指定 | [動画](https://www.youtube.com/watch?v=FB664mAqM28) |
 | `bgm-sheridan` | Track 11: Sheridan（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長121.173秒・3-5では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=ckEY6gEo_2A) |
 | `bgm-merc-ambush` | Track 13: Merc Ambush（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長55.168秒・用途未指定 | [動画](https://www.youtube.com/watch?v=1JM8Vrm8TX8) |
@@ -38,7 +38,7 @@
 | `bgm-betrayal` | Track 16: Betrayal（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長201.301秒・用途未指定 | [動画](https://www.youtube.com/watch?v=uWpTUXuLG_g) |
 | `bgm-defeated` | Track 18: Defeated（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長26.958秒・3-5ではイオン砲アナウンスの2秒前からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=4XJIibD6gr8) |
 | `bgm-crossing-the-war-zone` | Track 19: Crossing the War Zone（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長140.224秒・3-2では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=BROWgPMUPDg) |
-| `bgm-passenger` | Track 20: Passenger（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長64.939秒・用途未指定 | [動画](https://www.youtube.com/watch?v=icXcc3u4Po4) |
+| `bgm-passenger` | Track 20: Passenger（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長64.939秒・他者が操縦するHAWCまたはScorp ASVへの同乗時はファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=icXcc3u4Po4) |
 
 同じ曲が日本語版・英語版で同じ位置に流れるかは未確認。曲データと再生ルールに版・言語の確認状況を持たせるが、BGMを言語だけで別曲へ変更する前提にはしない。
 
@@ -67,7 +67,7 @@
 | --- | --- | --- | --- | --- |
 | 1-1・開始 | ミッション開始時 | `bgm-mission-1-1-start` | 未確認 | 曲と開始場面はユーザー指定。フェード・ループ・戦闘曲への切り替え方法は未確認 |
 | 1-1・敵Sentry HAWCとの戦闘 | Merc Sentry HAWCがプレイヤーを初めて視認したとき | `bgm-mission-1-1-sentry-combat` | 未確認 | 切替条件と音源を配置済み。フェード・ループ・終了条件は未確認 |
-| Merc領域 | 未確認 | `bgm-merc-region` | 未確認 | 曲の対応はユーザー指定。音源は配置済み。2026-11-18のメモでは、原作2-1とは別の仮任務のBGMにする。未実装。[仮の2-1](../missions/mission-2-1.md) |
+| Merc領域 | 未確認 | `bgm-merc-region` | 未確認 | 曲の対応はユーザー指定。4-3では北の橋を渡り切ったあとに再生する。2026-11-18の仮2-1への接続は未実装。[仮の2-1](../missions/mission-2-1.md) |
 | Scorp領域 | 未確認 | `bgm-scorp-region` | 未確認 | 曲の対応はユーザー指定。音源は配置済みで、任務へは未接続。3-3専用曲との関係は未確認 |
 | 3-3・任務開始 | 任務の進行時間が3秒に達したとき | `bgm-mission-3-3` | 敵Scorp ASVへ操縦者として搭乗したときにUnion Marchへ切り替え | ユーザー指定。ファイル全体をループし、切り替え時は前曲を止めて新曲を先頭から再生 |
 | 3-3・敵Scorp ASV搭乗後 | 対象機`scorp-asv`へプレイヤーが操縦者として搭乗 | `bgm-union-march` | 任務の中断・終了で停止 | ユーザー指定の曲。ファイル全体をループし、再搭乗では再生位置を維持 |
@@ -76,10 +76,14 @@
 | 3-1・開始 | 出撃時 | `bgm-credits` | 奪ったScorp ASVの操縦席で、広場の両軍6機の進軍がすべて始まったとき Union March へ一度切り替える | ユーザー指定（2026-11-12、後の指定、2026-11-13に広場の切り替えを追加）。既存の Credits を待機なしでループする。偵察の無線は `afterRadio` には結び付けていない。シェリダンの無線はまだない |
 | 3-1・広場の両軍が戦闘に入ったあと | `recon-asv`の操縦者であり、広場のScorp 3機とUnion 3機の進軍がすべて始まったとき | `bgm-union-march` | 未確認 | ユーザー指定（2026-11-13）。既存の Union March。搭乗だけ、または徒歩で広場へ近づいただけでは切り替えない。進軍開始は仮の220m。ループはファイル全体の仮設定 |
 | 3-1・シェリダンの無線のあと | シェリダンの無線の再生が終わったとき | `bgm-mission-1-1-sentry-combat` | 未確認 | ユーザー指定（2026-11-12、先の指定）。1-5 Rescue! と同じ音源。切り替え前の曲は、後の指定で Credits になった。台詞と任務内の位置は未指定。共通の `bgm.afterRadio` で切り替えられる。3-1の定義には、無線が未配置のためまだ書いていない |
+| 3-4・出撃 | 出撃時 | `bgm-sneaking-in` | 未確認 | ユーザー指定（2026-11-19）。音源は [sneaking-in-mziZW_QQPJI.mp3](../../assets/audio/bgm/sneaking-in-mziZW_QQPJI.mp3)。待機なし。投稿動画の題であり正式曲名ではない。ファイル全体のループは仮設定 |
 | 3-2・出撃 | 出撃時 | `bgm-crossing-the-war-zone` | `sheridan-encounter` の再生が終わったとき、下の戦闘曲へ一度切り替える | ユーザー指定（2026-11-18）。音源は [crossing-the-war-zone-BROWgPMUPDg.mp3](../../assets/audio/bgm/crossing-the-war-zone-BROWgPMUPDg.mp3)。待機なし。ファイル全体のループは仮設定 |
 | 3-2・シェリダンの遭遇無線のあと | `sheridan-encounter`「さあー諸君。ひと暴れと行こうか！」の再生が終わったとき | `bgm-mission-1-1-sentry-combat` | 未確認 | ユーザー指定（2026-11-13）。1-5と同じ既存音源。出撃時の曲は2026-11-18の指定で Crossing the War Zone。前の会話無線では切り替えない。ループはファイル全体の仮設定 |
 | 3-5・出撃 | 出撃時 | `bgm-sheridan` | イオン砲の捕捉アナウンス「イオンキャノン準備完了」の2秒前に、下の曲へ一度切り替える | ユーザー指定（2026-11-18）。音源は [sheridan-ckEY6gEo_2A.mp3](../../assets/audio/bgm/sheridan-ckEY6gEo_2A.mp3)。待機なし。投稿動画の題であり正式曲名ではない。ファイル全体のループは仮設定 |
 | 3-5・イオン砲アナウンスの2秒前 | 研究所破壊後、捕捉アナウンスの予定時刻の2秒前 | `bgm-defeated` | 未確認 | ユーザー指定（2026-11-18）。音源は [defeated-4XJIibD6gr8.mp3](../../assets/audio/bgm/defeated-4XJIibD6gr8.mp3)。アナウンスと赤い光柱の時刻は変えない。研究所を破壊するまで切り替わらない。一時停止中は保留し、再開で同じ曲の再生位置は戻さない。全長約27秒のファイル全体ループは仮設定。投稿動画の題であり正式曲名ではない |
+| 4-3・出撃 | 出撃時 | `bgm-barren-landscape` | 北の橋 `war-north-bridge` を渡り切ったとき、下の曲へ一度切り替える | ユーザー指定（2026-11-19）。音源は [barren-landscape-ZJb2W-SxDAo.mp3](../../assets/audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3)。待機なし。ファイル全体のループは仮設定。投稿動画の題であり正式曲名ではない |
+| 4-3・北の橋を渡ったあと | 出撃地点の対岸で、北の橋の橋幅に沿った岸へプレイヤーが出たとき | `bgm-merc-region` | 未確認 | ユーザー指定（2026-11-19）。音源は [merc-region.mp3](../../assets/audio/bgm/merc-region.mp3)。橋の上、橋が上がったまま溶岩で止まった位置、溶岩の端を回り込んだ位置では切り替えない。渡り切ったあとに対岸の奥へ進んでも、戻ってきても曲は維持する。一時停止中は保留し、再開で再生位置は戻さない。再出撃では Barren Landscape の先頭から。全長ループは仮設定 |
+| 全任務・他者が操縦するHAWCまたはScorp ASVへの同乗 | プレイヤーが、他者の操縦中のHAWC、または他者の操縦中のScorp ASVの乗客になったとき | `bgm-passenger` | 未確認 | ユーザー指定（2026-11-19。同日、4-2の味方Scorp ASVを追加）。音源は [passenger-icXcc3u4Po4.mp3](../../assets/audio/bgm/passenger-icXcc3u4Po4.mp3)。待機なし。任務ごとの曲指定ではなく、同乗状態で切り替える。自分で操縦席に乗った場合と、Union ASVへの同乗は切り替えない。一度切り替えたあとは降機しても戻さない。一時停止中は保留し、再開で再生位置は戻さない。再出撃ではその任務の出撃曲の先頭から。撃破曲とイオン砲アナウンスの予告は同乗曲より優先する。4-2では全滅後の `bgm-snow-maze` が優先される。全長ループは仮設定。投稿動画の題であり正式曲名ではない |
 
 切り替え条件は、ミッション開始、任務イベント、領域への進入、戦闘状態、会話、曲の再生終了、経過時間などを候補として調べる。交戦開始と同時に曲が変わった1回の観察だけで、戦闘開始が原因と決めない。
 
@@ -192,14 +196,14 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 - 取得元：[Creditsの個別ページ](https://downloads.khinsider.com/game-soundtracks/album/gnome-windows-gamerip-1997/01.%2520Credits.mp3)。公開MP3をそのまま保存し、再圧縮していない。
 - 検査値：MP3、22050Hz、ステレオ、全長138.000秒、2,476,127バイト。FFmpegで全体のデコードに成功。
 - SHA-256：`3ea368cc39553d407de84cf3aa565412415825a8959be7cad641de0bb398938b`
-- 再生条件：4-2出撃直後から全長をループ。BGM設定の0.8倍。一時停止・設定で停止、再開で続きから、任務終了で停止し、再出撃では先頭から再生する。開始時刻とループ位置は未照合の試作設定。
+- 再生条件：4-2出撃直後から全長をループ。BGM設定の0.8倍。一時停止・設定で停止、再開で続きから、任務終了で停止し、再出撃では先頭から再生する。開始時刻とループ位置は未照合の試作設定。他者が操縦するScorp HAWCまたはScorp ASVの乗客になったときは、Union部隊の全滅前に `bgm-passenger` へ切り替える。音量倍率は任務の0.8倍のまま。
 
 検査・接続・ブラウザ確認の記録は`.artifacts/mission-4-2-20261030/`へ保存する。SEは既存の塔・武器・乗降・終了の共通処理を使う。
 
 
 ## 4-2のUnion部隊全滅後の切り替え（2026-10-30）
 
-ユーザー指定により、Union側の敵部隊を全て倒した後にBGMを切り替える。共通選曲処理に`bgm.afterEliminate`を追加した。切り替え先はユーザー指定の「15 Snow Maze」。Union地上部隊8機とAIP2機のIDを任務に指定し、10部隊を撃破した後にCreditsから`bgm-snow-maze`へ一度だけ切り替える。撃破は任務側の判定と合わせ、機体破壊に加えて搭乗兵の死亡も数える。操縦兵を倒して空の機体だけ残った場合も切り替え、降機した兵が生きているだけでは撃破に数えない。橋の近くの敵Union Sentry（`bridge-union-sentry`）はカウント外とし、生き残っていても切り替える。橋を上げる目標は別に維持する。全長ループ・BGM設定の0.8倍を使い、停止・再開・再出撃は共通処理に従う。原作のループ点やフェードは未確認のため追加しない。
+ユーザー指定により、Union側の敵部隊を全て倒した後にBGMを切り替える。共通選曲処理に`bgm.afterEliminate`を追加した。切り替え先はユーザー指定の「15 Snow Maze」。Union地上部隊8機とAIP2機のIDを任務に指定し、10部隊を撃破した後にCreditsから`bgm-snow-maze`へ一度だけ切り替える。撃破は任務側の判定と合わせ、機体破壊に加えて搭乗兵の死亡も数える。操縦兵を倒して空の機体だけ残った場合も切り替え、降機した兵が生きているだけでは撃破に数えない。橋の近くの敵Union Sentry（`bridge-union-sentry`）はカウント外とし、生き残っていても切り替える。橋を上げる目標は別に維持する。全長ループ・BGM設定の0.8倍を使い、停止・再開・再出撃は共通処理に従う。原作のループ点やフェードは未確認のため追加しない。同乗曲 `bgm-passenger` は、この撃破が成立したあとは再生しない。同乗してから全滅した場合は Snow Maze へ切り替わる。
 
 
 - 音源：[G-NOME 1996 PC Game Soundtrack - Track 15: Snow Maze](https://www.youtube.com/watch?v=D0jKDtJPqLM)。ユーザーが指定した動画1本から音声を抽出し、MP3へ変換して[audio/bgm/snow-maze-D0jKDtJPqLM.mp3](../../assets/audio/bgm/snow-maze-D0jKDtJPqLM.mp3)へ配置した。以前の別サイトのTrack 15は誤った音源だったため、採用を取り消した。ファイル名も変更し、旧音源のキャッシュを再利用しない。
@@ -214,7 +218,7 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 - 出典：[ユーザー指定動画](https://www.youtube.com/watch?v=8I_7gl0ar3M&list=PLCC2B142A186B59C9&index=4)。再生リストは付けず、この動画1本を補助スクリプトでMP3にした
 - 検査値：MP3、48kHz、ステレオ、全長85.333秒、2,660,060バイト。FFmpegで全体のデコードに成功
 - SHA-256：`0c5f3d6eaa8186133110e250f4702df46476d54858c1a13e4f3863b8774907e8`
-- 再生条件：未接続。2026-11-18のユーザー指定では、原作2-1とは別の仮任務で、Merc Tactical Defense HAWCにキリーと乗り込むだけの場面のBGMにする。ユーザーはこの曲をMercの戦闘曲と呼んだ。正式曲名、原作のループ位置、開始の待ち時間は未確認。[メモ](../missions/mission-2-1.md)
+- 再生条件：4-3で、北の橋 `war-north-bridge` を渡り切ったあとに一度切り替える。出撃時の曲は Barren Landscape。2026-11-18のユーザー指定では、原作2-1とは別の仮任務で、Merc Tactical Defense HAWCにキリーと乗り込むだけの場面のBGMにもする。その仮任務への接続は未実装。ユーザーはこの曲をMercの戦闘曲と呼んだ。正式曲名、原作のループ位置、開始の待ち時間は未確認。[メモ](../missions/mission-2-1.md)
 - 検証ログ：`.artifacts/merc-region-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない
 
 ## 配置済みのScorp領域曲（2026-11-18）
@@ -230,7 +234,7 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 
 ## 未配置曲の前半（2026-11-18）
 
-ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Sheridan は 3-5 の出撃曲として接続した。ほかの5曲は任務へ未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Sheridan は 3-5 の出撃曲、Barren Landscape は 4-3 の出撃曲、Sneaking In は 3-4 の出撃曲として接続した。ほかの3曲は任務へ未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
 
 | 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
 | --- | --- | --- | ---: | --- |
@@ -245,7 +249,7 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 
 ## 未配置曲の残り（2026-11-18）
 
-ユーザー指定により、同じ再生リストで残っていた5曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Defeated は 3-5 のイオン砲アナウンスの2秒前、Crossing the War Zone は 3-2 の出撃曲として接続した。ほかの3曲は任務へ未接続。検査ログは `.artifacts/bgm-rest-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+ユーザー指定により、同じ再生リストで残っていた5曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Defeated は 3-5 のイオン砲アナウンスの2秒前、Crossing the War Zone は 3-2 の出撃曲、Passenger は他者が操縦するHAWCまたはScorp ASVへの同乗時の曲として接続した。ほかの2曲は任務へ未接続。検査ログは `.artifacts/bgm-rest-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
 
 | 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
 | --- | --- | --- | ---: | --- |

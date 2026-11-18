@@ -229,7 +229,7 @@ test('minefield discovery uses female voice two for the Japanese warning, suppor
 async function musicFixture(check:(audio:GameAudio,tracks:any[])=>Promise<void>,availableNext=true){
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const previous=Object.getOwnPropertyDescriptor(globalThis,'Audio'),tracks:any[]=[];
  class Music{src:string;loop=false;volume=1;paused=true;currentTime=0;plays=0;fail=false;defer:(()=>Promise<void>)|null=null;constructor(src:string){this.src=src;tracks.push(this);}pause(){this.paused=true;}play(){this.plays++;this.paused=false;return this.defer?this.defer():this.fail?Promise.reject(new Error('Playback blocked')):Promise.resolve();}}
- try{Object.defineProperty(globalThis,'Audio',{configurable:true,value:Music});const audio=new GameAudio(defaults(),{'bgm-mission-1-1-start':'mission-1-1-start.mp3','bgm-mission-1-1-sentry-combat':availableNext?'sentry-combat.mp3':null,'bgm-mission-3-3':'start.mp3','bgm-fighting-on-the-tundra':'tundra.mp3','bgm-snow-maze':'snow-maze.mp3','bgm-credits':'credits.mp3','bgm-union-march':availableNext?'union-march.mp3':null,'bgm-crossing-the-war-zone':'crossing-the-war-zone.mp3','bgm-sheridan':'sheridan.mp3','bgm-defeated':availableNext?'defeated.mp3':null});audio.beginMissionMusic(MISSION_3_3);await check(audio,tracks);}
+ try{Object.defineProperty(globalThis,'Audio',{configurable:true,value:Music});const audio=new GameAudio(defaults(),{'bgm-mission-1-1-start':'mission-1-1-start.mp3','bgm-mission-1-1-sentry-combat':availableNext?'sentry-combat.mp3':null,'bgm-mission-3-3':'start.mp3','bgm-fighting-on-the-tundra':'tundra.mp3','bgm-snow-maze':'snow-maze.mp3','bgm-credits':'credits.mp3','bgm-union-march':availableNext?'union-march.mp3':null,'bgm-crossing-the-war-zone':'crossing-the-war-zone.mp3','bgm-sheridan':'sheridan.mp3','bgm-defeated':availableNext?'defeated.mp3':null,'bgm-barren-landscape':'barren-landscape.mp3','bgm-merc-region':availableNext?'merc-region.mp3':null,'bgm-sneaking-in':'sneaking-in.mp3','bgm-passenger':availableNext?'passenger.mp3':null});audio.beginMissionMusic(MISSION_3_3);await check(audio,tracks);}
  finally{if(previous)Object.defineProperty(globalThis,'Audio',previous);else Reflect.deleteProperty(globalThis,'Audio');}
 }
 test('3-3 music starts once at three simulation seconds, loops, preserves position across pause and follows music volume',async()=>{
@@ -372,6 +372,18 @@ test('3-5 keeps Sheridan when the ion track is missing',async()=>{
   audio.musicError=null;audio.updateMissionMusic(19,false,undefined,false,20);assert.equal(audio.musicError,null);assert.equal(tracks[0].paused,false);
  },false);
 });
+test('3-4 plays Sneaking In at launch, loops, resumes and restarts on retry',async()=>{
+ const {MISSION_3_4}=await import('../content/missions/mission-3-4.ts');
+ await musicFixture(async(audio,tracks)=>{
+  assert.deepEqual(MISSION_3_4.bgm,{start:{trackId:'bgm-sneaking-in',delay:0}});
+  audio.beginMissionMusic(MISSION_3_4);audio.updateMissionMusic(0,true);assert.equal(tracks.length,0);
+  audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'sneaking-in.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].paused,false);assert.equal(tracks[0].volume,audio.settings.music);
+  audio.updateMissionMusic(1,false);assert.equal(tracks[0].plays,1);tracks[0].currentTime=6;audio.updateMissionMusic(1,true);assert.equal(tracks[0].paused,true);
+  audio.resume();await Promise.resolve();assert.equal(tracks[0].currentTime,6);assert.equal(tracks[0].paused,false);
+  audio.beginMissionMusic(MISSION_3_4);assert.equal(tracks[0].paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sneaking-in.mp3');assert.equal(tracks.at(-1).currentTime,0);
+  audio.resetMissionMusic();assert.equal(tracks.at(-1).paused,true);assert.equal(audio.music,null);
+ });
+});
 test('1-5 plays the assigned combat BGM at launch and stops it when the mission ends',async()=>{
  const {MISSION_1_5}=await import('../content/missions/mission-1-5.ts');
  await musicFixture(async(audio,tracks)=>{
@@ -504,6 +516,58 @@ test('2-6 plays Tundra once at launch, loops, pauses, resumes and starts fresh o
   audio.beginMissionMusic(MISSION_2_6);assert.equal(tracks[0].paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,0);
   audio.resetMissionMusic();assert.equal(tracks[1].paused,true);assert.equal(audio.music,null);
  });
+});
+
+test('4-3 starts Barren Landscape and switches once to Merc region after the north bridge is crossed',async()=>{
+ const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts');const {Simulation}=await import('../simulation/simulation.ts');
+ const def={...MISSION_4_3,units:MISSION_4_3.units.filter(u=>u.id==='union-player'),assaults:[],garrison:[]};
+ const sim=new Simulation('Easy',def);
+ await musicFixture(async(audio,tracks)=>{
+  const update=(paused=false)=>audio.updateMissionMusic(sim.time,paused,sim.missionMusicUnits,sim.missionMusicAssaultReady,sim.ionAnnouncementAt,sim.missionMusicBridgeCrossed);
+  audio.beginMissionMusic(MISSION_4_3);update();await Promise.resolve();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'barren-landscape.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].paused,false);assert.equal(tracks[0].volume,audio.settings.music);
+  sim.mounted!.x=-50;sim.mounted!.z=650;update();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'barren-landscape.mp3');
+  sim.mounted!.z=600;update(true);assert.equal(tracks.length,1);assert.equal(tracks[0].paused,true);
+  update();await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[0].paused,true);assert.equal(tracks[1].src,'merc-region.mp3');assert.equal(tracks[1].loop,true);assert.equal(tracks[1].paused,false);
+  tracks[1].currentTime=5;sim.mounted!.z=400;update();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,5);assert.equal(sim.missionMusicBridgeCrossed,false);
+  sim.mounted!.x=200;sim.mounted!.z=560;audio.beginMissionMusic(MISSION_4_3);update();await Promise.resolve();assert.equal(tracks.at(-1).src,'barren-landscape.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(sim.missionMusicBridgeCrossed,false);
+ });
+});
+
+test('riding a piloted HAWC switches to Passenger once, holds across pause and dismount, and yields to elimination and the ion cue',async()=>{
+ const {MISSION}=await import('../content/mission-1-1.ts'),{MISSION_3_5}=await import('../content/missions/mission-3-5.ts'),{MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ await musicFixture(async(audio,tracks)=>{
+  const ride=(paused=false)=>audio.updateMissionMusic(1,paused,undefined,false,null,false,true);
+  audio.beginMissionMusic(MISSION);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'mission-1-1-start.mp3');
+  audio.missionMusicDetected('merc-sentry');audio.updateMissionMusic(1,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'sentry-combat.mp3');
+  ride(true);assert.equal(tracks.at(-1).src,'sentry-combat.mp3');assert.equal(tracks.at(-1).paused,true);
+  ride();await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).loop,true);assert.equal(tracks.at(-1).paused,false);assert.equal(tracks.at(-1).volume,audio.settings.music);
+  tracks.at(-1).currentTime=9;audio.updateMissionMusic(2,false,undefined,false,null,false,false);assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).currentTime,9);
+  audio.updateMissionMusic(3,true);assert.equal(tracks.at(-1).paused,true);audio.resume();await Promise.resolve();assert.equal(tracks.at(-1).currentTime,9);assert.equal(tracks.at(-1).paused,false);
+  audio.beginMissionMusic(MISSION);assert.equal(tracks.at(-1).paused,true);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'mission-1-1-start.mp3');assert.equal(tracks.at(-1).currentTime,0);
+  audio.beginMissionMusic(MISSION_4_2);audio.updateMissionMusic(0,false,[{id:'enemy',alive:true}]);await Promise.resolve();
+  audio.updateMissionMusic(1,false,[{id:'enemy',alive:true}],false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).volume,audio.settings.music*.8);
+  audio.updateMissionMusic(2,false,MISSION_4_2.bgm!.afterEliminate!.unitIds.map(id=>({id,alive:false})));await Promise.resolve();assert.equal(tracks.at(-1).src,'snow-maze.mp3');
+  audio.beginMissionMusic(MISSION_3_5);audio.updateMissionMusic(0,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');
+  audio.updateMissionMusic(18,false,undefined,false,20,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'defeated.mp3');
+  audio.beginMissionMusic({...MISSION,bgm:undefined});audio.updateMissionMusic(0,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).currentTime,0);
+  await audio.loadMusic(new File(['audio'],'manual.mp3',{type:'audio/mpeg'}));audio.updateMissionMusic(1,false,undefined,false,null,false,true);assert.equal(tracks.at(-1).src.startsWith('blob:'),true);assert.equal(tracks.at(-1).paused,false);
+ });
+});
+test('missing Passenger BGM keeps the mission track and reports the missing asset once',async()=>{
+ const {MISSION}=await import('../content/mission-1-1.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks[0].src,'mission-1-1-start.mp3');
+  audio.updateMissionMusic(1,false,undefined,false,null,false,true);assert.equal(tracks.length,1);assert.equal(audio.musicError,'missing-next');assert.equal(tracks[0].paused,false);
+  audio.musicError=null;audio.updateMissionMusic(2,false,undefined,false,null,false,true);assert.equal(audio.musicError,null);assert.equal(tracks.length,1);
+ },false);
+});
+test('missing 4-3 bridge BGM keeps Barren Landscape and reports the missing asset once',async()=>{
+ const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_4_3);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks[0].src,'barren-landscape.mp3');
+  audio.updateMissionMusic(1,false,undefined,false,null,true);assert.equal(tracks.length,1);assert.equal(audio.musicError,'missing-next');assert.equal(tracks[0].paused,false);
+  audio.musicError=null;audio.updateMissionMusic(2,false,undefined,false,null,true);assert.equal(audio.musicError,null);assert.equal(tracks.length,1);
+ },false);
 });
 
 test('4-2 starts the original credits cue on launch through the common mission music player',async()=>{

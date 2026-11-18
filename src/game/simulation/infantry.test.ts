@@ -189,9 +189,36 @@ test('F boarding chooses nearest eligible vehicle; passenger preserves driver, o
  s.tick(.05,{...idle,forward:true,right:true,fire1:true,fire2:true});assert.equal(carrier.yaw,before.yaw);assert.equal(carrier.aim,before.aim);assert.equal(carrier.order,before.order);assert.equal(s.player,carrier);assert.equal(s.humanHealth,100);
  carrier.speed=9;const order=carrier.order;s.eject();assert.equal(s.passenger,null);assert.equal(carrier.pilot,true);assert.equal(carrier.speed,9);assert.equal(carrier.order,order);assert.deepEqual(carrier.passengers,[]);assert.ok(s.flight);
 });
-test('passenger rejects HAWC, enemy IFF, full seats and reservations; seven metres is excluded',async()=>{
+test('passenger rejects enemy IFF, full seats and reservations; seven metres is excluded',async()=>{
  const {makeUnit}=await import('./simulation.ts');
- for(const reason of ['hawc','iff','full','distance']){const s=new Simulation(),u=makeUnit('carrier',reason==='hawc'?'union-sentry':'union-asv',s.human.x,s.human.z);s.units=[u];if(reason==='iff')u.iff='1111';if(reason==='full')u.passengers=['a','b','c'];if(reason==='distance')u.z+=7;assert.equal(s.board(),false,reason);assert.equal(s.passenger,null);}
+ for(const reason of ['iff','full','distance','taken']){const s=new Simulation(),u=makeUnit('carrier',reason==='taken'?'union-sentry':'union-asv',s.human.x,s.human.z);s.units=[u];if(reason==='iff')u.iff='1111';if(reason==='full')u.passengers=['a','b','c'];if(reason==='taken')u.passengers=['npc'];if(reason==='distance')u.z+=7;assert.equal(s.board(),false,reason);assert.equal(s.passenger,null);assert.equal(s.missionMusicPassengerRide,false);}
+});
+test('walking onto a friendly piloted HAWC rides along without taking the controls',async()=>{
+ const {makeUnit}=await import('./simulation.ts');
+ for(const kind of ['union-sentry','union-tactical'] as const){
+  const s=new Simulation(),hawk=makeUnit('driver',kind,0,7,true);hawk.iff=s.iff;hawk.spec={...hawk.spec,speed:0};hawk.speed=0;hawk.order=null;
+  s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.mission.base=undefined;s.units=[hawk];s.human={x:0,z:3.2};
+  for(let i=0;i<180&&!s.passenger;i++)s.tick(1/60,{...idle,forward:true});
+  assert.equal(s.passenger,hawk,kind);assert.equal(s.mounted,null);assert.equal(hawk.pilot,true);assert.equal(s.missionMusicPassengerRide,true);assert.deepEqual(hawk.passengers,['player']);
+  s.fire(1);assert.equal(s.events.filter(e=>e.type==='shot').length,0);
+  const pilot={yaw:hawk.yaw,aim:hawk.aim,person:hawk.personId};s.tick(.05,{...idle,forward:true,right:true,fire1:true});assert.equal(hawk.yaw,pilot.yaw);assert.equal(hawk.aim,pilot.aim);assert.equal(hawk.personId,pilot.person);
+  s.eject();assert.equal(s.passenger,null);assert.equal(s.missionMusicPassengerRide,false);assert.equal(hawk.pilot,true);assert.deepEqual(hawk.passengers,[]);
+ }
+ const enemy=new Simulation(),hostile=makeUnit('enemy','merc-sentry',enemy.human.x,enemy.human.z,true);enemy.units=[hostile];assert.equal(enemy.board(),false);assert.equal(enemy.passenger,null);
+ const empty=new Simulation(),open=makeUnit('empty','union-sentry',empty.human.x,empty.human.z,false);empty.units=[open];assert.ok(empty.board());assert.equal(empty.mounted,open);assert.equal(empty.missionMusicPassengerRide,false);
+ const asv=new Simulation(),carrier=makeUnit('asv','union-asv',asv.human.x,asv.human.z,true);carrier.iff=asv.iff;asv.units=[carrier];assert.ok(asv.board());assert.equal(asv.passenger,carrier);assert.equal(asv.missionMusicPassengerRide,false);
+});
+test('4-2 ride-along in a piloted Scorp HAWC or Scorp ASV arms Passenger and an empty friendly vehicle does not',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ for(const id of ['scorp-sentry-guard','scorp-tactical-guard','scorp-assault2','scorp-asv-guard','scorp-asv-guard3']){
+  const s=new Simulation('Easy',MISSION_4_2),unit=s.units.find(u=>u.id===id)!;s.human={x:unit.x,z:unit.z+3.2};s.humanYaw=Math.PI;
+  for(let i=0;i<120&&!s.passenger;i++)s.tick(1/60,{...idle,forward:true});
+  assert.equal(s.passenger?.id,id);assert.equal(s.mounted,null);assert.equal(unit.pilot,true);assert.equal(s.missionMusicPassengerRide,true);
+ }
+ const open=new Simulation('Easy',MISSION_4_2),empty=open.units.find(u=>u.id==='scorp-assault3')!;open.human={x:empty.x,z:empty.z+3.2};open.humanYaw=Math.PI;
+ for(let i=0;i<120&&!open.mounted;i++)open.tick(1/60,{...idle,forward:true});
+ assert.equal(open.mounted?.id,'scorp-assault3');assert.equal(open.passenger,null);assert.equal(open.missionMusicPassengerRide,false);
+ const hostile=new Simulation('Easy',MISSION_4_2),union=hostile.units.find(u=>u.id==='bridge-union-sentry')!;hostile.human={x:union.x,z:union.z};assert.equal(hostile.board(),false);assert.equal(hostile.missionMusicPassengerRide,false);
 });
 test('destroying or removing a passenger carrier clears riding state without killing the passenger',async()=>{
  const {makeUnit}=await import('./simulation.ts');for(const remove of [false,true]){const s=new Simulation(),u=makeUnit('carrier','union-asv',s.human.x,s.human.z);s.units=[u];assert.ok(s.board());const health=s.humanHealth;if(remove){s.units=[];s.tick(.01,idle);}else s.damage(u,9999);assert.equal(s.passenger,null);assert.equal(s.humanHealth,health);assert.equal(s.status,'running');assert.ok(s.flight);assert.ok(!u.passengers.includes('player'));}

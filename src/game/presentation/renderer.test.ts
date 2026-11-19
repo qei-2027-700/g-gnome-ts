@@ -1125,6 +1125,11 @@ test('Merc Assault window scenery sways gently with its gait, freezes on pause a
 test('curved 4-2 river has a recessed bed and oriented bridge leaves',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);const water=world.scene.getMeshByName('river-water')!,ground=world.scene.getMeshByName('valley')!;assert.ok(water);assert.ok((water.getVerticesData('position')?.length??0)>0);const groundVertices=ground.getVerticesData('position')!;let lowest=Infinity;for(let i=1;i<groundVertices.length;i+=3)lowest=Math.min(lowest,groundVertices[i]!);assert.ok(lowest<-1);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.y)>.1);assert.equal(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z,0);
+ for(const point of [s.mission.terrain.river!.path![0]!,s.mission.terrain.river!.path![7]!,s.mission.terrain.river!.path!.at(-1)!]){
+  let nearest=Infinity,bed=Infinity;
+  for(let i=0;i<groundVertices.length;i+=3){const distance=Math.hypot(groundVertices[i]!-point.x,groundVertices[i+2]!+ground.position.z-point.z);if(distance<nearest){nearest=distance;bed=groundVertices[i+1]!;}}
+  assert.ok(nearest<20&&bed<-.7,`water must be above the river bed at (${point.x}, ${point.z}), nearest=${nearest}, bed=${bed}`);
+ }
  const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());world.update(0);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),false);
  assert.ok(s.raiseBridge());world.completionTime=0;world.update(0);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z)>1.4);assert.ok(world.scene.getTransformNodeByName('bridge-hinge--1')!.rotation.z>1.4);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),true);
  const {bridgeControlMarkup}=await import('./bridge-control.ts');assert.ok(bridgeControlMarkup().includes('id="bridgeSwitch"'));assert.ok(bridgeControlMarkup().includes('bridge-control-building'));

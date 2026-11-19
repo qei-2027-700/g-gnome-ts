@@ -640,8 +640,10 @@ export const VEHICLES={...BASE_VEHICLES,
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
  'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
  'scorp-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
- 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
-  shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.5,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-.95,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.75,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
+ // Manual p.32: Scorpion speed, shield, energy and height. Armor is not on the card and stays the provisional 160.
+ // Hull, canopy and gun origins drop by (8.6-7.9)*0.6 so the photo-matched body stays on the legs.
+ 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',speed:30,shield:72,energy:1900,height:8.6,color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
+  shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.92,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-1.37,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.33,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
 } as const satisfies Record<string,VehicleDefinition>;
 export type VehicleKind=keyof typeof VEHICLES;
 type VehicleDataKey='shape'|'gait'|'drive';

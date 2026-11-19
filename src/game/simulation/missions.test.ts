@@ -231,6 +231,34 @@ test('3-1 seats Kylie and Thane after the recon ASV is captured, then the provis
  assert.equal(plaza.events.filter(event=>event.radioId==='thane-union-hold').length,0);
  assert.ok(worst<250,`plaza tick took ${worst.toFixed(0)}ms`);
 });
+test('3-1 plaza hawks all close on the center from the west, then surviving Scorp crews drive mounted toward waypoint 3',()=>{
+ const toward=(from:{x:number;z:number},to:{x:number;z:number},goal:{x:number;z:number})=>{const dx=goal.x-from.x,dz=goal.z-from.z,len=Math.hypot(dx,dz)||1;return ((to.x-from.x)*dx+(to.z-from.z)*dz)/len;};
+ const ids=['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv'];
+ const s=new Simulation('Easy',MISSION_3_1),asv=s.units.find(unit=>unit.id==='recon-asv')!;
+ asv.pilot=false;s.human={x:asv.x+3,z:asv.z};assert.equal(s.board(),true);s.iff='0701';asv.iff='0701';asv.speed=0;s.speed=0;
+ for(let i=0;i<20;i++)s.tick(1/60,idle);
+ assert.equal(s.missionMusicAssaultReady,false);
+ const assault=s.units.find(unit=>unit.id==='plaza-scorp-assault')!,rocket=MAP_3_1_POINTS.plazaRocket;
+ asv.x=assault.x-210;asv.z=assault.z;asv.speed=0;s.speed=0;
+ const start=new Map(ids.map(id=>{const unit=s.units.find(item=>item.id===id)!;return [id,{x:unit.x,z:unit.z}];}));
+ assert.ok(distance(asv,assault)<=220);assert.ok(distance(asv,start.get('plaza-scorp-sentry')!)>220);assert.ok(distance(asv,start.get('plaza-scorp-tactical')!)>220);
+ let worst=0;for(let i=0;i<8*60;i++){const t=performance.now();s.tick(1/60,idle);worst=Math.max(worst,performance.now()-t);}
+ assert.equal(s.missionMusicAssaultReady,true);
+ for(const id of ids){const unit=s.units.find(item=>item.id===id)!,from=start.get(id)!;assert.equal(unit.pilot,true,id);assert.ok(distance(unit,rocket)<distance(from,rocket)-10,`${id} stayed outside the plaza center`);}
+ assert.ok(worst<250,`plaza approach tick took ${worst.toFixed(0)}ms`);
+ const march=new Simulation('Easy',MISSION_3_1),scorpIds=['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical'];
+ for(const id of ['plaza-union-tactical','plaza-union-sentry','plaza-union-asv']){const unit=march.units.find(item=>item.id===id)!;march.damage(unit,99999);march.damage(unit,99999);assert.equal(unit.alive,false,id);}
+ const goals=new Map(scorpIds.map(id=>{const unit=march.units.find(item=>item.id===id)!,goal=march.mission.assaults!.find(item=>item.unitId===id)!.advanceTo!;assert.ok(distance(goal,MAP_3_1_POINTS.southeastReach)>24);return [id,{from:{x:unit.x,z:unit.z},goal}];}));
+ let marchWorst=0;for(let i=0;i<8*60;i++){const t=performance.now();march.tick(1/60,idle);marchWorst=Math.max(marchWorst,performance.now()-t);}
+ for(const id of scorpIds){const unit=march.units.find(item=>item.id===id)!,{from,goal}=goals.get(id)!;assert.equal(unit.alive,true,id);assert.equal(unit.pilot,true,`${id} left the vehicle`);assert.ok(toward(from,unit,goal)>12,`${id} did not drive toward waypoint 3`);}
+ assert.ok(marchWorst<250,`waypoint march tick took ${marchWorst.toFixed(0)}ms`);
+ const holding=new Simulation('Easy',MISSION_3_1),remaining=holding.units.find(unit=>unit.id==='plaza-union-tactical')!;
+ for(const id of ['plaza-union-sentry','plaza-union-asv']){const unit=holding.units.find(item=>item.id===id)!;holding.damage(unit,99999);holding.damage(unit,99999);}
+ const held=holding.units.find(unit=>unit.id==='plaza-scorp-assault')!,heldAt={x:held.x,z:held.z};
+ holding.human={x:rocket.x,z:rocket.z};
+ for(let i=0;i<4*60;i++)holding.tick(1/60,idle);
+ assert.equal(remaining.alive,true);assert.equal(held.pilot,true);assert.ok(distance(held,rocket)<distance(heldAt,rocket)-8,'a living Union hawk still keeps the Scorp assault on the plaza');
+});
 test('3-1 Scorp reacts when a Union ally approaches before the player',()=>{
  const s=new Simulation('Easy',MISSION_3_1),enemy=s.units.find(unit=>unit.id==='plaza-scorp-sentry')!,ally=s.units.find(unit=>unit.id==='plaza-union-sentry')!;
  s.units=[enemy,ally];s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];

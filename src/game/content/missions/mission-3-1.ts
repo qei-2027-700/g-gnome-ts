@@ -4,18 +4,23 @@ import {MAP_3_1_POINTS,MISSION_3_1_TERRAIN} from './mission-3-1-map.ts';
 // Start is due east of waypoint 1. The recon ASV, its rocks, and the plaza tower use that relation, not traced pixels.
 // initialIff 0000 and enemyIff 0701 are placeholders, not measured codes. field-anchor is outside the map and is not the captured ASV.
 // Kylie and Thane stand a few meters ahead. The ASV holds beyond the rocks so a straight missile along this line meets a rock. Those offsets are not measured pixels.
-// Plaza hawks stand on either side of the rocket and advance on each other once the player is within PLAZA_RANGE. That range is provisional.
+// Plaza hawks stand on either side of the rocket. PLAZA_RANGE is provisional.
+// Coming within that range of any of the six sends all of them to the rocket, then they fight.
+// After the three Union hawks are gone, the Scorp hawks stay mounted and drive toward waypoint 3.
 // Border mesons use a provisional 180 m detection so the southeast reach point stays outside it.
 const start=MAP_3_1_POINTS.playerStart,waypoint=MAP_3_1_POINTS.waypoint1,asv=MAP_3_1_POINTS.reconAsv,yaw=Math.atan2(waypoint.x-start.x,waypoint.z-start.z);
 const east=Math.PI/2,west=-east,mesonGuard={ai:{detection:180}},enemyIff='0701',PLAZA_RANGE=220;
-const plazaFight=(unitId:string,targetId:string)=>({unitId,targetId,startAt:0,engageRange:PLAZA_RANGE});
+const PLAZA_IDS=['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv'] as const;
+const UNION_PLAZA=['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'] as const;
+const center=MAP_3_1_POINTS.plazaRocket,reach=MAP_3_1_POINTS.southeastReach;
+const plazaFight=(unitId:string,targetId:string,advanceTo?:{x:number;z:number})=>({unitId,targetId,startAt:0,engageRange:PLAZA_RANGE,engageUnitIds:PLAZA_IDS,rally:center,...(advanceTo?{advanceAfterUnitIds:UNION_PLAZA,advanceTo}:{})});
 const foot=(forward:number,lateral:number)=>({x:start.x+Math.sin(yaw)*forward+Math.cos(yaw)*lateral,z:start.z+Math.cos(yaw)*forward-Math.sin(yaw)*lateral});
 const RECON_SPOTTED={ja:'偵察部隊に見つかった。真西の方角だ。攻撃はかのうか！',en:'The recon unit has spotted us. They are due west. Can we attack!'};
 export const MISSION_3_1:MissionDefinition={
  id:'3-1',title:'Scorp Crossing',playerFaction:'union',initialIff:'0000',factionCodes:{union:'0000',scorp:enemyIff},
  bgm:{start:{trackId:'bgm-credits',delay:0},afterAssault:{boardUnitId:'recon-asv',unitIds:['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry','plaza-union-asv'],trackId:'bgm-union-march'}},
  subtitle:{ja:'スコープ国境',en:'Scorp border'},
- briefing:{ja:'第1ウェイポイントの真東から、黒い地を真西へ徒歩で進む。淡い黄緑の帯には徒歩で入れない。キリーとターンが仮の位置から徒歩でついてくる。真西の岩の向こうに、仮の位置でScorpのASVと歩兵が2人いる。そのASVを奪うと、キリーとターンが同乗する。二人が同乗すると、IFFが0701になり、キリーが完了を告げる。0701は未計測の仮の敵コードである。中央の空き地に無人のロケットタワーがあり、その西側にScorpのHAWC3機、東側にUnionのHAWC2機とASVが仮の位置でいる。近づくと両側が交戦する。緑の輪の南東に、司令部、電力プラント、ミーゾンタワー3基、Scorpセントリー2機が仮の位置である。0701のままなら、これらは撃ってこない。仮の南東地点まで到達すると、この段階の任務は終わる。',en:'Walk due west on the black ground from due east of waypoint 1. Infantry cannot enter the pale bands. Kylie and Thane follow on foot from provisional positions. A Scorp ASV and two infantry wait beyond the rocks to the west, on provisional ground. Capture that ASV and Kylie and Thane ride along. Once both are aboard, IFF becomes 0701 and Kylie confirms it. 0701 is an unmeasured provisional enemy code. An unmanned rocket tower stands in the central opening, with three Scorp HAWCs to its west and two Union HAWCs plus an ASV to its east. The two sides engage once you come near. Southeast of the green ring are a command post, a power plant, three meson towers, and two Scorp Sentries, all on provisional ground. They hold their fire while your IFF is 0701. Reaching the provisional southeast point ends this stage.'},
+ briefing:{ja:'第1ウェイポイントの真東から、黒い地を真西へ徒歩で進む。淡い黄緑の帯には徒歩で入れない。キリーとターンが仮の位置から徒歩でついてくる。真西の岩の向こうに、仮の位置でScorpのASVと歩兵が2人いる。そのASVを奪うと、キリーとターンが同乗する。二人が同乗すると、IFFが0701になり、キリーが完了を告げる。0701は未計測の仮の敵コードである。中央の空き地に無人のロケットタワーがあり、その西側にScorpのHAWC3機、東側にUnionのHAWC2機とASVが仮の位置でいる。近づくと両側が広場の中央へ向かって交戦する。Scorp側がUnionの3機を倒すと、生き残ったScorpの機体は乗ったまま第3ウェイポイントへ向かう。緑の輪の南東に、司令部、電力プラント、ミーゾンタワー3基、Scorpセントリー2機が仮の位置である。0701のままなら、これらは撃ってこない。仮の南東地点まで到達すると、この段階の任務は終わる。',en:'Walk due west on the black ground from due east of waypoint 1. Infantry cannot enter the pale bands. Kylie and Thane follow on foot from provisional positions. A Scorp ASV and two infantry wait beyond the rocks to the west, on provisional ground. Capture that ASV and Kylie and Thane ride along. Once both are aboard, IFF becomes 0701 and Kylie confirms it. 0701 is an unmeasured provisional enemy code. An unmanned rocket tower stands in the central opening, with three Scorp HAWCs to its west and two Union HAWCs plus an ASV to its east. Come near and both sides move to the plaza center and engage. Once the Scorp side has destroyed the three Union vehicles, the surviving Scorp crews stay mounted and drive toward waypoint 3. Southeast of the green ring are a command post, a power plant, three meson towers, and two Scorp Sentries, all on provisional ground. They hold their fire while your IFF is 0701. Reaching the provisional southeast point ends this stage.'},
  startHint:{ja:'真西へ歩け。岩の向こうに偵察部隊がいる。帯には入らない。キリーとターンが徒歩でついてくる。ASVを奪うと二人が同乗し、IFFが0701になる。0701は未計測の仮コード。',en:'Walk due west. The recon unit is beyond the rocks. Stay off the bands. Kylie and Thane follow on foot. Capture the ASV and, once both are aboard, IFF becomes 0701. 0701 is an unmeasured provisional code.'},
  success:{ja:'仮の南東地点に到達した。',en:'Reached the provisional southeast point.'},
  radio:{ja:'黒い地を南東へ進め。',en:'Cross the black ground toward the southeast.'},
@@ -67,9 +72,9 @@ export const MISSION_3_1:MissionDefinition={
   {id:'thane-union-hold',event:'player-hit',unitIds:['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'],speakerId:'thane',vehicleKind:'scorp-asv',line:{ja:'攻撃はできないわ！彼らは味方よ！',en:'We cannot attack! They are allies!'}},
  ],
  assaults:[
-  plazaFight('plaza-scorp-assault','plaza-union-tactical'),
-  plazaFight('plaza-scorp-sentry','plaza-union-sentry'),
-  plazaFight('plaza-scorp-tactical','plaza-union-asv'),
+  plazaFight('plaza-scorp-assault','plaza-union-tactical',{x:reach.x+36,z:reach.z}),
+  plazaFight('plaza-scorp-sentry','plaza-union-sentry',{x:reach.x,z:reach.z+36}),
+  plazaFight('plaza-scorp-tactical','plaza-union-asv',{x:reach.x-36,z:reach.z}),
   plazaFight('plaza-union-tactical','plaza-scorp-assault'),
   plazaFight('plaza-union-sentry','plaza-scorp-sentry'),
   plazaFight('plaza-union-asv','plaza-scorp-tactical'),

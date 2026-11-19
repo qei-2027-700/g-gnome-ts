@@ -150,6 +150,11 @@ test('Merc Tactical Defense uses the manual 72 km/h in AI movement without a hid
  assert.ok(Math.abs(actual-72)<.01);assert.ok(Math.abs(enemy.speed*3.6-72)<.01);
 });
 
+test('Scorp Assault uses the manual Scorpion speed, shield, energy and height',()=>{
+ const spec=VEHICLES['scorp-assault'];
+ assert.equal(spec.speed,30);assert.equal(spec.shield,72);assert.equal(spec.energy,1900);assert.equal(spec.height,8.6);assert.equal(spec.armor,160);
+});
+
 test('Scorp slots consume independently through custom fire bindings, survive reboarding and reset on retry',async()=>{
  const {readInput}=await import('../input.ts');
  const mission=structuredClone(new Simulation().mission);mission.units=[{id:'scorp',kind:'scorp-asv',x:0,z:0,pilot:false}];mission.assignedUnitId='scorp';mission.startMountedUnitId='scorp';const s=new Simulation('Easy',mission);

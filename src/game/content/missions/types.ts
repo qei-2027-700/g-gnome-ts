@@ -16,7 +16,7 @@ export type BriefingPresentation={
  title?:string;mapPreview?:BriefingImage;vehiclePreview?:BriefingImage;
  entries:readonly {label:Localized;detail:Localized}[];
 };
-export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number;afterEliminateUnitId?:string;stopWhenBridgeRaisedId?:string};
+export type Assault={unitId:string;targetId:string;startAt:number;engageRange?:number;afterEliminateUnitId?:string;stopWhenBridgeRaisedId?:string;retaliateAfterHits?:number};
 export type MissionDefinition={
  bgm?:{volumeScale?:number;start:{trackId:string;delay:number};afterBoard?:{unitId:string;trackId:string};afterDetection?:{unitKind:VehicleKind;trackId:string};afterEliminate?:{unitIds:readonly string[];trackId:string};afterAssault?:{boardUnitId:string;unitIds:readonly string[];trackId:string};afterRadio?:{radioId:string;trackId:string};beforeIonLock?:{lead:number;trackId:string};afterBridge?:{bridgeId:string;trackId:string}};
  audioPath?:string;
@@ -32,6 +32,7 @@ export type MissionDefinition={
  infantrySorties?:readonly {id:string;facilityId:string;vehicleKind:VehicleKind;range:number;count:number;delay:number;interval:number}[];
  towerCrewArrivals?:readonly {id:string;towerId:string;range:number;delay:number;spawn:{x:number;z:number}}[];
  garrison?:readonly string[];companions?:readonly Companion[];radioRange?:number;autoFollowOnBoard?:readonly VehicleKind[];autoPassengerOnBoard?:readonly string[];passengerIff?:{unitId:string;iff:string};
+ respawningUnits?:readonly string[];respawnDelay?:number;
  footSecondaryWeapon?:'GASHR'|'EGGER';
  startMountedUnitId?:string;initialView?:'first-person'|'external-rear'|'external-diagonal';rearCamera?:{range:number;height:number;lookAhead:number;targetHeight:number};completionEnabled?:boolean;
  completionSequence?:{delay:number;radioId:string};

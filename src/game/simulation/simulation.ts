@@ -23,7 +23,7 @@ export type Unit = Vec & {id:string;hoverHeight:number;hoverDisabled:boolean;pas
 export type CombatTarget=Unit|Soldier;
 export type SelectionTarget=CombatTarget|Facility;
 export const isVehicle=(target:SelectionTarget):target is Unit=>'spec' in target;
-export const targetHeight=(target:SelectionTarget)=>isFacility(target)?target.height*.5:isVehicle(target)?target.hoverHeight+target.spec.height*.55:(target.flight?.altitude??0)+1;
+export const targetHeight=(target:SelectionTarget)=>isFacility(target)?target.height*.5:isVehicle(target)?target.hoverHeight+(target.kind==='union-aip'?.7:target.spec.height*.55):(target.flight?.altitude??0)+1;
 export const targetName=(target:SelectionTarget,companions:MissionDefinition['companions']=[],locale:'ja'|'en'='ja')=>{
  if(isFacility(target))return target.name;if(isVehicle(target))return target.spec.name;
  const member=companions?.find(person=>person.personId===target.personId);if(member)return member.name[locale];
@@ -75,7 +75,23 @@ export class Simulation {
   mines:{id:string;x:number;z:number;radius:number;spent:boolean}[]=[];
   facilities:Facility[];readonly mission:MissionDefinition;readonly weapons:ReturnType<typeof resolveWeapons>;reachedWaypoints=new Set<number>();
   usedSupplies=new Set<number>();airSupportUsed=0;private shieldDoublerUntil=new Map<string,number>();private aiFocus=new Map<string,{id:string;readyAt:number}>();
+  private assaultHitCounts=new Map<string,number>();
+  private pendingRespawns=new Map<string,number>();
   private spawnVehicle(spawn:Spawn){const spec=resolveVehicle(spawn.kind,this.mission.vehicleOverrides?.[spawn.kind],spawn.overrides);return Object.assign(makeUnit(spawn.id,spawn.kind,spawn.x,spawn.z,spawn.pilot,spec),{yaw:spawn.yaw??0,aim:spawn.yaw??0,personId:spawn.personId,iff:spawn.iff??this.mission.factionCodes[spec.faction]??spec.faction});}
+  private respawnVehicle(unit:Unit){
+    const spawn=this.mission.units.find(candidate=>candidate.id===unit.id),index=this.units.indexOf(unit);
+    if(!spawn||index<0)return;
+    this.pendingRespawns.delete(unit.id);
+    this.units[index]=this.spawnVehicle(spawn);
+    this.aiFocus.delete(unit.id);
+    this.emit({type:'impact',position:{x:unit.x,y:unit.spec.height*.5,z:unit.z}});
+  }
+  private scheduleRespawn(unit:Unit){
+    const delay=this.mission.respawnDelay??0;
+    if(delay<=0){this.respawnVehicle(unit);return;}
+    this.pendingRespawns.set(unit.id,this.time+delay);
+    this.emit({type:'destroy',unit});
+  }
   constructor(difficulty:Difficulty='Easy',mission:MissionDefinition=DEFAULT_MISSION){
     this.difficulty=difficulty;this.mission=structuredClone(mission);this.weapons=resolveWeapons(mission.weaponOverrides);
     for(const id of mission.initialRaisedBridges??[])this.raisedBridges.add(id);
@@ -415,9 +431,7 @@ export class Simulation {
       const boxes=this.navigationObstacles(unit).map(b=>({...b,width:b.width+clearance*2,depth:b.depth+clearance*2}));
       const radius=Math.max(unit.spec.ai.stopDistance,target&&isFacility(target)?Math.hypot(target.width,target.depth)/2+clearance+3:0);
       const candidates:Vec[]=[goal];if(radius>0)for(let i=0;i<12;i++)candidates.push({x:goal.x+Math.sin(i*Math.PI/6)*radius,z:goal.z+Math.cos(i*Math.PI/6)*radius});
-      let route:Vec[]=[];
-      for(const candidate of candidates){const path=allyRoute(unit,candidate,area,circles,boxes);if(path){route=path;break;}}
-      plan={targetId,goal:{...goal},until:this.time+.9,route};this.enemyRoutes.set(unit.id,plan);
+      plan={targetId,goal:{...goal},until:this.time+.9,route:allyRoute(unit,candidates,area,circles,boxes)??[]};this.enemyRoutes.set(unit.id,plan);
     }
     if(plan.route.length===1&&!crossing)return false;
     while(plan.route.length>1&&distance(unit,plan.route[0])<2)plan.route.shift();
@@ -704,7 +718,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   private friendlyVehicle(unit:Unit){return unit.id===this.mission.assignedUnitId||(this.mission.friendlyFactions??[this.mission.playerFaction]).includes(unit.spec.faction)||!!unit.personId&&!!this.mission.companions?.some(member=>member.personId===unit.personId);}
   private friendlySoldier(soldier:Soldier){return (this.mission.friendlyFactions??[this.mission.playerFaction]).includes(soldier.faction)||!!soldier.personId&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);}
   private crushSoldier(soldier:Soldier,from:Point3,previousVehicle:Vec,unit:Unit|null=this.mounted){
-    if(!unit?.alive||!soldier.alive||isEmbarked(soldier)||(unit===this.mounted||this.friendlyVehicle(unit))===this.friendlySoldier(soldier))return false;
+    if(!unit?.alive||!soldier.alive||isEmbarked(soldier)||unit.spec.category==='hovercraft'&&unit!==this.mounted||(unit===this.mounted||this.friendlyVehicle(unit))===this.friendlySoldier(soldier))return false;
     const to={x:soldier.x,y:soldier.flight?.altitude??0,z:soldier.z};
     if(!sweptVehicleContact(unit,previousVehicle,from,to))return false;
     this.damageSoldier(soldier,soldier.health,to);return true;
@@ -925,7 +939,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     vehicle.speed=stopped?0:vehicle.speed*Math.min(1,distance(start,position)/length);if(vehicle===this.mounted)this.speed=vehicle.speed;
   }
 
-  damage(u:Unit|null,amount:number,part:BodyPart='hull',position?:Point3,attacker?:CombatTarget|null,weapon?:string){if(u){if(!u.alive)return;if(amount>0&&attacker===this.mounted)this.notePlayerStrike(u);if(amount>0&&u!==this.mounted&&u.pilot){u.alert=true;if(weapon!=='VISOM')this.rememberAggressor(u,attacker??null);}const absorbed=Math.min(u.shield,amount);u.shield-=absorbed;const penetrated=amount-absorbed;const previousHealth=u.parts[part];applyPartDamage(u.parts,part,penetrated,u.spec.armor);if(u===this.mounted&&previousHealth>PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]<=PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]>PART_DAMAGE_THRESHOLDS.critical)this.pendingDamageWarning=u;if(penetrated>0)u.armor=u.spec.armor*PARTS.reduce((total,key)=>total+u.parts[key],0)/PARTS.length;u.lastHit=this.time;this.emit({type:'hit',unit:u,part,position,weapon});if(u.parts[part]<=0){const playerWasMounted=this.mounted===u;if(this.passenger===u)this.exitPassenger();for(const soldier of this.soldiers)if(soldier.passengerOf===u.id)this.exitPassenger(soldier);for(const soldier of this.soldiers)if(soldier.boardingTarget===u.id)this.cancelBoarding(soldier);if(u.pilot&&!playerWasMounted)this.forceEject(u,'destruction');u.armor=0;u.alive=false;u.pilot=false;u.order=null;u.speed=0;this.emit({type:'destroy',unit:u});if(playerWasMounted){this.releaseGuidance('destroyed');this.eject();}}}else{if(this.humanHealth<=0)return;const wasAlive=this.humanHealth>0;this.humanHealth=Math.max(0,this.humanHealth-amount);if(wasAlive&&this.humanHealth<=0){this.emit({type:'soldier-death',faction:this.mission.playerFaction,position:position??{x:this.human.x,y:(this.flight?.altitude??0)+1,z:this.human.z}});this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}}}
+  damage(u:Unit|null,amount:number,part:BodyPart='hull',position?:Point3,attacker?:CombatTarget|null,weapon?:string){if(u){if(!u.alive)return;if(amount>0&&attacker===this.mounted)this.notePlayerStrike(u);if(amount>0&&u!==this.mounted&&u.pilot){u.alert=true;if(weapon!=='VISOM'){const threshold=this.mission.assaults?.find(assault=>assault.unitId===u.id)?.retaliateAfterHits;if(threshold){const hits=(this.assaultHitCounts.get(u.id)??0)+1;this.assaultHitCounts.set(u.id,hits);if(hits>=threshold)this.rememberAggressor(u,attacker??null);}else this.rememberAggressor(u,attacker??null);}}const absorbed=Math.min(u.shield,amount);u.shield-=absorbed;const penetrated=amount-absorbed;const previousHealth=u.parts[part];applyPartDamage(u.parts,part,penetrated,u.spec.armor);if(u===this.mounted&&previousHealth>PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]<=PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]>PART_DAMAGE_THRESHOLDS.critical)this.pendingDamageWarning=u;if(penetrated>0)u.armor=u.spec.armor*PARTS.reduce((total,key)=>total+u.parts[key],0)/PARTS.length;u.lastHit=this.time;this.emit({type:'hit',unit:u,part,position,weapon});if(u.parts[part]<=0){const playerWasMounted=this.mounted===u,respawns=this.mission.respawningUnits?.includes(u.id)&&!playerWasMounted;if(this.passenger===u)this.exitPassenger();for(const soldier of this.soldiers)if(soldier.passengerOf===u.id)this.exitPassenger(soldier);for(const soldier of this.soldiers)if(soldier.boardingTarget===u.id)this.cancelBoarding(soldier);if(u.pilot&&!playerWasMounted&&!respawns)this.forceEject(u,'destruction');u.armor=0;u.alive=false;u.pilot=false;u.order=null;u.speed=0;if(respawns)this.scheduleRespawn(u);else this.emit({type:'destroy',unit:u});if(playerWasMounted){this.releaseGuidance('destroyed');this.eject();}}}else{if(this.humanHealth<=0)return;const wasAlive=this.humanHealth>0;this.humanHealth=Math.max(0,this.humanHealth-amount);if(wasAlive&&this.humanHealth<=0){this.emit({type:'soldier-death',faction:this.mission.playerFaction,position:position??{x:this.human.x,y:(this.flight?.altitude??0)+1,z:this.human.z}});this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}}}
   fire(slot:number){if(this.passenger||this.insideFacility||this.guidedMissile)return;const u=this.mounted;if(u&&(!this.unitPowered(u)||u.cooldown>0))return;if(!u){if(slot<=2)this.fireFoot(slot);return;}
     const weapon=u.spec.weapons[slot-1];if(!weapon)return;const profile=isLaser(weapon)?this.weapons.lasers[weapon]:null;
     if(profile?u.energy<this.laserEnergyCost(u,weapon as LaserWeapon):(u.slotAmmo[slot-1]??0)<=0)return;
@@ -1232,8 +1246,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(sequence&&this.completionStartedAt===null){this.completionStartedAt=this.time;this.emit({type:'mission-radio',radioId:sequence.radioId});}
     if(!sequence||this.time-this.completionStartedAt!>=sequence.delay){this.status='won';this.releaseGuidance('complete');this.emit({type:'win'});}
   }
-  tick(dt:number,input:Input){if(this.status!=='running')return;this.brakingUnits.clear();if(this.passenger)input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:input.fire1,fire2:input.fire2,fire3:input.fire3,fire4:input.fire4};dt=Math.min(dt,.05);this.time+=dt;
-    for(const unit of this.units)if(unit.spec.category==='hovercraft'){const shape=VEHICLE_SHAPES[unit.kind],landed=-(unit.spec.height*.6+shape.hull.y-shape.hull.h/2),goal=unit.hoverDisabled?landed:unit.spec.hoverHeight??0;unit.hoverHeight+=Math.sign(goal-unit.hoverHeight)*Math.min(Math.abs(goal-unit.hoverHeight),dt*.6);}
+  tick(dt:number,input:Input){if(this.status!=='running')return;this.brakingUnits.clear();if(this.passenger)input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:input.fire1,fire2:input.fire2,fire3:input.fire3,fire4:input.fire4};dt=Math.min(dt,.05);this.time+=dt;const respawned=new Set<string>();for(const [id,readyAt] of this.pendingRespawns)if(this.time>=readyAt){const unit=this.units.find(candidate=>candidate.id===id&&!candidate.alive);if(unit){this.respawnVehicle(unit);respawned.add(id);}else this.pendingRespawns.delete(id);}
+    for(const unit of this.units)if(unit.spec.category==='hovercraft'){const shape=VEHICLE_SHAPES[unit.kind],landed=-(unit.spec.height*.6+shape.hull.y-shape.hull.h/2),moving=!unit.hoverDisabled&&Math.abs(unit.speed)>.1,goal=moving?unit.spec.hoverHeight??0:landed;unit.hoverHeight+=Math.sign(goal-unit.hoverHeight)*Math.min(Math.abs(goal-unit.hoverHeight),dt*1.5);}
     this.tickPickups();this.tickInfantrySorties();this.tickTowerCrewArrivals();
     const fireDown=[input.fire1,input.fire2,!!input.fire3,!!input.fire4],firePressed=fireDown.map((down,i)=>down&&!this.fireHeld[i]);this.fireHeld=fireDown;
     for(const soldier of this.soldiers)if(soldier.insideFacility){const facility=this.facilities.find(f=>f.id===soldier.insideFacility);if(facility?.alive){soldier.x=facility.x;soldier.z=facility.z;}else if(soldier.alive){soldier.health=0;soldier.alive=false;}}
@@ -1280,8 +1294,9 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const before=this.events.length;this.fire(i+1);if(this.events.length>before)this.fireRepeatAt[i]=this.time+(weapon&&isMissile(weapon)?this.weapons.missiles[weapon].interval:weapon&&!isLaser(weapon)?this.weapons.guns[weapon as MachineGun].interval:HELD_TRIGGER_INTERVAL);
     }
     for(const unit of this.units){if(!unit.alive)continue;unit.cooldown=Math.max(0,unit.cooldown-dt);const spec=unit.spec,shieldCap=this.time<(this.shieldDoublerUntil.get(unit.id)??0)?spec.shield*2:spec.shield;unit.shield=Math.min(shieldCap,unit.shield);if(this.time-unit.lastHit>7&&this.unitPowered(unit)){unit.shield=Math.min(shieldCap,unit.shield+dt*1.5);unit.energy=Math.min(spec.energy,unit.energy+dt*4);}
-      if(unit===u)continue;if(!unit.pilot){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
-      const wasAlert=unit.alert;
+      if(unit===u||respawned.has(unit.id))continue;if(!unit.pilot){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
+      const wasAlert=unit.alert,respawning=this.mission.respawningUnits?.includes(unit.id)??false;
+      if(respawning)unit.alert=true;
       const assault=this.mission.assaults?.find(a=>a.unitId===unit.id);
       if(assault?.stopWhenBridgeRaisedId&&this.raisedBridges.has(assault.stopWhenBridgeRaisedId)){unit.alert=false;unit.speed=0;this.aiFocus.delete(unit.id);continue;}
       if(assault?.afterEliminateUnitId&&!this.eliminated(assault.afterEliminateUnitId)){this.coastVehicle(unit,dt);continue;}
@@ -1294,13 +1309,15 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const disguise=this.facilityIffAcquired?this.mission.facilityIffDisguise:undefined;
       const exposedCompanion=disguise&&unit.iff===disguise.enemyIff?this.soldiers.filter(soldier=>soldier.alive&&!isEmbarked(soldier)&&soldier.iff!==unit.iff&&this.mission.companions?.some(member=>member.personId===soldier.personId)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0]:undefined;
       const nearby=this.combatTargets.filter(candidate=>candidate!==unit&&candidate.alive&&candidate.iff!==unit.iff&&(!isVehicle(candidate)||candidate.pilot)&&distance(unit,candidate)<spec.ai.detection&&this.attackVisible(unit,candidate)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0];
+      const nearestHostile=respawning?this.combatTargets.filter(candidate=>candidate!==unit&&candidate.alive&&candidate.iff!==unit.iff&&(!isVehicle(candidate)||candidate.pilot)).sort((a,b)=>distance(unit,a)-distance(unit,b))[0]:undefined;
+      const nearestPlayer=respawning&&this.isHostile(unit)&&this.humanHealth>0&&(!nearestHostile||distance(unit,this.player)<distance(unit,nearestHostile));
       const playerNearby=this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<spec.ai.detection&&this.attackVisible(unit,this.player);
       const playerPursuit=unit.alert&&this.isHostile(unit)&&this.humanHealth>0&&distance(unit,this.player)<(spec.ai.pursuitRange??Infinity);
       if(!this.isHostile(unit)&&!opponent&&!retaliatingToPlayer&&!assaultTarget&&!exposedCompanion&&!nearby){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       if(this.waitingForLure(unit)&&!unit.alert){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
-      const hostile=!!opponent||retaliatingToPlayer||!!assaultTarget||!!exposedCompanion||!!nearby||playerNearby||playerPursuit;if(!hostile){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
+      const hostile=!!opponent||retaliatingToPlayer||!!assaultTarget||!!exposedCompanion||!!nearby||playerNearby||playerPursuit||!!nearestHostile||!!nearestPlayer;if(!hostile){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       const ramPlayer=this.shouldRamPlayer(unit),nearest=nearby&&(!playerNearby||distance(unit,nearby)<=distance(unit,this.player))?nearby:undefined;
-      const target=ramPlayer?null:opponent??(retaliatingToPlayer?this.mounted??this.passenger:assaultTarget)??nearest??(playerNearby||playerPursuit?this.mounted??this.passenger:exposedCompanion)??exposedCompanion??null;
+      const target=respawning?(nearestPlayer?null:nearestHostile??null):ramPlayer?null:assault?.retaliateAfterHits&&retaliatingToPlayer?this.mounted??this.passenger??null:opponent??(retaliatingToPlayer?this.mounted??this.passenger:assaultTarget)??nearest??(playerNearby||playerPursuit?this.mounted??this.passenger:exposedCompanion)??exposedCompanion??null;
       const position=target??this.human,dist=distance(unit,position),sight=this.attackVisible(unit,position);
       if((target||playerNearby)&&dist<spec.ai.detection&&sight){unit.alert=true;if(position===this.player&&this.isHostile(unit)&&!this.playerDetectionAnnounced.has(unit.id)){this.playerDetectionAnnounced.add(unit.id);this.emit({type:'enemy-detected',unit});}}
       if(!unit.alert){this.aiFocus.delete(unit.id);continue;}
@@ -1332,7 +1349,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(unit.laserCharge===1&&this.laserRechargePending.delete(unit)&&unit===this.mounted)this.emit({type:'laser-ready',unit,weapon});
     }
     if(this.checkCrush(previousHuman,previousUnits))return;
-    for(const unit of this.units){if(!unit.alive||!unit.pilot||unit===this.mounted)continue;for(const soldier of this.soldiers){if(!soldier.alive||isEmbarked(soldier)||this.friendlyVehicle(unit)===this.friendlySoldier(soldier))continue;const point={x:soldier.x,y:soldier.flight?.altitude??0,z:soldier.z};if(sweptVehicleContact(unit,previousUnits.get(unit.id)??unit,point,point))this.damageSoldier(soldier,soldier.health,point,unit);}}
+    for(const unit of this.units){if(!unit.alive||!unit.pilot||unit===this.mounted||unit.spec.category==='hovercraft')continue;for(const soldier of this.soldiers){if(!soldier.alive||isEmbarked(soldier)||this.friendlyVehicle(unit)===this.friendlySoldier(soldier))continue;const point={x:soldier.x,y:soldier.flight?.altitude??0,z:soldier.z};if(sweptVehicleContact(unit,previousUnits.get(unit.id)??unit,point,point))this.damageSoldier(soldier,soldier.health,point,unit);}}
     this.advanceMissiles(dt);if(this.status!=='running')return;this.tickSoldiers(dt);
     if(this.passenger){if(!this.units.includes(this.passenger)||!this.passenger.alive)this.exitPassenger();else{this.human={x:this.passenger.x,z:this.passenger.z};this.speed=this.passenger.speed;}}
     for(const soldier of this.soldiers)if(soldier.passengerOf){const carrier=this.units.find(u=>u.id===soldier.passengerOf);if(carrier?.alive){soldier.x=carrier.x;soldier.z=carrier.z;}else if(carrier)this.exitPassenger(soldier);else soldier.passengerOf=undefined;}

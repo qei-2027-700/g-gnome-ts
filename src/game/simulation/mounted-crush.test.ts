@@ -1,9 +1,19 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,type Input} from './simulation.ts';
+import {MISSION} from '../content/mission-1-1.ts';
 import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
 import {MISSION_4_2} from '../content/missions/mission-4-2.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
+test('player AIP rests on its hull, lifts while moving, and settles again after stopping',()=>{
+ const s=new Simulation('Easy',{...MISSION,objectives:[],completionEnabled:false}),aip=makeUnit('aip','union-aip',0,0,false);s.units=[aip];s.human={x:0,z:0};assert.ok(s.board());
+ for(let i=0;i<300;i++)s.tick(1/60,idle);
+ const parked=aip.hoverHeight;assert.ok(parked<0);
+ for(let i=0;i<180;i++)s.tick(1/60,{...idle,boost:true});
+ assert.ok(aip.speed>1);assert.ok(aip.hoverHeight>0);
+ s.tick(1/60,{...idle,stop:true});for(let i=0;i<600;i++)s.tick(1/60,idle);
+ assert.ok(Math.abs(aip.speed)<.1);assert.ok(Math.abs(aip.hoverHeight-parked)<.01,`parked ${parked}, after stop ${aip.hoverHeight}, speed ${aip.speed}, status ${s.status}, time ${s.time}`);
+});
 function setup(kind:'union-sentry'|'merc-sentry'|'merc-tactical'='union-sentry'){
  const s=new Simulation(),unit=makeUnit('own',kind,0,0,false),source=makeUnit('enemy','merc-sentry',100,200);
  s.units=[unit,source];s.human={x:0,z:0};s.board();s.iff='6707';
@@ -26,6 +36,16 @@ test('player-driven vehicles spare friendly infantry with a different IFF',()=>{
 test('swept player vehicle movement crushes a soldier crossed between frames',()=>{
  const {s,unit,soldier}=setup();s.iff='2620';soldier.z=15;s.speed=2000;unit.speed=2000;
  s.tick(.016,idle);assert.ok(unit.z>20);assert.equal(soldier.alive,false);
+});
+test('moving player AIP crushes crossed enemy infantry but spares allies and soldiers above it',()=>{
+ const s=new Simulation(),aip=makeUnit('aip','union-aip',0,0,false),source=makeUnit('enemy','merc-sentry',100,200);
+ s.units=[aip,source];s.human={x:0,z:0};assert.ok(s.board());
+ const enemy=s.forceEject(source)!;enemy.flight=null;enemy.x=0;enemy.z=15;enemy.health=999;
+ s.speed=2000;aip.speed=2000;s.tick(.016,idle);assert.ok(aip.z>20);assert.equal(enemy.alive,false);
+ const allySource=makeUnit('ally','union-sentry',100,220),highSource=makeUnit('high','merc-sentry',100,240);s.units.push(allySource,highSource);
+ const ally=s.forceEject(allySource)!;ally.flight=null;ally.x=aip.x;ally.z=aip.z;ally.faction=s.mission.playerFaction;
+ const above=s.forceEject(highSource)!;above.flight={altitude:20,vy:0,vx:0,vz:0};above.x=aip.x;above.z=aip.z;
+ s.tick(.016,idle);assert.equal(ally.alive,true);assert.equal(above.alive,true);
 });
 test('an ejected soldier crossing into a stationary player vehicle dies on contact',()=>{
  const {s,unit,soldier}=setup();s.iff='2620';soldier.x=3.6;soldier.flight={altitude:.1,vy:0,vx:-10,vz:0};const shield=unit.shield;

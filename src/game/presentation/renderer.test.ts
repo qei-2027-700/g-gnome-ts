@@ -10,6 +10,7 @@ import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
 import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
 import {MAP_3_5_POINTS} from '../content/missions/mission-3-5-map.ts';
 import {MISSION_3_1} from '../content/missions/mission-3-1.ts';
+import {VEHICLE_SHAPES} from '../content/vehicle-shapes.ts';
 import {StandardMaterial} from '@babylonjs/core/Materials/standardMaterial.js';
 import {boulderColor} from './landscape.ts';
 test('3-1 slope meshes meet the ground on the same rectangle that blocks movement',()=>{
@@ -72,6 +73,32 @@ test('3-5 pop-up turrets and their control building render at the configured fie
   turret.aim=.5;world.update(.05);
   assert.deepEqual([rig.root.position.x,rig.root.position.z],[turret.x,turret.z]);
   assert.equal(rig.torso.rotation.y,.5);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
+test('4-2 Scorp facilities use their reference silhouettes and remain inside their collision footprints',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_4_2),engine);
+  const expected=[
+   ['ur-kinsk-hq',['scorp-hq-pyramid-roof','scorp-hq-left-wing','scorp-hq-right-block']],
+   ['ur-kinsk-power',['scorp-power-raised-pipe','scorp-power-red-panel','scorp-power-center-spine']],
+   ['ur-kinsk-shield',['scorp-shield-central-tower','scorp-shield-spire-tip','scorp-shield-wing-brace']],
+  ] as const;
+  for(const [id,parts] of expected){
+   const b=MISSION_4_2.base!.buildings.find(item=>item.id===id)!,root=world.scene.getTransformNodeByName(`facility-${id}`)!;
+   assert.equal(root.metadata.facilityId,id);
+   const meshes=root.getChildMeshes();
+   for(const part of parts)assert.ok(meshes.some(mesh=>mesh.name===part),`${id}: ${part}`);
+   for(const mesh of meshes){
+    mesh.computeWorldMatrix(true);
+    const bounds=mesh.getBoundingInfo().boundingBox;
+    assert.ok(bounds.minimumWorld.x>=b.x-b.width/2-.2&&bounds.maximumWorld.x<=b.x+b.width/2+.2,`${id}: ${mesh.name} x`);
+    assert.ok(bounds.minimumWorld.z>=b.z-b.depth/2-.2&&bounds.maximumWorld.z<=b.z+b.depth/2+.2,`${id}: ${mesh.name} z`);
+   }
+  }
+  assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.getChildMeshes().some(mesh=>mesh.name==='scorp-hq-pyramid-roof'),false);
   world.scene.dispose();
  }finally{engine.dispose();}
 });
@@ -507,7 +534,7 @@ test('Scorp ASV has a raised sloped body, broad separated treads and green/ochre
 
 test('3-3 storm valley has cloud dome, textured grass and rocky mountains; mission switch restores daylight without leaks',async()=>{
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const engine=new NullEngine({renderWidth:1280,renderHeight:720,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_3_3),engine);
- const cloud=world.scene.getMeshByName('storm-cloud-dome')!;assert.ok(cloud);assert.equal(cloud.applyFog,false);assert.ok(world.scene.getMaterialByName('grass')?.getActiveTextures().length);assert.equal(world.scene.meshes.filter(m=>m.name==='rocky-mountain').length,24+(MISSION_3_3.terrain.peaks?.length??0));assert.equal(world.scene.getLightByName('sun')!.intensity,.48);
+ const cloud=world.scene.getMeshByName('storm-cloud-dome')!;assert.ok(cloud);assert.equal(cloud.applyFog,false);assert.equal(cloud.parent,null);world.camera.position.set(1450,12,400);assert.equal(cloud.computeWorldMatrix(true,world.camera).getTranslation().x,1450);assert.ok(world.scene.getMaterialByName('grass')?.getActiveTextures().length);assert.equal(world.scene.meshes.filter(m=>m.name==='rocky-mountain').length,24+(MISSION_3_3.terrain.peaks?.length??0));assert.equal(world.scene.getLightByName('sun')!.intensity,.48);
  assert.ok(world.sim.radioMembers.every(m=>m.unit!.z>world.sim.player.z&&m.available));const counts=[world.scene.meshes.length,world.scene.materials.length,world.scene.textures.length];world.reset(new Simulation('Easy',MISSION_3_3));assert.deepEqual([world.scene.meshes.length,world.scene.materials.length,world.scene.textures.length],counts);
  world.reset(new Simulation());assert.equal(world.scene.getMeshByName('storm-cloud-dome'),null);assert.equal(world.scene.getMeshByName('rocky-mountain'),null);assert.equal(world.scene.getLightByName('sun')!.intensity,1.1);assert.equal(world.scene.fogEnd,680);engine.dispose();
 });
@@ -902,6 +929,26 @@ test('GAUS30 renders a wider blue laser and blue impact smoke without an explosi
 });
 
 
+test('every hovering AIP casts a ground shadow that follows it and disappears after landing',()=>{
+ const sim=new Simulation(),kinds=['union-aip','merc-aip','darken-aip','scorp-aip'] as const;
+ sim.units=kinds.map((kind,i)=>makeUnit(`shadow-${kind}`,kind,i*20,20,true,{speed:0,ai:{detection:0}}));
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512}),world=new World({} as HTMLCanvasElement,sim,engine);
+ try{
+  world.update(0);
+  for(const unit of sim.units){
+   const shadow=world.aipShadows.get(unit.id)!;
+   assert.ok(shadow&&shadow.isEnabled(),unit.kind);
+   assert.equal(shadow.getChildMeshes().length,3);
+   const paint=shadow.getChildMeshes()[0]!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
+   assert.ok(paint.diffuseColor.r<.05&&paint.diffuseColor.g<.05&&paint.diffuseColor.b<.05);
+   assert.equal(shadow.position.x,unit.x);assert.equal(shadow.position.z,unit.z);
+   assert.ok(shadow.position.y<world.rigs.get(unit.id)!.root.position.y,unit.kind);
+   unit.x+=5;world.update(0);assert.equal(shadow.position.x,unit.x);
+   const shape=VEHICLE_SHAPES[unit.kind].hull;unit.hoverHeight=-(unit.spec.height*.6+shape.y-shape.h/2);world.update(0);assert.equal(shadow.isEnabled(),false);
+  }
+ }finally{engine.dispose();}
+});
+
 test('Merc Razor is a green diamond hovering close to the ground and bobs slightly only while moving',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const sim=new Simulation('Easy',MISSION_2_6),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine),aip=sim.units.find(u=>u.kind==='merc-aip')!;world.update(0);const rig=world.rigs.get(aip.id)!,base=rig.root.position.y;assert.ok(base>0&&base<2);
  const platform=world.scene.getMeshByName('aip-diamond-platform')!,paint=platform.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.diffuseColor.g>paint.diffuseColor.r&&paint.diffuseColor.g>paint.diffuseColor.b);assert.ok(platform.getTotalVertices()>0);const hullSize=platform.getBoundingInfo().boundingBox.extendSize;assert.ok(Math.abs(hullSize.x-3)<1e-6);assert.ok(Math.abs(hullSize.z-2.5)<1e-6);assert.equal(platform.getTotalVertices(),24);const canopy=world.scene.getMeshByName('aip-cockpit')!;assert.equal(canopy.metadata.bodyPart,'cockpit');
@@ -1003,7 +1050,8 @@ test('4-2 renders grassland under amber skies, a dedicated rotating Scorp Meson 
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);
  assert.ok(world.scene.getMeshByName('scorp-meson-column'));assert.ok(world.scene.getMeshByName('scorp-meson-brace'));assert.ok(world.scene.getMeshByName('scorp-meson-cannon'));assert.ok(world.scene.getMeshByName('tower-launch-panel'));assert.ok(world.scene.clearColor.r>world.scene.clearColor.b);assert.ok(world.scene.getMaterialByName('grass'));
- assert.ok(world.scene.getMeshByName('urkinsk-back-left-cliff'));assert.ok(world.scene.getMeshByName('rocky-mountain'));
+ const mountains=world.scene.meshes.filter(mesh=>mesh.name==='rocky-mountain');assert.ok(mountains.length>=s.mission.terrain.peaks!.length);assert.equal(world.scene.getMeshByName('urkinsk-back-left-cliff'),null);
+ const ridge=mountains.at(-1)!.getVerticesData('position')!;assert.ok(Math.max(...Array.from(ridge).filter((_,i)=>i%3===1))>50);assert.ok(Math.min(...Array.from(ridge).filter((_,i)=>i%3===1))<0);
  const tower=s.units.find(u=>u.id==='scorp-meson')!;tower.aim=.7;world.update(0);assert.equal(world.rigs.get(tower.id)!.torso.rotation.y,.7);assert.equal(world.rigs.get(tower.id)!.root.rotation.y,0);
  const {scorpMesonCockpitShellSvg}=await import('./scorp-meson-cockpit.ts');assert.ok(scorpMesonCockpitShellSvg().includes('scorp-meson-reference'));assert.ok(!scorpMesonCockpitShellSvg().includes('merc-mison'));
  }finally{engine.dispose();}
@@ -1125,6 +1173,11 @@ test('Merc Assault window scenery sways gently with its gait, freezes on pause a
 test('curved 4-2 river has a recessed bed and oriented bridge leaves',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);const water=world.scene.getMeshByName('river-water')!,ground=world.scene.getMeshByName('valley')!;assert.ok(water);assert.ok((water.getVerticesData('position')?.length??0)>0);const groundVertices=ground.getVerticesData('position')!;let lowest=Infinity;for(let i=1;i<groundVertices.length;i+=3)lowest=Math.min(lowest,groundVertices[i]!);assert.ok(lowest<-1);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.y)>.1);assert.equal(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z,0);
+ for(const point of [s.mission.terrain.river!.path![0]!,s.mission.terrain.river!.path![7]!,s.mission.terrain.river!.path!.at(-1)!]){
+  let nearest=Infinity,bed=Infinity;
+  for(let i=0;i<groundVertices.length;i+=3){const distance=Math.hypot(groundVertices[i]!-point.x,groundVertices[i+2]!+ground.position.z-point.z);if(distance<nearest){nearest=distance;bed=groundVertices[i+1]!;}}
+  assert.ok(nearest<40&&bed<-.7,`water must be above the river bed at (${point.x}, ${point.z}), nearest=${nearest}, bed=${bed}`);
+ }
  const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());world.update(0);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),false);
  assert.ok(s.raiseBridge());world.completionTime=0;world.update(0);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z)>1.4);assert.ok(world.scene.getTransformNodeByName('bridge-hinge--1')!.rotation.z>1.4);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),true);
  const {bridgeControlMarkup}=await import('./bridge-control.ts');assert.ok(bridgeControlMarkup().includes('id="bridgeSwitch"'));assert.ok(bridgeControlMarkup().includes('bridge-control-building'));
@@ -1153,16 +1206,19 @@ test('4-3 current-position marker uses the briefing image landmarks',async()=>{
  }
 });
 
-test('facility hits flash visibly and destroyed buildings disappear from the battlefield',()=>{
+test('facility hits flash and destroyed buildings leave persistent burned ruins',()=>{
  const mission=structuredClone(MISSION);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.objectives=[];mission.waypoints=[];mission.base={name:'facility-damage',x:0,z:30,width:20,depth:20,buildings:[{id:'test-building',kind:'command',x:0,z:30,width:20,depth:20,height:10,health:100}]};
  const sim=new Simulation('Easy',mission),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{
-  const world=new World({} as HTMLCanvasElement,sim,engine),facility=sim.facilities[0]!,root=world.scene.getTransformNodeByName('facility-test-building')!;
+  const world=new World({} as HTMLCanvasElement,sim,engine),facility=sim.facilities[0]!,root=world.scene.getTransformNodeByName('facility-test-building')!,ruin=world.facilityRuins.get(facility.id)!;
+  assert.equal(ruin.isEnabled(),false);
   const position={x:facility.x,y:facility.height*.5,z:facility.z};sim.damageFacility(facility,25,position);world.event(sim.events.at(-1)!);
   assert.equal(sim.events.at(-1)?.type,'facility-hit');assert.equal(facility.health,75);assert.ok(world.scene.getMeshByName('facility-hit-spark'));
   sim.selected=facility.id;assert.equal(sim.targetState?.armor,.75);
   sim.damageFacility(facility,100,position);world.event(sim.events.at(-1)!);world.update(0);
-  assert.equal(facility.alive,false);assert.equal(root.isEnabled(),false);assert.ok(world.scene.meshes.some(mesh=>mesh.name==='impact-flash'));
+  assert.equal(facility.alive,false);assert.equal(root.isEnabled(),false);assert.equal(ruin.isEnabled(),true);assert.equal(ruin.position.x,facility.x);assert.equal(ruin.position.z,facility.z);assert.ok(ruin.getChildMeshes().length>=6);assert.ok(ruin.getChildMeshes().every(mesh=>!mesh.isPickable));assert.ok(world.scene.meshes.some(mesh=>mesh.name==='impact-flash'));
+  world.update(1);assert.equal(ruin.isEnabled(),true);
+  world.reset(new Simulation('Easy',mission));assert.equal(world.facilityRuins.get(facility.id)?.isEnabled(),false);
  }finally{engine.dispose();}
 });
 

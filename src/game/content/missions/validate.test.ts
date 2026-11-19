@@ -103,6 +103,12 @@ test('4-2 occupation and garrison references are validated',async()=>{
  const errors=validateMissions([mission]).join('\n');assert.ok(errors.includes('missing-guard'));assert.ok(errors.includes('missing-tower'));
 });
 
+test('4-2 respawn timing and unit references are validated',async()=>{
+ const {MISSION_4_2}=await import('./mission-4-2.ts');const mission=structuredClone(MISSION_4_2);
+ mission.respawnDelay=-1;mission.respawningUnits=['missing-guard'];
+ const errors=validateMissions([mission]).join('\n');assert.ok(errors.includes('respawn delay'));assert.ok(errors.includes('missing-guard'));
+});
+
 test('river paths need multiple finite points inside the mission bounds',async()=>{
  const {MISSION_4_2}=await import('./mission-4-2.ts');const mission=structuredClone(MISSION_4_2);
  mission.terrain.river!.path=[{x:0,z:0}];assert.ok(validateMissions([mission]).some(error=>error.includes('river path needs at least two points')));

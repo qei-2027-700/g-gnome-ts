@@ -67,8 +67,8 @@ test('different IFF triggers retaliation even between vehicles of the same facti
 
 test('4-2 delayed assault retaliates after an actual hostile shot before its start time',()=>{
  const mission=structuredClone(MISSION_4_2);
- mission.units=mission.units.filter(unit=>['scorp-asv-guard','sheridan-union-1'].includes(unit.id));
- mission.assignedUnitId='scorp-asv-guard';mission.startMountedUnitId='scorp-asv-guard';
+ mission.units=mission.units.filter(unit=>['scorp-assault2','sheridan-union-1'].includes(unit.id));
+ mission.assignedUnitId='scorp-assault2';mission.startMountedUnitId='scorp-assault2';
  mission.garrison=[];mission.companions=[];mission.personnel=[];mission.objectives=[];mission.completionEnabled=false;
  mission.base=undefined;mission.rocks=[];mission.terrain.river=undefined;mission.terrain.cliffs=[];mission.terrain.peaks=[];
  const s=new Simulation('Easy',mission),own=s.mounted!,enemy=s.units.find(unit=>unit.id==='sheridan-union-1')!;

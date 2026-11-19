@@ -56,7 +56,7 @@ export function intersectParts(body:Body,from:Point,to:Point,padding=0){
 
 // Whole occupied HAWC contact is fatal to infantry, including a swept crossing.
 export function sweptVehicleContact(body:Body,previous:{x:number;z:number},from:Point,to:Point,prone=false){
- const spec=body.spec??VEHICLES[body.kind],hover=spec.category==='hovercraft',shape=VEHICLE_SHAPES[body.kind],h=spec.height,radius=prone?.65:.35,humanHalf=prone?.35:.9,c=Math.cos(body.yaw),s=Math.sin(body.yaw);
+ const spec=(body.spec??VEHICLES[body.kind]) as VehicleSpec,hover=spec.category==='hovercraft',shape=VEHICLE_SHAPES[body.kind],h=spec.height,radius=prone?.65:.35,humanHalf=prone?.35:.9,c=Math.cos(body.yaw),s=Math.sin(body.yaw);
  const top=hover?(body.hoverHeight??spec.hoverHeight??0)+h*.6+Math.max(shape.hull.y+shape.hull.h/2,shape.cockpit.y+shape.cockpit.h/2):h;
  const local=(p:Point,origin:{x:number;z:number})=>({x:(p.x-origin.x)*c-(p.z-origin.z)*s,y:p.y+humanHalf-top/2,z:(p.x-origin.x)*s+(p.z-origin.z)*c});
  const a=local(from,previous),b=local(to,body);let near=0,far=1;

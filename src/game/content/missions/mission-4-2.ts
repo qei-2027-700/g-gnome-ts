@@ -17,7 +17,7 @@ const groundAttackers:Spawn[]=Array.from(
     {
       id:`sheridan-union-${i+1}`,
       kind:groundKinds[i]!,
-      ...markedPoint(...groundPositions[i]!),
+      ...markedPoint(groundPositions[i]![0],groundPositions[i]![1]),
       yaw:Math.PI,pilot:true
     }
   )
@@ -32,9 +32,9 @@ const attackers=[...groundAttackers,...airAttackers];
 export const MISSION_4_2:MissionDefinition={
  id:'4-2',title:'Scorp Defense',playerFaction:'union',friendlyFactions:['scorp'],initialIff:'3317',factionCodes:{scorp:'3317',union:'2620'},
  briefingPresentation:{mapPreview:{src:originalMap,width:824,height:818,viewBox:'14 50 421 424',label:{ja:'原作4-2の任務地図',en:'Original Mission 4-2 map'},mapProjection:{pixelOrigin:{x:225,y:50},worldOrigin:{x:0,z:1500},pixelPerWorldX:{x:1/mapScale,y:0},pixelPerWorldZ:{x:0,y:-1/mapScale}}},entries:[
-  {label:{ja:'Ur-Kinskを防衛せよ',en:'Defend Ur-Kinsk'}},
-  {label:{ja:'ガードタワーを占拠せよ',en:'Occupy guard towers'}},
-  {label:{ja:'橋を上げよ',en:'Raise the bridge'}}
+  {label:{ja:'Ur-Kinskを防衛せよ',en:'Defend Ur-Kinsk'},detail:{ja:'友軍Scorpとともに基地を守り、橋を上げるまで司令部を維持する。編成・配置・数値は試作設定。',en:'Defend the base with Scorp and hold the headquarters until the bridge is raised. Roster, positions and statistics are provisional.'}},
+  {label:{ja:'ガードタワーを占拠せよ',en:'Occupy guard towers'},detail:{ja:'左手のScorpミーゾンタワーへ搭乗する。キリーは右手のロケットタワー、ターンはもう1基へ向かう。搭乗は任意。',en:'Board the Scorp Meson tower on the left. Kylie takes the right rocket tower and Thane the other Meson tower. Boarding is optional.'}},
+  {label:{ja:'橋を上げよ',en:'Raise the bridge'},detail:{ja:'川辺のBridge Control Buildingへ入り、スイッチで橋を上げると完了する。',en:'Enter the riverside Bridge Control Building and raise the bridge to finish.'}}
  ]},
  bgm:{volumeScale:.8,start:{trackId:'bgm-credits',delay:0},afterEliminate:{unitIds:attackers.map(u=>u.id),trackId:'bgm-snow-maze'}},
  shieldProtectionRadius:80,respawningUnits:['bridge-union-sentry','bridge-union-asv'],respawnDelay:30,

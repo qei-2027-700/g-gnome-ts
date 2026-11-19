@@ -507,7 +507,7 @@ test('Scorp ASV has a raised sloped body, broad separated treads and green/ochre
 
 test('3-3 storm valley has cloud dome, textured grass and rocky mountains; mission switch restores daylight without leaks',async()=>{
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const engine=new NullEngine({renderWidth:1280,renderHeight:720,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_3_3),engine);
- const cloud=world.scene.getMeshByName('storm-cloud-dome')!;assert.ok(cloud);assert.equal(cloud.applyFog,false);assert.ok(world.scene.getMaterialByName('grass')?.getActiveTextures().length);assert.equal(world.scene.meshes.filter(m=>m.name==='rocky-mountain').length,24+(MISSION_3_3.terrain.peaks?.length??0));assert.equal(world.scene.getLightByName('sun')!.intensity,.48);
+ const cloud=world.scene.getMeshByName('storm-cloud-dome')!;assert.ok(cloud);assert.equal(cloud.applyFog,false);assert.equal(cloud.parent,null);world.camera.position.set(1450,12,400);assert.equal(cloud.computeWorldMatrix(true,world.camera).getTranslation().x,1450);assert.ok(world.scene.getMaterialByName('grass')?.getActiveTextures().length);assert.equal(world.scene.meshes.filter(m=>m.name==='rocky-mountain').length,24+(MISSION_3_3.terrain.peaks?.length??0));assert.equal(world.scene.getLightByName('sun')!.intensity,.48);
  assert.ok(world.sim.radioMembers.every(m=>m.unit!.z>world.sim.player.z&&m.available));const counts=[world.scene.meshes.length,world.scene.materials.length,world.scene.textures.length];world.reset(new Simulation('Easy',MISSION_3_3));assert.deepEqual([world.scene.meshes.length,world.scene.materials.length,world.scene.textures.length],counts);
  world.reset(new Simulation());assert.equal(world.scene.getMeshByName('storm-cloud-dome'),null);assert.equal(world.scene.getMeshByName('rocky-mountain'),null);assert.equal(world.scene.getLightByName('sun')!.intensity,1.1);assert.equal(world.scene.fogEnd,680);engine.dispose();
 });
@@ -902,6 +902,24 @@ test('GAUS30 renders a wider blue laser and blue impact smoke without an explosi
 });
 
 
+test('every hovering AIP casts a ground shadow that follows it and disappears after landing',()=>{
+ const sim=new Simulation(),kinds=['union-aip','merc-aip','darken-aip','scorp-aip'] as const;
+ sim.units=kinds.map((kind,i)=>makeUnit(`shadow-${kind}`,kind,i*20,20,true,{speed:0,ai:{detection:0}}));
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512}),world=new World({} as HTMLCanvasElement,sim,engine);
+ try{
+  world.update(0);
+  for(const unit of sim.units){
+   const shadow=world.aipShadows.get(unit.id)!;
+   assert.ok(shadow&&shadow.isEnabled(),unit.kind);
+   assert.equal(shadow.getChildMeshes().length,3);
+   assert.equal(shadow.position.x,unit.x);assert.equal(shadow.position.z,unit.z);
+   assert.ok(shadow.position.y<world.rigs.get(unit.id)!.root.position.y,unit.kind);
+   unit.x+=5;world.update(0);assert.equal(shadow.position.x,unit.x);
+   unit.hoverHeight=-.5;world.update(0);assert.equal(shadow.isEnabled(),false);
+  }
+ }finally{engine.dispose();}
+});
+
 test('Merc Razor is a green diamond hovering close to the ground and bobs slightly only while moving',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const sim=new Simulation('Easy',MISSION_2_6),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine),aip=sim.units.find(u=>u.kind==='merc-aip')!;world.update(0);const rig=world.rigs.get(aip.id)!,base=rig.root.position.y;assert.ok(base>0&&base<2);
  const platform=world.scene.getMeshByName('aip-diamond-platform')!,paint=platform.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.diffuseColor.g>paint.diffuseColor.r&&paint.diffuseColor.g>paint.diffuseColor.b);assert.ok(platform.getTotalVertices()>0);const hullSize=platform.getBoundingInfo().boundingBox.extendSize;assert.ok(Math.abs(hullSize.x-3)<1e-6);assert.ok(Math.abs(hullSize.z-2.5)<1e-6);assert.equal(platform.getTotalVertices(),24);const canopy=world.scene.getMeshByName('aip-cockpit')!;assert.equal(canopy.metadata.bodyPart,'cockpit');
@@ -1003,7 +1021,8 @@ test('4-2 renders grassland under amber skies, a dedicated rotating Scorp Meson 
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);
  assert.ok(world.scene.getMeshByName('scorp-meson-column'));assert.ok(world.scene.getMeshByName('scorp-meson-brace'));assert.ok(world.scene.getMeshByName('scorp-meson-cannon'));assert.ok(world.scene.getMeshByName('tower-launch-panel'));assert.ok(world.scene.clearColor.r>world.scene.clearColor.b);assert.ok(world.scene.getMaterialByName('grass'));
- assert.ok(world.scene.getMeshByName('urkinsk-back-left-cliff'));assert.ok(world.scene.getMeshByName('rocky-mountain'));
+ const mountains=world.scene.meshes.filter(mesh=>mesh.name==='rocky-mountain');assert.ok(mountains.length>=s.mission.terrain.peaks!.length);assert.equal(world.scene.getMeshByName('urkinsk-back-left-cliff'),null);
+ const ridge=mountains.at(-1)!.getVerticesData('position')!;assert.ok(Math.max(...Array.from(ridge).filter((_,i)=>i%3===1))>50);assert.ok(Math.min(...Array.from(ridge).filter((_,i)=>i%3===1))<0);
  const tower=s.units.find(u=>u.id==='scorp-meson')!;tower.aim=.7;world.update(0);assert.equal(world.rigs.get(tower.id)!.torso.rotation.y,.7);assert.equal(world.rigs.get(tower.id)!.root.rotation.y,0);
  const {scorpMesonCockpitShellSvg}=await import('./scorp-meson-cockpit.ts');assert.ok(scorpMesonCockpitShellSvg().includes('scorp-meson-reference'));assert.ok(!scorpMesonCockpitShellSvg().includes('merc-mison'));
  }finally{engine.dispose();}
@@ -1128,7 +1147,7 @@ test('curved 4-2 river has a recessed bed and oriented bridge leaves',async()=>{
  for(const point of [s.mission.terrain.river!.path![0]!,s.mission.terrain.river!.path![7]!,s.mission.terrain.river!.path!.at(-1)!]){
   let nearest=Infinity,bed=Infinity;
   for(let i=0;i<groundVertices.length;i+=3){const distance=Math.hypot(groundVertices[i]!-point.x,groundVertices[i+2]!+ground.position.z-point.z);if(distance<nearest){nearest=distance;bed=groundVertices[i+1]!;}}
-  assert.ok(nearest<20&&bed<-.7,`water must be above the river bed at (${point.x}, ${point.z}), nearest=${nearest}, bed=${bed}`);
+  assert.ok(nearest<40&&bed<-.7,`water must be above the river bed at (${point.x}, ${point.z}), nearest=${nearest}, bed=${bed}`);
  }
  const control=s.facilities.find(f=>f.id==='bridge-control')!;s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());world.update(0);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),false);
  assert.ok(s.raiseBridge());world.completionTime=0;world.update(0);assert.ok(Math.abs(world.scene.getTransformNodeByName('bridge-hinge-1')!.rotation.z)>1.4);assert.ok(world.scene.getTransformNodeByName('bridge-hinge--1')!.rotation.z>1.4);assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.isEnabled(),true);

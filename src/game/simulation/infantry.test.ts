@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,makeUnit,type Input} from './simulation.ts';
+import {Simulation,makeUnit,targetHeight,type Input} from './simulation.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {INFANTRY_WEAPONS,weaponMountCount} from '../content/weapons.ts';
@@ -16,6 +16,15 @@ test('PRIF44 damages without ejecting; GASHR has five canisters and ejects after
  const shield=enemy.shield,armor=enemy.armor;s.fire(2);assert.equal(s.gashrAmmo,4);assert.equal(enemy.pilot,true);assert.equal(s.soldiers.length,0);
  step(s,1.1);assert.equal(enemy.pilot,false);assert.equal(s.soldiers.length,1);assert.equal(enemy.shield,shield);assert.equal(enemy.armor,armor);assert.equal(s.soldiers[0].flight,null);assert.ok(Math.hypot(s.soldiers[0].x-enemy.x,s.soldiers[0].z-enemy.z)>4);assert.ok(s.events.some(e=>e.type==='pilot-eject'));
  s.footCooldown.GASHR=0;s.fire(2);step(s,1.1);assert.equal(s.soldiers.length,1);
+});
+for(const kind of ['union-aip','merc-aip','darken-aip','scorp-aip'] as const)test(`GASHR aimed at a hovering ${kind} ejects its pilot on contact`,()=>{
+ const s=foot(),aip=makeUnit('hover-target',kind,0,40,true,{speed:0,ai:{detection:0}});
+ s.units=[aip];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];
+ if(kind==='union-aip')assert.equal(targetHeight(aip),aip.hoverHeight+.7);
+ aimAt(s,aip.x,targetHeight(aip),aip.z);
+ s.fire(2);step(s,1);
+ assert.equal(aip.pilot,false,kind);
+ assert.ok(s.events.some(e=>e.type==='pilot-eject'&&e.unit===aip),kind);
 });
 test('gas misses, obstacles, empty vehicles and ammunition exhaustion cannot create extra pilots',()=>{
  const miss=foot();miss.humanYaw=Math.PI/2;miss.fire(2);step(miss,2);assert.equal(miss.soldiers.length,0);
@@ -208,18 +217,19 @@ test('walking onto a friendly piloted HAWC rides along without taking the contro
  const empty=new Simulation(),open=makeUnit('empty','union-sentry',empty.human.x,empty.human.z,false);empty.units=[open];assert.ok(empty.board());assert.equal(empty.mounted,open);assert.equal(empty.missionMusicPassengerRide,false);
  const asv=new Simulation(),carrier=makeUnit('asv','union-asv',asv.human.x,asv.human.z,true);carrier.iff=asv.iff;asv.units=[carrier];assert.ok(asv.board());assert.equal(asv.passenger,carrier);assert.equal(asv.missionMusicPassengerRide,false);
 });
-test('4-2 ride-along in a piloted Scorp HAWC or Scorp ASV arms Passenger and an empty friendly vehicle does not',async()=>{
+test('4-2 ride-along in a piloted Scorp HAWC arms Passenger and an empty friendly vehicle does not',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
- for(const id of ['scorp-sentry-guard','scorp-tactical-guard','scorp-assault2','scorp-asv-guard','scorp-asv-guard3']){
+ assert.equal(MISSION_4_2.units.filter(unit=>unit.kind==='scorp-asv').length,0);
+ for(const id of ['scorp-sentry-guard','scorp-tactical-guard','scorp-assault2']){
   const s=new Simulation('Easy',MISSION_4_2),unit=s.units.find(u=>u.id===id)!;s.human={x:unit.x,z:unit.z+3.2};s.humanYaw=Math.PI;
   for(let i=0;i<120&&!s.passenger;i++)s.tick(1/60,{...idle,forward:true});
   assert.equal(s.passenger?.id,id);assert.equal(s.mounted,null);assert.equal(unit.pilot,true);assert.equal(s.missionMusicPassengerRide,true);
  }
- const open=new Simulation('Easy',MISSION_4_2),empty=open.units.find(u=>u.id==='scorp-assault3')!;open.human={x:empty.x,z:empty.z+3.2};open.humanYaw=Math.PI;
+ const open=new Simulation('Easy',MISSION_4_2),empty=open.units.find(u=>u.id==='bridge-rocket')!;open.human={x:empty.x,z:empty.z+3.2};open.humanYaw=Math.PI;
  for(let i=0;i<120&&!open.mounted;i++)open.tick(1/60,{...idle,forward:true});
- assert.equal(open.mounted?.id,'scorp-assault3');assert.equal(open.passenger,null);assert.equal(open.missionMusicPassengerRide,false);
+ assert.equal(open.mounted?.id,'bridge-rocket');assert.equal(open.passenger,null);assert.equal(open.missionMusicPassengerRide,false);
  const hostile=new Simulation('Easy',MISSION_4_2),union=hostile.units.find(u=>u.id==='bridge-union-sentry')!;hostile.human={x:union.x,z:union.z};assert.equal(hostile.board(),false);assert.equal(hostile.missionMusicPassengerRide,false);
- for(const id of ['scorp-sentry-guard','scorp-asv-guard']){
+ for(const id of ['scorp-sentry-guard','scorp-assault2']){
   const wrecked=new Simulation('Easy',MISSION_4_2),carrier=wrecked.units.find(u=>u.id===id)!;wrecked.human={x:carrier.x,z:carrier.z+3.2};wrecked.humanYaw=Math.PI;
   for(let i=0;i<120&&!wrecked.passenger;i++)wrecked.tick(1/60,{...idle,forward:true});
   assert.equal(wrecked.missionMusicPassengerRide,true,id);carrier.shield=0;wrecked.damage(carrier,9999);

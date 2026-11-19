@@ -23,7 +23,7 @@ function spiderBoxes(kind:'merc-assault'|'scorp-assault'){
   }));
  }));
 }
-function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind],leg='leg' in shape?shape.leg:undefined,torsoY=body.kind==='darken-tactical'?DARKEN_TACTICAL_TORSO_Y:h*.6;return [
+function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind],leg='leg' in shape?shape.leg:undefined,torsoY=body.kind==='union-aip'?0:body.kind==='darken-tactical'?DARKEN_TACTICAL_TORSO_Y:h*.6;return [
  {part:'cockpit' as const,x:0,...shape.cockpit,y:torsoY+shape.cockpit.y,upper:!('track' in shape)},
  ...('gunHousing' in shape?[{part:'leftWeapon' as const,x:0,...shape.gunHousing,y:torsoY+shape.gunHousing.y,upper:true}]:[]),
  ...('roof' in shape?[{part:'cockpit' as const,x:0,...shape.roof,y:torsoY+shape.roof.y,upper:true}]:[]),

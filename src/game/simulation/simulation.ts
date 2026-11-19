@@ -608,7 +608,7 @@ export class Simulation {
   private pilotReserved(unit:Unit,id:string){return this.soldiers.some(s=>s.alive&&s.id!==id&&s.boardingTarget===unit.id&&s.boardingRole==='pilot');}
   private cancelBoarding(soldier:Soldier){soldier.boardingTarget=undefined;soldier.boardingRole=undefined;soldier.automaticBoarding=undefined;}
   private companionDisguiseBoarding(soldier:Soldier,unit:Unit|undefined){const disguise=this.mission.facilityIffDisguise;return this.facilityIffAcquired&&!!unit&&!!disguise?.vehicleIds.includes(unit.id)&&soldier.iff===disguise.footIff&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);}
-  private validBoarding(soldier:Soldier,unit:Unit|undefined){return soldier.alive&&(soldier.iff===this.iff||soldier.automaticBoarding===true||!!unit&&this.companionDisguiseBoarding(soldier,unit))&&!!unit?.alive&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&(soldier.boardingRole==='pilot'?!unit.pilot&&!this.pilotReserved(unit,soldier.id):unit.iff===soldier.iff&&unit.passengers.length<unit.spec.passengerCapacity);}
+  private validBoarding(soldier:Soldier,unit:Unit|undefined){const claimPassenger=!!unit&&soldier.boardingRole==='passenger'&&soldier.automaticBoarding===true&&soldier.reclaimsVehicles===true&&unit.pilot&&unit.spec.category!=='tower'&&unit.iff===soldier.iff;return soldier.alive&&(soldier.iff===this.iff||soldier.automaticBoarding===true||!!unit&&this.companionDisguiseBoarding(soldier,unit))&&!!unit?.alive&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&(soldier.boardingRole==='pilot'?!unit.pilot&&!this.pilotReserved(unit,soldier.id):claimPassenger||unit.iff===soldier.iff&&unit.passengers.length<unit.spec.passengerCapacity);}
   private canReserve(unit:Unit,iff:string,id:string){return unit.alive&&unit.iff===iff&&unit.spec.passengerCapacity>0&&unit.passengers.length+this.soldiers.filter(s=>s.alive&&s.iff===unit.iff&&s.id!==id&&s.boardingTarget===unit.id&&s.boardingRole!=='pilot').length<unit.spec.passengerCapacity;}
   private playerHawkRide(unit:Unit){return isHawc(unit.kind)&&unit.pilot&&unit.passengers.length===0&&unit.iff===this.iff&&this.friendlyVehicle(unit);}
   entryShielded(target:Unit|Facility){
@@ -778,6 +778,34 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     }
     return true;
   }
+  private vehicleClaimOf(soldier:Soldier){
+    const claim=this.mission.vehicleClaim;
+    if(!claim||soldier.faction!==claim.faction||soldier.order)return;
+    if(!soldier.reclaimsVehicles&&claim.unitIds.includes(soldier.sourceVehicle))soldier.reclaimsVehicles=true;
+    if(!soldier.reclaimsVehicles)return;
+    return claim;
+  }
+  private claimRide(soldier:Soldier){
+    const claim=this.vehicleClaimOf(soldier);if(!claim||soldier.flight)return;
+    const open=(unit:Unit)=>unit!==this.mounted&&unit!==this.passenger&&unit.alive&&unit.spec.category!=='tower'&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&distance(soldier,unit)<=claim.range;
+    const nearest=(units:Unit[])=>units.sort((a,b)=>distance(soldier,a)-distance(soldier,b))[0];
+    const emptySame=nearest(this.units.filter(unit=>open(unit)&&unit.iff===soldier.iff&&!unit.pilot&&!this.pilotReserved(unit,soldier.id)));
+    if(emptySame)return {unit:emptySame,role:'pilot' as const};
+    const ride=nearest(this.units.filter(unit=>open(unit)&&unit.pilot&&unit.iff===soldier.iff));
+    if(ride)return {unit:ride,role:'passenger' as const};
+    const other=nearest(this.units.filter(unit=>open(unit)&&!unit.pilot&&!this.pilotReserved(unit,soldier.id)));
+    if(other)return {unit:other,role:'pilot' as const};
+  }
+  private claimHolding(unit:Unit){
+    const claim=this.mission.vehicleClaim;
+    if(!claim||!unit.alive||!unit.pilot||unit.spec.category==='tower'||unit===this.mounted||unit.iff===undefined)return false;
+    return this.soldiers.some(soldier=>{
+      if(!soldier.alive||isEmbarked(soldier)||soldier.faction!==claim.faction||distance(soldier,unit)>claim.range)return false;
+      if(!soldier.reclaimsVehicles&&claim.unitIds.includes(soldier.sourceVehicle))soldier.reclaimsVehicles=true;
+      if(!soldier.reclaimsVehicles||soldier.iff!==unit.iff)return false;
+      return !this.units.some(other=>other!==this.mounted&&other!==this.passenger&&other.alive&&!other.pilot&&other.iff===soldier.iff&&other.spec.category!=='tower'&&other.spec.boardable!==false&&!this.entryShielded(other)&&!this.pilotReserved(other,soldier.id)&&distance(soldier,other)<=claim.range);
+    });
+  }
   private tickSoldiers(dt:number){
     for(const soldier of this.soldiers){
       if(isEmbarked(soldier))continue;
@@ -798,6 +826,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const followThreat=soldier.order?.kind==='follow'&&this.combatTargets.some(target=>target!==soldier&&target.alive&&target.iff!==soldier.iff&&(!isVehicle(target)||target.pilot)&&distance(soldier,target)<120&&this.lineOfSight(soldier,target));
       if(!followThreat&&this.tickFootOrder(soldier,dt,from))continue;
       if(this.mission.pickups?.some(p=>p.personId===soldier.personId)){soldier.combatIdleTime=0;this.approachPerson(soldier,this.player,dt,6);continue;}
+      const ride=this.claimRide(soldier);if(ride){soldier.boardingTarget=ride.unit.id;soldier.boardingRole=ride.role;soldier.automaticBoarding=true;soldier.combatIdleTime=0;this.approachPerson(soldier,ride.unit,dt);for(const other of this.units)if(other.pilot)this.crushSoldier(soldier,from,other,other);continue;}
       const autoCompanion=!!this.mission.autoBoardCompanions&&!!this.mission.companions?.some(member=>member.personId===soldier.personId);
       const carrier=this.units.filter(unit=>unit!==this.mounted&&unit!==this.passenger&&unit.alive&&!unit.pilot&&(isHawc(unit.kind)||autoCompanion&&unit.spec.category!=='tower')&&(unit.iff===soldier.iff||autoCompanion||this.companionDisguiseBoarding(soldier,unit))&&unit.spec.boardable!==false&&!this.entryShielded(unit)&&!this.pilotReserved(unit,soldier.id)&&distance(soldier,unit)<=INFANTRY_AUTO_BOARD_RANGE).sort((a,b)=>distance(soldier,a)-distance(soldier,b))[0];
       if((autoCompanion||(soldier.gashrAmmo??0)<=0)&&carrier){
@@ -1309,7 +1338,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const assault=this.mission.assaults?.find(a=>a.unitId===unit.id);
       if(assault?.stopWhenBridgeRaisedId&&this.raisedBridges.has(assault.stopWhenBridgeRaisedId)){unit.alert=false;unit.speed=0;this.aiFocus.delete(unit.id);continue;}
       if(assault?.afterEliminateUnitId&&!this.eliminated(assault.afterEliminateUnitId)){this.coastVehicle(unit,dt);continue;}
-      if(assault?.advanceTo&&!!assault.advanceAfterUnitIds?.length&&assault.advanceAfterUnitIds.every(id=>this.eliminated(id))){unit.alert=false;this.aiFocus.delete(unit.id);this.followAlly(unit,assault.advanceTo,`advance:${unit.id}`,assault.advanceTo,dt);continue;}
+      if(assault?.advanceTo&&!!assault.advanceAfterUnitIds?.length&&assault.advanceAfterUnitIds.every(id=>this.eliminated(id))){unit.alert=false;this.aiFocus.delete(unit.id);if(this.claimHolding(unit)){unit.speed=0;continue;}this.followAlly(unit,assault.advanceTo,`advance:${unit.id}`,assault.advanceTo,dt);continue;}
       if(assault&&!this.assaultBegun(assault,unit)&&!this.activeAggressor(unit)){this.coastVehicle(unit,dt);continue;}
       const assaultTarget=assault?this.selectionTargets.find(t=>t.id===assault.targetId&&t.alive&&t.iff!==unit.iff):undefined;
       if(assaultTarget)unit.alert=true;

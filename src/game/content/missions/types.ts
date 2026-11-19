@@ -41,6 +41,7 @@ export type MissionDefinition={
  assaults?:readonly Assault[];
  unitRoutes?:readonly {unitId:string;personId?:string;x:number;z:number;startAt:number;via?:readonly {x:number;z:number}[];attackTargetIds?:readonly string[];attackPositions?:readonly {x:number;z:number}[]}[];
  autoBoardCompanions?:boolean;
+ vehicleClaim?:{faction:Faction;range:number;unitIds:readonly string[]};
  groundShields?:readonly {id:string;powerPlantId:string;x:number;z:number;width:number;depth:number;height:number}[];
  supplies?:readonly ({waypointId:number;kind:'ammunition'}|{waypointId:number;kind:'shield-doubler';duration:number})[];
  airSupport?:{unitId:string};

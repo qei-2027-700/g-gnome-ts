@@ -259,6 +259,39 @@ test('3-1 plaza hawks all close on the center from the west, then surviving Scor
  for(let i=0;i<4*60;i++)holding.tick(1/60,idle);
  assert.equal(remaining.alive,true);assert.equal(held.pilot,true);assert.ok(distance(held,rocket)<distance(heldAt,rocket)-8,'a living Union hawk still keeps the Scorp assault on the plaza');
 });
+test('3-1 ejected Scorp plaza crews board a remaining vehicle and never a tower',()=>{
+ const kill=(sim:Simulation,id:string)=>{const unit=sim.units.find(item=>item.id===id)!;sim.damage(unit,99999);sim.damage(unit,99999);assert.equal(unit.alive,false,id);return unit;};
+ const ride=new Simulation('Easy',MISSION_3_1);
+ for(const id of ['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'])kill(ride,id);
+ const sentry=ride.units.find(unit=>unit.id==='plaza-scorp-sentry')!,sentryAt={x:sentry.x,z:sentry.z};
+ kill(ride,'plaza-scorp-assault');
+ const crew=ride.soldiers.find(soldier=>soldier.alive&&soldier.sourceVehicle==='plaza-scorp-assault')!;
+ assert.equal(crew.faction,'scorp');assert.ok(crew.flight);
+ let heldWorst=0;for(let i=0;i<30;i++){const t=performance.now();ride.tick(1/60,idle);heldWorst=Math.max(heldWorst,performance.now()-t);}
+ assert.ok(crew.flight);assert.ok(distance(sentry,sentryAt)<1,'the mounted Scorp hawk waits while its crew is still in the air');assert.equal(ride.units.find(unit=>unit.id==='plaza-rocket')!.pilot,false);
+ crew.flight=null;crew.x=sentry.x+10;crew.z=sentry.z;crew.velocity=undefined;
+ let boarded=false,boardWorst=0;for(let i=0;i<8*60&&!crew.passengerOf;i++){const t=performance.now();ride.tick(1/60,idle);boardWorst=Math.max(boardWorst,performance.now()-t);boarded=!!crew.passengerOf;}
+ assert.equal(boarded,true);assert.equal(crew.passengerOf,sentry.id);assert.equal(crew.driverOf,undefined);assert.equal(sentry.pilot,true);assert.equal(ride.units.find(unit=>unit.id==='plaza-rocket')!.pilot,false);
+ const goal=ride.mission.assaults!.find(item=>item.unitId===sentry.id)!.advanceTo!,from={x:sentry.x,z:sentry.z};
+ let marchWorst=0;for(let i=0;i<4*60;i++){const t=performance.now();ride.tick(1/60,idle);marchWorst=Math.max(marchWorst,performance.now()-t);}
+ const dx=goal.x-from.x,dz=goal.z-from.z,len=Math.hypot(dx,dz)||1;
+ assert.ok(((sentry.x-from.x)*dx+(sentry.z-from.z)*dz)/len>8,'the hawk carries the crew toward waypoint 3');
+ assert.equal(crew.passengerOf,sentry.id);assert.ok(distance(crew,sentry)<1);assert.ok(Math.max(heldWorst,boardWorst,marchWorst)<250);
+ const capture=new Simulation('Easy',MISSION_3_1),rocket=capture.units.find(unit=>unit.id==='plaza-rocket')!;
+ for(const id of ['plaza-scorp-sentry','plaza-scorp-tactical','plaza-union-tactical','plaza-union-sentry'])kill(capture,id);
+ kill(capture,'plaza-scorp-assault');
+ const pilot=capture.soldiers.find(soldier=>soldier.alive&&soldier.sourceVehicle==='plaza-scorp-assault')!;
+ pilot.flight=null;pilot.velocity=undefined;pilot.x=rocket.x+6;pilot.z=rocket.z;
+ const asv=capture.units.find(unit=>unit.id==='plaza-union-asv')!;asv.pilot=false;asv.x=pilot.x+400;asv.z=pilot.z;
+ for(let i=0;i<60;i++)capture.tick(1/60,idle);
+ assert.equal(pilot.driverOf,undefined);assert.equal(pilot.passengerOf,undefined);assert.equal(rocket.pilot,false);assert.equal(pilot.boardingTarget,undefined);
+ asv.x=pilot.x+16;asv.z=pilot.z;asv.speed=0;
+ let took=false;for(let i=0;i<8*60&&pilot.driverOf!==asv.id;i++){capture.tick(1/60,idle);took=pilot.driverOf===asv.id;}
+ assert.equal(took,true);assert.equal(asv.pilot,true);assert.equal(asv.iff,pilot.iff);assert.equal(rocket.pilot,false);assert.equal(pilot.passengerOf,undefined);
+ const quiet=new Simulation('Easy',MISSION_3_1);
+ for(let i=0;i<60;i++)quiet.tick(1/60,idle);
+ for(const person of quiet.soldiers.filter(soldier=>soldier.faction==='scorp'&&soldier.id.startsWith('person-')))assert.equal(person.boardingTarget,undefined,person.id);
+});
 test('3-1 Scorp reacts when a Union ally approaches before the player',()=>{
  const s=new Simulation('Easy',MISSION_3_1),enemy=s.units.find(unit=>unit.id==='plaza-scorp-sentry')!,ally=s.units.find(unit=>unit.id==='plaza-union-sentry')!;
  s.units=[enemy,ally];s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];

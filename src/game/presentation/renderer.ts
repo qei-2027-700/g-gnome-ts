@@ -3,6 +3,7 @@ import {weatheredArmor,mesonWeatheredArmor} from './vehicle-finish.ts';
 import {initialCameraMode,REAR_CAMERA_DISTANCE_SCALE} from './camera-mode.ts';
 import {isEmbarked} from '../simulation/infantry.ts';
 import {makeBase} from './base.ts';
+import {makeFacilityRuin} from './facility-ruins.ts';
 import {boulderTexture,grassTexture,snowTexture,volcanicTexture,overcastSky,rockyMountains} from './landscape.ts';
 import {DARKEN_TACTICAL_HIP_Y,DARKEN_TACTICAL_HIP_Z,DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_SHIN,DARKEN_TACTICAL_THIGH,DARKEN_TACTICAL_TORSO_Y,MERC_TACTICAL_PALETTE,MERC_MESON_PALETTE,SCORP_ASV_PALETTE,SCORP_TACTICAL_SHIN,SCORP_TACTICAL_THIGH,SCORP_TOWER_PALETTE,type Faction} from '../content/vehicles.ts';
 // Register rendering extensions and shaders before the first frame, including dev reloads.
@@ -529,6 +530,7 @@ export class World {
   wreckRigs=new Map<string,TransformNode>();
   engine:Engine;scene:Scene;camera:FreeCamera; rigs=new Map<string,Rig>();
   aipShadows=new Map<string,TransformNode>();
+  facilityRuins=new Map<string,TransformNode>();
   private ground?:GroundMesh;
   private aipShadowPaint?:StandardMaterial;
   completionTime:number|null=null;
@@ -568,7 +570,7 @@ export class World {
   }
   material(name:string,hex:string,glow=false){const m=new StandardMaterial(name,this.scene);m.diffuseColor=color(hex);m.specularColor=new Color3(.08,.08,.08);if(glow)m.emissiveColor=color(hex);return m;}
   terrain(){
-    this.mineRigs.clear();this.groundShieldMeshes.clear();this.scene.getMeshByName('storm-cloud-dome')?.dispose(false,true);this.terrainRoot?.dispose(false,true);
+    this.mineRigs.clear();this.groundShieldMeshes.clear();this.facilityRuins.clear();this.scene.getMeshByName('storm-cloud-dome')?.dispose(false,true);this.terrainRoot?.dispose(false,true);
     for(const node of [...this.scene.transformNodes])if(node.name.startsWith('minefield-')&&!node.parent)node.dispose(false,true);
     const before=new Set(this.scene.meshes),terrain=this.sim.mission.terrain;this.terrainRoot=new TransformNode('mission-terrain',this.scene);
     const amber=terrain.skyPalette==='amber',storm=terrain.weather==='overcast',grass=terrain.biome==='grassland',snow=terrain.biome==='snow',volcanic=terrain.biome==='volcanic',groundPaint=this.material(snow?'snow':grass?'grass':volcanic?'volcanic-ground':'sand',snow?'#eef5f8':grass?'#649638':volcanic?'#45403a':'#bbae80');
@@ -596,6 +598,7 @@ export class World {
     for(const [i,r] of this.sim.mission.rocks.entries()){const rock=MeshBuilder.CreateSphere('boulder',{diameter:r.r*2,segments:8,updatable:true},this.scene);const positions=rock.getVerticesData('position')!;for(let v=0;v<positions.length;v+=3){if(positions[v+1]>=0)continue;const horiz=Math.hypot(positions[v],positions[v+2]);if(horiz<1e-4)continue;const scale=r.r/horiz;positions[v]*=scale;positions[v+2]*=scale;}rock.updateVerticesData('position',positions);rock.createNormals(true);rock.scaling.y=.75;rock.position.set(r.x,r.r*.55,r.z);rock.rotation.y=.4*i;rock.material=rockPaint;}
     if(!grass&&!snow&&!volcanic){const shrubMat=this.material('scrub','#666744');for(let i=0;i<75;i++){const x=Math.sin(i*27.3)*135,z=-40+(i*87.7)%610;if(Math.abs(x)<14)continue;const s=MeshBuilder.CreateCylinder('scrub',{height:1.4,diameterTop:.1,diameterBottom:2,tessellation:3},this.scene);s.position.set(x,.7,z);s.rotation.z=Math.sin(i)*.4;s.material=shrubMat;}}
     makeBase(this.scene,this.sim.mission);
+    for(const facility of this.sim.facilities){const ruin=makeFacilityRuin(this.scene,facility);ruin.parent=this.terrainRoot;ruin.setEnabled(!facility.alive);this.facilityRuins.set(facility.id,ruin);}
     for(const shield of this.sim.mission.groundShields??[]){const mesh=MeshBuilder.CreateBox(`ground-shield-${shield.id}`,{width:shield.width,height:shield.height,depth:shield.depth},this.scene);mesh.position.set(shield.x,shield.height/2,shield.z);const material=this.material(`ground-shield-${shield.id}`,'#38c9b4',true);material.alpha=.35;material.backFaceCulling=false;mesh.material=material;mesh.isPickable=false;this.groundShieldMeshes.set(shield.id,mesh);}
     if(this.sim.mines.length){const mineMat=this.material('detected-mine','#ff1818',true);for(const mine of this.sim.mines){const mesh=MeshBuilder.CreateCylinder('detected-mine',{height:.25,diameter:1.3,tessellation:6},this.scene);mesh.position.set(mine.x,.48,mine.z);mesh.material=mineMat;mesh.isVisible=false;this.mineRigs.set(mine.id,mesh);}}
     for(const node of this.scene.transformNodes)if((node.metadata?.facilityId||node.name.startsWith('minefield-'))&&!node.parent)node.parent=this.terrainRoot;
@@ -604,7 +607,7 @@ export class World {
   makeMech(u:Unit){
     this.rigs.set(u.id,buildVehicleModel(this.scene,u,(name,hex,glow)=>this.material(name,hex,glow)));
     if(u.spec.category!=='hovercraft')return;
-    if(!this.aipShadowPaint){const paint=this.material('aip-ground-shadow','#080c0b');paint.alpha=.16;paint.disableLighting=true;paint.backFaceCulling=false;this.aipShadowPaint=paint;}
+    if(!this.aipShadowPaint){const paint=this.material('aip-ground-shadow','#080808');paint.alpha=.38;paint.disableLighting=true;paint.backFaceCulling=false;paint.emissiveColor=Color3.Black();this.aipShadowPaint=paint;}
     const shadow=new TransformNode(`aip-shadow-${u.id}`,this.scene),shape=VEHICLE_SHAPES[u.kind].hull;
     for(const [index,scale] of [1.25,.9,.55].entries()){
       const disc=MeshBuilder.CreateDisc(`aip-shadow-layer-${u.id}-${index}`,{radius:1,tessellation:32,sideOrientation:Mesh.DOUBLESIDE},this.scene);
@@ -630,7 +633,7 @@ export class World {
     rig.lastX=unit.x;rig.lastZ=unit.z;
     if(dt>0){const speed=unit.alive?travel/dt:0;rig.run+=(Math.min(1,speed/Math.max(1,spec.speed/3.6))-rig.run)*Math.min(1,dt*12);if(unit.alive)rig.phase+=travel/profile.stride*Math.PI*2;}
     const run=unit.alive?rig.run:0;
-    if(unit.spec.category==='hovercraft'){rig.root.position.set(unit.x,unit.hoverHeight+(!unit.hoverDisabled&&Math.abs(unit.speed)>.1?Math.sin(this.sim.time*3)*.15:0),unit.z);rig.root.rotation.set(0,unit.yaw,0);return;}
+    if(unit.spec.category==='hovercraft'){const moving=!unit.hoverDisabled&&Math.abs(unit.speed)>.1,bob=moving?(Math.sin(this.sim.time*3)*.12+Math.sin(this.sim.time*7+unit.x*.03)*.07):0;rig.root.position.set(unit.x,unit.hoverHeight+bob,unit.z);rig.root.rotation.set(0,unit.yaw,0);return;}
     if(unit.spec.category==='tower'){rig.root.position.set(unit.x,0,unit.z);rig.root.rotation.set(0,0,0);return;}
     if(unit.kind.endsWith('-asv')){rig.root.position.set(unit.x,unit.alive?0:-.6,unit.z);rig.root.rotation.set(0,unit.yaw,unit.alive?0:.3);return;}
     if(unit.kind==='merc-assault'||unit.kind==='scorp-assault'){rig.root.position.set(unit.x,unit.alive?0:-1,unit.z);rig.root.rotation.set(0,unit.yaw,unit.alive?0:.3);rig.torso.position.x=0;rig.torso.rotation.z=0;this.poseAssaultLegs(rig,rig.phase,run);return;}
@@ -847,13 +850,14 @@ export class World {
   }
   private updateAipShadow(unit:Unit){
     const shadow=this.aipShadows.get(unit.id);if(!shadow)return;
-    shadow.setEnabled(unit.alive&&unit.hoverHeight>0);if(!unit.alive||unit.hoverHeight<=0)return;
+    const shape=VEHICLE_SHAPES[unit.kind].hull,landed=-(unit.spec.height*.6+shape.y-shape.h/2),airborne=unit.hoverHeight>landed+.08;
+    shadow.setEnabled(unit.alive&&airborne);if(!unit.alive||!airborne)return;
     const river=terrainRivers(this.sim.mission.terrain).find(r=>riverDistance(r,unit.x,unit.z)<r.width/2-7);
     const groundY=river?-.7:this.ground?.getHeightAtCoordinates(unit.x,unit.z)??0;
     shadow.position.set(unit.x,groundY+.07,unit.z);shadow.rotation.y=unit.yaw;
-    const spread=1+Math.max(0,unit.hoverHeight)*.12;shadow.scaling.set(spread,1,spread);
+    const spread=1+Math.max(0,unit.hoverHeight-landed)*.12;shadow.scaling.set(spread,1,spread);
   }
-  update(dt:number){this.updateMineControlSmoke(dt);const sim=this.sim;for(const shield of sim.mission.groundShields??[])this.groundShieldMeshes.get(shield.id)?.setEnabled(sim.facilities.some(f=>f.id===shield.powerPlantId&&f.alive));for(const unit of sim.units)if(unit.alive&&!this.rigs.has(unit.id))this.makeMech(unit);for(const river of terrainRivers(sim.mission.terrain))for(const side of [-1,1]){const hinge=this.scene.getTransformNodeByName(river===sim.mission.terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`);if(hinge)hinge.rotation.z=sim.raisedBridges.has(river.bridgeId)?-side*Math.PI*.48:0;}for(const facility of sim.facilities){const root=this.scene.getTransformNodeByName(`facility-${facility.id}`);root?.setEnabled(facility.alive&&!(sim.insideFacility===facility&&this.mode===0&&this.completionTime===null));}const detected=new Set(sim.detectedMines.map(m=>m.id));for(const [id,mesh] of this.mineRigs)mesh.isVisible=detected.has(id);this.updateDestructions(dt);for(const u of sim.units){const rig=this.rigs.get(u.id);if(!rig)continue;if(!u.alive&&!this.destructions.has(u.id)){this.retireVehicle(u);continue;}rig.recoil=Math.max(0,rig.recoil-dt*9);rig.torso.position.z=u.spec.category==='tower'||u.kind==='merc-assault'||u.kind==='scorp-assault'?0:-rig.recoil*.35;rig.torso.rotation.x=u.spec.category==='tower'||u.kind==='merc-assault'||u.kind==='scorp-assault'?0:(u.kind.endsWith('-asv')?-(u===sim.mounted?sim.pitch:u.aimPitch):u.kind==='darken-tactical'&&u.alive?DARKEN_TACTICAL_HUNCH:0)-rig.recoil*.045;this.updateGait(u,rig,dt);this.updateAipShadow(u);rig.torso.rotation.y=(u.kind==='merc-meson-tower'||u.kind==='scorp-meson-tower'||u.kind==='scorp-popup-turret')?u.aim:u.spec.category==='tower'||u.spec.torsoLimit===0?0:u.aim-u.yaw;if(u.kind!=='merc-assault'&&u.kind!=='scorp-assault')rig.torso.rotation.z=-rig.root.rotation.z*.65;rig.root.setEnabled(!((u===sim.mounted||u===sim.passenger)&&this.mode===0&&!sim.guidedMissile&&this.completionTime===null));if(rig.cannon)rig.cannon.rotation.x=-(u===sim.mounted?sim.pitch:u.aimPitch);this.updateDamage(u,rig,dt);}
+  update(dt:number){this.updateMineControlSmoke(dt);const sim=this.sim;for(const shield of sim.mission.groundShields??[])this.groundShieldMeshes.get(shield.id)?.setEnabled(sim.facilities.some(f=>f.id===shield.powerPlantId&&f.alive));for(const unit of sim.units)if(unit.alive&&!this.rigs.has(unit.id))this.makeMech(unit);for(const river of terrainRivers(sim.mission.terrain))for(const side of [-1,1]){const hinge=this.scene.getTransformNodeByName(river===sim.mission.terrain.river?`bridge-hinge-${side}`:`bridge-hinge-${river.bridgeId}-${side}`);if(hinge)hinge.rotation.z=sim.raisedBridges.has(river.bridgeId)?-side*Math.PI*.48:0;}for(const facility of sim.facilities){const root=this.scene.getTransformNodeByName(`facility-${facility.id}`);root?.setEnabled(facility.alive&&!(sim.insideFacility===facility&&this.mode===0&&this.completionTime===null));this.facilityRuins.get(facility.id)?.setEnabled(!facility.alive);}const detected=new Set(sim.detectedMines.map(m=>m.id));for(const [id,mesh] of this.mineRigs)mesh.isVisible=detected.has(id);this.updateDestructions(dt);for(const u of sim.units){const rig=this.rigs.get(u.id);if(!rig)continue;if(!u.alive&&!this.destructions.has(u.id)){this.retireVehicle(u);continue;}rig.recoil=Math.max(0,rig.recoil-dt*9);rig.torso.position.z=u.spec.category==='tower'||u.kind==='merc-assault'||u.kind==='scorp-assault'?0:-rig.recoil*.35;rig.torso.rotation.x=u.spec.category==='tower'||u.kind==='merc-assault'||u.kind==='scorp-assault'?0:(u.kind.endsWith('-asv')?-(u===sim.mounted?sim.pitch:u.aimPitch):u.kind==='darken-tactical'&&u.alive?DARKEN_TACTICAL_HUNCH:0)-rig.recoil*.045;this.updateGait(u,rig,dt);this.updateAipShadow(u);rig.torso.rotation.y=(u.kind==='merc-meson-tower'||u.kind==='scorp-meson-tower'||u.kind==='scorp-popup-turret')?u.aim:u.spec.category==='tower'||u.spec.torsoLimit===0?0:u.aim-u.yaw;if(u.kind!=='merc-assault'&&u.kind!=='scorp-assault')rig.torso.rotation.z=-rig.root.rotation.z*.65;rig.root.setEnabled(!((u===sim.mounted||u===sim.passenger)&&this.mode===0&&!sim.guidedMissile&&this.completionTime===null));if(rig.cannon)rig.cannon.rotation.x=-(u===sim.mounted?sim.pitch:u.aimPitch);this.updateDamage(u,rig,dt);}
     this.updateSoldiers(dt);
     const p=sim.player;const yaw=sim.aim;const height=sim.eyeHeight;
     const guided=sim.guidedMissile;

@@ -22,7 +22,7 @@ for(const kind of ['union-aip','merc-aip','darken-aip','scorp-aip'] as const)tes
  s.units=[aip];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];
  if(kind==='union-aip')assert.equal(targetHeight(aip),aip.hoverHeight+.7);
  aimAt(s,aip.x,targetHeight(aip),aip.z);
- s.fire(2);step(s,1);
+ s.fire(2);for(let i=0;i<60;i++){aip.speed=1;aip.x=0;aip.z=40;s.tick(1/60,idle);}
  assert.equal(aip.pilot,false,kind);
  assert.ok(s.events.some(e=>e.type==='pilot-eject'&&e.unit===aip),kind);
 });
@@ -388,12 +388,12 @@ test('EGGER ignores exposed infantry, respects cover and cannot fire with empty 
  const empty=await eggerScenario();for(let i=0;i<6;i++){empty.footCooldown.EGGER=0;empty.fire(2);}assert.equal(empty.eggerAmmo,0);assert.equal(empty.gashrAmmo,5);assert.equal(empty.missiles.length,5);
 });
 
-test('GASHR makes a moving Merc AIP coast down and settle onto the ground gradually; pause freezes landing and boarding restarts hover',async()=>{
+test('GASHR makes a moving Merc AIP coast down and settle onto the ground gradually; pause freezes landing and moving after boarding restarts hover',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const {advanceSimulation}=await import('../session.ts');const def=structuredClone(MISSION_2_6);def.base=undefined;def.units=[{id:'own',kind:'union-sentry',x:100,z:-80,pilot:false},{id:'razor',kind:'merc-aip',x:0,z:45,pilot:true}];def.assignedUnitId='own';def.player={x:0,z:0};def.companions=[];def.personnel=[];def.assaults=[];def.pickups=[];def.objectives=[];def.completionEnabled=false;def.rocks=[];def.terrain.cliffs=[];
  const s=new Simulation('Easy',def),aip=s.units[1];s.iff='5031';aip.speed=12;s.pitch=s.targetElevation(aip);s.fire(2);assert.ok(s.missiles.some(p=>p.weapon==='GASHR'));
  for(let i=0;i<180&&aip.pilot;i++)s.tick(1/60,idle);assert.equal(aip.pilot,false);assert.equal(aip.hoverDisabled,true);assert.ok(s.soldiers.some(p=>p.sourceVehicle===aip.id&&p.alive));const height=aip.hoverHeight,speed=aip.speed;assert.ok(speed>0);assert.ok(height>0);
  const frozen=JSON.stringify({height:aip.hoverHeight,speed:aip.speed,time:s.time});assert.equal(advanceSimulation(s,'pause',1,idle),0);assert.equal(JSON.stringify({height:aip.hoverHeight,speed:aip.speed,time:s.time}),frozen);
  for(let i=0;i<30;i++)s.tick(1/60,idle);assert.ok(aip.hoverHeight<height);assert.ok(aip.hoverHeight>-.9);assert.ok(aip.speed<speed);
  for(let i=0;i<240;i++)s.tick(1/60,idle);assert.ok(aip.hoverHeight<0);assert.ok(Math.abs(aip.speed)<.1);const grounded=aip.hoverHeight;
- s.human={x:aip.x,z:aip.z};assert.equal(s.board(),true);assert.equal(s.mounted,aip);assert.equal(aip.hoverDisabled,false);for(let i=0;i<240;i++)s.tick(1/60,idle);assert.ok(aip.hoverHeight>grounded);assert.ok(Math.abs(aip.hoverHeight-aip.spec.hoverHeight!)<1e-6);
+ s.human={x:aip.x,z:aip.z};assert.equal(s.board(),true);assert.equal(s.mounted,aip);assert.equal(aip.hoverDisabled,false);for(let i=0;i<240;i++)s.tick(1/60,{...idle,boost:true});assert.ok(aip.hoverHeight>grounded);assert.ok(Math.abs(aip.hoverHeight-aip.spec.hoverHeight!)<1e-6);
 });

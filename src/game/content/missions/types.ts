@@ -32,7 +32,7 @@ export type MissionDefinition={
  infantrySorties?:readonly {id:string;facilityId:string;vehicleKind:VehicleKind;range:number;count:number;delay:number;interval:number}[];
  towerCrewArrivals?:readonly {id:string;towerId:string;range:number;delay:number;spawn:{x:number;z:number}}[];
  garrison?:readonly string[];companions?:readonly Companion[];radioRange?:number;autoFollowOnBoard?:readonly VehicleKind[];autoPassengerOnBoard?:readonly string[];passengerIff?:{unitId:string;iff:string};
- respawningUnits?:readonly string[];
+ respawningUnits?:readonly string[];respawnDelay?:number;
  footSecondaryWeapon?:'GASHR'|'EGGER';
  startMountedUnitId?:string;initialView?:'first-person'|'external-rear'|'external-diagonal';rearCamera?:{range:number;height:number;lookAhead:number;targetHeight:number};completionEnabled?:boolean;
  completionSequence?:{delay:number;radioId:string};

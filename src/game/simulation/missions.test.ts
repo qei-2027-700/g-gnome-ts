@@ -1149,6 +1149,11 @@ test('2-6 starts on foot with Thane inside the giant fortress, Kylie boards the 
  boardDefense(s);assert.equal(thane.insideFacility,'citadel');assert.ok(thane.alive);
 });
 
+test('navigation picks a reachable attack position when another lies inside an obstacle',()=>{
+ const route=allyRoute({x:0,z:0},[{x:80,z:0},{x:0,z:120}],{halfWidth:300,minZ:-300,maxZ:300},[],[{x:80,z:0,width:30,depth:30}]);
+ assert.deepEqual(route?.at(-1),{x:0,z:120});
+});
+
 test('4-2 starts on foot, boards a dedicated Scorp Meson tower and records occupation through exit and retry',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;
  const hq=s.facilities.find(f=>f.id==='ur-kinsk-hq')!,backMountain=s.mission.terrain.peaks!.find(p=>p.x===(179-225)*4.5&&p.z===1500-(350-50)*4.5)!;
@@ -1184,7 +1189,11 @@ test('4-2 annotated positions use the expanded terrain scale',async()=>{
  const near=(a:{x:number;z:number},b:{x:number;z:number},limit:number)=>Math.hypot(a.x-b.x,a.z-b.z)<limit;
  assert.ok(near(mission.player,unit('scorp-meson'),50),'the unmanned Meson tower is reachable on foot from the start');
  assert.ok(unit('scorp-rocket').z<unit('scorp-meson').z&&unit('thane-meson').z<unit('scorp-rocket').z);
- assert.ok(unit('scorp-rocket').x<unit('scorp-assault2').x&&unit('scorp-assault2').x<unit('thane-meson').x&&near(unit('scorp-assault2'),unit('thane-meson'),70),'the piloted Assault HAWC stands on the rocket side of Thane’s tower');
+ const assault=unit('scorp-assault2'),shield=building('ur-kinsk-shield'),assaultRiverGap=riverDistance(mission.terrain.river!,assault.x,assault.z);
+ assert.ok(assault.x>shield.x&&assaultRiverGap>mission.terrain.river!.width/2+8&&assaultRiverGap<220,'the piloted Assault HAWC stands on dry ground between the Scorp facilities and river');
+ assert.ok(mission.garrison?.includes(assault.id),'the Assault HAWC takes part in active Scorp defense');
+ const assaultSpec=new Simulation('Easy',mission).units.find(u=>u.id===assault.id)!.spec;
+ assert.equal(assaultSpec.shield,70);assert.equal(assaultSpec.armor,160);assert.equal(assaultSpec.energy,1800);
  assert.ok(near(unit('scorp-tactical-guard'),building('ur-kinsk-power'),90),'one Tactical HAWC guards the power plant');
  const riverGuard=unit('scorp-tactical-guard2'),riverGap=riverDistance(mission.terrain.river!,riverGuard.x,riverGuard.z);
  assert.ok(riverGap>mission.terrain.river!.width/2+5&&riverGap<75,'the other Tactical HAWC stands on dry ground near the river');
@@ -1192,7 +1201,7 @@ test('4-2 annotated positions use the expanded terrain scale',async()=>{
  assert.ok(building('ur-kinsk-hq').z>mission.player.z&&building('ur-kinsk-power').z>mission.player.z);
  assert.ok(near(building('bridge-control'),mission.terrain.river!,170));
  assert.ok(unit('bridge-rocket').z>building('bridge-control').z);
- assert.deepEqual(mission.units.filter(u=>u.id.startsWith('sheridan-union-')).slice(0,4).map(u=>u.kind),['union-tactical','union-tactical','union-sentry','union-sentry']);
+ assert.deepEqual(mission.units.filter(u=>u.id.startsWith('sheridan-union-')).map(u=>u.kind),['union-tactical','union-sentry','union-sentry','union-asv','union-asv','union-sentry']);
  assert.ok(mission.units.filter(u=>u.id.startsWith('sheridan-union-')).slice(0,4).every(u=>near(u,building('bridge-control'),135)));
  assert.equal(mission.units.filter(u=>u.kind==='union-aip').length,2);
  assert.ok(mission.units.filter(u=>u.kind==='union-aip').every(u=>u.x<mission.player.x&&u.z<building('bridge-control').z));
@@ -1244,9 +1253,10 @@ test('4-2 AIPs retaliate after three hits while an idle defender loses the power
  for(let i=0;i<6000&&power.alive&&passive.status==='running';i++)passive.tick(1/60,idle);
  assert.equal(power.alive,false,'the untouched AIP assault destroys the plant before the idle mission ends');
 });
-test('4-2 far-bank Union guards respawn immediately and attack the nearest enemy',async()=>{
+test('4-2 far-bank Union guards return after a delay and attack the nearest enemy',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  assert.deepEqual(MISSION_4_2.respawningUnits,['bridge-union-sentry','bridge-union-asv']);
+ assert.equal(MISSION_4_2.respawnDelay,30);
  assert.equal(MISSION_4_2.units.filter(u=>u.kind==='scorp-assault'&&!u.pilot).length,0);
  for(const id of MISSION_4_2.respawningUnits!){
   const mission=structuredClone(MISSION_4_2);mission.units=mission.units.filter(u=>[id,'scorp-sentry-guard','scorp-assault2'].includes(u.id));mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.base=undefined;mission.rocks=[];mission.objectives=[];mission.completionEnabled=false;mission.terrain={...mission.terrain,river:undefined,peaks:[]};
@@ -1256,11 +1266,15 @@ test('4-2 far-bank Union guards respawn immediately and attack the nearest enemy
   let original=s.units.find(u=>u.id===id)!;
   for(let cycle=0;cycle<2;cycle++){
    original.x+=25;original.shield=0;original.ammo=0;s.damage(original,99999);
+   assert.equal(s.units.find(u=>u.id===id),original);assert.equal(original.alive,false);
+   assert.ok(!s.soldiers.some(soldier=>soldier.sourceVehicle===id&&soldier.alive));
+   for(let i=0;i<599;i++)s.tick(.05,idle);
+   assert.equal(s.units.find(u=>u.id===id),original,'the destroyed guard stays absent until the cooldown ends');
+   for(let i=0;i<3&&s.units.find(u=>u.id===id)===original;i++)s.tick(.05,idle);
    const revived=s.units.find(u=>u.id===id)!;
    assert.notEqual(revived,original);assert.equal(revived.alive,true);assert.equal(revived.pilot,true);
    assert.deepEqual({x:revived.x,z:revived.z,yaw:revived.yaw},{x:spawn.x,z:spawn.z,yaw:spawn.yaw});
    assert.equal(revived.shield,revived.spec.shield);assert.equal(revived.armor,revived.spec.armor);assert.ok(revived.ammo>0);
-   assert.ok(!s.soldiers.some(soldier=>soldier.sourceVehicle===id&&soldier.alive));
    original=revived;
   }
   let firedAtNear=false;
@@ -1275,14 +1289,14 @@ test('4-2 clears immediately on its bridge switch, not on entering the control b
  const retry=new Simulation('Easy',MISSION_4_2);assert.equal(retry.raisedBridges.size,0);assert.ok(!retry.objectiveStates.find(o=>o.id==='raise-bridge')!.done);
 });
 
- test('raising the bridge revives the special Union guard and kills other deck occupants',async()=>{
+ test('raising the bridge destroys its occupants and completes before a delayed guard return',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),r=s.mission.terrain.river!,control=s.facilities.find(f=>f.id==='bridge-control')!;
   const bridge=riverFrameAtZ(r,r.bridgeZ),normal={x:bridge.tz,z:-bridge.tx},point=(across:number,along=0)=>({x:bridge.x+normal.x*across+bridge.tx*along,z:bridge.z+normal.z*across+bridge.tz*along});
   const occupied=s.units.find(u=>u.id==='bridge-union-sentry')!,empty=s.units.find(u=>u.id==='scorp-meson')!,safe=s.units.find(u=>u.id==='scorp-sentry-guard')!;Object.assign(occupied,point(0));Object.assign(empty,point(12));empty.pilot=false;Object.assign(safe,point(r.width/2+20));
   const pedestrian=s.soldiers.find(v=>v.personId==='kylie')!,bank=s.soldiers.find(v=>v.personId==='thane')!;pedestrian.boardingTarget=undefined;Object.assign(pedestrian,point(0));bank.boardingTarget=undefined;Object.assign(bank,point(0,r.bridgeWidth/2+10));
  const reserve=s.units.find(u=>u.id==='bridge-rocket')!;assert.equal(reserve.pilot,false);assert.ok(reserve.x<r.x-r.width/2);assert.ok(MISSION_4_2.units.find(u=>u.id===occupied.id)!.x>r.x+r.width/2);assert.ok(Math.hypot(control.x-bridge.x,control.z-bridge.z)>60);
- s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.ok(!occupied.alive&&!empty.alive&&!pedestrian.alive);assert.ok(s.units.find(u=>u.id===occupied.id)!.alive);assert.ok(safe.alive&&bank.alive);assert.ok(!s.soldiers.some(v=>v.alive&&v.sourceVehicle===occupied.id));
- const deathEvents=s.events.filter(e=>e.type==='soldier-death').length;assert.equal(s.raiseBridge(),false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,deathEvents);
+ s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.equal(s.status,'won');assert.ok(!occupied.alive&&!empty.alive&&!pedestrian.alive);assert.equal(s.units.find(u=>u.id===occupied.id)!.alive,false);assert.ok(safe.alive&&bank.alive);assert.ok(!s.soldiers.some(v=>v.alive&&v.sourceVehicle===occupied.id));
+ const deathEvents=s.events.filter(e=>e.type==='soldier-death').length;assert.equal(s.raiseBridge(),false);s.tick(30,idle);assert.equal(s.units.find(u=>u.id===occupied.id)!.alive,false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,deathEvents);
 });
 
 test('the empty bridge Scorp rocket tower boards and fires SREM and UNKPA from separate slots',async()=>{

@@ -10,6 +10,7 @@ import {MISSION_3_2} from '../content/missions/mission-3-2.ts';
 import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
 import {MAP_3_5_POINTS} from '../content/missions/mission-3-5-map.ts';
 import {MISSION_3_1} from '../content/missions/mission-3-1.ts';
+import {VEHICLE_SHAPES} from '../content/vehicle-shapes.ts';
 import {StandardMaterial} from '@babylonjs/core/Materials/standardMaterial.js';
 import {boulderColor} from './landscape.ts';
 test('3-1 slope meshes meet the ground on the same rectangle that blocks movement',()=>{
@@ -72,6 +73,32 @@ test('3-5 pop-up turrets and their control building render at the configured fie
   turret.aim=.5;world.update(.05);
   assert.deepEqual([rig.root.position.x,rig.root.position.z],[turret.x,turret.z]);
   assert.equal(rig.torso.rotation.y,.5);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
+test('4-2 Scorp facilities use their reference silhouettes and remain inside their collision footprints',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_4_2),engine);
+  const expected=[
+   ['ur-kinsk-hq',['scorp-hq-pyramid-roof','scorp-hq-left-wing','scorp-hq-right-block']],
+   ['ur-kinsk-power',['scorp-power-raised-pipe','scorp-power-red-panel','scorp-power-center-spine']],
+   ['ur-kinsk-shield',['scorp-shield-central-tower','scorp-shield-spire-tip','scorp-shield-wing-brace']],
+  ] as const;
+  for(const [id,parts] of expected){
+   const b=MISSION_4_2.base!.buildings.find(item=>item.id===id)!,root=world.scene.getTransformNodeByName(`facility-${id}`)!;
+   assert.equal(root.metadata.facilityId,id);
+   const meshes=root.getChildMeshes();
+   for(const part of parts)assert.ok(meshes.some(mesh=>mesh.name===part),`${id}: ${part}`);
+   for(const mesh of meshes){
+    mesh.computeWorldMatrix(true);
+    const bounds=mesh.getBoundingInfo().boundingBox;
+    assert.ok(bounds.minimumWorld.x>=b.x-b.width/2-.2&&bounds.maximumWorld.x<=b.x+b.width/2+.2,`${id}: ${mesh.name} x`);
+    assert.ok(bounds.minimumWorld.z>=b.z-b.depth/2-.2&&bounds.maximumWorld.z<=b.z+b.depth/2+.2,`${id}: ${mesh.name} z`);
+   }
+  }
+  assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.getChildMeshes().some(mesh=>mesh.name==='scorp-hq-pyramid-roof'),false);
   world.scene.dispose();
  }finally{engine.dispose();}
 });
@@ -912,10 +939,12 @@ test('every hovering AIP casts a ground shadow that follows it and disappears af
    const shadow=world.aipShadows.get(unit.id)!;
    assert.ok(shadow&&shadow.isEnabled(),unit.kind);
    assert.equal(shadow.getChildMeshes().length,3);
+   const paint=shadow.getChildMeshes()[0]!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
+   assert.ok(paint.diffuseColor.r<.05&&paint.diffuseColor.g<.05&&paint.diffuseColor.b<.05);
    assert.equal(shadow.position.x,unit.x);assert.equal(shadow.position.z,unit.z);
    assert.ok(shadow.position.y<world.rigs.get(unit.id)!.root.position.y,unit.kind);
    unit.x+=5;world.update(0);assert.equal(shadow.position.x,unit.x);
-   unit.hoverHeight=-.5;world.update(0);assert.equal(shadow.isEnabled(),false);
+   const shape=VEHICLE_SHAPES[unit.kind].hull;unit.hoverHeight=-(unit.spec.height*.6+shape.y-shape.h/2);world.update(0);assert.equal(shadow.isEnabled(),false);
   }
  }finally{engine.dispose();}
 });
@@ -1177,16 +1206,19 @@ test('4-3 current-position marker uses the briefing image landmarks',async()=>{
  }
 });
 
-test('facility hits flash visibly and destroyed buildings disappear from the battlefield',()=>{
+test('facility hits flash and destroyed buildings leave persistent burned ruins',()=>{
  const mission=structuredClone(MISSION);mission.units=[];mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;mission.objectives=[];mission.waypoints=[];mission.base={name:'facility-damage',x:0,z:30,width:20,depth:20,buildings:[{id:'test-building',kind:'command',x:0,z:30,width:20,depth:20,height:10,health:100}]};
  const sim=new Simulation('Easy',mission),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{
-  const world=new World({} as HTMLCanvasElement,sim,engine),facility=sim.facilities[0]!,root=world.scene.getTransformNodeByName('facility-test-building')!;
+  const world=new World({} as HTMLCanvasElement,sim,engine),facility=sim.facilities[0]!,root=world.scene.getTransformNodeByName('facility-test-building')!,ruin=world.facilityRuins.get(facility.id)!;
+  assert.equal(ruin.isEnabled(),false);
   const position={x:facility.x,y:facility.height*.5,z:facility.z};sim.damageFacility(facility,25,position);world.event(sim.events.at(-1)!);
   assert.equal(sim.events.at(-1)?.type,'facility-hit');assert.equal(facility.health,75);assert.ok(world.scene.getMeshByName('facility-hit-spark'));
   sim.selected=facility.id;assert.equal(sim.targetState?.armor,.75);
   sim.damageFacility(facility,100,position);world.event(sim.events.at(-1)!);world.update(0);
-  assert.equal(facility.alive,false);assert.equal(root.isEnabled(),false);assert.ok(world.scene.meshes.some(mesh=>mesh.name==='impact-flash'));
+  assert.equal(facility.alive,false);assert.equal(root.isEnabled(),false);assert.equal(ruin.isEnabled(),true);assert.equal(ruin.position.x,facility.x);assert.equal(ruin.position.z,facility.z);assert.ok(ruin.getChildMeshes().length>=6);assert.ok(ruin.getChildMeshes().every(mesh=>!mesh.isPickable));assert.ok(world.scene.meshes.some(mesh=>mesh.name==='impact-flash'));
+  world.update(1);assert.equal(ruin.isEnabled(),true);
+  world.reset(new Simulation('Easy',mission));assert.equal(world.facilityRuins.get(facility.id)?.isEnabled(),false);
  }finally{engine.dispose();}
 });
 

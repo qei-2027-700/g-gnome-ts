@@ -56,11 +56,11 @@ export function intersectParts(body:Body,from:Point,to:Point,padding=0){
 
 // Whole occupied HAWC contact is fatal to infantry, including a swept crossing.
 export function sweptVehicleContact(body:Body,previous:{x:number;z:number},from:Point,to:Point,prone=false){
- if(((body.spec??VEHICLES[body.kind]) as VehicleSpec).category==='hovercraft')return false;
- const h=(body.spec??VEHICLES[body.kind]).height,radius=prone?.65:.35,humanHalf=prone?.35:.9,c=Math.cos(body.yaw),s=Math.sin(body.yaw);
- const local=(p:Point,origin:{x:number;z:number})=>({x:(p.x-origin.x)*c-(p.z-origin.z)*s,y:p.y+humanHalf-h/2,z:(p.x-origin.x)*s+(p.z-origin.z)*c});
+ const spec=body.spec??VEHICLES[body.kind],hover=spec.category==='hovercraft',shape=VEHICLE_SHAPES[body.kind],h=spec.height,radius=prone?.65:.35,humanHalf=prone?.35:.9,c=Math.cos(body.yaw),s=Math.sin(body.yaw);
+ const top=hover?(body.hoverHeight??spec.hoverHeight??0)+h*.6+Math.max(shape.hull.y+shape.hull.h/2,shape.cockpit.y+shape.cockpit.h/2):h;
+ const local=(p:Point,origin:{x:number;z:number})=>({x:(p.x-origin.x)*c-(p.z-origin.z)*s,y:p.y+humanHalf-top/2,z:(p.x-origin.x)*s+(p.z-origin.z)*c});
  const a=local(from,previous),b=local(to,body);let near=0,far=1;
- for(const [axis,half] of [['x',(body.kind.endsWith('-tactical')?3.45:2.95)+radius],['y',h/2+humanHalf],['z',2.1+radius]] as const){
+ for(const [axis,half] of [['x',(hover?shape.hull.w/2:body.kind.endsWith('-tactical')?3.45:2.95)+radius],['y',(hover?Math.max(0,top):h)/2+humanHalf],['z',(hover?shape.hull.d/2:2.1)+radius]] as const){
   const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-9){if(Math.abs(a[axis])>half)return false;}else{const t1=(-half-a[axis])/delta,t2=(half-a[axis])/delta;near=Math.max(near,Math.min(t1,t2));far=Math.min(far,Math.max(t1,t2));if(near>far)return false;}
  }
  return near<=far;

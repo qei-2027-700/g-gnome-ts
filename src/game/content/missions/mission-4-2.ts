@@ -8,14 +8,15 @@ const markedPoint=(x:number,y:number)=>mapPoint(14+x*421/924,50+y*424/922);
 const ridge=(x:number,y:number,width:number,depth:number)=>({...mapPoint(x,y),width:width*mapScale,depth:depth*mapScale,height:70});
 const groundPositions=[
  [590,298],[610,306],[585,322],[625,328],
- [345,366],[368,378],[388,364],[365,398]
+ [345,366],[368,378]
 ] as const;
+const groundKinds=['union-tactical','union-sentry','union-sentry','union-asv','union-asv','union-sentry'] as const;
 // User-confirmed scenario; coordinates, roster, timings and IFF are provisional.
 const groundAttackers:Spawn[]=Array.from(
   {length:groundPositions.length},(_,i)=>(
     {
       id:`sheridan-union-${i+1}`,
-      kind:i<2?'union-tactical':i<4?'union-sentry':i<6?'union-asv':'union-sentry',
+      kind:groundKinds[i]!,
       ...markedPoint(...groundPositions[i]!),
       yaw:Math.PI,pilot:true
     }
@@ -36,7 +37,7 @@ export const MISSION_4_2:MissionDefinition={
   {label:{ja:'橋を上げよ',en:'Raise the bridge'}}
  ]},
  bgm:{volumeScale:.8,start:{trackId:'bgm-credits',delay:0},afterEliminate:{unitIds:attackers.map(u=>u.id),trackId:'bgm-snow-maze'}},
- shieldProtectionRadius:80,respawningUnits:['bridge-union-sentry','bridge-union-asv'],
+ shieldProtectionRadius:80,respawningUnits:['bridge-union-sentry','bridge-union-asv'],respawnDelay:30,
  subtitle:{ja:'ScorpとともにシェリダンのUnion軍を迎撃',en:'Defend Ur-Kinsk alongside Scorp against Sheridan’s Union forces'},
  briefing:{ja:'シェリダン率いるUnion軍がUr-Kinskへ迫っている。徒歩の開始地点から左手のScorpミーゾン・ガードタワーへ搭乗し、友軍Scorpとともに基地を守れ。キリーは右手のロケットタワー、ターンはもう1基のミーゾンタワーへ搭乗する。Union AIP2機が電力プラントを狙うため優先して迎撃せよ。最後は川辺のBridge Control Buildingへ入り、スイッチで橋を上げると即座に完了する。地上編成・配置・数値は試作設定。',en:'Sheridan’s Union forces are approaching Ur-Kinsk. Occupy the Scorp Meson tower to your left and defend the base alongside Scorp. Kylie boards the right rocket tower; Thane boards the second Meson tower. Two Union AIPs attack the power plant: intercept them before both Meson towers lose power. Finish by entering the riverside Bridge Control Building and raising the bridge. Ground roster, positions and statistics are provisional.'},
  startHint:{ja:'左手のミーゾンタワーへ：左に向いてWで接近すると搭乗。右手はキリーのロケットタワー。ターンはもう1基へ。Union AIP2機が電力プラントを狙う！ Eで敵選択、Tで追尾、1でGAUS。',en:'Turn left and walk into the Meson tower. Kylie takes the right rocket tower; Thane takes the second Meson tower. Two Union AIPs attack the power plant! E: target, T: track, 1: GAUS. Protect headquarters.'},
@@ -48,7 +49,7 @@ export const MISSION_4_2:MissionDefinition={
   {id:'scorp-rocket',kind:'scorp-rocket-tower',...markedPoint(430,153),pilot:false},
   {id:'thane-meson',kind:'scorp-meson-tower',...markedPoint(476,194),pilot:false,powerSourceId:'ur-kinsk-power'},
   {id:'scorp-sentry-guard',kind:'scorp-sentry',...markedPoint(370,170),pilot:true},
-  {id:'scorp-assault2',kind:'scorp-assault',...markedPoint(452,207),pilot:true},
+  {id:'scorp-assault2',kind:'scorp-assault',...markedPoint(645,195),pilot:true},
   // {id:'scorp-assault3',kind:'scorp-assault',...markedPoint(385,355),pilot:false},
   // {id:'scorp-assault4',kind:'scorp-assault',...markedPoint(350,384),pilot:false},
   // {id:'scorp-assault5',kind:'scorp-assault',...markedPoint(410,370),pilot:false},
@@ -61,7 +62,7 @@ export const MISSION_4_2:MissionDefinition={
   {id:'scorp-tactical-guard',kind:'scorp-tactical',...markedPoint(522,123),pilot:true},
   {id:'scorp-tactical-guard2',kind:'scorp-tactical',...markedPoint(690,275),pilot:true},
   // {id:'scorp-tactical-guard3',kind:'scorp-tactical',x:-600,z:5,pilot:true},
-  {id:'bridge-rocket',kind:'scorp-rocket-tower',...markedPoint(630,253),pilot:false},
+  {id:'bridge-rocket',kind:'scorp-rocket-tower',...markedPoint(630,205),pilot:false},
   {id:'bridge-union-sentry',kind:'union-sentry',...markedPoint(726,345),yaw:-Math.PI/2,pilot:true},
   {id:'bridge-union-asv',kind:'union-asv',...markedPoint(737,375),yaw:-Math.PI/2,pilot:true},
   ...attackers
@@ -73,9 +74,9 @@ export const MISSION_4_2:MissionDefinition={
  companions:[
   {personId:'kylie',unitId:'scorp-rocket',key:'F2',name:{ja:'キリー',en:'Kylie'}},{personId:'thane',unitId:'thane-meson',key:'F3',name:{ja:'ターン',en:'Thane'}}
  ],
- garrison:['thane-meson','scorp-rocket','scorp-sentry-guard','scorp-tactical-guard'],
+ garrison:['thane-meson','scorp-rocket','scorp-sentry-guard','scorp-assault2','scorp-tactical-guard'],
  //  garrison:['thane-meson','scorp-rocket',],
- assaults:[...groundAttackers.map((u,i)=>({unitId:u.id,targetId:'ur-kinsk-hq',startAt:12+Math.floor(i/2)*12})),...airAttackers.map((u,i)=>({unitId:u.id,targetId:'ur-kinsk-power',startAt:20+i*12,retaliateAfterHits:3}))],
+ assaults:[...groundAttackers.map((u,i)=>({unitId:u.id,targetId:'ur-kinsk-hq',startAt:12+Math.floor(i/2)*12})),...airAttackers.map((u,i)=>({unitId:u.id,targetId:'ur-kinsk-power',startAt:8+i*12,retaliateAfterHits:3}))],
  base:{
   name:'Ur-Kinsk',
   faction:'scorp',

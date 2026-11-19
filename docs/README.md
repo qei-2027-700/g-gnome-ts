@@ -56,7 +56,9 @@
 - [ミッションの追加と共通仕様](technical/mission-definitions.md)：任務定義、機体・武器の再利用、任務限定の例外、再挑戦
 - [密集した障害物と更新コスト](technical/simulation-cost.md)：経路探索を1ティックに収める制約。動かない砲塔は探索せず照準と射撃を続ける
 - [Mission・Vehicle・Facilityの拡張手順](technical/content-extension.md)：追加時の変更箇所、共通／固有データ、型・挙動検証
+- [小さな作業のエージェント引き継ぎ](technical/agent-handoff.md)：別エージェントへ渡す条件、JSON依頼例、受け取り時の確認
 - [原作画像からの機体外観再現](technical/model-reconstruction.md)：画像の方向と姿勢、部位の接続、輪郭から細部への照合手順
+- [原作画像からの施設モデル再現](technical/facility-model-reconstruction.md)：施設の輪郭、現行モデルとの比較、描画と当たり判定の照合手順。今回の5施設の制作順も記録
 - [Codex向け追記ルール](technical/codex-rules.md)：機体・ミッション追加と既存マップ拡張の手順・プロンプトテンプレート
 - [1-1試作版の起動と実装範囲](technical/playable-1-1.md)：起動・操作、仮設定、実装箇所、検証結果
 

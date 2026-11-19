@@ -1,0 +1,31 @@
+{
+  "goal": "Mission 3-3 のScorp地雷原制御施設を原作画像に合わせてモデル化する",
+  "inputs": [
+    "assets/reference/gn-scope-地雷原control施設.png",
+    "docs/technical/facility-model-reconstruction.md",
+    "src/game/content/missions/mission-3-3.ts"
+  ],
+  "inputAccess": "assets/reference/ はGit管理外。別ワークツリーでは主作業ツリーの実ファイルを参照し、別マシンでは画像と未コミットの手順資料を受け取ってから開始する",
+  "editable": [
+    "src/game/presentation/",
+    "src/game/presentation/renderer.test.ts",
+    "docs/missions/mission-3-3.md"
+  ],
+  "constraints": [
+    "Scorpの外観だけを対象にする。別勢力の施設、地雷の機能、任務目標、耐久値は変更しない",
+    "原作画像で見えない面は仮の形として扱う",
+    "必要な入力画像が作業環境にない場合や未コミット変更と衝突する場合は作業を止めて報告する",
+    "コミット、push、PR作成は行わない"
+  ],
+  "doneWhen": [
+    "正面画像で分かる建物の輪郭と主要なパネル・左右の支持部を再現する",
+    "描画と衝突範囲の対応を関連する既存テストで確認する",
+    "実ブラウザで撮影し、原作画像と同じ方向から見比べる"
+  ],
+  "report": [
+    "変更ファイルと変更内容",
+    "実行したテストと結果",
+    "スクリーンショットの保存先と確認した視点",
+    "画像から判断できない形と残る差"
+  ]
+}

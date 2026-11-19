@@ -1,6 +1,6 @@
 ---
 name: gnome-vehicle-visuals
-description: G-Nomeの外観モデルと脚・砲塔の動きを、画像と形状データから再現して配置する。機内ビューは gnome-cockpit、既存モデルの差だけは gnome-model-match。操作・性能だけの調整には使わない。
+description: G-Nomeの機体・施設の外観モデルを原作画像から再現する。機体の脚・砲塔の動きも扱う。機内ビューは gnome-cockpit、既存機体モデルの差だけは gnome-model-match。操作・性能だけの調整には使わない。
 ---
 
 # 資料から外観と動きを再現する
@@ -9,7 +9,7 @@ description: G-Nomeの外観モデルと脚・砲塔の動きを、画像と形�
 
 ## 対象と資料を対応づける
 
-ユーザーの呼び方と既存の機種ID・勢力・用途を照合し、対象を絞る。[機体資料の目次](../../../docs/reference/vehicles/README.md)、対象の資料、実装を必要な範囲で読む。同名の塔でも勢力が違えば同じ外観と決めない。
+ユーザーの呼び方と既存の機種・施設ID、勢力、用途を照合し、対象を絞る。機体では[機体資料の目次](../../../docs/reference/vehicles/README.md)、施設では対象の参考画像と施設定義を、必要な範囲で読む。施設の勢力別デザインと共通設備の例外は[施設モデル再現](../../../docs/technical/facility-model-reconstruction.md#勢力別デザインと例外)に従う。
 
 画像は実ファイルを開いて確認し、ファイル名だけで内容を判断しない。資料が複数ある場合は、各画像の「機内／外観／HUD／地図／発射・歩行中」と撮影方向を分けて対応づける。1枚に写る窓外の機体、自機ホログラム、目標ホログラム、人物像はそれぞれ別の対象になり得る。
 
@@ -18,7 +18,8 @@ description: G-Nomeの外観モデルと脚・砲塔の動きを、画像と形�
 ## 再現する部分を選ぶ
 
 - **機内ビュー・照準・計器**：[gnome-cockpit](../gnome-cockpit/SKILL.md) の順番だけ使う。外観の手順は開かない。
-- **外観モデル・ホログラム・脚や砲塔の動き**：[外観と動きの手順](references/exterior.md)を読む。現行モデルと原作画像の差だけを直すときは [gnome-model-match](../gnome-model-match/SKILL.md) の順番を使う。
+- **機体の外観モデル・ホログラム・脚や砲塔の動き**：[外観と動きの手順](references/exterior.md)を読む。現行モデルと原作画像の差だけを直すときは [gnome-model-match](../gnome-model-match/SKILL.md) の順番を使う。
+- **施設の外観モデル**：[画像からの施設モデル再現](../../../docs/technical/facility-model-reconstruction.md)を読む。新しい施設種を加える場合は [コンテンツ拡張手順](../../../docs/technical/content-extension.md#facility建物)も使う。
 - **両方**：機種IDを一つ決めてから、機内は gnome-cockpit、外観は外観の手順を使う。外部視点への切り替えも確認する。
 
 見えた輪郭・色・配置と、試作で補う形状・数値を区別する。ホログラムの緑・黄・赤は損傷表示であり、塗装色の根拠にしない。白黒資料から色を確定せず、一方向の画像から背面・内部を確定しない。見た目の調整で最高速度・武器性能を変更しない。操作や性能も指定された場合は[ゲーム動作のスキル](../gnome-gameplay-change/SKILL.md)を併用する。

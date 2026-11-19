@@ -32,7 +32,7 @@ export const MISSION_3_3:MissionDefinition={
  infantrySorties:[{id:'ul-urit-infantry',facilityId:'ul-urit-command',vehicleKind:'scorp-asv',range:280,count:3,delay:3,interval:8}],
  towerCrewArrivals:[{id:'ul-urit-right-tower-crew',towerId:'rocket-tower-east',range:220,delay:15,spawn:{x:-847,z:-80}}],
  lures:[{unitId:'scorp-asv',weapon:'VISOM',hits:2,onFootResponse:'ram-player'}],
- base:{name:'UL-URIT',...BASE,width:240,depth:300,buildings:[{id:'ul-urit-command',kind:'command',x:-965,z:-168,width:28,depth:30,height:9},{id:'ul-urit-mine-control',kind:'mine-control',x:-955,z:-105,width:18,depth:46,height:7}]},
+ base:{name:'UL-URIT',faction:'scorp',...BASE,width:240,depth:300,buildings:[{id:'ul-urit-command',kind:'command',x:-965,z:-168,width:28,depth:30,height:9},{id:'ul-urit-mine-control',kind:'mine-control',x:-955,z:-105,width:18,depth:46,height:7}]},
  minefields:[{id:'base-approach',warningRange:60,warningVehicle:'union-asv',x:-600,z:-110,width:220,depth:520,triggerRadius:2,mines:Array.from({length:8},(_,row)=>Array.from({length:16},(_,column)=>{const z=500+row*28,x=-240+column*32+(row%2)*8;return {id:`mine-${row}-${column}`,x:-z,z:x-110};}).filter(mine=>Math.abs(mine.z+110-Math.sin((-mine.x-500)/196*Math.PI)*70)>22)).flat()}],
  terrain:MISSION_3_3_TERRAIN,rocks:[{x:-180,z:-100,r:12},{x:-260,z:110,r:14}],
  tuning:{Easy:{interval:2.6},Medium:{interval:1.9},Hard:{interval:1.35}},

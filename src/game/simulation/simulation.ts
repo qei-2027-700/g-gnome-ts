@@ -23,7 +23,7 @@ export type Unit = Vec & {id:string;hoverHeight:number;hoverDisabled:boolean;pas
 export type CombatTarget=Unit|Soldier;
 export type SelectionTarget=CombatTarget|Facility;
 export const isVehicle=(target:SelectionTarget):target is Unit=>'spec' in target;
-export const targetHeight=(target:SelectionTarget)=>isFacility(target)?target.height*.5:isVehicle(target)?target.hoverHeight+(target.kind==='union-aip'?.7:target.spec.height*.55):(target.flight?.altitude??0)+1;
+export const targetHeight=(target:SelectionTarget)=>isFacility(target)?target.height*.5:isVehicle(target)?target.hoverHeight+target.spec.height*.55:(target.flight?.altitude??0)+1;
 export const targetName=(target:SelectionTarget,companions:MissionDefinition['companions']=[],locale:'ja'|'en'='ja')=>{
  if(isFacility(target))return target.name;if(isVehicle(target))return target.spec.name;
  const member=companions?.find(person=>person.personId===target.personId);if(member)return member.name[locale];

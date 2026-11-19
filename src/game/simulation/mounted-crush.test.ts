@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {VEHICLE_SHAPES} from '../content/vehicle-shapes.ts';
 import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {MISSION_3_5} from '../content/missions/mission-3-5.ts';
@@ -8,7 +9,8 @@ const idle:Input={forward:false,back:false,left:false,right:false,boost:false,st
 test('player AIP rests on its hull, lifts while moving, and settles again after stopping',()=>{
  const s=new Simulation('Easy',{...MISSION,objectives:[],completionEnabled:false}),aip=makeUnit('aip','union-aip',0,0,false);s.units=[aip];s.human={x:0,z:0};assert.ok(s.board());
  for(let i=0;i<300;i++)s.tick(1/60,idle);
- const parked=aip.hoverHeight;assert.ok(parked<0);
+ const hull=VEHICLE_SHAPES[aip.kind].hull,landed=-(aip.spec.height*.6+hull.y-hull.h/2);
+ const parked=aip.hoverHeight;assert.ok(Math.abs(parked-landed)<.02,`parked ${parked}, hull tip ${landed}`);
  for(let i=0;i<180;i++)s.tick(1/60,{...idle,boost:true});
  assert.ok(aip.speed>1);assert.ok(aip.hoverHeight>0);
  s.tick(1/60,{...idle,stop:true});for(let i=0;i<600;i++)s.tick(1/60,idle);

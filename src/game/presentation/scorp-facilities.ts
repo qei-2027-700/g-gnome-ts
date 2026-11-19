@@ -54,6 +54,25 @@ export function makeScorpFacility(scene:Scene,b:Building,id:string){
     taper('scorp-shield-spire-tip',-.08,height+.08,side*distance,.06,0,.18,gold);
    }
   }
+ }else if(b.kind==='mine-control'){
+  // Front is +X. The reference is one low front view; the rear and interior stay provisional.
+  body=box('minefield-control',0,.2,0,.7*w,.38*h,.58*d,armor);
+  box('scorp-mine-eave',.36,.4,0,.025*w,.035*h,.6*d,copper);
+  box('scorp-mine-center-face',.355,.23,0,.02*w,.26*h,.26*d,dark);
+  for(const across of [-.09,-.03,.03,.09]){
+   box('scorp-mine-window',.372,.24,across,.012*w,.2*h,.04*d,glass);
+   box('scorp-mine-window-frame',.38,.24,across,.008*w,.22*h,.046*d,edge);
+  }
+  for(const side of [-1,1] as const){
+   box('scorp-mine-side-block',0,.21,side*.3,.66*w,.4*h,.16*d,armor);
+   box('scorp-mine-side-face',.35,.22,side*.3,.018*w,.24*h,.12*d,dark);
+   for(const [row,column] of [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]] as const)box('scorp-mine-checker',.372,.16+row*.1,side*.3+(column-1)*.035,.008*w,.07*h,.028*d,(row+column)%2?edge:dark);
+   box('scorp-mine-red-mark',.382,.14,side*.36,.01*w,.07*h,.035*d,red);
+   beam('scorp-mine-fin',[.02,.2,side*.36],[.04,.58,side*.44],.045,copper,4);
+   taper('scorp-mine-fin-tip',.04,.66,side*.44,.05,0,.14,edge,3);
+  }
+  box('scorp-mine-roof-vent',0,.43,0,.1*w,.05*h,.06*d,edge);
+  for(const side of [-1,1])box('scorp-mine-roof-mast',0,.5,side*.03,.015*w,.1*h,.012*d,gold);
  }else{
   body=box(name,0,.18,.17,.63*w,.36*h,.6*d,armor);
   box('scorp-hq-right-block',.02,.29,.25,.64*w,.5*h,.43*d,armor);

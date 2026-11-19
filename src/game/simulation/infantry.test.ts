@@ -20,7 +20,7 @@ test('PRIF44 damages without ejecting; GASHR has five canisters and ejects after
 for(const kind of ['union-aip','merc-aip','darken-aip','scorp-aip'] as const)test(`GASHR aimed at a hovering ${kind} ejects its pilot on contact`,()=>{
  const s=foot(),aip=makeUnit('hover-target',kind,0,40,true,{speed:0,ai:{detection:0}});
  s.units=[aip];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];
- if(kind==='union-aip')assert.equal(targetHeight(aip),aip.hoverHeight+.7);
+ assert.equal(targetHeight(aip),aip.hoverHeight+aip.spec.height*.55);
  aimAt(s,aip.x,targetHeight(aip),aip.z);
  s.fire(2);for(let i=0;i<60;i++){aip.speed=1;aip.x=0;aip.z=40;s.tick(1/60,idle);}
  assert.equal(aip.pilot,false,kind);
@@ -292,7 +292,7 @@ test('a facing infantry shot is intercepted by an intervening empty vehicle',()=
  s.tick(.02,idle);assert.equal(own.shield,shield);assert.equal(blocker.shield,before);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));step(s,.3);assert.equal(blocker.shield,before-INFANTRY_WEAPONS.PRIF44.vehicleDamage);
 });
 
-function occupiedCarrier(moving=false,kind:'scorp-asv'|'union-asv'='scorp-asv'){
+function occupiedCarrier(moving=false,kind:'scorp-asv'|'union-asv'|'union-aip'|'merc-aip'|'darken-aip'|'scorp-aip'='scorp-asv'){
  const s=new Simulation(),carrier=makeUnit('occupied',kind,0,1.5,true);s.units=[carrier];s.human={x:0,z:0};s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.minefields=[];
  carrier.spec={...carrier.spec,speed:moving?15:0,weapons:[],ai:{...carrier.spec.ai,detection:120,keepMoving:moving,strafe:0,stopDistance:0}};carrier.alert=moving;return {s,carrier};
 }
@@ -326,6 +326,39 @@ test('contact automatically boards a friendly carrier as passenger and accepts o
  s.tick(.02,{...idle,forward:true,right:true,boost:true,lookUp:true,center:true,fire1:true,fire2:true});
  assert.deepEqual({yaw:carrier.yaw,aim:carrier.aim,iff:s.iff,pitch:s.pitch,selected:s.selected,waypoint:s.selectedWaypoint,ammo:{...carrier.ammunition}},before);assert.equal(s.events.some(e=>e.type==='shot'||e.type==='center'||e.type==='boost'),false);assert.equal(s.humanHealth,100);
  s.eject();assert.equal(s.passenger,null);assert.ok(s.flight);assert.equal(carrier.pilot,true);assert.deepEqual(carrier.passengers,[]);
+});
+
+test('AIP cabins carry several passengers, keep the pilot, and refuse another once full',()=>{
+ for(const kind of ['union-aip','merc-aip','darken-aip','scorp-aip'] as const){
+  assert.equal(VEHICLES[kind].passengerCapacity,3,kind);
+  const empty=new Simulation(),bare=makeUnit(`empty-${kind}`,kind,0,0,false);
+  empty.units=[bare];empty.human={x:0,z:0};empty.mission.base=undefined;empty.mission.rocks=[];empty.mission.terrain.cliffs=[];empty.mission.minefields=[];empty.mission.completionEnabled=false;
+  assert.equal(empty.board(),true,kind);assert.equal(empty.mounted,bare,kind);assert.equal(empty.passenger,null,kind);assert.equal(bare.pilot,true,kind);assert.deepEqual(bare.passengers,[]);
+  const {s,carrier}=occupiedCarrier(false,kind);s.mission.friendlyFactions=['union',carrier.spec.faction];carrier.iff=s.iff;s.mission.completionEnabled=false;
+  const source=makeUnit(`${kind}-ally`,'union-sentry',40,40,true);s.units.push(source);const ally=s.forceEject(source,'boarding')!;source.alive=false;
+  ally.flight=null;ally.iff=s.iff;ally.x=carrier.x;ally.z=carrier.z;ally.boardingTarget=carrier.id;ally.boardingRole='passenger';ally.gashrAmmo=0;
+  s.tick(.02,idle);
+  assert.equal(s.passenger,carrier,kind);assert.equal(s.mounted,null,kind);assert.equal(carrier.pilot,true,kind);assert.equal(s.missionMusicPassengerRide,false,kind);
+  assert.deepEqual(carrier.passengers,['player',ally.id],kind);assert.equal(ally.passengerOf,carrier.id,kind);
+ }
+ const hostile=occupiedCarrier(false,'merc-aip');hostile.s.tick(.02,idle);
+ assert.equal(hostile.s.status,'running');assert.equal(hostile.s.humanHealth,100);assert.equal(hostile.s.passenger,null);assert.equal(hostile.s.mounted,null);assert.equal(hostile.carrier.pilot,true);
+ assert.equal(hostile.s.events.filter(e=>e.type==='occupied-contact').length,1);
+ const s=new Simulation(),aip=makeUnit('pilot-aip','union-aip',0,0,false);s.units=[aip];s.human={x:0,z:0};s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.minefields=[];s.mission.completionEnabled=false;
+ assert.equal(s.board(),true);assert.equal(s.mounted,aip);assert.deepEqual(aip.passengers,[]);
+ const names=['kylie','thane','sheridan','extra'] as const;
+ s.mission.companions=names.map((personId,i)=>({personId,name:{ja:personId,en:personId},key:(['F2','F3','F4','F2'] as const)[i]}));
+ const people=names.map(personId=>{const source=makeUnit(personId,'union-sentry',70,70,true);s.units.push(source);const soldier=s.forceEject(source,'boarding')!;source.alive=false;soldier.flight=null;soldier.personId=personId;soldier.iff=s.iff;soldier.x=0;soldier.z=0;soldier.gashrAmmo=0;return soldier;});
+ s.selected=null;const reserved=s.sendAllyOrder('all','board');
+ assert.deepEqual(reserved.accepted,['kylie','thane','sheridan']);assert.equal(reserved.rejected.length,1);assert.equal(reserved.rejected[0]!.reason,'full');assert.equal(people[3]!.boardingTarget,undefined);
+ const pilot=aip.pilot,iff=aip.iff;s.tick(.02,idle);
+ assert.equal(s.mounted,aip);assert.equal(aip.pilot,pilot);assert.equal(aip.iff,iff);assert.equal(aip.passengers.length,3);assert.ok(people.slice(0,3).every(p=>p.passengerOf===aip.id));assert.equal(people[3]!.passengerOf,undefined);
+ const hawkSim=new Simulation(),hawk=makeUnit('hawk','union-sentry',0,0,false);hawkSim.units=[hawk];hawkSim.human={x:0,z:0};hawkSim.mission.base=undefined;hawkSim.mission.rocks=[];hawkSim.mission.terrain.cliffs=[];hawkSim.mission.minefields=[];hawkSim.mission.completionEnabled=false;
+ assert.equal(hawkSim.board(),true);assert.equal(VEHICLES['union-sentry'].passengerCapacity,0);
+ hawkSim.mission.companions=[{personId:'kylie',name:{ja:'キリー',en:'Kylie'},key:'F2'}];
+ const hawkSource=makeUnit('kylie-hawk','union-sentry',60,60,true);hawkSim.units.push(hawkSource);const kylie=hawkSim.forceEject(hawkSource,'boarding')!;hawkSource.alive=false;kylie.flight=null;kylie.personId='kylie';kylie.iff=hawkSim.iff;kylie.x=0;kylie.z=0;
+ hawkSim.selected=null;const denied=hawkSim.sendAllyOrder('kylie','board');
+ assert.equal(denied.accepted.length,0);assert.equal(denied.rejected[0]!.reason,'full');assert.equal(hawk.pilot,true);assert.deepEqual(hawk.passengers,[]);assert.equal(kylie.boardingTarget,undefined);
 });
 
 test('physical GASHR ejection preserves carrier momentum, then the empty vehicle brakes to rest',()=>{

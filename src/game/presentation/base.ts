@@ -9,7 +9,7 @@ export function makeBase(scene:Scene,mission:MissionDefinition){const material=(
   const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,paint:StandardMaterial)=>{const mesh=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},scene);mesh.position.set(x,y,z);mesh.material=paint;return mesh;};
   for(const [index,b] of base.buildings.entries()){
    const before=new Set(scene.meshes),id=b.id??`facility-${b.kind??'command'}-${index}`;
-   if(base.faction==='scorp'&&(b.kind==='command'||b.kind==='power-plant'||b.kind==='shield-generator')){makeScorpFacility(scene,b,id);continue;}
+   if(base.faction==='scorp'&&(b.kind==='command'||b.kind==='power-plant'||b.kind==='shield-generator'||b.kind==='mine-control')){makeScorpFacility(scene,b,id);continue;}
    const paint=b.color?material(`facility-${id}-armor`,b.color):armor;
    const name=b.kind==='bridge-control'?'bridge-control-building':b.kind==='comm-array'?'latlon-comm-array':b.kind==='power-plant'?'power-plant':b.kind==='citadel'?'citadel':b.kind==='mine-control'?'minefield-control':b.kind==='popup-turret-control'?'popup-turret-control':b.kind==='shield-generator'?'shield-generator':b.kind==='sweep-turret'?'sweep-turret':'command-center';
    const body=box(name,b.width,b.height*.8,b.depth,b.x,b.height*.4,b.z,paint);body.metadata={facility:b.kind??'command',facilityId:b.id};

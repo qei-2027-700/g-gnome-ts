@@ -436,7 +436,8 @@ const BASE_VEHICLES = {
   },
   'union-aip':{
     category:'hovercraft',
-    hoverHeight:1.2,
+    // Provisional cruise. The original altitude is unconfirmed. A stop uses the hull tip on the ground, not this value.
+    hoverHeight:1.8,
     ejectionSeat:true,
     name:'Union Airborne Insurgence Platform',
     jp:'Union エアーボーン インサージェンス プラットフォーム',
@@ -446,7 +447,8 @@ const BASE_VEHICLES = {
     energy:1200,
     armor:80,
     height:3.7,
-    passengerCapacity:0,
+    // Three passenger seats besides the pilot. Provisional; the original count is unconfirmed.
+    passengerCapacity:3,
     color:'#7890a4',
     weapons:[
       'P2MEC'],
@@ -467,7 +469,8 @@ const BASE_VEHICLES = {
   },
   'merc-aip':{
     category:'hovercraft',
-    hoverHeight:.8,
+    // Provisional cruise. Darken and Scorp AIP inherit it. The original altitude is unconfirmed.
+    hoverHeight:1.8,
     ejectionSeat:false,
     name:'Merc Airborne Insurgence Platform (Razor)',
     jp:'メルク軍 エアーボーン インサージェンス プラットフォーム',
@@ -477,7 +480,8 @@ const BASE_VEHICLES = {
     energy:1400,
     armor:84,
     height:3.7,
-    passengerCapacity:0,
+    // Three passenger seats besides the pilot. Provisional; Darken and Scorp AIP inherit this cabin.
+    passengerCapacity:3,
     color:'#386849',
     weapons:[
       'TAR12',

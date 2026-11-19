@@ -102,6 +102,32 @@ test('4-2 Scorp facilities use their reference silhouettes and remain inside the
   world.scene.dispose();
  }finally{engine.dispose();}
 });
+test('3-3 Scorp command and mine control use faction silhouettes and remain inside their collision footprints',async()=>{
+ const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_3_3),engine);
+  const expected=[
+   ['ul-urit-command',['scorp-hq-pyramid-roof','scorp-hq-left-wing','scorp-hq-right-block']],
+   ['ul-urit-mine-control',['scorp-mine-window','scorp-mine-fin','scorp-mine-checker']],
+  ] as const;
+  for(const [id,parts] of expected){
+   const b=MISSION_3_3.base!.buildings.find(item=>item.id===id)!,root=world.scene.getTransformNodeByName(`facility-${id}`)!;
+   assert.equal(root.metadata.facilityId,id);
+   const meshes=root.getChildMeshes();
+   for(const part of parts)assert.ok(meshes.some(mesh=>mesh.name===part),`${id}: ${part}`);
+   for(const mesh of meshes){
+    mesh.computeWorldMatrix(true);
+    const bounds=mesh.getBoundingInfo().boundingBox;
+    assert.ok(bounds.minimumWorld.x>=b.x-b.width/2-.2&&bounds.maximumWorld.x<=b.x+b.width/2+.2,`${id}: ${mesh.name} x`);
+    assert.ok(bounds.minimumWorld.z>=b.z-b.depth/2-.2&&bounds.maximumWorld.z<=b.z+b.depth/2+.2,`${id}: ${mesh.name} z`);
+   }
+  }
+  assert.equal(world.scene.getMeshByName('command-center-roof-turret'),null);
+  assert.equal(world.scene.getMeshByName('minefield-control-roof-equipment'),null);
+  world.scene.dispose();
+ }finally{engine.dispose();}
+});
 test('3-5 Sheridan leaves an empty HAWK after his retreat radio',()=>{
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
  try{
@@ -698,8 +724,9 @@ test('selected command facility has a building hologram, projects onto the HUD, 
  const engine=new NullEngine({renderWidth:1280,renderHeight:720,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),s=new Simulation('Easy',MISSION_3_3),command=s.facilities.find(f=>f.facilityType==='command')!;
  s.mounted!.x=-700;s.mounted!.z=command.z;s.mounted!.yaw=-Math.PI/2;s.mounted!.aim=-Math.PI/2;s.pitch=s.targetElevation(command);s.selected=command.id;
  const world=new World({} as HTMLCanvasElement,s,engine);world.mode=0;world.update(0);assert.ok(world.projectTarget(command).visible);
- const mesh=world.scene.getMeshByName('command-center')!;assert.equal(mesh.position.x,command.x);assert.equal(mesh.metadata.facilityId,command.id);
- assert.ok(world.scene.getMeshByName('command-center-roof-turret'));assert.ok(world.scene.getMeshByName('command-center-antenna'));
+ const root=world.scene.getTransformNodeByName(`facility-${command.id}`)!;assert.equal(root.position.x,command.x);assert.equal(root.position.z,command.z);
+ const mesh=root.getChildMeshes().find(item=>item.name==='command-center')!;assert.equal(mesh.metadata.facilityId,command.id);
+ assert.ok(root.getChildMeshes().some(item=>item.name==='scorp-hq-pyramid-roof'));assert.equal(world.scene.getMeshByName('command-center-roof-turret'),null);
  assert.ok(facilityHologramSvg('command').includes('司令部ホログラム'));assert.ok(missionMap(s,'ja').includes('司令部ホログラム'));engine.dispose();
 });
 
@@ -943,8 +970,12 @@ test('every hovering AIP casts a ground shadow that follows it and disappears af
    assert.ok(paint.diffuseColor.r<.05&&paint.diffuseColor.g<.05&&paint.diffuseColor.b<.05);
    assert.equal(shadow.position.x,unit.x);assert.equal(shadow.position.z,unit.z);
    assert.ok(shadow.position.y<world.rigs.get(unit.id)!.root.position.y,unit.kind);
+   const rig=world.rigs.get(unit.id)!;rig.root.computeWorldMatrix(true);
+   const lowest=()=>Math.min(...rig.root.getChildMeshes().map(mesh=>{mesh.computeWorldMatrix(true);return mesh.getBoundingInfo().boundingBox.minimumWorld.y;}));
+   assert.ok(lowest()>2,`${unit.kind} cruise clearance ${lowest()}`);
    unit.x+=5;world.update(0);assert.equal(shadow.position.x,unit.x);
    const shape=VEHICLE_SHAPES[unit.kind].hull;unit.hoverHeight=-(unit.spec.height*.6+shape.y-shape.h/2);world.update(0);assert.equal(shadow.isEnabled(),false);
+   assert.ok(Math.abs(lowest())<.05,`${unit.kind} landed tip ${lowest()}`);
   }
  }finally{engine.dispose();}
 });
@@ -1099,7 +1130,7 @@ test('Union AIP uses its photographed shell and rear nozzles with a distinct sel
  assert.notEqual(hologramSvg('union-aip'),hologramSvg('merc-aip'));
  const sim=new Simulation(),unit=makeUnit('union-aip-preview','union-aip',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
  const engine=new NullEngine({renderWidth:1142,renderHeight:858,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
- try{const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='aip-rear-nozzle').length,2);assert.equal(world.rigs.get(unit.id)!.torso.position.y,0);}finally{engine.dispose();}
+ try{const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='aip-rear-nozzle').length,2);assert.equal(world.rigs.get(unit.id)!.torso.position.y,unit.spec.height*.6);}finally{engine.dispose();}
 });
 
 test('Scorp Assault LRIP fires two green lasers from its paired muzzles',async()=>{

@@ -111,6 +111,7 @@ export class Simulation {
   private radioSpeakerAlive(personId:string){return this.units.some(u=>u.alive&&u.pilot&&u.personId===personId)||this.soldiers.some(s=>s.alive&&s.personId===personId);}
 
   private playedMissionRadio=new Set<string>();
+  private hoverYaw=new Map<string,number>();
   private passengerIffApplied=false;
   private ionRetreated=false;private ionStartedAt:number|null=null;private ionLockAt:number|null=null;private ionImpactAt:number|null=null;private ionImpactSurvived=false;private ionTargetUnitId:string|null=null;
   private suspendedUnitRoutes=new Set<string>();
@@ -1247,7 +1248,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!sequence||this.time-this.completionStartedAt!>=sequence.delay){this.status='won';this.releaseGuidance('complete');this.emit({type:'win'});}
   }
   tick(dt:number,input:Input){if(this.status!=='running')return;this.brakingUnits.clear();if(this.passenger)input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:input.fire1,fire2:input.fire2,fire3:input.fire3,fire4:input.fire4};dt=Math.min(dt,.05);this.time+=dt;const respawned=new Set<string>();for(const [id,readyAt] of this.pendingRespawns)if(this.time>=readyAt){const unit=this.units.find(candidate=>candidate.id===id&&!candidate.alive);if(unit){this.respawnVehicle(unit);respawned.add(id);}else this.pendingRespawns.delete(id);}
-    for(const unit of this.units)if(unit.spec.category==='hovercraft'){const shape=VEHICLE_SHAPES[unit.kind],landed=-(unit.spec.height*.6+shape.hull.y-shape.hull.h/2),moving=!unit.hoverDisabled&&Math.abs(unit.speed)>.1,goal=moving?unit.spec.hoverHeight??0:landed;unit.hoverHeight+=Math.sign(goal-unit.hoverHeight)*Math.min(Math.abs(goal-unit.hoverHeight),dt*1.5);}
+    for(const unit of this.units)if(unit.spec.category==='hovercraft'){const shape=VEHICLE_SHAPES[unit.kind],landed=-(unit.spec.height*.6+shape.hull.y-shape.hull.h/2),previousYaw=this.hoverYaw.get(unit.id),turning=previousYaw!==undefined&&Math.abs(angle(unit.yaw-previousYaw))>1e-4;this.hoverYaw.set(unit.id,unit.yaw);const moving=!unit.hoverDisabled&&(Math.abs(unit.speed)>.1||turning),goal=moving?unit.spec.hoverHeight??0:landed;unit.hoverHeight+=Math.sign(goal-unit.hoverHeight)*Math.min(Math.abs(goal-unit.hoverHeight),dt*1.5);}
     this.tickPickups();this.tickInfantrySorties();this.tickTowerCrewArrivals();
     const fireDown=[input.fire1,input.fire2,!!input.fire3,!!input.fire4],firePressed=fireDown.map((down,i)=>down&&!this.fireHeld[i]);this.fireHeld=fireDown;
     for(const soldier of this.soldiers)if(soldier.insideFacility){const facility=this.facilities.find(f=>f.id===soldier.insideFacility);if(facility?.alive){soldier.x=facility.x;soldier.z=facility.z;}else if(soldier.alive){soldier.health=0;soldier.alive=false;}}

@@ -65,6 +65,8 @@ type SpiderLeg={side:number;front:number;upper:Mesh;lower:Mesh;foot:Mesh};
 type Rig={spiderLegs?:SpiderLeg[];cannon?:TransformNode;root:TransformNode;torso:TransformNode;legs:TransformNode[];knees:TransformNode[];feet:TransformNode[];phase:number;run:number;lastX:number;lastZ:number;recoil:number;parts:Record<BodyPart,PartVisual>};
 export const SOLDIER_PROPORTIONS={height:1.9,headHeight:1.9/8,hipHeight:INFANTRY_GAIT.upper+INFANTRY_GAIT.lower+INFANTRY_GAIT.sole} as const;
 export const VEHICLE_DESTRUCTION={engulf:.85,burn:12,smokeEnd:15,clear:18} as const;
+// Provisional heave while an AIP is moving. The hull stays clear of the ground at the 1.8 m cruise height.
+export const aipHoverBob=(time:number,x:number)=>Math.sin(time*3)*.2+Math.sin(time*7+x*.03)*.11;
 type SoldierRig={root:TransformNode;upper:TransformNode;legs:TransformNode[];knees:TransformNode[];ankles:TransformNode[];arms:TransformNode[];lastX:number;lastZ:number;phase:number;run:number;direction:number};
 type Destruction={age:number;smokeTimer:number;root:TransformNode;flames:Mesh[]};
 export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:string,glow?:boolean)=>StandardMaterial):Rig {const spec=u.spec,scorp=u.kind==='scorp-asv',tower=spec.category==='tower';const root=new TransformNode(u.id,scene);const torso=new TransformNode('upper',scene);torso.parent=root;torso.position.y=spec.height*.6;
@@ -633,7 +635,7 @@ export class World {
     rig.lastX=unit.x;rig.lastZ=unit.z;
     if(dt>0){const speed=unit.alive?travel/dt:0;rig.run+=(Math.min(1,speed/Math.max(1,spec.speed/3.6))-rig.run)*Math.min(1,dt*12);if(unit.alive)rig.phase+=travel/profile.stride*Math.PI*2;}
     const run=unit.alive?rig.run:0;
-    if(unit.spec.category==='hovercraft'){const moving=!unit.hoverDisabled&&Math.abs(unit.speed)>.1,bob=moving?(Math.sin(this.sim.time*3)*.12+Math.sin(this.sim.time*7+unit.x*.03)*.07):0;rig.root.position.set(unit.x,unit.hoverHeight+bob,unit.z);rig.root.rotation.set(0,unit.yaw,0);return;}
+    if(unit.spec.category==='hovercraft'){const moving=!unit.hoverDisabled&&Math.abs(unit.speed)>.1,bob=moving?aipHoverBob(this.sim.time,unit.x):0;rig.root.position.set(unit.x,unit.hoverHeight+bob,unit.z);rig.root.rotation.set(0,unit.yaw,0);return;}
     if(unit.spec.category==='tower'){rig.root.position.set(unit.x,0,unit.z);rig.root.rotation.set(0,0,0);return;}
     if(unit.kind.endsWith('-asv')){rig.root.position.set(unit.x,unit.alive?0:-.6,unit.z);rig.root.rotation.set(0,unit.yaw,unit.alive?0:.3);return;}
     if(unit.kind==='merc-assault'||unit.kind==='scorp-assault'){rig.root.position.set(unit.x,unit.alive?0:-1,unit.z);rig.root.rotation.set(0,unit.yaw,unit.alive?0:.3);rig.torso.position.x=0;rig.torso.rotation.z=0;this.poseAssaultLegs(rig,rig.phase,run);return;}
@@ -868,7 +870,7 @@ export class World {
       this.camera.setTarget(new Vector3(p.x,carrier?carrier.spec.height*.35:1,p.z));
     }
     else if(guided){const direction=new Vector3(guided.vx,guided.vy,guided.vz).normalize();this.camera.position.set(guided.x,guided.y,guided.z);this.camera.setTarget(this.camera.position.add(direction.scale(80)));}
-    else if(this.mode===0){const gait=sim.mounted?this.rigs.get(sim.mounted.id):null,bob=gait&&sim.mounted?Math.sin(gait.phase*2)*Math.min(.12,GAITS[sim.mounted.kind].bounce*.5)*Math.sqrt(gait.run):(!sim.passenger&&Math.abs(sim.speed)>1?Math.sin(sim.time*7)*.06:0);this.camera.position.set(p.x,height+bob,p.z);this.camera.setTarget(new Vector3(p.x+Math.sin(yaw)*80,height+Math.tan(sim.pitch)*80,p.z+Math.cos(yaw)*80));}
+    else if(this.mode===0){const mounted=sim.mounted,hoverBob=mounted?.spec.category==='hovercraft'&&!mounted.hoverDisabled&&Math.abs(mounted.speed)>.1?aipHoverBob(sim.time,mounted.x):0,gait=mounted?this.rigs.get(mounted.id):null,bob=hoverBob||(gait&&mounted?Math.sin(gait.phase*2)*Math.min(.12,GAITS[mounted.kind].bounce*.5)*Math.sqrt(gait.run):(!sim.passenger&&Math.abs(sim.speed)>1?Math.sin(sim.time*7)*.06:0));this.camera.position.set(p.x,height+bob,p.z);this.camera.setTarget(new Vector3(p.x+Math.sin(yaw)*80,height+bob+Math.tan(sim.pitch)*80,p.z+Math.cos(yaw)*80));}
     else {const carrier=sim.mounted??sim.passenger,fixed=!!carrier,body=sim.yaw,viewYaw=fixed?body:yaw,viewPitch=sim.pitch,rear=carrier&&this.mode===2?sim.mission.rearCamera:undefined,range=(rear?.range??(carrier?(this.mode===1?20:16):(this.mode===1?6:5)))*(this.mode===2?REAR_CAMERA_DISTANCE_SCALE:1),side=this.mode===1?(carrier?15:4):0,altitude=sim.flight?.altitude??0,lookAhead=rear?.lookAhead??(carrier?(this.mode===1?8:15):(this.mode===1?2:3));this.camera.position.set(p.x-Math.sin(body)*range+Math.cos(body)*side,altitude+(rear?.height??(carrier?10:3)),p.z-Math.cos(body)*range-Math.sin(body)*side);this.camera.setTarget(new Vector3(p.x+Math.sin(viewYaw)*lookAhead,altitude+(rear?.targetHeight??(carrier?4:1.2))+Math.tan(viewPitch)*(carrier?25:8),p.z+Math.cos(viewYaw)*lookAhead));}
     this.kick=Math.max(0,this.kick-dt*.7);if(!guided)this.camera.position.y+=this.kick*Math.sin(sim.time*65);
     this.updateMissiles(dt);

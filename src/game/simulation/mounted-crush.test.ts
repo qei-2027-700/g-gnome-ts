@@ -14,6 +14,16 @@ test('player AIP rests on its hull, lifts while moving, and settles again after 
  s.tick(1/60,{...idle,stop:true});for(let i=0;i<600;i++)s.tick(1/60,idle);
  assert.ok(Math.abs(aip.speed)<.1);assert.ok(Math.abs(aip.hoverHeight-parked)<.01,`parked ${parked}, after stop ${aip.hoverHeight}, speed ${aip.speed}, status ${s.status}, time ${s.time}`);
 });
+test('a stopped AIP lifts while its hull turns and settles again when the turn stops',()=>{
+ const s=new Simulation('Easy',{...MISSION,objectives:[],completionEnabled:false}),aip=makeUnit('aip','union-aip',0,0,false);s.units=[aip];s.human={x:0,z:0};assert.ok(s.board());
+ for(let i=0;i<300;i++)s.tick(1/60,idle);
+ const parked=aip.hoverHeight,yaw=aip.yaw;assert.ok(Math.abs(aip.speed)<.1);
+ for(let i=0;i<180;i++)s.tick(1/60,{...idle,left:true});
+ assert.ok(Math.abs(aip.speed)<.1);assert.ok(Math.abs(angleDelta(aip.yaw,yaw))>.2);assert.ok(Math.abs(aip.hoverHeight-aip.spec.hoverHeight!)<.05);
+ for(let i=0;i<600;i++)s.tick(1/60,idle);
+ assert.ok(Math.abs(aip.hoverHeight-parked)<.02);
+});
+const angleDelta=(a:number,b:number)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 function setup(kind:'union-sentry'|'merc-sentry'|'merc-tactical'='union-sentry'){
  const s=new Simulation(),unit=makeUnit('own',kind,0,0,false),source=makeUnit('enemy','merc-sentry',100,200);
  s.units=[unit,source];s.human={x:0,z:0};s.board();s.iff='6707';

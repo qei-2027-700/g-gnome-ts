@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {NullEngine} from '@babylonjs/core/Engines/nullEngine.js';
-import {World} from './renderer.ts';
+import {AIP_HOVER_BOB_SPEED,World} from './renderer.ts';
 import {Simulation,makeUnit} from '../simulation/simulation.ts';
 import type {FacilityType} from '../simulation/facilities.ts';
 import {MISSION} from '../content/mission-1-1.ts';
@@ -966,7 +966,14 @@ test('every hovering AIP casts a ground shadow that follows it and disappears af
    const shadow=world.aipShadows.get(unit.id)!;
    assert.ok(shadow&&shadow.isEnabled(),unit.kind);
    assert.equal(shadow.getChildMeshes().length,3);
-   const paint=shadow.getChildMeshes()[0]!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
+   const outer=shadow.getChildMeshes().find(mesh=>mesh.name.endsWith('-0'))!;
+   assert.equal(outer.getTotalVertices(),4);
+   outer.computeWorldMatrix(true);
+   const bounds=outer.getBoundingInfo().boundingBox,hull=VEHICLE_SHAPES[unit.kind].hull;
+   assert.ok(Math.abs(bounds.maximumWorld.x-bounds.minimumWorld.x-hull.w)<.05,`${unit.kind} shadow width`);
+   assert.ok(Math.abs(bounds.maximumWorld.z-bounds.minimumWorld.z-hull.d)<.05,`${unit.kind} shadow depth`);
+   assert.equal(shadow.scaling.x,1);assert.equal(shadow.scaling.z,1);
+   const paint=outer.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;
    assert.ok(paint.diffuseColor.r<.05&&paint.diffuseColor.g<.05&&paint.diffuseColor.b<.05);
    assert.equal(shadow.position.x,unit.x);assert.equal(shadow.position.z,unit.z);
    assert.ok(shadow.position.y<world.rigs.get(unit.id)!.root.position.y,unit.kind);
@@ -980,10 +987,14 @@ test('every hovering AIP casts a ground shadow that follows it and disappears af
  }finally{engine.dispose();}
 });
 
-test('Merc Razor is a green diamond hovering close to the ground and bobs slightly only while moving',async()=>{
+test('Merc Razor is a green diamond hovering close to the ground and shakes up and down quickly only above airflow speed',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const sim=new Simulation('Easy',MISSION_2_6),engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine),aip=sim.units.find(u=>u.kind==='merc-aip')!;world.update(0);const rig=world.rigs.get(aip.id)!,base=rig.root.position.y;assert.ok(base>0&&base<2);
  const platform=world.scene.getMeshByName('aip-diamond-platform')!,paint=platform.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.diffuseColor.g>paint.diffuseColor.r&&paint.diffuseColor.g>paint.diffuseColor.b);assert.ok(platform.getTotalVertices()>0);const hullSize=platform.getBoundingInfo().boundingBox.extendSize;assert.ok(Math.abs(hullSize.x-3)<1e-6);assert.ok(Math.abs(hullSize.z-2.5)<1e-6);assert.equal(platform.getTotalVertices(),24);const canopy=world.scene.getMeshByName('aip-cockpit')!;assert.equal(canopy.metadata.bodyPart,'cockpit');
- aip.speed=20;sim.time=.5;world.update(.01);const up=rig.root.position.y;sim.time=1.5;world.update(.01);assert.ok(Math.abs(up-rig.root.position.y)>.16);assert.ok(Math.abs(rig.root.position.y-base)<.42);aip.speed=0;world.update(0);assert.equal(rig.root.position.y,base);engine.dispose();
+ aip.speed=AIP_HOVER_BOB_SPEED-.2;sim.time=.25;world.update(.01);assert.equal(rig.root.position.y,base);
+ aip.speed=20;sim.time=.5;world.update(.01);const up=rig.root.position.y;sim.time=1.5;world.update(.01);assert.ok(Math.abs(up-rig.root.position.y)>.1);assert.ok(Math.abs(rig.root.position.y-base)<.42);
+ let low=Infinity,high=-Infinity;for(let step=0;step<=8;step++){sim.time=step*.05;world.update(.01);const y=rig.root.position.y;low=Math.min(low,y);high=Math.max(high,y);}
+ assert.ok(high-low>.3,`moving AIP shake span ${high-low}`);
+ aip.speed=0;world.update(0);assert.equal(rig.root.position.y,base);engine.dispose();
 });
 
 

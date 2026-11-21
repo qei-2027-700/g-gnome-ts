@@ -95,6 +95,22 @@ test('radio transmissions bracket overlapping voices with one opening and one cl
   settings.voice=1;settings.locale='en';const english=sources.length;await audio.sayRadio(replies);assert.ok(urls.slice(3).every(url=>url.includes('-en-')));await audio.sayRadio([{personId:'kylie',line:KYLIE_TOWER_WARNING}]);assert.ok(sources.slice(english,english+4).every(s=>s.stopped));
  });
 });
+test('cockpit callouts leave a loading or playing radio transmission running, and alerts replace it',async()=>{
+ await radioAudioFixture(async({audio,ctx,sources,spoken})=>{
+  let cancelled=0;const cancel=speechSynthesis.cancel.bind(speechSynthesis);speechSynthesis.cancel=()=>{cancelled++;cancel();};
+  let finish:((buffer:any)=>void)|undefined;ctx.decodeAudioData=()=>new Promise(resolve=>{finish=resolve;});
+  const loading=audio.sayRadio([{personId:'kylie',line:RADIO_DEFAULT_REPLY}]);
+  for(let i=0;i<8&&!finish;i++)await Promise.resolve();assert.ok(finish);
+  const duringLoad=cancelled;audio.say('目標選択','Target selection','young',true);assert.equal(cancelled,duringLoad);assert.equal(spoken.length,0);
+  finish!({duration:2});await loading;const voice=sources.find(s=>s.buffer?.duration===2);assert.ok(voice&&!voice.stopped);
+  audio.say('センター','Center','young',true);audio.say('停止します','Stopping','young',true);audio.say('出力全開','Full power','solemn',true);audio.say('第一ウェイポイント','Waypoint 1','young',true);audio.say('脱出','Ejecting','young',true);
+  assert.equal(voice.stopped,false);assert.equal(spoken.length,0);assert.equal(cancelled,duringLoad);
+  voice.onended();const closing=sources.at(-1);assert.ok(closing&&closing!==voice&&!closing.stopped);audio.say('目標選択','Target selection','young',true);assert.equal(spoken.length,0);assert.equal(closing.stopped,false);
+  closing.onended();audio.say('目標選択','Target selection','young',true);assert.equal(spoken.at(-1)!.text,'目標選択');
+  const restart=sources.length;await audio.sayRadio([{personId:'kylie',line:RADIO_DEFAULT_REPLY}]);const live=sources.slice(restart);
+  audio.sayAlert('ダメージ','Damage');assert.ok(live.length>0&&live.every(s=>s.stopped));assert.equal(spoken.at(-1)!.text,'ダメージ');
+ });
+});
 test('radio static respects SE mute while preserving the voice, and TTS callouts get both static sounds',async()=>{
  await radioAudioFixture(async({audio,settings,sources,spoken,ctx})=>{
   settings.sfx=0;await audio.sayRadio([{personId:'kylie',line:RADIO_DEFAULT_REPLY}]);assert.equal(sources.length,1);assert.equal(sources[0].buffer.duration,2);sources[0].onended();assert.equal(sources.length,1);

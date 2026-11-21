@@ -41,7 +41,7 @@ export const MISSION_3_2:MissionDefinition={
  ],radioRange:400,autoBoardCompanions:true,
  radioTriggers:[
   {id:'thane-opening',event:'time',at:5,speakerId:'thane',vehicleKind:'union-aip',line:{ja:'ところでキリー。シェリダンの話って一体...',en:'By the way, Kylie. What was that about Sheridan...?'}},
-  {id:'kylie-history',event:'time',at:5.01,speakerId:'kylie',vehicleKind:'union-aip',line:{ja:'やつは10年前、俺たちを裏切った。そして最高の戦士を失った...',en:'Ten years ago, he betrayed us. We lost our finest soldier...'}},
+  {id:'kylie-history',event:'time',at:5.01,speakerId:'kylie',vehicleKind:'union-aip',line:{ja:'やつは10年前、俺たちを裏切った。そして最高の戦士、最高の友を失った...',en:'Ten years ago, he betrayed us. We lost our finest soldier...'}},
   {id:'thane-interrupt',event:'time',at:5.02,speakerId:'thane',vehicleKind:'union-aip',line:{ja:'それでなんで奴が偉そうにしてるわけ？！',en:'Then why is he acting so high and mighty?!'}},
   {id:'kylie-reply',event:'time',at:5.03,speakerId:'kylie',vehicleKind:'union-aip',line:{ja:'やつは無罪放免さ。パールの死体は見つからなかったからな',en:'He walked free. Pearl’s body was never found.'}},
   {id:'sheridan-encounter',event:'encounter',at:25,unitIds:['kylie-tactical','sheridan-tactical'],enemyUnitIds:['scorp-aip-patrol'],range:220,speakerId:'sheridan',vehicleKind:'union-aip',line:{ja:'さあー諸君。ひと暴れと行こうか！',en:'All right, everyone. Let us raise some hell!'}},

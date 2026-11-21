@@ -29,7 +29,7 @@ export const RADIO_RESPONSE_STAGGER_SECONDS=.18;
 export class GameAudio {
   private occupiedUtterance:SpeechSynthesisUtterance|null=null;
   private afterOccupied:(()=>void)|null=null;
-  sayMinefieldFound(){this.say('地雷原を発見','Minefield detected.','solemn',true);}
+  sayMinefieldFound(){this.sayAlert('地雷原を発見','Minefield detected.','solemn');}
   sayOccupied(){
     if(!('speechSynthesis'in window)||!this.settings.voice)return;
     this.stopRadio();speechSynthesis.cancel();this.afterOccupied=null;this.lastSpeech=performance.now();
@@ -39,7 +39,7 @@ export class GameAudio {
   }
   announceResult(won:boolean){
     if(won)return;
-    const speak=()=>this.say('任務失敗','Mission failed','young',true);
+    const speak=()=>this.sayAlert('任務失敗','Mission failed');
     if(this.occupiedUtterance)this.afterOccupied=speak;else speak();
   }
   private deathSources=new Set<AudioBufferSourceNode>();
@@ -262,9 +262,16 @@ export class GameAudio {
   }
   say(ja:string,en:string,profile:'young'|'solemn'='young',priority=false){
     if(!('speechSynthesis'in window)||!this.settings.voice)return;
-    const now=performance.now();if(!priority&&(this.radioPending>0||now-this.lastSpeech<1800))return;
-    if(priority){this.occupiedUtterance=null;this.afterOccupied=null;this.stopRadio();speechSynthesis.cancel();}this.lastSpeech=now;
+    const now=performance.now();
+    // Target selection and the other cockpit callouts stay quiet until the transmission ends.
+    if(this.radioPending>0)return;
+    if(!priority&&now-this.lastSpeech<1800)return;
+    if(priority){this.occupiedUtterance=null;this.afterOccupied=null;speechSynthesis.cancel();}this.lastSpeech=now;
     speechSynthesis.speak(this.utterance(this.settings.locale==='ja'?ja:en,profile));
+  }
+  sayAlert(ja:string,en:string,profile:'young'|'solemn'='young'){
+    if(!('speechSynthesis'in window)||!this.settings.voice)return;
+    this.stopRadio();this.say(ja,en,profile,true);
   }
   private stopRadio(){
     if(this.radioSpeechTimer!==undefined){clearTimeout(this.radioSpeechTimer);this.radioSpeechTimer=undefined;}

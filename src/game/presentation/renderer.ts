@@ -659,8 +659,8 @@ export class World {
         paint.material.diffuseColor=paint.base.scale(1-scorch*.9);
         paint.material.emissiveColor=Color3.Lerp(paint.glow.scale(1-scorch),new Color3(1,.32,.04),visual.flash*.7);
       }
-      // Smoke originates on the damaged assembly and follows its articulation.
-      if(unit.alive&&health<.3){visual.smoke+=dt;if(visual.smoke>=.3){visual.smoke%=.3;const anchor=visual.meshes[0];anchor.computeWorldMatrix(true);const smoke=MeshBuilder.CreateSphere('damage-smoke',{diameter:.55+(1-health)*.6,segments:4},this.scene);smoke.position.copyFrom(anchor.getAbsolutePosition());smoke.material=this.fxMaterial('smoke','#6d6a60');this.addEffect(smoke,1.2,'smoke',new Vector3(.15,1.4,0));}}
+      // Smoke follows the damaged assembly. A hitbox with no mesh, such as an AIP leg, uses the hull.
+      if(unit.alive&&health<.3){visual.smoke+=dt;if(visual.smoke>=.3){visual.smoke%=.3;const anchor=visual.meshes[0]??rig.parts.hull.meshes[0]??rig.root;anchor.computeWorldMatrix(true);const smoke=MeshBuilder.CreateSphere('damage-smoke',{diameter:.55+(1-health)*.6,segments:4},this.scene);smoke.position.copyFrom(anchor.getAbsolutePosition());smoke.material=this.fxMaterial('smoke','#6d6a60');this.addEffect(smoke,1.2,'smoke',new Vector3(.15,1.4,0));}}
       else visual.smoke=0;
     }
   }

@@ -440,6 +440,21 @@ test('3D damage is local, persists after hit flash, emits smoke only from damage
  const fresh=world.rigs.get('union')!.parts.leftLeg.paint[0];assert.ok(fresh.material.diffuseColor.equals(fresh.base));assert.equal(world.effects.length,0);engine.dispose();
 });
 
+test('damage smoke from a meshless part anchors to the hull',()=>{
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation(),popup=makeUnit('popup','scorp-popup-turret',0,20,false),aip=makeUnit('aip','union-aip',30,20,false);
+  sim.units=[popup,aip];const world=new World({} as HTMLCanvasElement,sim,engine);
+  for(const unit of [popup,aip]){const rig=world.rigs.get(unit.id)!;assert.equal(rig.parts.leftLeg.meshes.length,0);assert.ok(rig.parts.hull.meshes.length>0);unit.parts.leftLeg=.1;}
+  world.update(.3);assert.equal(world.effects.filter(effect=>effect.mesh.name==='damage-smoke').length,2);
+  for(const unit of [popup,aip]){
+   const hull=world.rigs.get(unit.id)!.parts.hull.meshes[0]!;hull.computeWorldMatrix(true);const origin=hull.getAbsolutePosition();
+   const smoke=world.effects.find(effect=>effect.mesh.name==='damage-smoke'&&Math.hypot(effect.mesh.position.x-origin.x,effect.mesh.position.z-origin.z)<1);
+   assert.ok(smoke);assert.ok(Math.abs(smoke.mesh.position.x-origin.x-.15*.3)<.05);assert.ok(Math.abs(smoke.mesh.position.y-origin.y-1.4*.3)<.05);assert.ok(Math.abs(smoke.mesh.position.z-origin.z)<.05);
+  }
+ }finally{engine.dispose();}
+});
+
 test('running follows actual travel, articulates knees, adds footfall dust and pauses without drifting',()=>{
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  const sim=new Simulation(),world=new World({} as HTMLCanvasElement,sim,engine),unit=sim.units[1],rig=world.rigs.get(unit.id)!;

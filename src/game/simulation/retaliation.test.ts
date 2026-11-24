@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,type Input} from './simulation.ts';
 import {MISSION_3_3} from '../content/missions/mission-3-3.ts';
 import {MISSION_4_2} from '../content/missions/mission-4-2.ts';
+import {DEFAULT_MISSION} from '../content/missions/index.ts';
+import type {VehicleKind} from '../content/vehicles.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function setup(){const s=new Simulation('Easy',MISSION_3_3);s.mission.terrain.cliffs=[];for(const [i,p] of [{x:-22,z:30},{x:10,z:65},{x:26,z:100}].entries())Object.assign(s.units[i+1],p);for(const u of s.units){u.yaw=0;u.aim=0;}Object.assign(s.units.find(u=>u.id==='scorp-asv')!,{x:0,z:350});return {s,enemy:s.units.find(u=>u.id==='scorp-asv')!};}
 function tick(s:Simulation,seconds:number,input=idle){for(let i=0;i<seconds*60;i++)s.tick(1/60,input);}
@@ -168,6 +170,55 @@ test('incoming enemy missiles stop at buildings, cliffs, rocks and mountains bef
   if(cover==='peak')s.mission.terrain.peaks=[{x:0,z:55,width:60,depth:60,height:50}];
   s.fireMissile(enemy,'CHUM',1,{x:0,y:4,z:0});tick(s,3);assert.equal(own.shield,own.spec.shield,cover);assert.equal(s.missiles.length,0);assert.ok(s.events.some(e=>e.type==='impact'&&e.position!.z>45),cover);
  }
+});
+function garrisonDuel(kind:VehicleKind,gap:number){
+ const mission=structuredClone(DEFAULT_MISSION);
+ mission.units=[
+  {id:'guard',kind,x:0,z:0,pilot:true,iff:'1111'},
+  {id:'attacker',kind:'union-sentry',x:0,z:gap,pilot:true,iff:'2222',overrides:{speed:0,ai:{detection:0,strafe:0,keepMoving:false,stopDistance:0,missileVolley:1}}},
+ ];
+ mission.garrison=['guard'];mission.companions=[];mission.personnel=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];mission.player={x:0,z:500};mission.assignedUnitId=undefined;mission.startMountedUnitId=undefined;
+ mission.terrain={...mission.terrain,peaks:[],cliffs:[]};
+ const s=new Simulation('Easy',mission),guard=s.units.find(unit=>unit.id==='guard')!,attacker=s.units.find(unit=>unit.id==='attacker')!;
+ guard.yaw=guard.aim=0;attacker.yaw=attacker.aim=Math.PI;attacker.cooldown=999;
+ return {s,guard,attacker};
+}
+test('a garrison ally returns fire at an attacker outside detection without chasing, and ignores one it cannot reach',()=>{
+ const near=garrisonDuel('scorp-sentry',165),far=garrisonDuel('scorp-sentry',650);
+ assert.ok(distance(near.guard,near.attacker)>near.guard.spec.ai.detection);
+ assert.ok(distance(near.guard,near.attacker)<=near.s.weapons.guns.zWASP.range);
+ tick(near.s,1);assert.equal(near.s.events.some(event=>event.type==='shot'&&event.unit===near.guard),false);
+ const home={x:near.guard.x,z:near.guard.z};
+ near.s.damage(near.guard,5,'hull',undefined,near.attacker,'FIL-30');
+ tick(near.s,1.5);
+ assert.equal(near.guard.aggressorId,near.attacker.id);
+ assert.ok(near.s.events.some(event=>event.type==='shot'&&event.unit===near.guard));
+ assert.ok(Math.hypot(near.guard.x-home.x,near.guard.z-home.z)<1);
+ assert.ok(distance(far.guard,far.attacker)>far.s.weapons.missiles.SREM.speed*far.s.weapons.missiles.SREM.lifetime);
+ tick(far.s,1);far.s.damage(far.guard,5,'hull',undefined,far.attacker,'FIL-30');const parked={x:far.guard.x,z:far.guard.z};tick(far.s,1.5);
+ assert.equal(far.s.events.some(event=>event.type==='shot'&&event.unit===far.guard),false);
+ assert.ok(Math.hypot(far.guard.x-parked.x,far.guard.z-parked.z)<1);
+});
+test('garrison return fire stops for a dead, empty, or same-IFF attacker',()=>{
+ for(const end of ['dead','empty','friendly'] as const){
+  const {s,guard,attacker}=garrisonDuel('scorp-sentry',165);
+  if(end==='friendly')attacker.iff=guard.iff;
+  s.damage(guard,5,'hull',undefined,attacker,'FIL-30');
+  if(end==='dead')attacker.alive=false;
+  if(end==='empty')attacker.pilot=false;
+  tick(s,1.5);
+  assert.equal(s.events.some(event=>event.type==='shot'&&event.unit===guard),false,end);
+ }
+});
+test('a garrison rocket tower returns a missile past its detection range without moving',()=>{
+ const {s,guard,attacker}=garrisonDuel('scorp-rocket-tower',300);
+ assert.ok(distance(guard,attacker)>guard.spec.ai.detection);
+ assert.equal(guard.spec.speed,0);
+ tick(s,1);assert.equal(s.events.some(event=>event.type==='shot'&&event.unit===guard),false);
+ s.damage(guard,5,'hull',undefined,attacker,'P2MEC');
+ tick(s,1.5);
+ assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===guard&&(event.weapon==='SREM'||event.weapon==='UNKPA')));
+ assert.equal(guard.x,0);assert.equal(guard.z,0);
 });
 test('enemy AI does not fire through a mountain peak',()=>{
  const s=new Simulation(),own=makeUnit('own','union-sentry',0,0,false),enemy=makeUnit('mountain-gunner','merc-tactical',0,120,true,{weapons:['DASY'],speed:0,ai:{detection:300,strafe:0,keepMoving:false,stopDistance:200,missileVolley:1}});s.units=[own,enemy];s.human={x:0,z:0};s.board();s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[{x:0,z:60,width:60,depth:60,height:65}];enemy.yaw=enemy.aim=Math.PI;enemy.alert=true;

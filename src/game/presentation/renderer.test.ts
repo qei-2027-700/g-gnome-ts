@@ -1297,6 +1297,18 @@ test('4-3 renders four lava channels and four bridge decks',async()=>{
   for(const river of MISSION_4_3.terrain.rivers!)for(const side of [-1,1])assert.ok(world.scene.getTransformNodeByName(`bridge-hinge-${river.bridgeId}-${side}`));
  }finally{engine.dispose();}
 });
+test('4-4 renders one lava ribbon and one bridge deck',async()=>{
+ const {MISSION_4_4}=await import('../content/missions/mission-4-4.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_4_4),engine);world.update(0);
+  const lava=world.scene.meshes.filter(mesh=>mesh.name==='river-water');assert.equal(lava.length,1);
+  const color=(lava[0]!.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;assert.ok(color.r>color.b);
+  for(const side of [-1,1])assert.ok(world.scene.getTransformNodeByName(`bridge-hinge-delivery-bridge-${side}`));
+  assert.equal(world.scene.transformNodes.filter(node=>node.name.startsWith('bridge-hinge-')).length,2);
+  assert.equal(MISSION_4_4.terrain.biome,'volcanic');
+  assert.ok(world.scene.getMaterialByName('basalt-mountain'));
+  assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='rocky-mountain').length,24+MISSION_4_4.terrain.peaks!.length);
+ }finally{engine.dispose();}
+});
 test('4-3 current-position marker uses the briefing image landmarks',async()=>{
  const {MISSION_4_3}=await import('../content/missions/mission-4-3.ts');
  const {MAP_4_3_POINTS,MAP_4_3_SOURCE}=await import('../content/missions/mission-4-3-map.ts');

@@ -8,6 +8,8 @@ import {riverFrameAtZ,riverDistance,riverSamples,riverStripBoxes,terrainRivers} 
 import {allyRoute} from './ally-navigation.ts';
 import {MISSION_4_3} from '../content/missions/mission-4-3.ts';
 import {MAP_4_3_POINTS,MAP_4_3_SOURCE,map43PixelToWorld} from '../content/missions/mission-4-3-map.ts';
+import {MISSION_4_4} from '../content/missions/mission-4-4.ts';
+import {MAP_4_4_LAVA,MAP_4_4_POINTS,MAP_4_4_SOURCE,map44PixelToWorld} from '../content/missions/mission-4-4-map.ts';
 import {MISSION_1_5} from '../content/missions/mission-1-5.ts';
 import {MISSION_3_4} from '../content/missions/mission-3-4.ts';
 import {MAP_3_4_POINTS,map34PixelToWorld} from '../content/missions/mission-3-4-map.ts';
@@ -1014,6 +1016,109 @@ test('4-3 Merc and Darken shoot each other and the player can change vehicles',(
  assert.ok(mercShots>0&&darkenShots>0&&hits>0);
  const derelict=s.units.find(u=>u.id==='depot-unoccupied')!;s.eject('ground');s.human={x:derelict.x,z:derelict.z+3};assert.ok(s.board());
  assert.equal(s.mounted,derelict);assert.equal(s.mounted.iff,s.iff);
+});
+function segmentsCross(a:{x:number;z:number},b:{x:number;z:number},c:{x:number;z:number},d:{x:number;z:number}){
+ const cross=(p:{x:number;z:number},q:{x:number;z:number},r:{x:number;z:number})=>(q.x-p.x)*(r.z-p.z)-(q.z-p.z)*(r.x-p.x);
+ const ab=cross(a,b,c),cd=cross(a,b,d),ca=cross(c,d,a),cb=cross(c,d,b);
+ return ((ab>0&&cd<0)||(ab<0&&cd>0))&&((ca>0&&cb<0)||(ca<0&&cb>0));
+}
+test('4-4 lava is one eastward ribbon and its only bridge is on the southern leg',()=>{
+ assert.equal(MAP_4_4_SOURCE.metersPerPixel,3);
+ assert.deepEqual(map44PixelToWorld(99,181),MAP_4_4_POINTS.start);
+ assert.deepEqual(MISSION_4_4.player,MAP_4_4_POINTS.start);
+ const preview=MISSION_4_4.briefingPresentation!.mapPreview!;
+ assert.equal(preview.mapProjection!.pixelOrigin.x,99);assert.equal(preview.mapProjection!.pixelOrigin.y,181);
+ assert.deepEqual(preview.mapProjection!.worldOrigin,MAP_4_4_POINTS.start);
+ const rivers=MISSION_4_4.terrain.rivers!,river=rivers[0]!;
+ assert.equal(rivers.length,1);assert.equal(river.surface,'lava');assert.equal(river.bridgeId,'delivery-bridge');
+ assert.equal(river.bridgeWidth>0,true);
+ assert.deepEqual(river.path,MAP_4_4_LAVA.map(([x,y])=>map44PixelToWorld(x,y)));
+ assert.deepEqual({x:river.x,z:river.bridgeZ},MAP_4_4_POINTS.bridge);
+ assert.equal(riverDistance(river,MAP_4_4_POINTS.bridge.x,MAP_4_4_POINTS.bridge.z),0);
+ const frame=riverFrameAtZ(river,river.bridgeZ);
+ assert.equal(frame.x,MAP_4_4_POINTS.bridge.x);assert.equal(frame.z,MAP_4_4_POINTS.bridge.z);
+ const northMax=Math.max(...river.path!.slice(0,5).map(point=>point.x));
+ const southMin=Math.min(...river.path!.slice(-6).map(point=>point.x));
+ assert.ok(southMin>northMax+400,`the southern leg stays east of the northern leg (${southMin} vs ${northMax})`);
+ const path=river.path!;
+ for(let i=1;i<path.length;i++)for(let j=i+2;j<path.length;j++)assert.equal(segmentsCross(path[i-1]!,path[i]!,path[j-1]!,path[j]!),false);
+ const westArm=map44PixelToWorld(150,300);
+ assert.ok(riverDistance(river,westArm.x,westArm.z)>river.width,'the old west arm of the cross is dry ground');
+ const clear=(point:{x:number;z:number},pad:number,label:string)=>assert.ok(riverDistance(river,point.x,point.z)>river.width/2+pad,label);
+ clear(MAP_4_4_POINTS.start,20,'start');
+ clear(MAP_4_4_POINTS.bridgeControl,12,'bridge control');
+ clear(MAP_4_4_POINTS.labMarker,12,'laboratory');
+ clear(MAP_4_4_POINTS.mineControl,12,'mine control');
+ clear(MAP_4_4_POINTS.minefield,30,'minefield');
+ clear(MAP_4_4_POINTS.waypoint1,20,'waypoint');
+ for(const unit of MISSION_4_4.units)clear(unit,8,unit.id);
+ for(const rock of MISSION_4_4.rocks)clear(rock,rock.r,'rock');
+ for(const peak of MISSION_4_4.terrain.peaks!)for(let i=1;i<path.length;i++)for(let step=0;step<=8;step++){
+  const t=step/8,x=path[i-1]!.x+(path[i]!.x-path[i-1]!.x)*t,z=path[i-1]!.z+(path[i]!.z-path[i-1]!.z)*t;
+  const dx=x-peak.x,dz=z-peak.z,len=Math.hypot(dx,dz)||1,ux=dx/len,uz=dz/len;
+  const ellipse=1/Math.hypot(ux/(peak.width/2),uz/(peak.depth/2));
+  assert.ok(len>ellipse+river.width/2,`peak at ${peak.x},${peak.z} overlaps the lava`);
+ }
+ assert.equal(MISSION_4_4.initialRaisedBridges?.[0],'delivery-bridge');
+ const lower=MISSION_4_4.objectives.find(objective=>objective.id==='lower-bridge');
+ assert.equal(lower?.type,'lower-bridge');
+ if(lower?.type==='lower-bridge')assert.equal(lower.bridgeId,'delivery-bridge');
+});
+test('4-4 raised south bridge blocks the crossing and lowering it opens only that gap',()=>{
+ const def={...MISSION_4_4,units:MISSION_4_4.units.filter(unit=>unit.id==='player-td'),assaults:[],minefields:[]};
+ const river=def.terrain.rivers![0]!,frame=riverFrameAtZ(river,river.bridgeZ),normal={x:frame.tz,z:-frame.tx};
+ const spawn=Math.sign((def.player.x-frame.x)*normal.x+(def.player.z-frame.z)*normal.z)||1;
+ const place=(sign:number,distance:number)=>({x:frame.x+normal.x*spawn*sign*distance,z:frame.z+normal.z*spawn*sign*distance});
+ const near=place(1,river.width/2+28),far=place(-1,river.width/2+28);
+ const sideOf=(sim:Simulation)=>Math.sign((sim.player.x-frame.x)*normal.x+(sim.player.z-frame.z)*normal.z);
+ const aim=(sim:Simulation)=>{const unit=sim.mounted!;unit.yaw=Math.atan2(far.x-near.x,far.z-near.z);unit.aim=unit.yaw;};
+ const blocked=new Simulation('Easy',def);Object.assign(blocked.mounted!,near);aim(blocked);
+ assert.ok(blocked.raisedBridges.has('delivery-bridge'));
+ for(let i=0;i<100;i++)blocked.tick(.05,{...idle,forward:true});
+ assert.equal(sideOf(blocked),spawn);
+ const open=new Simulation('Easy',def);open.raisedBridges.delete('delivery-bridge');Object.assign(open.mounted!,near);aim(open);
+ for(let i=0;i<200;i++)open.tick(.05,{...idle,forward:true});
+ assert.equal(sideOf(open),-spawn);
+ const band=map44PixelToWorld(348,312),bank=riverFrameAtZ(river,band.z),bankNormal={x:bank.tz,z:-bank.tx};
+ assert.ok(riverDistance(river,band.x,band.z)<1);
+ const off={x:bank.x+bankNormal.x*(river.width/2+28),z:bank.z+bankNormal.z*(river.width/2+28)};
+ const sealed=new Simulation('Easy',def);sealed.raisedBridges.delete('delivery-bridge');Object.assign(sealed.mounted!,off);
+ sealed.mounted!.yaw=Math.atan2(-bankNormal.x,-bankNormal.z);sealed.mounted!.aim=sealed.mounted!.yaw;
+ const signed=(point:{x:number;z:number})=>(point.x-bank.x)*bankNormal.x+(point.z-bank.z)*bankNormal.z;
+ for(let i=0;i<80;i++)sealed.tick(.05,{...idle,forward:true});
+ assert.equal(Math.sign(signed(sealed.player)),Math.sign(signed(off)));
+ assert.ok(riverDistance(river,sealed.player.x,sealed.player.z)>river.width/2-2,'the horizontal ribbon has no bridge gap');
+});
+test('4-4 pale ridges are rocky mountains and the dark valley stays open',()=>{
+ const peaks=MISSION_4_4.terrain.peaks!,onPeak=(pixel:readonly [number,number],limit=1)=>{
+  const world=map44PixelToWorld(pixel[0],pixel[1]);
+  return peaks.some(peak=>{const nx=(world.x-peak.x)/(peak.width/2),nz=(world.z-peak.z)/(peak.depth/2);return nx*nx+nz*nz<limit;});
+ };
+ assert.ok(peaks.length>=30);
+ assert.equal(MISSION_4_4.terrain.ridgeStyle,'rocky');
+ assert.equal(MISSION_4_4.terrain.biome,'volcanic');
+ // Cream samples measured on assets/map/4-4/4-4map.png. These sit on the whitish ridges.
+ for(const pixel of [[104,166],[170,250],[200,340],[360,390],[500,280],[300,200],[174,329],[579,360],[264,100]] as const)assert.equal(onPeak(pixel,.95),true,`${pixel} is pale mountain`);
+ // Dark red samples in the valley, including the start's south side, the bridge banks and the moved lab.
+ for(const pixel of [[160,200],[250,180],[320,250],[470,400],[80,250],[400,180],[530,420],[99,210],[530,448],[174,390]] as const)assert.equal(onPeak(pixel),false,`${pixel} stays open ground`);
+ const def={...MISSION_4_4,units:MISSION_4_4.units.filter(unit=>unit.id==='player-td'),assaults:[],minefields:[],rocks:[],objectives:[],completionEnabled:false};
+ const mountain=map44PixelToWorld(174,329),approach=map44PixelToWorld(174,390);
+ const blocked=new Simulation('Easy',def);Object.assign(blocked.mounted!,approach);
+ blocked.mounted!.yaw=Math.atan2(mountain.x-approach.x,mountain.z-approach.z);blocked.mounted!.aim=blocked.mounted!.yaw;
+ const started=Math.hypot(blocked.player.x-mountain.x,blocked.player.z-mountain.z);
+ for(let i=0;i<100;i++)blocked.tick(.05,{...idle,forward:true});
+ const stopped=Math.hypot(blocked.player.x-mountain.x,blocked.player.z-mountain.z);
+ assert.ok(started-stopped>15,'the vehicle approaches the pale ridge');
+ assert.ok(stopped>55,'the vehicle does not drive through the pale ridge');
+ const from=map44PixelToWorld(160,200),toward=map44PixelToWorld(220,210);
+ const valley=new Simulation('Easy',def);Object.assign(valley.mounted!,from);
+ valley.mounted!.yaw=Math.atan2(toward.x-from.x,toward.z-from.z);valley.mounted!.aim=valley.mounted!.yaw;
+ for(let i=0;i<80&&Math.hypot(valley.player.x-from.x,valley.player.z-from.z)<40;i++)valley.tick(.05,{...idle,forward:true});
+ assert.ok(Math.hypot(valley.player.x-from.x,valley.player.z-from.z)>20,'dark ground between the ridges is passable');
+ for(const peak of peaks){
+  const nx=(valley.player.x-peak.x)/(peak.width/2),nz=(valley.player.z-peak.z)/(peak.depth/2);
+  assert.ok(nx*nx+nz*nz>=1,'the valley run stays off the mountain ellipses');
+ }
 });
 function mission(id='test'):MissionDefinition{return {...structuredClone(DEFAULT_MISSION),id,player:{x:40,z:0},initialIff:'6707',units:[{id:'own',kind:'merc-sentry',x:40,z:0,pilot:false},{id:'target',kind:'union-sentry',x:40,z:100,pilot:true}],assignedUnitId:'own',playerFaction:'merc',rocks:[],waypoints:[{id:2,x:40,z:120,radius:3}],objectives:[{id:'reach',type:'reach',waypointId:2,label:{ja:'到達',en:'Reach'}}]};}
 test('different missions reuse the same vehicle and weapon defaults; capacities are weapon-specific',()=>{

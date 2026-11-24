@@ -25,6 +25,7 @@ export const CHARACTER_VOICE_PROFILES={
  sheridan:{pitch:.78,rate:.88,preferred:/Reed|Takumi|Daniel|David/i},
 } as const;
 const maleVoiceName=/Otoya|Ichiro|Keita|Takumi|Naoki|Daichi|Eddy|Reed|Rocko|Grandpa|Alex|Daniel|David|Fred|George|James|Thomas|Aaron|Arthur|Gordon|Ralph|Albert|\bTom\b|\bMark\b|\bmale\b|男性/i;
+type VoiceProfile='young'|'solemn';
 export const RADIO_RESPONSE_STAGGER_SECONDS=.18;
 export class GameAudio {
   private occupiedUtterance:SpeechSynthesisUtterance|null=null;
@@ -67,7 +68,7 @@ export class GameAudio {
   private missionRadioQueue:{radioId?:string;personId?:string;line:{ja:string;en:string}}[]=[];
   private missionRadioCue:{id:string;generation:number}|null=null;
   queueMissionRadio(reply:{radioId?:string;personId?:string;line:{ja:string;en:string}}){this.missionRadioQueue.push(reply);}
-  async updateMissionRadio(paused=false){if(paused||this.radioPending>0||this.occupiedUtterance||!this.missionRadioQueue.length)return;const next=this.missionRadioQueue.shift()!;await this.sayRadio([next],'young',next.radioId);}
+  async updateMissionRadio(paused=false){if(paused||this.radioPending>0||this.occupiedUtterance||!this.missionRadioQueue.length)return;const next=this.missionRadioQueue.shift()!;const profile:VoiceProfile=next.personId==='wilkins'?'solemn':'young';await this.sayRadio([next],profile,next.radioId);}
   private radioPending=0;private radioGeneration=0;
   private radioSources=new Map<AudioBufferSourceNode,GainNode>();private radioBuffers=new Map<string,Promise<AudioBuffer|null>>();
   private guidanceBuffer=new Map<string,Promise<AudioBuffer|null>>();private guidanceSource:AudioBufferSourceNode|null=null;private guidanceGeneration=0;
@@ -250,7 +251,7 @@ export class GameAudio {
     const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.sfx*.45*distanceGain;
     source.connect(gain);gain.connect(ctx.destination);source.onended=()=>{source.disconnect();gain.disconnect();};source.start();
   }
-  private utterance(text:string,profile:'young'|'solemn',personId?:string){
+  private utterance(text:string,profile:VoiceProfile,personId?:string){
     const u=new SpeechSynthesisUtterance(text);u.lang=this.settings.locale==='ja'?'ja-JP':'en-US';u.pitch=profile==='young'?1.2:.82;u.rate=profile==='young'?1:.88;u.volume=this.settings.voice;
     const voices=speechSynthesis.getVoices().filter(v=>v.lang.startsWith(u.lang.slice(0,2))),character=personId==='kylie'||personId==='sheridan'?CHARACTER_VOICE_PROFILES[personId]:null;
     if(character){
@@ -260,7 +261,7 @@ export class GameAudio {
     }else u.voice=voices.find(v=>/Kyoko|Samantha|female|女性|O-Ren/i.test(v.name))??voices[0]??null;
     return u;
   }
-  say(ja:string,en:string,profile:'young'|'solemn'='young',priority=false){
+  say(ja:string,en:string,profile:VoiceProfile='young',priority=false){
     if(!('speechSynthesis'in window)||!this.settings.voice)return;
     const now=performance.now();
     // Target selection and the other cockpit callouts stay quiet until the transmission ends.
@@ -269,7 +270,7 @@ export class GameAudio {
     if(priority){this.occupiedUtterance=null;this.afterOccupied=null;speechSynthesis.cancel();}this.lastSpeech=now;
     speechSynthesis.speak(this.utterance(this.settings.locale==='ja'?ja:en,profile));
   }
-  sayAlert(ja:string,en:string,profile:'young'|'solemn'='young'){
+  sayAlert(ja:string,en:string,profile:VoiceProfile='young'){
     if(!('speechSynthesis'in window)||!this.settings.voice)return;
     this.stopRadio();this.say(ja,en,profile,true);
   }
@@ -324,7 +325,7 @@ export class GameAudio {
     this.radioPending=Math.max(0,this.radioPending-1);
     if(this.radioPending===0){this.finishMissionRadio(generation);if(this.radioHiss(this.ctx?.currentTime??0,generation,()=>{this.radioPending=0;}))this.radioPending=1;}
   }
-  private radioTts(replies:readonly {personId?:string;line:{ja:string;en:string}}[],generation:number,profile:'young'|'solemn'){
+  private radioTts(replies:readonly {personId?:string;line:{ja:string;en:string}}[],generation:number,profile:VoiceProfile){
     const delay=this.radioHiss((this.ctx?.currentTime??0)+.01,generation);
     const speak=()=>{
       this.radioSpeechTimer=undefined;if(generation!==this.radioGeneration)return;
@@ -334,7 +335,7 @@ export class GameAudio {
     };
     if(delay)this.radioSpeechTimer=setTimeout(speak,(delay+.01)*1000);else speak();
   }
-  async sayRadio(replies:readonly {personId?:string;line:{ja:string;en:string}}[],profile:'young'|'solemn'='young',radioCueId?:string){
+  async sayRadio(replies:readonly {personId?:string;line:{ja:string;en:string}}[],profile:VoiceProfile='young',radioCueId?:string){
     this.occupiedUtterance=null;this.afterOccupied=null;
     if(!replies.length)return;
     this.stopRadio();const generation=this.radioGeneration;this.missionRadioCue=radioCueId?{id:radioCueId,generation}:null;this.radioPending=replies.length;this.lastSpeech=performance.now();

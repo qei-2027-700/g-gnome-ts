@@ -474,11 +474,19 @@ export class Simulation {
     const next=plan.route[0];if(next)this.moveAllyToward(unit,next,0,dt,dist<preferred*.75);else this.coastVehicle(unit,dt);
   }
   private aimAI(unit:Unit,target:SelectionTarget,dt:number){unit.aimPitch=Math.atan2(targetHeight(target)-(unit.hoverHeight+unit.spec.height*.6),distance(unit,target));const bearing=Math.atan2(target.x-unit.x,target.z-unit.z),limit=unit.spec.torsoLimit;if(unit.spec.category!=='tower'&&(Math.abs(unit.speed)<.1||this.brakingUnits.has(unit.id))&&Math.abs(angle(bearing-unit.yaw))>limit*.8)unit.yaw+=aiTurnStep(unit.kind,angle(bearing-unit.yaw),dt);const desired=unit.yaw+Math.max(-limit,Math.min(limit,angle(bearing-unit.yaw)));unit.aim+=aiAimTurnStep(unit.kind,angle(desired-unit.aim),dt);unit.aim=unit.yaw+Math.max(-limit,Math.min(limit,angle(unit.aim-unit.yaw)));}
+  private aiWeaponRange(unit:Unit){return Math.max(0,...unit.spec.weapons.map(weapon=>isLaser(weapon)?this.weapons.lasers[weapon].range:isMissile(weapon)?this.weapons.missiles[weapon].speed*this.weapons.missiles[weapon].lifetime:this.weapons.guns[weapon].range));}
   private tickAllies(dt:number){
     const allies=[...(this.mission.companions??[]).map(member=>this.units.find(u=>u.pilot&&u.personId===member.personId)),...(this.mission.garrison??[]).map(id=>this.units.find(u=>u.id===id))];
     for(const [index,unit] of [...new Set(allies.filter((u):u is Unit=>!!u))].entries()){if(!unit.alive||!unit.pilot||unit===this.mounted)continue;
       const order=unit.order,route=this.suspendedUnitRoutes.has(unit.id)?undefined:this.mission.unitRoutes?.find(route=>(route.unitId===unit.id||!!route.personId&&route.personId===unit.personId)&&!this.suspendedUnitRoutes.has(route.unitId)&&this.time>=route.startAt);
-      const threat=this.combatTargets.filter(target=>target!==unit&&target!==this.mounted&&target.alive&&(!isVehicle(target)||target.pilot)&&target.iff!==unit.iff&&distance(unit,target)<unit.spec.ai.detection&&this.lineOfSight(unit,target)).sort((a,b)=>distance(a,unit)-distance(b,unit))[0];
+      const range=this.aiWeaponRange(unit);
+      const seen=this.combatTargets.filter(target=>target!==unit&&target!==this.mounted&&target.alive&&(!isVehicle(target)||target.pilot)&&target.iff!==unit.iff&&distance(unit,target)<unit.spec.ai.detection&&this.lineOfSight(unit,target)).sort((a,b)=>distance(a,unit)-distance(b,unit))[0];
+      const aggressor=this.activeAggressor(unit);
+      // A hit from outside detection is returned in place. Passive spotting stays inside detection, and this does not add a chase.
+      // Restrict to SelectionTarget (Unit/Soldier/Facility); this.human is a Vec and cannot be used as an attack target here.
+      const aggressorTarget='id' in (aggressor??{})?aggressor as SelectionTarget:undefined;
+      const provoked=aggressorTarget&&aggressorTarget!==this.mounted&&distance(unit,aggressorTarget)<=range&&this.lineOfSight(unit,aggressorTarget)?aggressorTarget:undefined;
+      const threat=provoked??seen,provokedBeyondDetection=!!provoked&&distance(unit,provoked)>=unit.spec.ai.detection;
       const steps=route?.via??[],step=route?this.unitRouteSteps.get(route.unitId)??0:0;
       if(order?.kind!=='follow'&&!route)this.allyFollowRoutes.delete(unit.id);if(order?.kind!=='attack'&&!threat)this.allyManeuvers.delete(unit.id);if(order?.kind==='follow'){
         const anchor=order.targetId?this.selectionTargets.find(t=>t.id===order.targetId&&t.alive):null;
@@ -496,11 +504,10 @@ export class Simulation {
       const target=order?.kind==='attack'?this.selectionTargets.find(value=>value.id===order.targetId):threat??facility;
       if(!target&&order?.kind!=='attack'){if(!route||step>=steps.length)this.coastVehicle(unit,dt);continue;}
       if(!this.validAttackTarget(target,order?.kind==='attack'||!!facility)){if(order?.kind==='attack'){unit.order=null;this.emit({type:'ally-order-complete',unit});}if(!route)this.coastVehicle(unit,dt);continue;}
-      const range=Math.max(...unit.spec.weapons.map(weapon=>isLaser(weapon)?this.weapons.lasers[weapon].range:isMissile(weapon)?this.weapons.missiles[weapon].speed*this.weapons.missiles[weapon].lifetime:this.weapons.guns[weapon].range));
       const disguisedOrder=order?.kind==='attack'&&target!.iff===unit.iff;
-      if((order?.kind==='attack'&&!disguisedOrder||!order&&!!threat)&&target)this.maneuverAlly(unit,target,range,index,dt);
+      if((order?.kind==='attack'&&!disguisedOrder||!order&&!!threat&&!provokedBeyondDetection)&&target)this.maneuverAlly(unit,target,range,index,dt);
       else if(!order&&facility&&route){const goal=route.attackPositions?.[facilityIndex]??route;if(distance(unit,goal)>12&&(distance(unit,facility)>range*.7||!this.lineOfSight(unit,facility)))this.followAlly(unit,goal,`facility:${route.unitId}:${facility.id}`,goal,dt);else this.coastVehicle(unit,dt);}
-      else if(!route)this.coastVehicle(unit,dt);const wasAlert=unit.alert;this.aimAI(unit,target!,dt);
+      else if(!route)this.coastVehicle(unit,dt);const wasAlert=unit.alert||!!provoked;this.aimAI(unit,target!,dt);
       const bearing=Math.atan2(target!.x-unit.x,target!.z-unit.z),settled=this.trackAiFocus(unit,target!.id,wasAlert);if(distance(unit,target!)<=range&&Math.abs(angle(unit.aim-bearing))<.12&&unit.cooldown<=0&&settled)this.fireAI(unit,target!);
     }
   }
@@ -1345,7 +1352,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(assault?.afterEliminateUnitId&&!this.eliminated(assault.afterEliminateUnitId)){this.coastVehicle(unit,dt);continue;}
       if(assault?.advanceTo&&!!assault.advanceAfterUnitIds?.length&&assault.advanceAfterUnitIds.every(id=>this.eliminated(id))){unit.alert=false;this.aiFocus.delete(unit.id);if(this.claimHolding(unit)){unit.speed=0;continue;}this.followAlly(unit,assault.advanceTo,`advance:${unit.id}`,assault.advanceTo,dt);continue;}
       if(assault&&!this.assaultBegun(assault,unit)&&!this.activeAggressor(unit)){this.coastVehicle(unit,dt);continue;}
-      const assaultTarget=assault?this.selectionTargets.find(t=>t.id===assault.targetId&&t.alive&&t.iff!==unit.iff):undefined;
+      const assaultTarget=assault?this.selectionTargets.find(t=>t.id===assault.targetId&&t.alive&&t.iff!==unit.iff&&(!isVehicle(t)||t.pilot)):undefined;
       if(assaultTarget)unit.alert=true;
       this.activeAggressor(unit);
       if(this.mission.companions?.some(member=>member.personId===unit.personId)||this.mission.garrison?.includes(unit.id)){unit.alert=false;continue;}

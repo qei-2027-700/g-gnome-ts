@@ -8,7 +8,7 @@
 | --- | --- |
 | `cockpits/union-sentry-reference.png` | [Union Sentryの提供画像](../docs/reference/vehicles/union-sentry/user-sentry-identification-2026-10-23.png) |
 | `cockpits/union-tactical-reference.png` | [Union Tacticalの機内参照](../docs/reference/vehicles/union-tactical/1-3-darken軍-sentry-hawk.png)。適用先はユーザー指定 |
-| [cockpits/union-aip.png](cockpits/union-aip.png) | [3-2のUnion AIP機内画像](map/3-2/3-2-union-aip.png)から窓と固定計器を除き、金属フレームとして使用 |
+| [cockpits/union-aip.png](cockpits/union-aip.png) | [確認済みのUnion AIP機内写真](reference/union-aip/union-aip.png)。3-2の機内画像と同じ画素で、窓と計器はSVGマスクで抜く |
 | [cockpits/merc-td-hawk.png](cockpits/merc-td-hawk.png) | Merc Tacticalの機内フレーム。窓とHUDを除いて使用。[機内資料](../docs/reference/vehicles/merc-tactical/2-4-merc軍-タクティカルディフェンスhawk内view.png) |
 | [cockpits/darken-sentry-hawk.png](cockpits/darken-sentry-hawk.png) | Darken Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/darken/README.md) |
 | [cockpits/scope-sentry-hawk.png](cockpits/scope-sentry-hawk.png) | Scorp Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/scope-sentry/README.md) |

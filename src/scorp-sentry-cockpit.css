@@ -12,15 +12,7 @@
 .scorp-sentry-cockpit .weapon-panel>div:nth-child(4){left:74.2%;top:10%}
 .scorp-sentry-cockpit .weapon-panel i{order:0;padding:0 .2em;margin:0;border:1px solid #4dff28;font-size:1.15cqw;line-height:1.15}
 .scorp-sentry-cockpit .weapon-panel b{order:1;width:5.4em;font-weight:400}
-.scorp-sentry-cockpit .weapon-panel>div:before{content:'';order:2;width:.55cqw;height:.55cqw;border-radius:50%;background:#ff2a16;flex:none}
-.scorp-sentry-cockpit .weapon-panel>div.ready:before{background:#4dff28}
 .scorp-sentry-cockpit .weapon-panel span[id^=ammo]{order:4;margin-left:auto;float:none;font-size:1.2cqw;color:#67ff32}
-.scorp-sentry-cockpit .weapon-panel .asv-weapon-symbol{display:none}
-.scorp-sentry-cockpit .weapon-panel .charge-meter{order:3;position:relative;float:none;flex:1;height:1.25cqw;min-width:28%;margin:0;border:2px solid #3dff22;border-radius:1.2cqw;background:#041405}
-.scorp-sentry-cockpit #laserChargeFill{height:100%;background:linear-gradient(90deg,#f03318 0 10%,#d6e222 12% 28%,#4dff24 30%);transform-origin:left}
-.scorp-sentry-cockpit .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 22%,#041405 23% 28%)}
-.scorp-sentry-cockpit .weapon-panel>div:nth-child(2):after{content:'';order:3;width:34%;height:62%;background:repeat-x left center/14.2% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 28'%3E%3Crect x='2' y='2' width='12' height='24' rx='6' fill='none' stroke='%2348ff22' stroke-width='2'/%3E%3C/svg%3E")}
-.scorp-sentry-cockpit .weapon-panel>div:nth-child(3):after{content:'';order:3;width:30%;height:70%;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 28'%3E%3Cpath d='M6 9h78l28 5-28 5H6z M24 9l8-7 16 7M24 19l8 7 16-7' stroke='%2348ff22' stroke-width='2' fill='%2336dc20'/%3E%3C/svg%3E")}
 .scorp-sentry-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
 .scorp-sentry-cockpit .iff-display{left:46.9%;top:10%;width:5.2%;height:3%;padding:0;transform:none;border:0;background:#000;display:flex;align-items:center;justify-content:center;font-size:0;z-index:3}
 .scorp-sentry-cockpit .iff-display strong{margin:0;font:1.55cqw "Courier New",monospace;color:#62ff36}

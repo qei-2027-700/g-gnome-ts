@@ -49,6 +49,17 @@
 
 .weapon-panel .charge-meter[hidden]{display:none}.weapon-panel b{font-weight:inherit}
 
+/* One weapon glyph for every cockpit: number, name, symbol, ammo. */
+#cockpit .weapon-panel>div{display:flex;align-items:center;gap:.35em}
+#cockpit .weapon-panel .asv-weapon-symbol{display:block;order:2;position:relative;left:auto;top:auto;flex:1 1 8em;width:auto;height:1.2em;min-width:3.2em;max-width:48%;margin:0;float:none;background:none;filter:none;pointer-events:none}
+#cockpit .weapon-panel .asv-weapon-symbol svg{display:block;width:100%;height:100%;visibility:visible}
+#cockpit .weapon-panel span[id^="ammo"]{order:3;margin-left:auto;float:none}
+#cockpit .weapon-panel .charge-meter{position:absolute;width:1px;height:1px;margin:0;padding:0;border:0;outline:none;overflow:hidden;opacity:0;pointer-events:none;flex:none;background:none;box-shadow:none}
+#cockpit .weapon-panel .charge-meter[hidden]{display:none}
+#cockpit .weapon-panel .charge-meter:before,#cockpit .weapon-panel .charge-meter:after{content:none}
+.ready-light{fill:#f92a17}
+.weapon-panel>div.ready .ready-light,.foot-weapon.ready .ready-light{fill:#3cff20}
+
 /* VISOM camera feed is separate from the vehicle cockpit. */
 #missileHud[hidden]{display:none!important}#missileHud{position:absolute;inset:60px 0 38px;z-index:7;pointer-events:none;color:#c6f7c1;text-shadow:0 1px 3px #000;font-family:monospace;background:repeating-linear-gradient(0deg,#08160812 0 1px,transparent 1px 4px)}
 #missileHud header{position:absolute;top:24px;left:40px;right:40px;display:flex;align-items:center;justify-content:space-between}#missileHud small{display:block;font-size:10px;letter-spacing:3px;opacity:.7}#missileHud strong{display:block;font-size:30px;letter-spacing:5px;line-height:1.7}#missileHud strong span{font-size:13px;letter-spacing:2px}#missileHud .signal{font-size:11px;letter-spacing:3px;color:#9df392}
@@ -62,6 +73,8 @@
 .foot-panel-heading{font-size:9px;letter-spacing:.18em;color:#98a88b;padding-bottom:9px;border-bottom:1px solid #49603b}
 .foot-weapon{padding:10px 0 3px}.foot-weapon+.foot-weapon{margin-top:6px;border-top:1px solid #33452e}
 .foot-weapon-label{display:flex;align-items:center;gap:9px;color:#a0f38b}.foot-weapon-label i{font-style:normal;border:1px solid #637d50;min-width:18px;text-align:center;color:#b5c99e;font-size:10px}.foot-weapon-label b{font-weight:400;letter-spacing:.09em}
+.infantry-weapons .asv-weapon-symbol{display:block;flex:1 1 5em;height:1.15em;min-width:3.2em;margin:0;float:none}
+.infantry-weapons .asv-weapon-symbol svg{display:block;width:100%;height:100%}
 .foot-ammo{margin-left:auto!important;display:flex;align-items:center;gap:8px}.foot-ammo small,.foot-weapon-charge small{font-size:8px;color:#90a581;letter-spacing:.08em}.foot-ammo>span{min-width:20px;text-align:right;font-size:17px;line-height:1}
 .foot-weapon-charge{display:grid;grid-template-columns:43px 1fr 44px;align-items:center;gap:9px;margin-top:8px}.foot-weapon-charge>span{font-size:9px;text-align:right;color:#a8ff85}
 .foot-weapon-charge progress{appearance:none;border:1px solid #49603b;width:100%;height:8px;background:#102015;border-radius:0}.foot-weapon-charge progress::-webkit-progress-bar{background:#102015}.foot-weapon-charge progress::-webkit-progress-value{background:repeating-linear-gradient(90deg,#92e477 0 7px,#28522c 7px 9px)}.foot-weapon-charge progress::-moz-progress-bar{background:#92e477}

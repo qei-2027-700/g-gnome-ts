@@ -12,12 +12,7 @@
 .scorp-tactical-cockpit .weapon-panel>div:nth-child(4){left:74%;top:8.5%}
 .scorp-tactical-cockpit .weapon-panel i{order:0;padding:0 .2em;margin:0;border:1px solid #4dff28;font-size:1.35cqw;line-height:1.15}
 .scorp-tactical-cockpit .weapon-panel b{order:1;width:5em;font-weight:400}
-.scorp-tactical-cockpit .weapon-panel>div:before{content:'';order:2;width:.6cqw;height:.6cqw;border-radius:50%;background:#ff2a16;flex:none}
-.scorp-tactical-cockpit .weapon-panel>div.ready:before{background:#4dff28}
 .scorp-tactical-cockpit .weapon-panel span[id^=ammo]{order:4;margin-left:auto;float:none;font-size:1.3cqw;color:#67ff32}
-.scorp-tactical-cockpit .weapon-panel .asv-weapon-symbol{display:none}
-.scorp-tactical-cockpit .weapon-panel .charge-meter{order:3;position:relative;float:none;flex:1;height:1.25cqw;min-width:24%;margin:0;border:2px solid #3dff22;border-radius:1cqw;background:#041405}
-.scorp-tactical-cockpit #laserChargeFill{height:100%;background:#4dff24;transform-origin:left}
 .scorp-tactical-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
 .scorp-tactical-cockpit .iff-display{left:47%;top:8%;width:6%;height:4%;padding:0;transform:none;border:0;background:#000;display:flex;align-items:center;justify-content:center;font-size:0;z-index:3}
 .scorp-tactical-cockpit .iff-display strong{margin:0;font:1.6cqw "Courier New",monospace;color:#62ff36}

@@ -98,7 +98,43 @@ test('4-2 Scorp facilities use their reference silhouettes and remain inside the
     assert.ok(bounds.minimumWorld.z>=b.z-b.depth/2-.2&&bounds.maximumWorld.z<=b.z+b.depth/2+.2,`${id}: ${mesh.name} z`);
    }
   }
-  assert.equal(world.scene.getTransformNodeByName('facility-bridge-control')!.getChildMeshes().some(mesh=>mesh.name==='scorp-hq-pyramid-roof'),false);
+  const control=MISSION_4_2.base!.buildings.find(item=>item.id==='bridge-control')!,controlRoot=world.scene.getTransformNodeByName('facility-bridge-control')!;
+  assert.equal(controlRoot.metadata.facilityId,'bridge-control');
+  const controlMeshes=controlRoot.getChildMeshes();
+  assert.equal(controlMeshes.some(mesh=>mesh.name==='scorp-hq-pyramid-roof'||mesh.name.startsWith('bridge-sentry-')),false);
+  assert.equal(controlMeshes.some(mesh=>mesh.name==='bridge-control-building-roof'||mesh.name==='minefield-control-roof-equipment'),false);
+  for(const part of ['bridge-control-building','bridge-control-cabin','bridge-control-window','bridge-control-antenna','bridge-control-track'])assert.ok(controlMeshes.some(mesh=>mesh.name===part),part);
+  assert.equal(controlMeshes.filter(mesh=>mesh.name==='bridge-control-track').length,2);
+  const body=controlMeshes.find(mesh=>mesh.name==='bridge-control-building')!;
+  assert.equal(body.metadata.facility,'bridge-control');assert.equal(body.metadata.facilityId,'bridge-control');
+  const bodyPaint=(body.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;
+  assert.ok(Math.abs(bodyPaint.r-bodyPaint.g)<.08&&Math.abs(bodyPaint.g-bodyPaint.b)<.08&&bodyPaint.r>.4);
+  const cabin=controlMeshes.find(mesh=>mesh.name==='bridge-control-cabin')!,windowMesh=controlMeshes.find(mesh=>mesh.name==='bridge-control-window')!,antenna=controlMeshes.find(mesh=>mesh.name==='bridge-control-antenna')!;
+  for(const mesh of [cabin,windowMesh,antenna,body])mesh.computeWorldMatrix(true);
+  const cabinAt=cabin.getAbsolutePosition(),antennaAt=antenna.getAbsolutePosition();
+  assert.ok(Math.abs(cabinAt.z-control.z)>control.depth*.05);
+  assert.ok(Math.sign(cabinAt.z-control.z)===Math.sign(antennaAt.z-control.z)&&Math.abs(cabinAt.z-control.z)>Math.abs(antennaAt.z-control.z));
+  const windowPaint=(windowMesh.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor,cabinPaint=(cabin.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;
+  assert.ok(windowPaint.r+windowPaint.g+windowPaint.b<cabinPaint.r+cabinPaint.g+cabinPaint.b);
+  assert.ok(antenna.getBoundingInfo().boundingBox.maximumWorld.y>body.getBoundingInfo().boundingBox.maximumWorld.y);
+  assert.ok(windowMesh.getBoundingInfo().boundingBox.maximumWorld.x>cabin.getBoundingInfo().boundingBox.maximumWorld.x+.04);
+  const bodyPositions=body.getVerticesData('position')!,frontX=bodyPositions[3]!,roofY=bodyPositions[5*3+1]!,roofX=bodyPositions[5*3]!,run=frontX-roofX,rise=roofY-bodyPositions[4]!,span=Math.hypot(run,rise),nx=rise/span,ny=run/span;
+  const bodyBounds=body.getBoundingInfo().boundingBox;
+  assert.ok(bodyBounds.maximum.y>control.height*.7&&bodyBounds.maximum.x-bodyBounds.minimum.x>control.width*.9&&bodyBounds.maximum.z-bodyBounds.minimum.z>control.depth*.9);
+  for(const rail of controlMeshes.filter(mesh=>mesh.name==='bridge-control-track')){
+   const points=rail.getVerticesData('position')!;
+   for(let i=0;i<points.length;i+=3){
+    const gap=nx*(points[i]!-frontX)+ny*(points[i+1]!-bodyPositions[4]!);
+    assert.ok(gap>.02&&gap<.12,`${rail.name} meets the slope`);
+   }
+  }
+  for(const mesh of controlMeshes){
+   mesh.computeWorldMatrix(true);
+   const bounds=mesh.getBoundingInfo().boundingBox;
+   assert.ok(bounds.minimumWorld.x>=control.x-control.width/2-.2&&bounds.maximumWorld.x<=control.x+control.width/2+.2,`bridge-control: ${mesh.name} x`);
+   assert.ok(bounds.minimumWorld.z>=control.z-control.depth/2-.2&&bounds.maximumWorld.z<=control.z+control.depth/2+.2,`bridge-control: ${mesh.name} z`);
+   assert.ok(bounds.minimumWorld.y>=-.2&&bounds.maximumWorld.y<=control.height+.2,`bridge-control: ${mesh.name} y`);
+  }
   world.scene.dispose();
  }finally{engine.dispose();}
 });
@@ -274,15 +310,26 @@ test('Scorp Sentry has a blue canopy, hanging arms and white outward feet',async
   const paint=(canopy.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;
   assert.ok(paint.b>paint.r&&paint.b>paint.g);
   assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='scorp forearm').length,2);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='scorp upper arm').length,2);
+  assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='scorp shoulder bridge').length,2);
   assert.equal(rig.root.getChildMeshes().filter(mesh=>mesh.name==='pod rim'||mesh.name==='barrel'||mesh.name==='visor'||mesh.name==='hip armor').length,0);
-  assert.equal(shape.weapon.x,2);assert.ok(shape.leg&&shape.leg.w>1);
+  assert.equal(shape.weapon.x,2);assert.ok(shape.leg&&shape.leg.w<.85);
+  canopy.computeWorldMatrix(true);const canopyBox=canopy.getBoundingInfo().boundingBox.extendSize;assert.ok(canopyBox.x>canopyBox.z*2);
   const foot=rig.root.getChildMeshes().find(mesh=>mesh.name==='foot')!;
   const toe=(foot.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor;
   assert.ok(toe.r>.8&&toe.g>.8&&toe.b>.8);
   const through=(x:number,y:number)=>intersectParts(unit,{x,y,z:unit.z+8},{x,y,z:unit.z-8})?.part;
   assert.equal(through(shape.weapon.x,unit.spec.height*.6+shape.weapon.y),'rightWeapon');
-  assert.equal(through(shape.legX,1.6),'rightLeg');
+  const {SCORP_SENTRY_SPLAY}=await import('../content/vehicles.ts');
+  const open=(shape.legHip!- .225)*Math.tan(SCORP_SENTRY_SPLAY),shinX=shape.legX+open*.55,shinY=shape.legHip!-(shape.legHip!-.225)*.55;
+  assert.equal(through(shinX,shinY),'rightLeg');assert.equal(through(.2,1.2),undefined);
   world.update(.016);assert.equal(world.renderError,null);
+  const bounds=(name:string)=>rig.root.getChildMeshes().filter(mesh=>mesh.name===name).map(mesh=>{mesh.computeWorldMatrix(true);const box=mesh.getBoundingInfo().boundingBox;return {min:box.minimumWorld,max:box.maximumWorld};});
+  const overlaps=(a:{min:{x:number;y:number};max:{x:number;y:number}},b:{min:{x:number;y:number};max:{x:number;y:number}})=>a.max.y>=b.min.y-.02&&a.min.y<=b.max.y&&a.max.x>=b.min.x-.02&&a.min.x<=b.max.x;
+  const thighs=bounds('thigh'),shins=bounds('shin'),feet=bounds('foot');
+  assert.equal(thighs.length,2);assert.equal(shins.length,2);assert.ok(feet.length>=2);
+  for(const shin of shins)assert.ok(thighs.some(thigh=>overlaps(shin,thigh)));
+  for(const toeBox of feet)assert.ok(shins.some(shin=>overlaps(toeBox,shin))&&toeBox.min.y<.35);
  }finally{engine.dispose();}
 });
 test('Scorp Assault cockpit uses its reference frame without fixed IFF',async()=>{

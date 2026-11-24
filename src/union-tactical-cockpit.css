@@ -13,12 +13,6 @@
 .tactical-cockpit .weapon-panel i{order:0;font-size:1.2cqw;line-height:1;padding:.1cqw .2cqw;margin:0;border:1px solid #54ff20;color:#54ff20}
 .tactical-cockpit .weapon-panel b{order:1;min-width:31%;font-weight:400}
 .tactical-cockpit .weapon-panel #ammo,.tactical-cockpit .weapon-panel #ammo2,.tactical-cockpit .weapon-panel #ammo3,.tactical-cockpit .weapon-panel #ammo4{order:3;margin-left:auto;float:none;font-size:1.25cqw;min-width:9%;color:#65ff27}
-.tactical-cockpit .weapon-panel .asv-weapon-symbol{display:none}
-.tactical-cockpit .weapon-panel .charge-meter{order:2;display:block;position:relative;float:none;flex:1;height:1.15cqw;min-width:24%;padding:0;margin:0;border:2px solid #3bee18;border-radius:1cqw;background:#001800}
-.tactical-cockpit #laserChargeFill{display:block;height:100%;background:linear-gradient(90deg,#ff3811 0 15%,#d6ee20 16% 25%,#70ff21 26%);transform-origin:left}
-.tactical-cockpit .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 17%,#002800 18% 20%)}
-.tactical-cockpit .weapon-panel>div:nth-child(n+3):after{content:'';order:2;width:30%;height:1.2cqw;flex-shrink:0;clip-path:polygon(0 22%,70% 22%,70% 0,100% 50%,70% 100%,70% 78%,0 78%);background:linear-gradient(90deg,#ec3821 0 13%,#c4ec25 14% 40%,#4bff18 41%);box-shadow:inset 0 0 0 2px #2bfa20}
-.tactical-cockpit #ammo2:before{content:'';display:inline-block;width:7cqw;height:1.7cqw;margin-right:1.3cqw;vertical-align:middle;background:repeat-x left center/14.285% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 30'%3E%3Cpath d='M2 28V8L7 1 12 8V28Z M5 25V9L7 6 9 9V25Z' stroke='%234cff20' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
 .tactical-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
 .tactical-cockpit .iff-display{left:44.8%;top:2.7%;right:auto;width:10%;height:4.6%;padding:0;transform:none;display:flex;align-items:center;justify-content:center;font-size:0;border:0;border-radius:0;background:#000;box-shadow:none;z-index:3}
 .tactical-cockpit .iff-display strong{margin:0;color:#52fc22;font:1.6cqw "Courier New",monospace}

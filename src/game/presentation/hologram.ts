@@ -16,6 +16,14 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  leftLeg:'M49 59h15l-5 22 1 18H44V80z M45 84h14 M44 93h15 M40 99h24v7H40z',
  rightLeg:'M96 59h15l5 21v19h-16l1-18z M101 84h14 M101 93h15 M96 99h24v7H96z'
  });
+ if(kind==='scorp-sentry')Object.assign(paths,{
+  hull:'M56 22h48l-8 36H64z',
+  cockpit:'M62 24h36l-5 16H67z',
+  leftWeapon:'M18 18h20v18H34v30H22V36H18z',
+  rightWeapon:'M122 18h20v18h-4v30H126V36h-4z',
+  leftLeg:'M70 56 L56 90 L42 104 H60 L70 90 L78 58z M40 102h24l-6 6H36z',
+  rightLeg:'M90 56 L104 90 L118 104 H100 L90 90 L82 58z M96 102h24l6 6h-22z'
+ });
  if(kind==='scorp-tactical')Object.assign(paths,{
   hull:'M62 30h36l7 22-10 13H65L55 52z M70 35h20v23H70z M75 62h10v7H75z',
   cockpit:'M67 8h26l5 17-7 6H69l-7-6z M70 12h20v12H70z M74 7V3h12v4 M72 28h16',

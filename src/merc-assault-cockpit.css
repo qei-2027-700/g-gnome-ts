@@ -13,11 +13,6 @@
 .merc-assault-cockpit .weapon-panel i{order:0;font-size:1.4cqw;padding:.1cqw .2cqw;margin:0;border:1px solid #54ff20}
 .merc-assault-cockpit .weapon-panel b{order:1;min-width:27%;font-weight:400}
 .merc-assault-cockpit .weapon-panel #ammo,.merc-assault-cockpit .weapon-panel #ammo2,.merc-assault-cockpit .weapon-panel #ammo3,.merc-assault-cockpit .weapon-panel #ammo4{order:3;margin-left:auto;float:none;font-size:1.2cqw;color:#65ff27}
-.merc-assault-cockpit .weapon-panel .asv-weapon-symbol{display:none}
-.merc-assault-cockpit .weapon-panel .charge-meter{order:2;display:block;position:relative;float:none;flex:1;height:1.2cqw;min-width:24%;padding:0;margin:0;border:2px solid #3bee18;border-radius:1cqw;background:#001800}
-.merc-assault-cockpit #laserChargeFill{display:block;height:100%;background:#55ff27;transform-origin:left}
-.merc-assault-cockpit .weapon-panel>div:after{content:'●';order:2;color:#51ff25;font-size:.8em}
-.merc-assault-cockpit .weapon-panel>div[data-state=firing]:after{color:#ff3a1c}
 .merc-assault-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
 .merc-assault-cockpit .iff-display{left:50%;top:10.3%;right:auto;width:7.4%;height:2.7%;padding:0;background:#000;border:0;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
 .merc-assault-cockpit .iff-display strong{margin:0;font:1.5cqw monospace}

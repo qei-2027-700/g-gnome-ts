@@ -49,7 +49,7 @@ export const MISSION_4_2:MissionDefinition={
   {id:'scorp-rocket',kind:'scorp-rocket-tower',...markedPoint(450,153),pilot:false},
   // {id:'thane-meson',kind:'scorp-meson-tower',...markedPoint(476,194),pilot:false,powerSourceId:'ur-kinsk-power'},
   {id:'thane-meson',kind:'scorp-meson-tower',...markedPoint(526,194),pilot:false,powerSourceId:'ur-kinsk-power'},
-  {id:'scorp-sentry-guard',kind:'scorp-sentry',...markedPoint(370,170),pilot:true},
+  {id:'scorp-sentry-guard',kind:'scorp-sentry',...markedPoint(420,170),pilot:true},
   {id:'scorp-assault2',kind:'scorp-assault',...markedPoint(535,135),pilot:true},
   // {id:'scorp-assault3',kind:'scorp-assault',...markedPoint(385,355),pilot:false},
   // {id:'scorp-asv-guard',kind:'scorp-asv',...markedPoint(558,214),pilot:true},

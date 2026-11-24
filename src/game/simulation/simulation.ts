@@ -689,7 +689,12 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     soldier.order=undefined;soldier.driverOf=undefined;soldier.iff=unit.iff;soldier.yaw=unit.yaw;this.cancelBoarding(soldier);
     const disguise=this.mission.facilityIffDisguise;if(this.facilityIffAcquired&&disguise?.vehicleIds.includes(unit.id)&&this.mission.companions?.some(member=>member.personId===soldier.personId)){soldier.iff=disguise.footIff;soldier.faction=this.mission.playerFaction;}
     const launch=cause!=='boarding'&&unit.spec.ejectionSeat!==false&&unit.spec.category!=='tower';soldier.velocity=undefined;soldier.x=unit.x+(launch?0:Math.cos(unit.yaw)*9);soldier.z=unit.z-(launch?0:Math.sin(unit.yaw)*9);soldier.flight=launch?launchFlight(unit.spec.height,unit.yaw):null;
+    // Gas and destruction leave a living soldier. Attack orders stay on that person, not the empty hull. Boarding is a transfer, not this handoff.
+    if(cause!=='boarding'&&soldier.alive)this.retargetAttackOrders(unit.id,soldier.id);
     if(cause!=='boarding')this.emit({type:'pilot-eject',unit,soldier,ejection:cause});return soldier;
+  }
+  private retargetAttackOrders(fromId:string,toId:string){
+    for(const actor of [...this.units,...this.soldiers])if(actor.order?.kind==='attack'&&actor.order.targetId===fromId)actor.order={kind:'attack',targetId:toId};
   }
   private killVehicleCrew(unit:Unit){
     if(!unit.alive)return;

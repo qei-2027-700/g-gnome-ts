@@ -9,9 +9,6 @@
 .union-cockpit .weapon-panel i{padding:0 .17em;margin:0;font-size:.8em;line-height:1.15;border-radius:1px;color:#45f943}
 .union-cockpit .weapon-panel b{width:33%;font-weight:400}
 .union-cockpit .weapon-panel #ammo,.union-cockpit .weapon-panel #ammo2{margin-left:auto;float:none;color:#8bff68;font-size:.78em}
-.union-cockpit .weapon-panel .charge-meter{float:none;margin:0 0 0 auto;width:34%;height:55%;border:0;background:radial-gradient(circle at 15% 50%,#652916 0 10%,transparent 12%),repeating-linear-gradient(90deg,transparent 0 25%,#399b27 26% 29%,transparent 30% 33%);outline:1px solid #3db929;border-radius:20px;overflow:hidden}
-.union-cockpit .weapon-panel #laserChargeFill{border-radius:20px;background:linear-gradient(90deg,#fa2c10 0 15%,#cce344 17% 24%,#7ee738 25%);height:100%;box-shadow:0 0 6px #59d83c}
-.union-cockpit .weapon-panel .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 22%,#081007 23% 26%,transparent 27% 33%)}
 .union-cockpit .iff-display{top:3.2%;left:50%;right:auto;width:10.2%;height:5.6%;padding:0;display:flex;align-items:center;justify-content:center;gap:0;font-size:0;background:#020803;border:clamp(4px,.65vw,10px) solid #666f61;border-radius:12px;box-shadow:0 -3px 1px #a5a594,0 5px 3px #111810,inset 0 0 10px #000;z-index:3}
 .union-cockpit .iff-display strong{margin:0;font:clamp(13px,1.6vw,25px) "Courier New",monospace;color:#7cfa59;text-shadow:0 0 5px #68f44066}
 .union-cockpit #pingLight{top:4.3%;left:40.5%;right:auto;bottom:auto;width:2.1%;height:3.1%;border-radius:50%;border:3px solid #252c21;background:radial-gradient(circle at 40% 35%,#894229,#3a2015 60%,#1e150e);box-shadow:0 0 0 5px #55594d,0 0 0 7px #242b22}

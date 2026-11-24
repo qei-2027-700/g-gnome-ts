@@ -10,9 +10,7 @@
 .scorp-cockpit .weapon-panel>div:nth-child(4){left:74.5%;top:8.5%}
 .scorp-cockpit .weapon-panel b{font-size:1em;max-width:34%;width:34%}
 .scorp-cockpit .weapon-panel span[id^=ammo]{font-size:.8em;margin-left:auto;float:none;color:#45ff24}
-.scorp-cockpit .asv-weapon-symbol{left:40%;width:42%;top:8%;height:84%}
 .scorp-cockpit .weapon-panel>div[data-state=empty]{opacity:.45}
-.scorp-cockpit .weapon-panel>div[data-state=firing] .asv-weapon-symbol{filter:hue-rotate(300deg)}
 .scorp-cockpit .iff-display{left:50.2%;top:8.2%;width:6.3%;height:4%;background:#000}
 .scorp-cockpit .iff-display strong{font-size:1.8cqw}
 .scorp-cockpit #pingLight{left:49%;top:62.7%;width:4%;height:4.8%;opacity:.75}
@@ -34,6 +32,4 @@
 .scorp-cockpit .telemetry{display:none}
 .scorp-cockpit #notice{top:24%}
 
-.scorp-cockpit .weapon-panel>div:nth-child(-n+2) .asv-weapon-symbol svg{visibility:hidden}
-.scorp-cockpit .weapon-panel>div:nth-child(-n+2) .asv-weapon-symbol{top:17%;height:66%;background:repeat-x left center/14.28% 100% url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 30'%3E%3Cpath d='M2 28V8L7 1 12 8V28Z M5 25V9L7 6 9 9V25Z' stroke='%233cff20' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")}
 .scorp-cockpit .compass .ticks{display:block;width:100%;overflow:hidden;white-space:nowrap;font-size:1.6cqw}

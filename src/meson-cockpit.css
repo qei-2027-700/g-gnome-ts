@@ -11,9 +11,6 @@
 .meson-cockpit .weapon-panel i{font-size:1.1cqw;padding:.1cqw .2cqw;margin:0;border:1px solid #55e724}
 .meson-cockpit .weapon-panel b{font-weight:400}
 .meson-cockpit .weapon-panel #ammo{display:none}
-.meson-cockpit .weapon-panel .charge-meter{display:block;position:relative;float:none;flex:1;height:.8cqw;margin:0;border:1px solid #3bbb21;border-radius:1cqw;background:#071307}
-.meson-cockpit #laserChargeFill{display:block;height:100%;background:#50ed25;transform-origin:left}
-.meson-cockpit .weapon-panel .asv-weapon-symbol{display:none}
 .meson-cockpit .iff-display{left:45.5%;top:8.7%;right:auto;width:12%;height:4.8%;padding:0;border:0;background:none;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
 .meson-cockpit .iff-display strong{margin:0;font:1.5cqw monospace}
 .meson-cockpit .instrument{border:0;background:transparent;box-shadow:none;border-radius:0;z-index:2;overflow:hidden}
@@ -56,12 +53,6 @@
 
 .meson-cockpit #cockpit .meson-reference>path{stroke:none}
 .meson-cockpit .instrument #targetData{left:12%;right:12%}
-.meson-cockpit .charge-meter:after{display:none}
-
-.meson-cockpit .weapon-panel .charge-meter{flex:none;width:36%;height:1.5cqw;border:0;border-radius:0;background:none}
-.meson-cockpit .weapon-panel .charge-meter:before{content:'';position:absolute;inset:0;background:#227b18;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 32'%3E%3Cpath d='M4 16C4 6 18 4 26 10H42C50 3 64 3 72 10H92C101 4 116 6 116 16S101 28 92 22H72C64 29 50 29 42 22H26C18 28 4 26 4 16Z' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
-.meson-cockpit #laserChargeFill{position:relative;z-index:1;background:#50ff28;mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 32'%3E%3Cpath d='M4 16C4 6 18 4 26 10H42C50 3 64 3 72 10H92C101 4 116 6 116 16S101 28 92 22H72C64 29 50 29 42 22H26C18 28 4 26 4 16Z' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
-
 .meson-cockpit .reticle #lockDistance,.meson-cockpit .reticle.on-target #lockDistance,.meson-cockpit .reticle.locked #lockDistance{color:#50ff28}
 .scorp-meson-reference{display:none}
 .meson-cockpit #cockpit[data-vehicle="scorp-meson-tower"] .meson-reference{display:none}

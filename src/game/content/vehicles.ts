@@ -360,8 +360,8 @@ const BASE_VEHICLES = {
       stopDistance:65,
       missileVolley:1
     },
-    // Card front, torso width = 1: canopy about .77 by .48 and seated on the chest, arms hang in front of the legs at x .83, legs about .48 wide. Metres are prototypes. weapon.x stays 2 so the paired CETI mounts remain 4 apart.
-    shape:{hull:{w:2.4,h:1.45,d:2.2,y:-.1,z:0},cockpit:{w:1.85,h:1.15,d:1.5,y:.72,z:.4},weapon:{w:.95,h:2.75,d:.7,x:2,y:-.2,z:.55},legX:1.62,leg:{w:1.15,h:3.2,d:1.15,y:1.6,z:.08}},
+    // Card front, full height 6.3 m = 1. Pale trapezoid chest, blue window on the upper face, gold arms at x 2 so paired CETI stays 4 m apart. leg.w is the open column's thickness. Metres are prototypes from that 3/4 view.
+    shape:{hull:{w:2.5,h:2.42,d:1.12,y:1.21,z:0},cockpit:{w:2.2,h:1.12,d:.16,y:1.78,z:.58},weapon:{w:1.15,h:3.8,d:.7,x:2,y:.5,z:.22},legX:.62,legHip:3.95,leg:{w:.62,h:3.72,d:.55,y:2.09,z:0}},
     gait:{stride:6,lift:.6,lean:.06,bounce:.1},
     drive:{idle:78,rev:60,harmonic:2,filter:320,volume:.035,wave:'sine'}
   },
@@ -630,6 +630,11 @@ export const DARKEN_TACTICAL_REST_STEP=.65;
 export const SCORP_TACTICAL_THIGH=2.75;
 export const SCORP_TACTICAL_SHIN=2.55;
 export const SCORP_TACTICAL_REST_STEP=.75;
+// Card front: the waist sits high and the legs run most of the 6.3 m height. Lengths match shape.legHip 3.95.
+// SPLAY is the outward hip roll. The gait divides the vertical step by cos(SPLAY) so a stopped sole still meets the ground.
+export const SCORP_SENTRY_THIGH=1.96;
+export const SCORP_SENTRY_SHIN=1.94;
+export const SCORP_SENTRY_SPLAY=.24;
 export function pitchDarkenTactical(localY:number,localZ:number){
  const c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH);
  return {y:DARKEN_TACTICAL_TORSO_Y+localY*c-localZ*s,z:localY*s+localZ*c};

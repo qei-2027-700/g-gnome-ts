@@ -10,11 +10,6 @@
 .darken-sentry-cockpit .weapon-panel i{padding:0 .18em;margin:0;border:1px solid #50f52d;font-size:1.2cqw;line-height:1.1}
 .darken-sentry-cockpit .weapon-panel b{width:28%;font-weight:400}
 .darken-sentry-cockpit .weapon-panel #ammo{margin-left:auto;float:none;font-size:1.35cqw;color:#70fb40}
-.darken-sentry-cockpit .weapon-panel .asv-weapon-symbol{display:none}
-.darken-sentry-cockpit .weapon-panel>div:first-child:after{content:'';position:absolute;left:51%;top:16%;width:30%;height:63%;background:no-repeat center/contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 115 28'%3E%3Cpath d='M8 9h76l24 5-24 5H8z M25 9l9-7 14 7M25 19l9 7 14-7' stroke='%234cff24' stroke-width='2' fill='%233fdc24'/%3E%3C/svg%3E")}
-.darken-sentry-cockpit .weapon-panel .charge-meter{position:absolute;left:52%;top:24%;width:33%;height:50%;margin:0;float:none;border:2px solid #58e836;border-radius:2cqw;background:#061804}
-.darken-sentry-cockpit #laserChargeFill{height:100%;background:linear-gradient(90deg,#fa3825 0 12%,#d5df22 14% 30%,#54f527 31%);transform-origin:left}
-.darken-sentry-cockpit .charge-meter:after{background:repeating-linear-gradient(90deg,transparent 0 24%,#061804 25% 29%)}
 .darken-sentry-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
 .darken-sentry-cockpit .iff-display{left:47%;top:9%;width:6%;height:3.5%;padding:0;transform:none;border:0;background:#000;display:flex;align-items:center;justify-content:center;font-size:0;z-index:3}
 .darken-sentry-cockpit .iff-display strong{margin:0;font:1.6cqw "Courier New",monospace;color:#6dff3d}

@@ -68,7 +68,4 @@
 .asv-cockpit .reticle i{display:block;position:absolute;clip-path:none;inset:0;border:0;background:var(--cursor);mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 80'%3E%3Cg fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M42 9Q24 12 13 27M13 53Q25 69 42 72M78 9Q96 12 107 27M107 53Q95 69 78 72'/%3E%3C/g%3E%3C/svg%3E");mask-size:100% 100%;mask-repeat:no-repeat}
 .asv-cockpit .reticle b{display:none}
 
-.asv-weapon-symbol{display:none}
-.asv-cockpit .asv-weapon-symbol{display:block;position:absolute;left:47%;top:15%;width:43%;height:70%;margin:0;float:none;z-index:4;pointer-events:none}
-.asv-cockpit .asv-weapon-symbol svg{display:block;width:100%;height:100%}
 .asv-cockpit .objectives{z-index:10}

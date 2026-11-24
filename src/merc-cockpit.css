@@ -12,10 +12,6 @@
 .merc-cockpit #ammo,.merc-cockpit #ammo2,.merc-cockpit #ammo3{margin-left:auto;font-size:.9em;color:#69ff30}
 .merc-cockpit .iff-display{left:46%;top:12.5%;right:auto;width:6%;height:3.5%;padding:0;background:#000;border:0;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
 .merc-cockpit .iff-display strong{margin:0;font:clamp(10px,1.4vw,21px) monospace}
-.merc-cockpit .weapon-panel .charge-meter{display:block;float:none;width:28%;height:.7em;margin:0 0 0 auto;border:1px solid #52df30;background:#132315;flex-shrink:0}
-.merc-cockpit .weapon-panel .charge-meter[hidden]{display:none}
-.merc-cockpit #laserChargeFill{display:block;width:100%;height:100%;background:#55ff27;transform-origin:left}
-.merc-cockpit .charge-meter.charging #laserChargeFill{background:#e5dc72}
 .merc-cockpit .instrument{border:0;background:#000;box-shadow:none;border-radius:0;z-index:2;overflow:hidden}
 .merc-cockpit .target-instrument{left:10.5%;bottom:0;width:21%;height:31%}
 .merc-cockpit .self-instrument{right:8.5%;bottom:0;width:23%;height:31%}
@@ -42,6 +38,4 @@
 .merc-cockpit .telemetry .stat{display:none}
 .merc-cockpit .telemetry small{font-size:7px}.merc-cockpit .telemetry b{font-size:12px}
 .merc-cockpit .compass .ticks{font-size:clamp(12px,1.8vw,26px);letter-spacing:0}
-.merc-cockpit .weapon-panel>div:after{content:'●';color:#51ff25;font-size:.8em}
-.merc-cockpit .weapon-panel>div[data-state=firing]:after{color:#ff3a1c}
 .merc-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}

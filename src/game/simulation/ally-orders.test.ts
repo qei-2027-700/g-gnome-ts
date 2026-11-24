@@ -331,6 +331,31 @@ test('2-6 F2 addresses Kylie before and after tower boarding; F1 attacks the sel
 function orderedFootSetup(){const {s,people}=footSquad();s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.completionEnabled=false;s.mines=[];s.units=[s.mounted!];s.mounted!.x=-80;s.mounted!.z=-60;
  const target=makeUnit('foot-order-target','merc-sentry',0,260,true);target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=9999;s.units.push(target);people[0].x=0;people[0].z=0;people[0].yaw=0;people[0].gashrAmmo=0;people.slice(1).forEach((p,i)=>{p.x=-50-i*10;p.z=-50;p.cooldown=999;});s.selected=target.id;return {s,people,target};}
 
+test('radio attack follows the living crew after a GASHR impact and does not resume the empty hull',()=>{
+ const s=setup(),menu=new RadioMenu(),ally=s.units.find(u=>u.personId==='kylie')!,thane=s.units.find(u=>u.personId==='thane')!,target=s.units.find(u=>u.id==='scorp-asv')!;
+ s.mission.rocks=[];s.mission.completionEnabled=false;s.mission.footSecondaryWeapon='GASHR';
+ for(const other of s.units)if(other!==s.mounted&&other!==ally&&other!==thane&&other!==target){other.x=900;other.z=900;}
+ target.x=0;target.z=70;target.yaw=0;target.spec.speed=0;target.spec.ai.detection=0;target.cooldown=999;
+ ally.x=36;ally.z=70;ally.yaw=Math.PI/2;ally.aim=ally.yaw;
+ const foot=s.forceEject(thane,'boarding')!;foot.flight=null;foot.x=36;foot.z=58;foot.yaw=Math.atan2(target.x-foot.x,target.z-foot.z);foot.gashrAmmo=0;foot.cooldown=4;thane.x=900;thane.z=900;
+ s.eject('ground');s.human={x:0,z:30};s.humanYaw=Math.atan2(target.x-s.human.x,target.z-s.human.z);s.pitch=s.targetElevation(target);s.selected=target.id;
+ menu.begin('kylie');assert.deepEqual(key(s,menu,'F1')!.accepted,['kylie']);menu.begin('thane');assert.deepEqual(key(s,menu,'F1')!.accepted,['thane']);
+ assert.deepEqual(ally.order,{kind:'attack',targetId:target.id});assert.deepEqual(foot.order,{kind:'attack',targetId:target.id});
+ s.fire(2);assert.equal(target.pilot,true);assert.ok(s.missiles.some(m=>m.weapon==='GASHR'&&m.playerOwned));s.human={x:-400,z:-400};
+ let ejected=false;for(let i=0;i<180&&!ejected;i++){s.tick(1/60,idle);ejected=s.events.some(e=>e.type==='pilot-eject'&&e.unit===target&&e.ejection==='gas');}
+ assert.equal(target.pilot,false);assert.equal(target.alive,true);
+ const crew=s.events.find(e=>e.type==='pilot-eject'&&e.unit===target)?.soldier;assert.ok(crew?.alive);
+ assert.deepEqual(ally.order,{kind:'attack',targetId:crew.id});assert.deepEqual(foot.order,{kind:'attack',targetId:crew.id});assert.equal(s.selected,target.id);
+ const shield=target.shield,armor=target.armor,health=crew.health;
+ for(let i=0;i<25*60&&crew.alive&&crew.health===health;i++)s.tick(1/60,idle);
+ assert.ok(crew.health<health);assert.equal(target.shield,shield);assert.equal(target.armor,armor);
+ assert.deepEqual(ally.order,{kind:'attack',targetId:crew.id});assert.deepEqual(foot.order,{kind:'attack',targetId:crew.id});
+ for(let i=0;i<20*60&&crew.alive;i++)s.tick(1/60,idle);
+ assert.equal(crew.alive,false);s.tick(1/60,idle);assert.equal(ally.order,null);assert.equal(foot.order,null);
+ assert.equal(s.events.filter(e=>e.type==='ally-order-complete'&&(e.unit===ally||e.soldier===foot)).length,2);
+ run(s,3);assert.equal(target.shield,shield);assert.equal(target.armor,armor);assert.equal(ally.order,null);assert.equal(foot.order,null);
+});
+
 test('dismounted F2/F1 attack advances into common PRIF44 range, fires and damages the selected enemy; invalid target clears once',()=>{
  const {s,people,target}=orderedFootSetup(),soldier=people[0],menu=new RadioMenu();key(s,menu,'F2');assert.deepEqual(key(s,menu,'F1')!.accepted,['kylie']);assert.deepEqual(soldier.order,{kind:'attack',targetId:target.id});const shield=target.shield;
  run(s,40);assert.ok(soldier.z>100);assert.ok(s.events.some(e=>e.type==='shot'&&e.soldier===soldier));assert.ok(target.shield<shield||!target.pilot);assert.ok(distance(soldier,target)<150);

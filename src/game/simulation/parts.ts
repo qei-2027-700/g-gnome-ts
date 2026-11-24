@@ -1,4 +1,4 @@
-import {DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_TORSO_Y,pitchDarkenTactical,VEHICLES,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
+import {DARKEN_TACTICAL_HUNCH,DARKEN_TACTICAL_TORSO_Y,pitchDarkenTactical,SCORP_SENTRY_SPLAY,VEHICLES,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
 import {VEHICLE_SHAPES,mercAssaultLegPose,scorpAssaultLegPose} from '../content/vehicle-shapes.ts';
 export const PART_DAMAGE_THRESHOLDS={yellow:.6,critical:.25} as const;
 export const PARTS=['hull','cockpit','leftWeapon','rightWeapon','leftLeg','rightLeg'] as const;
@@ -23,6 +23,13 @@ function spiderBoxes(kind:'merc-assault'|'scorp-assault'){
   }));
  }));
 }
+function scorpSentryLegs():PartBox[]{
+ const shape=VEHICLE_SHAPES['scorp-sentry'],width=shape.leg?.w??.62,hipY=shape.legHip??3.95,drop=hipY-.225,out=drop*Math.tan(SCORP_SENTRY_SPLAY),z=shape.leg?.z??0;
+ return ([-1,1] as const).map(side=>{
+  const from={x:side*shape.legX,y:hipY,z},to={x:side*(shape.legX+out),y:.225,z};
+  return {part:(side<0?'leftLeg':'rightLeg') as BodyPart,x:(from.x+to.x)/2,y:(from.y+to.y)/2,z,w:width,h:Math.hypot(to.x-from.x,to.y-from.y)+width,d:Math.max(width,shape.leg?.d??width),upper:false,segment:{from,to}};
+ });
+}
 function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).height,shape=VEHICLE_SHAPES[body.kind],leg='leg' in shape?shape.leg:undefined,torsoY=body.kind==='darken-tactical'?DARKEN_TACTICAL_TORSO_Y:h*.6;return [
  {part:'cockpit' as const,x:0,...shape.cockpit,y:torsoY+shape.cockpit.y,upper:!('track' in shape)},
  ...('gunHousing' in shape?[{part:'leftWeapon' as const,x:0,...shape.gunHousing,y:torsoY+shape.gunHousing.y,upper:true}]:[]),
@@ -33,7 +40,7 @@ function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).hei
  ...('shoulder' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.shoulder,x:side*shape.shoulder.x,y:torsoY+shape.shoulder.y,upper:false})):[]),
  ...('upperLeg' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.upperLeg,x:side*shape.legX,upper:false})):[]),
  ...('brace' in shape?([-1,1] as const).map(side=>({part:'hull' as const,...shape.brace,x:side*shape.brace.x,y:torsoY+shape.brace.y,upper:true})):[]),
- ...('spider' in shape?spiderBoxes(body.kind as 'merc-assault'|'scorp-assault'):([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,x:side*shape.legX,y:'track' in shape?shape.track.y:'support' in shape?shape.support.y:leg?.y??h*.25,z:'track' in shape?shape.track.z:'support' in shape?shape.support.z:leg?.z??.4,w:'track' in shape?shape.track.w:'support' in shape?shape.support.w:leg?.w??1.5,h:'track' in shape?shape.track.h:'support' in shape?shape.support.h:leg?.h??h*.5,d:'track' in shape?shape.track.d:'support' in shape?shape.support.d:leg?.d??2,upper:false})))
+ ...(body.kind==='scorp-sentry'?scorpSentryLegs():'spider' in shape?spiderBoxes(body.kind as 'merc-assault'|'scorp-assault'):([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,x:side*shape.legX,y:'track' in shape?shape.track.y:'support' in shape?shape.support.y:leg?.y??h*.25,z:'track' in shape?shape.track.z:'support' in shape?shape.support.z:leg?.z??.4,w:'track' in shape?shape.track.w:'support' in shape?shape.support.w:leg?.w??1.5,h:'track' in shape?shape.track.h:'support' in shape?shape.support.h:leg?.h??h*.5,d:'track' in shape?shape.track.d:'support' in shape?shape.support.d:leg?.d??2,upper:false})))
  ];}
 // Enclose all shared part boxes, including weapons and wide legs. A rotation-safe
 // horizontal radius keeps both the body and its turning upper assembly outside walls.

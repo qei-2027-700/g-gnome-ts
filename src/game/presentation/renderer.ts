@@ -80,7 +80,9 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
     const scorpCanopy=scorpSentry?material(`${u.id}-scorp-canopy`,'#3a4d86'):null,scorpChest=scorpSentry?material(`${u.id}-scorp-chest`,'#e0e3e6'):null,scorpArm=scorpSentry?material(`${u.id}-scorp-arm`,'#d4a23a'):null,scorpForearm=scorpSentry?material(`${u.id}-scorp-forearm`,'#9bb5a4'):null,scorpThigh=scorpSentry?material(`${u.id}-scorp-thigh`,'#c47830'):null,scorpShin=scorpSentry?material(`${u.id}-scorp-shin`,'#9bb5a4'):null,scorpFoot=scorpSentry?material(`${u.id}-scorp-foot`,'#f3f0e8'):null;
     const tdSilver=scorpTactical?material(`${u.id}-td-silver`,'#969f9e'):null,tdOrange=scorpTactical?material(`${u.id}-td-orange`,'#b8792d'):null,tdTeal=scorpTactical?material(`${u.id}-td-teal`,'#416f68'):null,tdFoot=scorpTactical?material(`${u.id}-td-foot`,'#d8ded9'):null;
     const tdBlue=scorpTactical?material(`${u.id}-td-blue`,'#5267a9'):null;
-    if(u.kind==='union-asv'||unionTactical){shell.diffuseColor=Color3.White();shell.diffuseTexture=weatheredArmor(scene);}
+    const rampageGold=unionTactical?material(`${u.id}-rampage-gold`,'#b99757'):null;
+    if(u.kind==='union-asv'){shell.diffuseColor=Color3.White();shell.diffuseTexture=weatheredArmor(scene);}
+    if(unionTactical)shell.diffuseColor=Color3.FromHexString('#b4b5b0');
     const trim=material(`${u.id}-edge-panels`,tower?SCORP_TOWER_PALETTE.metal:scorp?SCORP_ASV_PALETTE.metal:darkenTactical?'#5e635c':heavy?MERC_TACTICAL_PALETTE.gray:'#a0a5a5');
     const box=(name:string,w:number,h:number,d:number,x:number,y:number,z:number,mat:StandardMaterial,parent:TransformNode,part?:BodyPart)=>{const b=MeshBuilder.CreateBox(name,{width:w,height:h,depth:d},scene);b.parent=parent;b.position.set(x,y,z);b.material=mat;if(part)b.metadata={bodyPart:part};return b;};
     const prism=(name:string,topW:number,botW:number,topD:number,botD:number,y0:number,y1:number,z:number,mat:StandardMaterial,parent:TransformNode,part?:BodyPart)=>{
@@ -92,9 +94,50 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
       mesh.parent=parent;mesh.material=mat;if(part)mesh.metadata={bodyPart:part};return mesh;
     };
     let cannon:TransformNode|undefined;
+    const extraMaterials:StandardMaterial[]=[];
     const legs:TransformNode[]=[],knees:TransformNode[]=[],feet:TransformNode[]=[],spiderLegs:SpiderLeg[]=[];
     if(spec.category==='hovercraft'){
       const {hull,cockpit}=shape;
+      if(u.kind==='union-aip'){
+        const armor=material(`${u.id}-union-armor`,'#d7d9d5');
+        const edge=material(`${u.id}-union-edge`,'#595b58');
+        const gold=material(`${u.id}-union-gold`,'#b4924d');
+        const glass=material(`${u.id}-union-glass`,'#173c54');
+        const fan=material(`${u.id}-union-fan`,'#494b47');
+        extraMaterials.push(armor,edge,gold,glass,fan);
+        const wing=(side:number,inset:boolean)=>{
+          const outline=inset?[[1.4,1.55],[2.68,1.28],[2.84,-.32],[1.4,-1.58]]:[[1.03,2.2],[2.92,1.62],[3.2,-.55],[1.12,-2.18]];
+          const thickness=inset?.025:.28;
+          const mesh=new Mesh(inset?'union-wing-white':'union-wing',scene),data=new VertexData();
+          data.positions=[...outline.flatMap(([x,z])=>[side*x,(x<1.5?-.16:-.8)+(inset?.04:0),z]),...outline.flatMap(([x,z])=>[side*x,(x<1.5?-.16:-.8)+(inset?.04:0)-thickness,z])];
+          const faces=[0,1,2,0,2,3,7,6,5,7,5,4,0,4,5,0,5,1,1,5,6,1,6,2,2,6,7,2,7,3,3,7,4,3,4,0],reverse:number[]=[];
+          for(let i=0;i<faces.length;i+=3)reverse.push(faces[i],faces[i+2],faces[i+1]);
+          data.indices=[...faces,...reverse];data.normals=[];VertexData.ComputeNormals(data.positions,data.indices,data.normals);data.applyToMesh(mesh);mesh.parent=torso;mesh.material=armor;mesh.metadata={bodyPart:'hull'};
+        };
+        box('union-center-hull',2.45,.62,4.15,0,-.72,.05,armor,torso,'hull');
+        box('union-center-keel',1.65,.3,3.4,0,-1.12,.1,edge,torso,'hull');
+        for(const side of [-1,1]){
+          wing(side,false);wing(side,true);
+          const face=new Mesh('union-wing-front-white',scene),faceData=new VertexData();
+          faceData.positions=[[1.92,-.18,2.28],[2.93,-.48,1.82],[2.9,-.78,1.83],[1.92,-.54,2.29]].flatMap(([x,y,z])=>[side*x,y,z]);
+          faceData.indices=side>0?[2,1,0,3,2,0]:[0,1,2,0,2,3];faceData.normals=[];VertexData.ComputeNormals(faceData.positions,faceData.indices,faceData.normals);faceData.applyToMesh(face);face.parent=torso;face.material=armor;face.metadata={bodyPart:'hull'};
+          box('union-wing-gold-band',1.3,.12,.4,side*1.95,-.22,-1.05,gold,torso,'hull');
+          const rotor=MeshBuilder.CreateCylinder('union-front-rotor',{height:.16,diameter:1.05,tessellation:12},scene);
+          rotor.parent=torso;rotor.rotation.x=Math.PI/2;rotor.position.set(side*1.48,-.58,2.13);rotor.material=fan;rotor.metadata={bodyPart:'hull'};
+          const rim=MeshBuilder.CreateTorus('union-front-rotor-rim',{diameter:1.13,thickness:.1,tessellation:12},scene);
+          rim.parent=torso;rim.rotation.x=Math.PI/2;rim.position.set(side*1.48,-.58,2.23);rim.material=edge;rim.metadata={bodyPart:'hull'};
+          box('union-weapon-housing',.42,.28,1.4,side*2.65,-.28,.35,edge,torso,side<0?'leftWeapon':'rightWeapon');
+          box('union-weapon-muzzle',.29,.16,.2,side*2.65,-.28,1.15,dark,torso,side<0?'leftWeapon':'rightWeapon');
+          const nozzle=MeshBuilder.CreateCylinder('aip-rear-nozzle',{height:.22,diameter:.9,tessellation:16},scene);
+          nozzle.parent=torso;nozzle.rotation.x=Math.PI/2;nozzle.position.set(side*.9,-.7,-2.15);nozzle.material=fan;nozzle.metadata={bodyPart:'hull'};
+          box('union-rear-red-panel',.16,.08,.55,side*1.1,-.12,-1.55,accent,torso,'hull');
+        }
+        box('union-cockpit-base',1.55,.44,2.25,0,-.22,.45,armor,torso,'cockpit');
+        prism('union-cockpit-roof',.78,1.5,1.05,1.8,-.02,.55,.18,armor,torso,'cockpit');
+        box('union-front-window',.88,.43,.08,0,.02,1.55,glass,torso,'cockpit');
+        box('union-window-sill',1.1,.1,.16,0,-.26,1.6,edge,torso,'cockpit');
+        box('union-roof-gold',1.4,.12,.4,0,.38,-.55,gold,torso,'cockpit');
+      }else{
       // A low faceted diamond: the supplied tower view shows pointed shoulders, not a square platform.
       const platform=new Mesh('aip-diamond-platform',scene),data=new VertexData();
       const points=[[0,hull.y+hull.h/2,0],[-hull.w/2,hull.y-.1,0],[0,hull.y-.1,hull.d/2],[hull.w/2,hull.y-.1,0],[0,hull.y-.1,-hull.d/2],[0,hull.y-hull.h/2,0]];
@@ -104,13 +147,6 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
       const canopy=MeshBuilder.CreateCylinder('aip-cockpit',{height:cockpit.h,diameterTop:.28,diameterBottom:1,tessellation:4},scene);canopy.parent=torso;canopy.bakeTransformIntoVertices(Matrix.RotationY(Math.PI/4));canopy.scaling.set(cockpit.w*Math.SQRT2,1,cockpit.d*Math.SQRT2);canopy.position.set(0,cockpit.y,cockpit.z);canopy.material=dark;canopy.metadata={bodyPart:'cockpit'};
 
       for(const side of [-1,1]){box('aip-pod',.5,.5,2.4,side*2,-.2,0,shell,torso,'hull');box('aip-gun',.7,.7,2.7,side*2.4,.1,1,dark,torso,side<0?'leftWeapon':'rightWeapon');}
-      if(u.kind==='union-aip'){
-       shell.diffuseColor=Color3.FromHexString('#c4c5c3');
-       const exhaust=material(`${u.id}-rear-exhaust`,'#333a3b');
-       for(const side of [-1,1]){
-        const nozzle=MeshBuilder.CreateCylinder('aip-rear-nozzle',{height:.22,diameter:.9,tessellation:16},scene);nozzle.parent=torso;nozzle.rotation.x=Math.PI/2;nozzle.position.set(side*.9,-.28,-hull.d/2+.1);nozzle.material=exhaust;nozzle.metadata={bodyPart:'hull'};
-        box('aip-rear-red-panel',.18,.11,.8,side*1.15,hull.y+hull.h/2+.06,-hull.d/2+.8,accent,torso,'hull');
-       }
       }
      }else if(u.kind==='scorp-assault'){
       const {hull,cockpit,weapon,spider}=VEHICLE_SHAPES['scorp-assault'];
@@ -311,12 +347,26 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
       }
     }else if(!scorpSentry)box('hull',hull.w,hull.h,hull.d,0,hull.y,hull.z,shell,torso);
     if(heavy&&!darkenTactical&&!scorpTactical){
-      const cabin=MeshBuilder.CreateCylinder('cockpit',{height:cockpit.h,diameterTop:1,diameterBottom:.68,tessellation:4},scene);
-      cabin.parent=torso;cabin.position.set(0,cockpit.y,cockpit.z);cabin.rotation.y=Math.PI/4;cabin.scaling.set(cockpit.w*Math.SQRT2,1,cockpit.d*Math.SQRT2);cabin.material=dark;cabin.metadata={bodyPart:'cockpit'};
-      box('cab roof edge',cockpit.w+.16,.18,cockpit.d+.12,0,cockpit.y+cockpit.h/2,cockpit.z,shell,torso,'cockpit');
-      box('cab lower rim',cockpit.w*.75,.18,cockpit.d*.8,0,cockpit.y-cockpit.h/2,cockpit.z,trim,torso,'cockpit');
+      if(unionTactical){
+        box('rampage low cockpit',cockpit.w,cockpit.h,cockpit.d,0,cockpit.y,cockpit.z,dark,torso,'cockpit');
+        box('rampage roof armor',cockpit.w+.12,.16,cockpit.d+.08,0,cockpit.y+cockpit.h/2,cockpit.z,shell,torso,'cockpit');
+        box('rampage cockpit lower rim',cockpit.w*.9,.16,cockpit.d,0,cockpit.y-cockpit.h/2,cockpit.z,trim,torso,'cockpit');
+        box('rampage cockpit support',1.45,1.1,1.0,0,.7,.1,shell,torso,'hull');
+        box('rampage support front',1.25,.66,.12,0,.68,.67,trim,torso,'hull');
+        for(const side of [-1,1]){
+          const vent=MeshBuilder.CreateCylinder('rampage rear round vent',{height:.12,diameter:.45,tessellation:10},scene);
+          vent.parent=torso;vent.rotation.x=Math.PI/2;vent.position.set(side*.43,1.46,-.55);vent.material=shell;vent.metadata={bodyPart:'cockpit'};
+          const core=MeshBuilder.CreateCylinder('rampage rear red vent core',{height:.14,diameter:.23,tessellation:10},scene);
+          core.parent=torso;core.rotation.x=Math.PI/2;core.position.set(side*.43,1.46,-.64);core.material=accent;core.metadata={bodyPart:'cockpit'};
+        }
+      }else{
+        const cabin=MeshBuilder.CreateCylinder('cockpit',{height:cockpit.h,diameterTop:1,diameterBottom:.68,tessellation:4},scene);
+        cabin.parent=torso;cabin.position.set(0,cockpit.y,cockpit.z);cabin.rotation.y=Math.PI/4;cabin.scaling.set(cockpit.w*Math.SQRT2,1,cockpit.d*Math.SQRT2);cabin.material=dark;cabin.metadata={bodyPart:'cockpit'};
+        box('cab roof edge',cockpit.w+.16,.18,cockpit.d+.12,0,cockpit.y+cockpit.h/2,cockpit.z,shell,torso,'cockpit');
+        box('cab lower rim',cockpit.w*.75,.18,cockpit.d*.8,0,cockpit.y-cockpit.h/2,cockpit.z,trim,torso,'cockpit');
+      }
       box('shoulder crossbar',4.5,.28,1.05,0,2.05,-.25,trim,torso,'hull');
-      box('waist bridge',3.0,.36,1.5,0,-.95,.1,shell,torso,'hull');
+      box('waist bridge',unionTactical?4.25:3.0,.36,1.5,0,-.95,.1,shell,torso,'hull');
       box('waist dark inset',1.6,.3,.15,0,-.25,1.2,dark,torso,'hull');
       box('waist blue plate',1.7,.22,.18,0,-.52,1.24,accent,torso,'hull');
       if(u.kind==='merc-tactical'){
@@ -334,7 +384,12 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
           box('rear shoulder blue marker',weapon.w*.58,.12,.09,x,weapon.y-.38,z-.14,accent,torso,side<0?'leftWeapon':'rightWeapon');
         }
       }
-      if(unionTactical){box('rampage armored brow',3.3,.45,1.3,0,1.92,.7,shell,torso,'cockpit');box('rampage central window',1.55,.65,.14,0,1.3,1.35,dark,torso,'cockpit');}
+      if(unionTactical){
+        box('rampage front chest',1.85,.72,.24,0,.72,hull.z+hull.d/2+.1,shell,torso,'hull');
+        box('rampage gold chest lamp',.7,.13,.08,0,.91,hull.z+hull.d/2+.27,rampageGold!,torso,'hull');
+        box('rampage lower chest vent',1.2,.2,.08,0,.38,hull.z+hull.d/2+.27,dark,torso,'hull');
+        for(const side of [-1,1])box('rampage hip brace',.6,.48,.62,side*1.75,-1.12,.1,trim,torso,'hull');
+      }
     }else if(scorpTactical){
       box('td neck',.58,.38,.58,0,cockpit.y-.48,0,dark,torso,'hull');
       box('td silver head',cockpit.w,cockpit.h,cockpit.d,0,cockpit.y,cockpit.z,tdSilver!,torso,'cockpit');
@@ -404,17 +459,30 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
         const data=new VertexData();data.positions=positions;data.indices=indices;data.normals=[];VertexData.ComputeNormals(positions,indices,data.normals);data.applyToMesh(pod);
       }
       if(scorpSentry){box('scorp elbow',weapon.w*.92,.3,weapon.d*.92,x,1.12,weapon.z,scorpThigh!,torso,part);box('scorp forearm',weapon.w*.84,2.7,weapon.d*.82,x,-.28,weapon.z,scorpForearm!,torso,part);}
-      if(unionTactical){pod.parent=torso;pod.position.set(x,weapon.y,weapon.z);pod.rotation.x=Math.PI/2;pod.scaling.set(weapon.w/2,weapon.d,weapon.h/2);pod.material=accent;pod.metadata={bodyPart:part};}
+      if(unionTactical){
+        pod.parent=torso;pod.position.set(x,weapon.y,weapon.z);pod.rotation.x=Math.PI/2;pod.scaling.set(weapon.w/2,weapon.d,weapon.h/2);pod.material=shell;pod.metadata={bodyPart:part};
+        box('rampage shoulder amber plate',weapon.w*.8,.16,.62,x,weapon.y+weapon.h/2+.09,weapon.z-.12,rampageGold!,torso,part);
+        const gun=MeshBuilder.CreateCylinder('rampage side cannon',{height:.72,diameterTop:.34,diameterBottom:.58,tessellation:8},scene);
+        gun.parent=torso;gun.rotation.z=Math.PI/2;gun.position.set(side*3.12,weapon.y-.05,weapon.z+.22);gun.material=trim;gun.metadata={bodyPart:part};
+        const muzzle=MeshBuilder.CreateCylinder('rampage side muzzle',{height:.1,diameter:.37,tessellation:8},scene);
+        muzzle.parent=torso;muzzle.rotation.z=Math.PI/2;muzzle.position.set(side*3.48,weapon.y-.05,weapon.z+.22);muzzle.material=dark;muzzle.metadata={bodyPart:part};
+      }
       if(!heavy&&!darkenSentry&&!scorpSentry){
         box('pod rim',weapon.w*.8,.14,weapon.d+.1,x,weapon.y+.35,weapon.z,trim,torso,part);
         box('weapon muzzle',weapon.w*.7,weapon.h*.55,.18,x,weapon.y,weapon.z+weapon.d/2+.07,dark,torso,part);
         box('weapon face panel',.36,.3,.2,x+side*.28,weapon.y+.05,weapon.z+weapon.d/2+.12,darkenPod??accent,torso,part);
       }
       if(heavy&&!darkenTactical&&!scorpTactical){
-        box('shoulder blue cap',weapon.w+.12,.27,weapon.d+.1,x,weapon.y+weapon.h/2+.05,weapon.z,accent,torso,part);
-        box('shoulder black face',weapon.w*.75,weapon.h*.63,.16,x,weapon.y,weapon.z+weapon.d/2+.06,dark,torso,part);
-        box('shoulder white divider',weapon.w*.88,.16,.2,x,weapon.y-.24,weapon.z+weapon.d/2+.12,shell,torso,part);
-        box('shoulder lower rail',weapon.w+.06,.16,weapon.d+.12,x,weapon.y-weapon.h/2,weapon.z,trim,torso,part);
+        if(unionTactical){
+          box('rampage shoulder face',weapon.w*.64,weapon.h*.5,.13,x,weapon.y,weapon.z+weapon.d/2+.04,dark,torso,part);
+          box('rampage shoulder red mark',.13,.4,.08,x+side*.28,weapon.y,weapon.z+weapon.d/2+.14,accent,torso,part);
+          box('rampage shoulder lower rail',weapon.w,.12,weapon.d,x,weapon.y-weapon.h/2,weapon.z,trim,torso,part);
+        }else{
+          box('shoulder blue cap',weapon.w+.12,.27,weapon.d+.1,x,weapon.y+weapon.h/2+.05,weapon.z,accent,torso,part);
+          box('shoulder black face',weapon.w*.75,weapon.h*.63,.16,x,weapon.y,weapon.z+weapon.d/2+.06,dark,torso,part);
+          box('shoulder white divider',weapon.w*.88,.16,.2,x,weapon.y-.24,weapon.z+weapon.d/2+.12,shell,torso,part);
+          box('shoulder lower rail',weapon.w+.06,.16,weapon.d+.12,x,weapon.y-weapon.h/2,weapon.z,trim,torso,part);
+        }
       }
       if(darkenTactical){
         const podPart=part;
@@ -468,8 +536,14 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
           box('rear thigh inset',.62,spec.height*.11,.08,0,-spec.height*.13,-.65,dark,leg,side<0?'leftLeg':'rightLeg');
         }
         box('tactical knee band',1.5,.32,1.3,0,-.1,.12,trim,knee);
-        box('shin blue armor',1.3,spec.height*.13,.18,0,-spec.height*.115,.79,accent,knee);
-        box('shin black vent',.9,.32,.2,0,-spec.height*.12,.89,dark,knee);
+        if(unionTactical){
+          box('rampage shin front armor',1.25,spec.height*.16,.16,0,-spec.height*.12,.79,trim,knee,side<0?'leftLeg':'rightLeg');
+          const mark=MeshBuilder.CreateCylinder('rampage shin red roundel',{height:.08,diameter:.34,tessellation:10},scene);
+          mark.parent=knee;mark.rotation.x=Math.PI/2;mark.position.set(0,-spec.height*.15,.9);mark.material=accent;mark.metadata={bodyPart:side<0?'leftLeg':'rightLeg'};
+        }else{
+          box('shin blue armor',1.3,spec.height*.13,.18,0,-spec.height*.115,.79,accent,knee);
+          box('shin black vent',.9,.32,.2,0,-spec.height*.12,.89,dark,knee);
+        }
         box('shin white seam',1.4,.18,.22,0,-spec.height*.065,.9,shell,knee);
         box('shin lower white cuff',1.5,.27,1.35,0,-spec.height*.2,.12,shell,knee);
         if(u.kind==='merc-tactical'){
@@ -483,6 +557,7 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
       else if(scorpTactical){const ankle=new TransformNode('td ankle',scene);ankle.parent=knee;ankle.position.y=-SCORP_TACTICAL_SHIN;foot=ankle;box('td long foot',.82,.16,1.45,0,-.02,.42,dark,ankle,side<0?'leftLeg':'rightLeg');for(const edge of [-1,1])box('td white claw',.32,.16,.62,edge*.27,.02,1.2,tdFoot!,ankle,side<0?'leftLeg':'rightLeg');}
       else if(scorpSentry){const ankle=new TransformNode('scorp ankle',scene);ankle.parent=knee;ankle.position.y=-SCORP_SENTRY_SHIN;ankle.rotation.z=-side*SCORP_SENTRY_SPLAY;foot=ankle;const toe:BodyPart=side<0?'leftLeg':'rightLeg';box('foot',.86,.16,.66,side*.12,-.05,.06,scorpFoot!,ankle,toe);for(const [toeZ,reach] of [[-.22,.72],[.02,.98],[.24,.64]] as const)box('foot',reach,.12,.2,side*(.22+reach/2),-.06,toeZ,scorpFoot!,ankle,toe);}
       else foot=box('foot',darkenSentry?.42:heavy?1.65:1.5,darkenSentry?.16:.45,darkenSentry?.55:heavy?2.35:2,0,-spec.height*.22,darkenSentry?0:.2,dark,knee);
+      if(unionTactical){box('rampage foot armor',1.5,.17,1.65,0,.2,.18,shell,foot,side<0?'leftLeg':'rightLeg');box('rampage foot toe',1.65,.16,.52,0,.11,.9,trim,foot,side<0?'leftLeg':'rightLeg');}
       feet.push(foot);
       if(u.kind==='merc-tactical')for(const z of [-.75,-.25,.25,.75]){const tread=MeshBuilder.CreatePlane('merc-sole-tread',{width:1.35,height:.14,sideOrientation:Mesh.DOUBLESIDE},scene);tread.parent=foot;tread.rotation.x=Math.PI/2;tread.position.set(0,-.226,z);tread.material=trim;}
     }
@@ -496,7 +571,8 @@ export function buildVehicleModel(scene:Scene,u:Unit,material:(name:string,hex:s
       const original=mesh.material as StandardMaterial,material=original.clone(`${u.id}-${part}-${mesh.name}`)!;
       mesh.material=material;mesh.metadata={bodyPart:part};parts[part].meshes.push(mesh);parts[part].paint.push({material,base:original.diffuseColor.clone(),glow:original.emissiveColor.clone()});
     }
-    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();scorpCanopy?.dispose();scorpChest?.dispose();scorpArm?.dispose();scorpForearm?.dispose();scorpThigh?.dispose();scorpShin?.dispose();scorpFoot?.dispose();tdSilver?.dispose();tdOrange?.dispose();tdTeal?.dispose();tdFoot?.dispose();tdBlue?.dispose();
+    accent.dispose();trim.dispose();shell.dispose(false,true);dark.dispose();glow.dispose();darkenPod?.dispose();scorpCanopy?.dispose();scorpChest?.dispose();scorpArm?.dispose();scorpForearm?.dispose();scorpThigh?.dispose();scorpShin?.dispose();scorpFoot?.dispose();tdSilver?.dispose();tdOrange?.dispose();tdTeal?.dispose();tdFoot?.dispose();tdBlue?.dispose();rampageGold?.dispose();
+    for(const paint of extraMaterials)paint.dispose();
     return {spiderLegs,cannon,root,torso,legs,knees,feet,phase:0,run:0,lastX:u.x,lastZ:u.z,recoil:0,parts} as Rig;
   }
 export function buildSoldierModel(scene:Scene,id:string,hero=false,faction:Faction='merc',heroFaction:Faction='union',material:(name:string,hex:string,glow?:boolean)=>StandardMaterial=(name,hex)=>{const m=new StandardMaterial(name,scene);m.diffuseColor=color(hex);return m;}):SoldierRig {

@@ -152,7 +152,7 @@ const BASE_VEHICLES = {
       missileVolley:1
     },
     // User-tuned leg proportions; keep the upper assembly and declared height unchanged.
-    shape:{hull:{w:2.9,h:1.1,d:2.1,y:-.35,z:0},cockpit:{w:2.65,h:1.6,d:2.2,y:1.2,z:.2},weapon:{w:1.7,h:1.3,d:2.6,x:2.65,y:1.5,z:.05},legX:1.65,legScale:{x:.82,y:1.1,z:.9},legHip:4.125,support:{w:1.65*.82,h:4.125,d:2.35*.9,y:4.125/2,z:.2*.9}},
+    shape:{hull:{w:2.9,h:1.1,d:2.1,y:-.35,z:0},cockpit:{w:1.9,h:.82,d:1.35,y:1.58,z:.2},weapon:{w:1.7,h:1.3,d:2.6,x:2.65,y:1.5,z:.05},legX:2.2,legScale:{x:.82,y:1.1,z:.9},legHip:4.125,support:{w:1.65*.82,h:4.125,d:2.35*.9,y:4.125/2,z:.2*.9}},
     gait:{stride:7,lift:.65,lean:.06,bounce:.13},
     drive:{idle:72,rev:52,harmonic:2.5,filter:320,volume:.035,wave:'triangle'}
   },
@@ -463,7 +463,7 @@ const BASE_VEHICLES = {
       stopDistance:110,
       missileVolley:1
     },
-    shape:{hull:{w:5.2,h:1.7,d:6.2,y:-.4,z:0},cockpit:{w:2.4,h:1.5,d:2.8,y:.7,z:.8},weapon:{w:.7,h:.7,d:2.7,x:2.1,y:.1,z:1},legX:2.6,support:{w:.2,h:.2,d:.2,y:0,z:0}},
+    shape:{hull:{w:6.4,h:1.12,d:4.5,y:-.7,z:0},cockpit:{w:1.55,h:.82,d:2.25,y:.12,z:.45},weapon:{w:.42,h:.28,d:1.4,x:2.65,y:-.28,z:.35},legX:2.6,support:{w:.2,h:.2,d:.2,y:0,z:0}},
     gait:{stride:1,lift:0,lean:0,bounce:0},
     drive:{idle:110,rev:70,harmonic:2,filter:400,volume:.035,wave:'sine'}
   },

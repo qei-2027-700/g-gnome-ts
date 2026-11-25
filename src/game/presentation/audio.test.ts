@@ -752,3 +752,21 @@ test('classified fire sounds share a voice, and weapons outside the table keep t
   if(previousWindow)Object.defineProperty(globalThis,'window',previousWindow);else Reflect.deleteProperty(globalThis,'window');
  }
 });
+
+test('accepted local 4-5 reference clips play while rejected clips use the synthesized sounds',async()=>{
+ const fetched:string[]=[],sources:any[]=[],gains:number[]=[],generated:Float32Array[]=[];
+ const ctx={currentTime:10,sampleRate:44100,state:'running',destination:{},decodeAudioData:async(bytes:ArrayBuffer)=>({duration:1,name:new TextDecoder().decode(bytes)}),createBuffer:()=>({copyToChannel(samples:Float32Array){generated.push(samples);}}),createBufferSource:()=>{const source={buffer:null as any,stopped:false,connect(){},disconnect(){},start(){},stop(){this.stopped=true;},onended:null as null|(()=>void)};sources.push(source);return source;},createGain:()=>({gain:{set value(v:number){gains.push(v);},get value(){return gains.at(-1)??0;}},connect(){},disconnect(){}})};
+ const descriptor=Object.getOwnPropertyDescriptor(globalThis,'fetch');
+ try{
+  Object.defineProperty(globalThis,'fetch',{configurable:true,value:async(url:string)=>{fetched.push(url);return {ok:true,arrayBuffer:async()=>new TextEncoder().encode(url.split('/').at(-1)).buffer};}});
+  const settings=defaults(),audio=new GameAudio(settings,{},'/reference/');audio.ctx=ctx as unknown as AudioContext;
+  audio.sound('shot',true,'P2MEC');assert.equal(generated.length,1);
+  (audio as any).preloadLocalReferences();await Promise.all((audio as any).referenceLoading.values());assert.equal(fetched.length,3);
+  audio.sound('shot',true,'P2MEC');audio.sound('shot',false,'TCREAP');audio.sound('missile',false,'VISOM');assert.equal(generated.length,3);
+  assert.equal(fetched.some(url=>/visom|p2mec|tcreap/.test(url)),false);
+  audio.sound('missile',false,'TCROCK');assert.equal(sources.at(-1).buffer.name,'tcrock.wav');
+  audio.sound('impact',false,'GAUS30');assert.equal(sources.at(-1).buffer.name,'gaus-hit.wav');
+  audio.vehicleDestroyed('union-sentry');assert.equal(sources.at(-1).buffer.name,'sentry-destroy.wav');assert.equal(gains.at(-1),settings.sfx*1.6);
+  assert.ok(gains.every(gain=>gain>0));
+ }finally{if(descriptor)Object.defineProperty(globalThis,'fetch',descriptor);else Reflect.deleteProperty(globalThis,'fetch');}
+});

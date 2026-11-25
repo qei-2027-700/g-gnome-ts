@@ -50,6 +50,7 @@
 ## 音・音声
 
 - [中断確認と音の制作](audio/mission-controls-and-audio.md)：女性声2種類、機体・施設名の案内、損傷警告、中断、自作SE、BGM、後日の英語対応
+- [原作動画からのSE採集手順](audio/original-se-extraction.md)：音の特定、切り出し、試聴、ゲームへの再利用と記録
 - [BGMと場面の対応表](audio/bgm-mapping.md)：Merc・Scorp領域・3-3・1-1開始曲と戦闘開始曲、Merc最終戦用Fighting on the Tundra（再生未接続）の参照URL・検査値、MP3抽出手順、複数曲と切り替え条件
 
 ## 技術設計

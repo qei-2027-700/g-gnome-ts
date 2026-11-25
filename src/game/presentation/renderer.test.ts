@@ -803,7 +803,8 @@ test('launch-view Union ASV and Sheridan Rampage render distinct rear, armor and
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const {VEHICLES}=await import('../content/vehicles.ts');
  const engine=new NullEngine({renderWidth:1280,renderHeight:720,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),s=new Simulation('Easy',MISSION_3_3),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);
  const sheridan=world.rigs.get('sheridan')!,asv=world.rigs.get('player-asv')!;
- assert.ok(sheridan.root.getChildMeshes().some(m=>m.name==='rampage armored brow'));assert.ok(sheridan.root.getChildMeshes().some(m=>m.name==='rampage central window'));
+ assert.ok(sheridan.root.getChildMeshes().some(m=>m.name==='rampage low cockpit'));assert.ok(sheridan.root.getChildMeshes().some(m=>m.name==='rampage cockpit support'));
+ assert.equal(sheridan.root.getChildMeshes().filter(m=>m.name==='rampage side cannon').length,2);assert.equal(sheridan.root.getChildMeshes().filter(m=>m.name==='rampage rear red vent core').length,2);
  assert.ok(asv.root.getChildMeshes().some(m=>m.name==='rear observation slit'));assert.ok(asv.root.getChildMeshes().some(m=>m.name==='engine grille slat'));
  assert.notEqual(VEHICLES['union-tactical'].height,VEHICLES['union-sentry'].height);assert.ok(VEHICLES['union-tactical'].weapons.includes('P2MEC'));
  assert.ok(world.scene.getMeshByName('start-left-cliff'));assert.equal(sheridan.root.rotation.y,s.units.find(u=>u.id==='sheridan')!.yaw);engine.dispose();
@@ -1246,14 +1247,14 @@ test('a thin cliff is the same box from both width edges and shares one texture'
  }finally{engine.dispose();}
 });
 
-test('Union AIP uses its photographed shell and rear nozzles with a distinct self hologram',async()=>{
+test('Union AIP has its distinct cockpit shell, wide wings and paired rotors',async()=>{
  const {unionAipCockpitShellSvg}=await import('./union-aip-cockpit.ts');
  const {hologramSvg}=await import('./hologram.ts');
  const shell=unionAipCockpitShellSvg();assert.ok(shell.includes('assets/cockpits/union-aip.png'));assert.ok(shell.includes('union-aip-metal-mask'));assert.equal(shell.includes('4044'),false);
  assert.notEqual(hologramSvg('union-aip'),hologramSvg('merc-aip'));
  const sim=new Simulation(),unit=makeUnit('union-aip-preview','union-aip',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
  const engine=new NullEngine({renderWidth:1142,renderHeight:858,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
- try{const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='aip-rear-nozzle').length,2);assert.equal(world.rigs.get(unit.id)!.torso.position.y,unit.spec.height*.6);}finally{engine.dispose();}
+ try{const world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='aip-rear-nozzle').length,2);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='union-front-rotor').length,2);assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='union-wing-front-white').length,2);assert.equal(world.scene.getMeshByName('union-front-window')?.metadata.bodyPart,'cockpit');assert.equal(world.scene.getMeshByName('aip-diamond-platform'),null);assert.equal(world.rigs.get(unit.id)!.torso.position.y,unit.spec.height*.6);}finally{engine.dispose();}
 });
 
 test('Scorp Assault LRIP fires two green lasers from its paired muzzles',async()=>{

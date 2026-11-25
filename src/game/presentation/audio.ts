@@ -14,6 +14,9 @@ const MISSILE_LAUNCH_URL=new URL('../../../assets/audio/sfx/missile-launch.wav',
 // Fallback for non-GAUS lasers that do not have an auditory class yet, including RUPP.
 const LASER_SHOT={wave:'sine' as OscillatorType,frequency:1100,duration:.12,gain:.1};
 const MISSILE_AUDIO_MAX_DISTANCE=600;
+const LOCAL_REFERENCE_FILES={bowWheeGggo:'tcrock.wav',gausImpact:'gaus-hit.wav',hawcDestroy:'sentry-destroy.wav'} as const;
+type LocalReferenceKey=keyof typeof LOCAL_REFERENCE_FILES;
+const LOCAL_REFERENCE_ROOT=typeof location!=='undefined'&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?'/.artifacts/mission-4-5-original-audio/game/':null;
 type HorizontalPosition={x:number;z:number};
 function missileDistanceGain(source:HorizontalPosition,listener:HorizontalPosition){
   return Math.max(0,1-Math.hypot(source.x-listener.x,source.z-listener.z)/MISSILE_AUDIO_MAX_DISTANCE);
@@ -51,6 +54,7 @@ export class GameAudio {
   vehicleDestroyed(kind:VehicleKind){
     if(!isHawc(kind)){this.sound('destroy');return;}
     const ctx=this.ctx;if(!ctx||ctx.state!=='running'||this.settings.sfx<=0)return;
+    if(this.playLocalReference('hawcDestroy',1.6,this.collapseSources))return;
     if(!this.collapseBuffer){const samples=hawcCollapseSamples(ctx.sampleRate);this.collapseBuffer=ctx.createBuffer(1,samples.length,ctx.sampleRate);this.collapseBuffer.copyToChannel(samples,0);}
     // Bound overlapping collapses, including several HAWCs on a lifting bridge.
     if(this.collapseSources.size>=2){const oldest=this.collapseSources.values().next().value!;oldest.stop();this.collapseSources.delete(oldest);}
@@ -83,6 +87,9 @@ export class GameAudio {
   private missileBuffer:AudioBuffer|null=null;private missileLoading:Promise<AudioBuffer|null>|null=null;
   private fireBuffers=new Map<string,AudioBuffer>();
   private fireSources=new Set<AudioBufferSourceNode>();
+  private referenceBuffers=new Map<LocalReferenceKey,AudioBuffer>();
+  private referenceLoading=new Map<LocalReferenceKey,Promise<void>>();
+  private referenceLastAt=new Map<LocalReferenceKey,number>();
   private zWaspStep=0;
   private zWaspLast=-1;
   private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;assault:boolean;radioEnded:boolean;bridged:boolean;waypoint:boolean;track:string|null;missingReported:boolean}|null=null;
@@ -90,7 +97,23 @@ export class GameAudio {
   private musicOwner:'manual'|'mission'|null=null;
   private musicPaused=true;private musicPending=false;private musicFailed=false;private musicGeneration=0;
   musicError:string|null=null;
-  constructor(public settings:Settings,private readonly bgmAssets:Readonly<Record<string,string|null>>=BGM_ASSETS){}
+  constructor(public settings:Settings,private readonly bgmAssets:Readonly<Record<string,string|null>>=BGM_ASSETS,private readonly referenceRoot:string|null=LOCAL_REFERENCE_ROOT){}
+  private preloadLocalReferences(){
+    const ctx=this.ctx;if(!ctx||!this.referenceRoot)return;
+    for(const key of Object.keys(LOCAL_REFERENCE_FILES) as LocalReferenceKey[]){
+      if(this.referenceBuffers.has(key)||this.referenceLoading.has(key))continue;
+      const loading=fetch(this.referenceRoot+LOCAL_REFERENCE_FILES[key]).then(response=>{if(!response.ok)throw new Error('Reference sound unavailable');return response.arrayBuffer();}).then(bytes=>ctx.decodeAudioData(bytes)).then(buffer=>{this.referenceBuffers.set(key,buffer);}).catch(()=>{}).finally(()=>{this.referenceLoading.delete(key);});
+      this.referenceLoading.set(key,loading);
+    }
+  }
+  private playLocalReference(key:LocalReferenceKey,volume:number,sources=this.fireSources):boolean{
+    const ctx=this.ctx,buffer=this.referenceBuffers.get(key);if(!ctx||!buffer)return false;
+    const last=this.referenceLastAt.get(key)??-Infinity;
+    if(ctx.currentTime-last<buffer.duration*.8)return true;
+    const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=buffer;gain.gain.value=this.settings.sfx*volume;
+    source.connect(gain);gain.connect(ctx.destination);sources.add(source);this.referenceLastAt.set(key,ctx.currentTime);
+    source.onended=()=>{sources.delete(source);source.disconnect();gain.disconnect();};source.start();return true;
+  }
   private stopMusic(){
     this.musicGeneration++;this.music?.pause();this.music=null;this.musicOwner=null;this.musicPending=false;this.musicFailed=false;
     if(this.url){URL.revokeObjectURL(this.url);this.url=null;}
@@ -196,7 +219,7 @@ export class GameAudio {
     }
   }
 
-  unlock(){this.ctx??=new AudioContext();void this.ctx.resume();void this.loadMissileSound();}
+  unlock(){this.ctx??=new AudioContext();void this.ctx.resume();void this.loadMissileSound();this.preloadLocalReferences();}
   doorClosed(){
     const ctx=this.ctx;if(!ctx||this.settings.sfx===0)return;
     // Short body thud and metallic contact, both finished before the menu returns.
@@ -222,6 +245,7 @@ export class GameAudio {
       if(laserVoice)return this.playWeaponFire(laserVoice,1);
       if(weapon&&GUN_FIRE_VOICES[weapon])return this.playGunFire(weapon);
     }
+    if(kind==='impact'&&(weapon==='GAUS30'||weapon==='GAUS20')&&this.playLocalReference('gausImpact',.3))return;
     const gaus=(weapon==='GAUS30'||weapon==='GAUS20')&&(kind==='shot'||kind==='impact'),laserShot=kind==='shot'&&laser,ctx=this.ctx,o=ctx.createOscillator(),g=ctx.createGain();o.type=gaus?'sine':kind==='collision'||laserShot?LASER_SHOT.wave:'sawtooth';const t=ctx.currentTime,duration=gaus?.09:kind==='collision'?.18:kind==='gas'?.3:kind==='impact'?.25:kind==='destroy'?.65:kind==='board'?.2:laserShot?LASER_SHOT.duration:.12;o.frequency.setValueAtTime(gaus?420:kind==='collision'?70:kind==='impact'?65:kind==='shot'?(laserShot?LASER_SHOT.frequency:160):kind==='hit'?90:60,t);o.frequency.exponentialRampToValueAtTime(25,t+duration);g.gain.setValueAtTime(this.settings.sfx*(gaus?.008:laserShot?LASER_SHOT.gain:.1),t);g.gain.exponentialRampToValueAtTime(gaus?.00001:.001,t+duration);o.connect(g);g.connect(ctx.destination);o.start();o.stop(t+duration);
   }
   private playGunFire(weapon:string){
@@ -236,6 +260,7 @@ export class GameAudio {
   }
   private playWeaponFire(voice:WeaponFireVoice,distanceGain:number,pitchStep=0){
     const ctx=this.ctx;if(!ctx||distanceGain===0)return;
+    if(voice in LOCAL_REFERENCE_FILES&&this.playLocalReference(voice as LocalReferenceKey,WEAPON_FIRE_GAIN[voice]*distanceGain))return;
     const key=`${voice}:${pitchStep}:${ctx.sampleRate}`;
     let buffer=this.fireBuffers.get(key);
     if(!buffer){const samples=weaponFireSamples(voice,ctx.sampleRate,pitchStep);buffer=ctx.createBuffer(1,samples.length,ctx.sampleRate);buffer.copyToChannel(samples,0);this.fireBuffers.set(key,buffer);}
@@ -371,6 +396,6 @@ export class GameAudio {
     u.pitch=japanese?.82:.68;u.rate=.88;speechSynthesis.speak(u);
   }
   loadMusic(file:File){this.stopMusic();this.missionMusic=null;this.musicOwner='manual';this.musicError=null;this.url=URL.createObjectURL(file);this.music=new Audio(this.url);this.music.loop=true;this.music.volume=this.settings.music;return this.musicPaused?Promise.resolve():this.music.play();}
-  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.guidanceGeneration++;this.guidanceSource?.stop();this.guidanceSource=null;this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();for(const source of this.fireSources)source.stop();this.fireSources.clear();this.zWaspStep=0;this.zWaspLast=-1;this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
+  pause(preserveOccupied=false,preserveCollapse=false){if(!preserveCollapse){for(const source of this.collapseSources)source.stop();this.collapseSources.clear();}this.guidanceGeneration++;this.guidanceSource?.stop();this.guidanceSource=null;this.updateBuildingInterior(null,true);for(const source of this.gausShots)source.stop();this.gausShots.clear();for(const source of this.fireSources)source.stop();this.fireSources.clear();this.referenceLastAt.clear();this.zWaspStep=0;this.zWaspLast=-1;this.pauseMusic();for(const source of this.deathSources)source.stop();this.deathSources.clear();this.wind.pause();this.stopRadio();this.updateDrive(null,0,0,true);this.music?.pause();if(!preserveOccupied||!this.occupiedUtterance){this.occupiedUtterance=null;this.afterOccupied=null;if('speechSynthesis'in window)speechSynthesis.cancel();}}
   resume(){this.musicPaused=false;this.musicFailed=false;if(this.music)this.music.volume=this.musicVolume;this.playCurrentMusic();}
 }

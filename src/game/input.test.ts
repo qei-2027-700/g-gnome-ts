@@ -112,6 +112,19 @@ test('Darken TD HOMP11 fires rapidly with held 1 key or mouse before READY',()=>
  const before=count();for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set()));assert.equal(count(),before);
  s.tick(1/60,readInput(settings,new Set(),true));assert.equal(count(),before+2);
 });
+test('Union Assault P2MEC repeats while held at the weapon interval',()=>{
+ const s=new Simulation(),unit=makeUnit('lion','union-assault',0,0,false),settings=defaults();
+ s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());unit.laserCharge=0;
+ const count=()=>s.events.filter(e=>e.type==='shot'&&e.weapon==='P2MEC').length;
+ const times:number[]=[];
+ for(let i=0;i<200;i++){const before=count();s.tick(1/60,readInput(settings,new Set(['Digit1'])));if(count()>before)times.push(s.time);}
+ assert.ok(times.length>=3);
+ assert.equal(count(),times.length*2);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.8-1e-8&&times[i]-times[i-1]<.8+1/60+1e-8);
+ const before=count();
+ for(let i=0;i<40;i++)s.tick(1/60,readInput(settings,new Set()));
+ assert.equal(count(),before);
+});
 
 test('ordinary held lasers wait for full moving recharge while the confirmed exception uses its own interval',async()=>{
  const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');

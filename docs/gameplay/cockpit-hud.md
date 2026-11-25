@@ -138,6 +138,10 @@ Q/Eの選択を左Holo・選択対象のシールドバー・黄色い追従マ�
 
 実装は[専用フレーム](../../src/game/presentation/merc-assault-cockpit.ts)、[専用CSS](../../src/merc-assault-cockpit.css)、`src/main.ts`の機種別表示切替。追加した搭乗・4枠の武器・カメラ切替・降機の検査は`renderer.test.ts`。検証ログとブラウザ画像は`.artifacts/merc-assault-cockpit-20261029/`へ保存する。
 
+## Union Assault HAWCの操縦席（2026-11-25）
+
+[union-assault-hawk.png](../../assets/cockpits/union-assault-hawk.png)を Union Heavy Assault HAWC（Lion）のコックピットとして使う。比率は1314:978。金属の枠と支柱を残し、窓と、武器・IFF・目標・自機ホログラム・レーダーの井戸をマスクする。窓は塗り戻さない。写真の残弾とIFFは撮影時点の表示で、初期値にしない。右下は今の自機ホログラム。歩行で枠は揺らさない。視点の高さは全高14.7mに対する既存の0.81倍で、機種ごとの特別な視点高さは足していない。確認用URLは`/?previewVehicle=union-assault`。
+
 ## 仲間の搭乗者名（2026-10-24）
 
 仲間が搭乗中の機体を選ぶと、ホログラムのコックピット部分にKylie・Thaneなどの人物名を表示する。自機に仲間が同乗している場合も自機ホログラムへ表示する。表示名は人物定義の英語名を使う。現在の搭乗状態を参照し、同じ機種への乗り換えでも名前を更新する。降機・撃破後や無人機には名前を残さない。[3-3の任務完了条件](../missions/mission-3-3.md#仲間の搭乗者名と任務完了2026-10-24)を参照。

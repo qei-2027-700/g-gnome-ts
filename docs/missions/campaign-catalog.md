@@ -64,7 +64,7 @@
 | 4-2 | Scorp Defense | キリーが釈放され、Scorpと協力する。ユーザー指定では徒歩開始後にScorpミーゾンタワーへ搭乗し、シェリダン率いるUnion軍を迎撃する | [4-2](https://www.youtube.com/watch?v=dKik04jCwCg) | [試作実装](mission-4-2.md)。キリー・ターンと防衛。Union AIP2機はプラントを攻撃。地上編成・数値・勝敗判定は仮設定 |
 | 4-3 | War Zone | Scorpの輸送支援でShalton Frontierへ。DarkenとMercが交戦する地域を突破してシェリダンを追う | [前半](https://www.youtube.com/watch?v=dlIy0zh8vVk)・[後半](https://www.youtube.com/watch?v=0k85E049niI) | [実装前調査](mission-4-3.md)。両軍の敵味方判定・補給と航空支援・配置の数値は未確認 |
 | 4-4 | General Delivery | 溶岩の川に架かる橋を下ろし、ウィルキンスと仲間を対岸へ渡して研究所攻撃に備える | [4-4](https://www.youtube.com/watch?v=8sXUAZLF9Tw) | 橋操作・護衛・全員通過の判定 |
-| 4-5 | Sheridan's Lair | 宇宙輸送船が到着する前にシェリダンの防衛部隊を突破し、クローン研究所を破壊する。終盤にキリーを失い、シェリダンが逃走する | [4-5](https://www.youtube.com/watch?v=_XcvTyyTxyw) | 輸送船到着の時間条件・研究所破壊・キリーのイベント |
+| 4-5 | Sheridan's Lair | 宇宙輸送船が到着する前にシェリダンの防衛部隊を突破し、クローン研究所を破壊する。終盤にキリーを失い、シェリダンが逃走する | [4-5](https://www.youtube.com/watch?v=_XcvTyyTxyw) | 実装済みは研究所へのレーザーマークでキリーが機体ごと破壊されて完了、それより前のキリー死亡で失敗。20分・機体交換は未実装。[4-5](mission-4-5.md) |
 | 4-6 | Mano-a-Mano | 研究所から逃げたシェリダンを、輸送手段の待つ橋へ追い詰めて決着をつける | [4-6](https://www.youtube.com/watch?v=4jdJl-1hZ78) | 最終戦・G-Nomeへの対処・エンディングの操作条件 |
 
 ## 訓練

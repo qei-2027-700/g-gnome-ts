@@ -2,6 +2,12 @@ import type {Vec} from './simulation.ts';
 import type {Terrain} from '../content/missions/types.ts';
 type Peak=NonNullable<Terrain['peaks']>[number];
 export function sweptCircle(from:Vec,to:Vec,point:Vec,radius:number){const dx=to.x-from.x,dz=to.z-from.z,t=Math.max(0,Math.min(1,((point.x-from.x)*dx+(point.z-from.z)*dz)/(dx*dx+dz*dz||1)));return Math.hypot(from.x+t*dx-point.x,from.z+t*dz-point.z)<=radius;}
+// A deck is raised ground units stand on. It is not a blocking cliff.
+export function deckAltitude(terrain:Terrain,x:number,z:number){
+ let height=0;
+ for(const cliff of terrain.cliffs??[])if(cliff.surface==='deck'&&Math.abs(x-cliff.x)<=cliff.width/2&&Math.abs(z-cliff.z)<=cliff.depth/2)height=Math.max(height,cliff.height);
+ return height;
+}
 export function crossesBuilding(from:Vec,to:Vec,b:{x:number;z:number;width:number;depth:number},padding=0){let lo=0,hi=1;for(const axis of ['x','z'] as const){const half=(axis==='x'?b.width:b.depth)/2+padding,a=from[axis]-b[axis],d=to[axis]-from[axis];if(Math.abs(d)<1e-9){if(Math.abs(a)>half)return false;}else{const n=(-half-a)/d,f=(half-a)/d;lo=Math.max(lo,Math.min(n,f));hi=Math.min(hi,Math.max(n,f));if(lo>hi)return false;}}return true;}
 export function buildingContact(from:Vec&{y:number},to:Vec&{y:number},b:{x:number;z:number;width:number;depth:number;height:number},padding=0){let lo=0,hi=1;for(const [axis,center,half] of [['x',b.x,b.width/2+padding],['y',b.height/2,b.height/2+padding],['z',b.z,b.depth/2+padding]] as const){const a=from[axis]-center,d=to[axis]-from[axis];if(Math.abs(d)<1e-9){if(Math.abs(a)>half)return null;}else{const n=(-half-a)/d,f=(half-a)/d;lo=Math.max(lo,Math.min(n,f));hi=Math.min(hi,Math.max(n,f));if(lo>hi)return null;}}return lo;}
 
@@ -49,6 +55,35 @@ export function rockSegmentContact(from:Vec&{y:number},to:Vec&{y:number},rock:{x
  let hit:number|null=null;
  for(const plane of [-padding,top]){const t=(plane-from.y)/dy;if(t>=lo&&t<=hi&&(hit===null||t<hit))hit=t;}
  return hit;
+}
+
+// A dense ridge field keeps every ellipse. Segment tests skip ellipses that cannot reach the segment.
+// The slack covers the footprint expansion inside peakMotionContact. The height test itself is unchanged.
+const PEAK_QUERY_SLACK=4,PEAK_QUERY_CELL=160;
+type PeakGrid={buckets:Map<number,number[]>};
+const peakGrids=new WeakMap<readonly Peak[],PeakGrid>();
+let peakSeen=new Uint32Array(256),peakStamp=1;
+function peakGrid(peaks:readonly Peak[]){
+ const cached=peakGrids.get(peaks);if(cached)return cached;
+ const buckets=new Map<number,number[]>();
+ for(let i=0;i<peaks.length;i++){
+  const peak=peaks[i]!,x0=Math.floor((peak.x-peak.width/2-PEAK_QUERY_SLACK)/PEAK_QUERY_CELL),x1=Math.floor((peak.x+peak.width/2+PEAK_QUERY_SLACK)/PEAK_QUERY_CELL),z0=Math.floor((peak.z-peak.depth/2-PEAK_QUERY_SLACK)/PEAK_QUERY_CELL),z1=Math.floor((peak.z+peak.depth/2+PEAK_QUERY_SLACK)/PEAK_QUERY_CELL);
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const key=x*100003+z,list=buckets.get(key);if(list)list.push(i);else buckets.set(key,[i]);}
+ }
+ const grid={buckets};peakGrids.set(peaks,grid);return grid;
+}
+export function somePeakNearSegment(peaks:readonly Peak[]|undefined,ax:number,az:number,bx:number,bz:number,pad:number,visit:(peak:Peak,index:number)=>boolean){
+ if(!peaks?.length)return false;
+ if(peaks.length<24){for(let i=0;i<peaks.length;i++)if(visit(peaks[i]!,i))return true;return false;}
+ const grid=peakGrid(peaks);
+ if(peakSeen.length<peaks.length){const next=new Uint32Array(peaks.length);next.set(peakSeen);peakSeen=next;}
+ if(++peakStamp>=0x100000000){peakSeen.fill(0);peakStamp=1;}
+ const x0=Math.floor((Math.min(ax,bx)-pad)/PEAK_QUERY_CELL),x1=Math.floor((Math.max(ax,bx)+pad)/PEAK_QUERY_CELL),z0=Math.floor((Math.min(az,bz)-pad)/PEAK_QUERY_CELL),z1=Math.floor((Math.max(az,bz)+pad)/PEAK_QUERY_CELL);
+ for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){
+  const list=grid.buckets.get(x*100003+z);if(!list)continue;
+  for(const index of list){if(peakSeen[index]===peakStamp)continue;peakSeen[index]=peakStamp;if(visit(peaks[index]!,index))return true;}
+ }
+ return false;
 }
 
 export function peakSegmentContact(from:Vec&{y:number},to:Vec&{y:number},peak:Peak,padding=0){

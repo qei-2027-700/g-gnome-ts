@@ -13,7 +13,8 @@ export const BGM_ASSETS:Readonly<Record<string,string|null>>={
  'bgm-merc-region':new URL('../../../assets/audio/bgm/merc-region.mp3',import.meta.url).href,
  // User-assigned Scorp region theme. The upload title says Track 06: Credits. Not wired, and not the existing credits file.
  'bgm-scorp-region':new URL('../../../assets/audio/bgm/scorp-region.mp3',import.meta.url).href,
- // Upload titles only. Acquired 2026-11-18. Not wired, except Sheridan (3-5 launch), Barren Landscape (4-3 launch) and Sneaking In (3-4 launch).
+ // Upload titles only. Acquired 2026-11-18. Sheridan is the 3-5 launch, Barren Landscape the 4-3 launch, Sneaking In the 3-4 launch.
+ // Infiltrating Darken Territory is the 4-4 launch and the 4-5 cue after waypoint 1. Rescuing Kylie is the 4-5 launch. Merc Ambush stays unwired.
  'bgm-barren-landscape':new URL('../../../assets/audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3',import.meta.url).href,
  'bgm-infiltrating-darken-territory':new URL('../../../assets/audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3',import.meta.url).href,
  'bgm-sneaking-in':new URL('../../../assets/audio/bgm/sneaking-in-mziZW_QQPJI.mp3',import.meta.url).href,

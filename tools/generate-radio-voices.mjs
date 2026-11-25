@@ -10,7 +10,7 @@ for(const person of ['kylie','thane','sheridan','wilkins']){
  const profile=CHARACTER_VOICE_PROFILES[person]??{pitch:1.2,rate:1};
  const lines=[...Object.values(RADIO_REPLY_LINES[person]??{}),RADIO_DEFAULT_REPLY,RADIO_TARGET_FOLLOW_REPLY,...(person==='kylie'?[KYLIE_TOWER_WARNING]:person==='sheridan'?[SHERIDAN_SCORP_ASV_BOARDED,SHERIDAN_INFANTRY_WARNING]:[])];
  for(const locale of ['ja','en'])for(const text of new Set(lines.map(line=>line[locale]))){
-  const voice=locale==='ja'?(person==='kylie'||person==='sheridan'?'jm_kumo':'jf_alpha'):person==='kylie'?'am_puck':person==='sheridan'?'am_fenrir':'af_heart';
+  const voice=locale==='ja'?(person==='thane'?'jf_alpha':'jm_kumo'):person==='kylie'?'am_puck':person==='thane'?'af_heart':'am_fenrir';
   const id=`${person}-${locale}-${createHash('sha256').update(text).digest('hex').slice(0,12)}`;
   if(locale==='ja'&&!readings[text])throw Error('Missing reading: '+text);
   tasks.push({id,person,locale,text,phonemes:locale==='ja'?readings[text]:undefined,voice,pitch:profile.pitch,rate:profile.rate});

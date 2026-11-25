@@ -167,7 +167,7 @@ test('Kylie and Sheridan use distinct dedicated male voices for replies and miss
  class Utterance{constructor(public text:string){}lang='';pitch=1;rate=1;volume=1;voice:unknown=null;onend:(()=>void)|null=null;onerror:(()=>void)|null=null;}
  try{Object.defineProperty(globalThis,'window',{configurable:true,value:{speechSynthesis:synth}});Object.defineProperty(globalThis,'speechSynthesis',{configurable:true,value:synth});Object.defineProperty(globalThis,'SpeechSynthesisUtterance',{configurable:true,value:Utterance});
   const settings=defaults(),audio=new GameAudio(settings),line={ja:'了解。',en:'Copy.'};
-  for(const locale of ['ja','en'] as const){settings.locale=locale;for(const personId of ['kylie','sheridan','thane'])audio.sayRadio([{personId,line}]);const [kylie,sheridan,thane]=spoken.slice(-3);assert.equal(kylie.voice,voices[locale==='ja'?1:4]);assert.equal(sheridan.voice,voices[locale==='ja'?2:5]);assert.notEqual(kylie.pitch,sheridan.pitch);assert.notEqual(kylie.rate,sheridan.rate);assert.equal(thane.voice,voices[locale==='ja'?0:3]);}
+  for(const locale of ['ja','en'] as const){settings.locale=locale;for(const personId of ['kylie','sheridan','thane','wilkins'])audio.sayRadio([{personId,line}]);const [kylie,sheridan,thane,wilkins]=spoken.slice(-4);assert.equal(kylie.voice,voices[locale==='ja'?1:4]);assert.equal(sheridan.voice,voices[locale==='ja'?2:5]);assert.notEqual(kylie.pitch,sheridan.pitch);assert.notEqual(kylie.rate,sheridan.rate);assert.equal(thane.voice,voices[locale==='ja'?0:3]);assert.equal(wilkins.voice,voices[locale==='ja'?2:5]);assert.ok(wilkins.pitch<sheridan.pitch);assert.ok(wilkins.rate<sheridan.rate);}
   settings.locale='ja';audio.sayRadio([{personId:'kylie',line:{ja:'タワーはパワーアップしてやがるぜ',en:'Those towers have been powered up.'}}]);assert.equal(spoken.at(-1)!.voice,voices[1]);
   voices.splice(2,1);for(const personId of ['kylie','sheridan'])audio.sayRadio([{personId,line}]);const [a,b]=spoken.slice(-2);assert.equal(a.voice,b.voice);assert.notEqual(a.pitch,b.pitch);assert.notEqual(a.rate,b.rate);
   const count=spoken.length;settings.voice=0;audio.sayRadio([{personId:'kylie',line},{personId:'sheridan',line}]);assert.equal(spoken.length,count);
@@ -205,9 +205,12 @@ test('all current radio replies have nonempty bundled clips, and dedicated chara
  for(const person of ['kylie','thane','sheridan','wilkins'])for(const locale of ['ja','en'] as const){const lines=[...Object.values(RADIO_REPLY_LINES[person]??{}),RADIO_DEFAULT_REPLY,RADIO_TARGET_FOLLOW_REPLY,...(person==='kylie'?[KYLIE_TOWER_WARNING]:[])];
   for(const line of lines){const clip=RADIO_VOICE_CLIPS[radioVoiceKey(locale,person,line[locale])];assert.ok(clip,`${person}: ${line[locale]}`);const bytes=await readFile(new URL(clip.url));assert.equal(bytes.toString('ascii',0,4),'RIFF');assert.ok(bytes.length>2000);let offset=12,data=0;while(offset+8<=bytes.length){const length=bytes.readUInt32LE(offset+4);if(bytes.toString('ascii',offset,offset+4)==='data'){data=length;break;}offset+=8+length+length%2;}assert.ok(data>2000);assert.ok([...bytes.subarray(offset+8)].some(value=>value!==0));
    if(person==='kylie'||person==='sheridan')assert.ok(clip.voice.includes(locale==='ja'?'jm_':'am_'));
+   if(person==='wilkins'){assert.equal(clip.voice,'macOS/Reed');assert.ok(clip.pitch<1);assert.ok(clip.rate<1);}
   }
  }
  const k=RADIO_VOICE_CLIPS[radioVoiceKey('ja','kylie',RADIO_DEFAULT_REPLY.ja)],s=RADIO_VOICE_CLIPS[radioVoiceKey('ja','sheridan',RADIO_DEFAULT_REPLY.ja)];assert.notEqual(k.pitch,s.pitch);assert.notEqual(k.rate,s.rate);
+ assert.equal(RADIO_VOICE_CLIPS[radioVoiceKey('ja','wilkins','後方に回る。オーバー！')].voice,'macOS/Reed');
+ assert.equal(RADIO_VOICE_CLIPS[radioVoiceKey('ja','wilkins','今から向かう！')].voice,'macOS/Reed');
 });
 
 test('infantry death voices are distinct nonverbal faction sounds and stop on pause',async()=>{
@@ -245,7 +248,7 @@ test('minefield discovery uses female voice two for the Japanese warning, suppor
 async function musicFixture(check:(audio:GameAudio,tracks:any[])=>Promise<void>,availableNext=true){
  const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');const previous=Object.getOwnPropertyDescriptor(globalThis,'Audio'),tracks:any[]=[];
  class Music{src:string;loop=false;volume=1;paused=true;currentTime=0;plays=0;fail=false;defer:(()=>Promise<void>)|null=null;constructor(src:string){this.src=src;tracks.push(this);}pause(){this.paused=true;}play(){this.plays++;this.paused=false;return this.defer?this.defer():this.fail?Promise.reject(new Error('Playback blocked')):Promise.resolve();}}
- try{Object.defineProperty(globalThis,'Audio',{configurable:true,value:Music});const audio=new GameAudio(defaults(),{'bgm-mission-1-1-start':'mission-1-1-start.mp3','bgm-mission-1-1-sentry-combat':availableNext?'sentry-combat.mp3':null,'bgm-mission-3-3':'start.mp3','bgm-fighting-on-the-tundra':'tundra.mp3','bgm-snow-maze':'snow-maze.mp3','bgm-credits':'credits.mp3','bgm-union-march':availableNext?'union-march.mp3':null,'bgm-crossing-the-war-zone':'crossing-the-war-zone.mp3','bgm-sheridan':'sheridan.mp3','bgm-defeated':availableNext?'defeated.mp3':null,'bgm-barren-landscape':'barren-landscape.mp3','bgm-merc-region':availableNext?'merc-region.mp3':null,'bgm-sneaking-in':'sneaking-in.mp3','bgm-passenger':availableNext?'passenger.mp3':null});audio.beginMissionMusic(MISSION_3_3);await check(audio,tracks);}
+ try{Object.defineProperty(globalThis,'Audio',{configurable:true,value:Music});const audio=new GameAudio(defaults(),{'bgm-mission-1-1-start':'mission-1-1-start.mp3','bgm-mission-1-1-sentry-combat':availableNext?'sentry-combat.mp3':null,'bgm-mission-3-3':'start.mp3','bgm-fighting-on-the-tundra':'tundra.mp3','bgm-snow-maze':'snow-maze.mp3','bgm-credits':'credits.mp3','bgm-union-march':availableNext?'union-march.mp3':null,'bgm-crossing-the-war-zone':'crossing-the-war-zone.mp3','bgm-sheridan':'sheridan.mp3','bgm-defeated':availableNext?'defeated.mp3':null,'bgm-barren-landscape':'barren-landscape.mp3','bgm-merc-region':availableNext?'merc-region.mp3':null,'bgm-sneaking-in':'sneaking-in.mp3','bgm-rescuing-kylie':'rescuing-kylie.mp3','bgm-infiltrating-darken-territory':availableNext?'infiltrating-darken-territory.mp3':null,'bgm-passenger':availableNext?'passenger.mp3':null});audio.beginMissionMusic(MISSION_3_3);await check(audio,tracks);}
  finally{if(previous)Object.defineProperty(globalThis,'Audio',previous);else Reflect.deleteProperty(globalThis,'Audio');}
 }
 test('3-3 music starts once at three simulation seconds, loops, preserves position across pause and follows music volume',async()=>{
@@ -552,6 +555,30 @@ test('4-3 starts Barren Landscape and switches once to Merc region after the nor
  });
 });
 
+test('4-5 starts Rescuing Kylie and switches once to Infiltrating Darken Territory at waypoint 1',async()=>{
+ const {MISSION_4_5}=await import('../content/missions/mission-4-5.ts');const {Simulation}=await import('../simulation/simulation.ts');
+ const idle={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
+ const def={...MISSION_4_5,units:MISSION_4_5.units.filter(u=>u.id==='player-assault'),companions:[],objectives:[],completionEnabled:false};
+ const sim=new Simulation('Easy',def),place=(s:typeof sim,id:number)=>{const w=s.mission.waypoints.find(item=>item.id===id)!;Object.assign(s.mounted!,{x:w.x,z:w.z});};
+ await musicFixture(async(audio,tracks)=>{
+  const update=(paused=false,current=sim)=>audio.updateMissionMusic(current.time,paused,current.missionMusicUnits,current.missionMusicAssaultReady,current.ionAnnouncementAt,current.missionMusicBridgeCrossed,current.missionMusicPassengerRide,current.missionMusicWaypointReached);
+  audio.beginMissionMusic(MISSION_4_5);update();await Promise.resolve();assert.equal(tracks.length,1);assert.equal(tracks[0].src,'rescuing-kylie.mp3');assert.equal(tracks[0].loop,true);assert.equal(tracks[0].paused,false);assert.equal(tracks[0].volume,audio.settings.music);
+  place(sim,2);sim.tick(1/60,idle);update();assert.equal(sim.reachedWaypoints.has(2),true);assert.equal(sim.missionMusicWaypointReached,false);assert.equal(tracks.length,1);assert.equal(tracks[0].src,'rescuing-kylie.mp3');
+  const {MAP_4_5_POINTS}=await import('../content/missions/mission-4-5-map.ts');
+  Object.assign(sim.mounted!,MAP_4_5_POINTS.headquarters);sim.tick(1/60,idle);update(true);assert.equal(sim.missionMusicWaypointReached,true);assert.equal(tracks.length,1);assert.equal(tracks[0].paused,true);assert.equal(tracks[0].src,'rescuing-kylie.mp3');
+  update();await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[0].paused,true);assert.equal(tracks[1].src,'infiltrating-darken-territory.mp3');assert.equal(tracks[1].loop,true);assert.equal(tracks[1].paused,false);
+  tracks[1].currentTime=6;place(sim,2);sim.tick(1/60,idle);update();assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,6);
+  const retry=new Simulation('Easy',def);audio.beginMissionMusic(MISSION_4_5);update(false,retry);await Promise.resolve();assert.equal(tracks.at(-1).src,'rescuing-kylie.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(retry.missionMusicWaypointReached,false);
+ });
+});
+test('missing 4-5 waypoint BGM keeps Rescuing Kylie and reports the missing asset once',async()=>{
+ const {MISSION_4_5}=await import('../content/missions/mission-4-5.ts');
+ await musicFixture(async(audio,tracks)=>{
+  audio.beginMissionMusic(MISSION_4_5);audio.updateMissionMusic(0,false);await Promise.resolve();assert.equal(tracks[0].src,'rescuing-kylie.mp3');
+  audio.updateMissionMusic(1,false,undefined,false,null,false,false,true);assert.equal(tracks.length,1);assert.equal(audio.musicError,'missing-next');assert.equal(tracks[0].paused,false);
+  audio.musicError=null;audio.updateMissionMusic(2,false,undefined,false,null,false,false,true);assert.equal(audio.musicError,null);assert.equal(tracks.length,1);
+ },false);
+});
 test('riding a piloted HAWC switches to Passenger, holds across pause, returns to the mission cue when the ride ends, and yields to elimination and the ion cue',async()=>{
  const {MISSION}=await import('../content/mission-1-1.ts'),{MISSION_3_5}=await import('../content/missions/mission-3-5.ts'),{MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  await musicFixture(async(audio,tracks)=>{

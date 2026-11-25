@@ -35,6 +35,29 @@ test('target-directed F5 has a target-directed voice reply without dialogue subt
  const replies=orderReplies(MISSION_3_3.companions!,['thane'],'follow','parked');assert.equal(replies.length,1);assert.equal(replies[0].line.ja,'了解。目標へ向かう。');assert.notEqual(replies[0].line.ja,orderReplies(MISSION_3_3.companions!,['thane'],'follow')[0].line.ja);
 });
 
+test('Wilkins answers F4 by heading out and F5 by moving to the rear, including when a target is selected',async()=>{
+ const {MISSION_4_5}=await import('./content/missions/mission-4-5.ts');
+ const members=MISSION_4_5.companions!;
+ assert.equal(orderReplies(members,['wilkins'],'board')[0].line.ja,'今から向かう！');
+ assert.equal(orderReplies(members,['wilkins'],'follow')[0].line.ja,'後方に回る。オーバー！');
+ assert.equal(orderReplies(members,['wilkins'],'follow','east-asv')[0].line.ja,'後方に回る。オーバー！');
+ const sim=new Simulation('Easy',MISSION_4_5),menu=new RadioMenu();
+ assert.deepEqual(menu.key('F4',sim.mission.companions!),{kind:'select',recipient:'wilkins'});
+ const follow=menu.key('F5',sim.mission.companions!)!;assert.equal(follow.kind,'send');if(follow.kind!=='send')return;
+ assert.deepEqual(sim.sendAllyOrder(follow.recipient,follow.command).accepted,['wilkins']);
+ const followed=sim.events.find(event=>event.type==='ally-order')!;
+ assert.equal(orderReplies(sim.mission.companions!,followed.recipients!,followed.command!,followed.targetId)[0].line.ja,'後方に回る。オーバー！');
+ assert.equal(sim.units.find(unit=>unit.personId==='wilkins')!.order?.kind,'follow');
+ menu.close();sim.events=[];sim.selected=null;
+ assert.deepEqual(menu.key('F4',sim.mission.companions!),{kind:'select',recipient:'wilkins'});
+ const board=menu.key('F4',sim.mission.companions!)!;assert.equal(board.kind,'send');if(board.kind!=='send')return;
+ assert.deepEqual(sim.sendAllyOrder(board.recipient,board.command).accepted,['wilkins']);
+ const headed=sim.events.find(event=>event.type==='ally-order')!;
+ assert.equal(headed.command,'board');
+ assert.equal(orderReplies(sim.mission.companions!,headed.recipients!,headed.command!)[0].line.ja,'今から向かう！');
+ assert.equal(sim.units.find(unit=>unit.personId==='wilkins')!.order?.kind,'follow');
+});
+
 test('F3 and F4 select the real initial 3-3 companions and F5 is accepted, including after a failed command',()=>{
  for(const [key,id] of [['F3','thane'],['F4','sheridan']] as const){const sim=new Simulation('Easy',MISSION_3_3),menu=new RadioMenu();sim.selected=null;
   const selected=menu.key(key,sim.mission.companions!);assert.deepEqual(selected,{kind:'select',recipient:id});const send=menu.key('F5',sim.mission.companions!)!;assert.equal(send.kind,'send');if(send.kind!=='send')throw Error('Expected command');assert.deepEqual(sim.sendAllyOrder(send.recipient,send.command).accepted,[id]);assert.equal(sim.units.find(u=>u.personId===id)!.order?.kind,'follow');

@@ -649,6 +649,18 @@ export const VEHICLES={...BASE_VEHICLES,
  // Hull, canopy and gun origins drop by (8.6-7.9)*0.6 so the photo-matched body stays on the legs.
  'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',speed:30,shield:72,energy:1900,height:8.6,color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
   shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.92,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-1.37,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.33,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
+ // Manual Union Heavy Assault HAWC (Lion): 90 km/h, shield 90, energy 2200, height 14.7 m, mass 57 t. Armor is not on the card.
+ // Behind view: a low central chassis between legs that drop from the outer corners. The gray waist is wider and shorter than the first box. Side length stays long. Guns sit under the jaw. The walk is a provisional four-beat beast gait. Metres and armor 240 are provisional.
+ 'union-assault':{
+  name:'Union Assault HAWC',jp:'ユニオン軍 アサルト ホーク',faction:'union',
+  speed:90,shield:90,energy:2200,armor:240,height:14.7,passengerCapacity:0,color:'#c8cbc4',
+  weapons:['P2MEC','TCREAP','VISOM','TCROCK'],torsoLimit:Math.PI/3,voice:'solemn',
+  initialAmmo:{TCREAP:3000,VISOM:30,TCROCK:50},
+  ai:{detection:220,strafe:.2,keepMoving:false,stopDistance:120,missileVolley:1},
+  shape:{hull:{w:9,h:2.4,d:10.6,y:2.38,z:-.3},cockpit:{w:3.2,h:1.7,d:3.2,y:2.4,z:5.3},weapon:{w:.5,h:.38,d:1.7,x:.95,y:1.05,z:6.3},legX:4.65,spider:{hipX:4.35,hipY:9.85,hipZ:3.2,kneeX:4.5,kneeY:5.2,kneeZ:3.35,footX:4.65,footZ:3.6,upperWidth:1.45,lowerWidth:.78,step:1.2,lift:2.2,kneeLift:.26,sway:0,sideStep:0}},
+  gait:{stride:8.5,lift:.2,lean:0,bounce:.04},
+  drive:{idle:48,rev:32,harmonic:2.2,filter:220,volume:.04,wave:'triangle'}
+ },
 } as const satisfies Record<string,VehicleDefinition>;
 export type VehicleKind=keyof typeof VEHICLES;
 type VehicleDataKey='shape'|'gait'|'drive';

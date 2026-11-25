@@ -6,7 +6,10 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
  for(const mission of missions){
   const fail=(message:string)=>errors.push(`${mission.id}: ${message}`);
   if(catalog.has(mission.id))fail('duplicate mission ID');catalog.add(mission.id);
+  if(mission.footWeapons?.egger&&mission.footSecondaryWeapon==='EGGER')fail('foot EGGER cannot occupy slot 2 and slot 3');
+  if(mission.footWeapons?.egger&&(!Number.isInteger(mission.footWeapons.egger.ammo)||mission.footWeapons.egger.ammo<1))fail('foot EGGER ammo must be a positive integer');
   const unique=(values:readonly (string|number)[],label:string)=>{const seen=new Set<string|number>();for(const value of values){if(seen.has(value))fail(`duplicate ${label}: ${value}`);seen.add(value);}return seen;};
+  if(mission.footWeapons?.laserSite){const site=mission.footWeapons.laserSite;if(!Number.isFinite(site.range)||site.range<=0)fail('laser site range must be positive');if(!site.facilityIds.length)fail('laser site has no facilities');unique(site.facilityIds,'laser site facility ID');for(const id of site.facilityIds)if(!mission.base?.buildings.some(building=>building.id===id))fail(`laser site references missing facility: ${id}`);}
   const allUnits=[...mission.units,...(mission.rendezvous?.units??[])];
   const units=unique(allUnits.map(u=>u.id),'unit ID');
   const waypoints=unique(mission.waypoints.map(w=>w.id),'waypoint ID');
@@ -23,6 +26,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   if(mission.bgm?.afterRadio&&!mission.radioTriggers?.some(trigger=>trigger.id===mission.bgm?.afterRadio?.radioId))fail(`BGM afterRadio references missing radio: ${mission.bgm.afterRadio.radioId}`);
   if(mission.bgm?.beforeIonLock){const cue=mission.bgm.beforeIonLock;if(!mission.ionStrike)fail('BGM beforeIonLock needs an ion strike');else if(!Number.isFinite(cue.lead)||cue.lead<0||cue.lead>mission.ionStrike.delay)fail('BGM beforeIonLock lead must fit the ion delay');}
   if(mission.bgm?.afterBridge&&![mission.terrain.river,...mission.terrain.rivers??[]].some(river=>river?.bridgeId===mission.bgm?.afterBridge?.bridgeId))fail(`BGM afterBridge references missing bridge: ${mission.bgm.afterBridge.bridgeId}`);
+  if(mission.bgm?.afterWaypoint&&!waypoints.has(mission.bgm.afterWaypoint.waypointId))fail(`BGM afterWaypoint references missing waypoint: ${mission.bgm.afterWaypoint.waypointId}`);
   const targets=new Set([...units,...(mission.base?.buildings??[]).map((b,i)=>b.id??`facility-${b.kind??'command'}-${i}`)]);
   if(mission.facilityIffDisguise){const disguise=mission.facilityIffDisguise;
    if(!mission.base?.buildings.some(b=>b.id===disguise.facilityId&&b.kind==='bridge-control'))fail(`IFF disguise references missing bridge control: ${disguise.facilityId}`);
@@ -78,7 +82,8 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
     if(!Number.isFinite(objective.radius)||objective.radius<=0)fail(`objective ${objective.id} has invalid radius`);
     for(const id of objective.afterObjectiveIds)if(id===objective.id||!mission.objectives.some(o=>o.id===id))fail(`objective ${objective.id} references missing prerequisite: ${id}`);
    }
-   if(objective.type==='destroy-facility'){if(!objective.facilityIds.length)fail(`objective ${objective.id} has no facilities`);for(const id of objective.facilityIds)if(!mission.base?.buildings.some(b=>b.id===id))fail(`objective ${objective.id} references missing facility: ${id}`);}
+   if(objective.type==='destroy-facility'||objective.type==='destroy-facility-casualty'){if(!objective.facilityIds.length)fail(`objective ${objective.id} has no facilities`);for(const id of objective.facilityIds)if(!mission.base?.buildings.some(b=>b.id===id))fail(`objective ${objective.id} references missing facility: ${id}`);if(objective.type==='destroy-facility-casualty'&&(!people.has(objective.personId)||!mission.companions?.some(c=>c.personId===objective.personId)))fail(`objective ${objective.id} references missing companion: ${objective.personId}`);}
+   if(objective.type==='mark-facility-casualty'){if(!mission.base?.buildings.some(b=>b.id===objective.facilityId))fail(`objective ${objective.id} references missing facility: ${objective.facilityId}`);if(!people.has(objective.personId)||!mission.companions?.some(c=>c.personId===objective.personId))fail(`objective ${objective.id} references missing companion: ${objective.personId}`);if(!Number.isFinite(objective.range)||objective.range<=0||!Number.isFinite(objective.holdSeconds)||objective.holdSeconds<=0)fail(`objective ${objective.id} has invalid mark range or time`);}
    if(objective.type==='set-iff'&&!/^[0-7]{4}$/.test(objective.iff))fail(`objective ${objective.id} has invalid IFF`);
    if(objective.type==='lure'){
     unitRef(objective.unitId,`objective ${objective.id}`);

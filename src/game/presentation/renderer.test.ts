@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {NullEngine} from '@babylonjs/core/Engines/nullEngine.js';
+import {Vector3} from '@babylonjs/core/Maths/math.vector.js';
 import {AIP_HOVER_BOB_SPEED,World} from './renderer.ts';
 import {Simulation,makeUnit} from '../simulation/simulation.ts';
 import type {FacilityType} from '../simulation/facilities.ts';
@@ -395,6 +396,33 @@ test('Merc Assault has four raised spider legs, grounded alternating feet, share
   const bolt=world.scene.meshes.find(m=>m.metadata?.weapon==='RUPP'&&m.metadata?.visual==='yellow-laser')!;assert.ok(bolt);
   const paint=bolt.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial;assert.ok(paint.emissiveColor.r>.9&&paint.emissiveColor.g>.7&&paint.emissiveColor.b<.25);
   world.event({type:'impact',weapon:'RUPP',position:{x:0,y:3,z:20}});assert.ok(world.scene.getMeshByName('rupp-yellow-flash'));
+  assert.equal(world.renderError,null);
+ }finally{engine.dispose();}
+});
+test('Union Assault is a quadruped with legs under the chest, guns below the face, and a cockpit shell without the photo instruments',async()=>{
+ const {unionAssaultCockpitShellSvg}=await import('./union-assault-cockpit.ts');
+ const {hologramSvg}=await import('./hologram.ts');
+ const shell=unionAssaultCockpitShellSvg();
+ assert.ok(shell.includes('union-assault-hawk.png'));
+ assert.ok(shell.includes('maskUnits="userSpaceOnUse"'));
+ assert.equal(shell.includes('4337'),false);
+ assert.notEqual(hologramSvg('union-assault'),hologramSvg('merc-assault'));
+ const engine=new NullEngine({renderWidth:1000,renderHeight:800,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation(),unit=makeUnit('lion','union-assault',0,0,false);sim.units=[unit];sim.human={x:0,z:0};assert.ok(sim.board());
+  const world=new World({} as HTMLCanvasElement,sim,engine);world.mode=2;world.update(0);const rig=world.rigs.get(unit.id)!;
+  assert.equal(rig.legs.length,0);assert.equal(rig.spiderLegs!.length,4);
+  assert.equal(rig.root.getChildMeshes().some(mesh=>mesh.name==='union-assault-hull'),true);
+  assert.equal(rig.root.getChildMeshes().some(mesh=>mesh.name==='assault-low-hull'),false);
+  const hips=rig.root.getChildMeshes().filter(mesh=>mesh.name==='union-assault-hip');
+  const head=rig.root.getChildMeshes().find(mesh=>mesh.name==='union-assault-cockpit')!,guns=rig.root.getChildMeshes().filter(mesh=>mesh.name==='union-assault-weapon');
+  head.computeWorldMatrix(true);const faceBottom=head.getBoundingInfo().boundingBox.minimumWorld.y;
+  assert.equal(hips.length,4);assert.equal(guns.length,2);assert.ok(guns.every(gun=>{gun.computeWorldMatrix(true);return gun.getBoundingInfo().boundingBox.maximumWorld.y<faceBottom;}));
+  assert.ok(hips.every(hip=>hip.position.y>8.5&&hip.position.y<10.5));
+  for(const leg of rig.spiderLegs!){assert.ok(leg.upper.position.y>4&&leg.upper.position.y<8);assert.ok(Math.abs(leg.foot.position.y-.1)<1e-8);assert.ok(Math.abs(leg.foot.position.x)>2.8&&Math.abs(leg.foot.position.x)<5.4);}
+  unit.z+=.6;world.update(.1);assert.ok(rig.spiderLegs!.some(leg=>leg.foot.position.y>.1));assert.ok(rig.torso.position.y>8);
+  rig.phase=1.2;rig.run=1;world.update(0);
+  for(const leg of rig.spiderLegs!)for(const mesh of [leg.upper,leg.lower,leg.foot]){mesh.computeWorldMatrix(true);const width=mesh.getDirection(new Vector3(1,0,0));assert.ok(Math.abs(width.x)>.85,`${mesh.name} rolled sideways`);}
   assert.equal(world.renderError,null);
  }finally{engine.dispose();}
 });
@@ -872,6 +900,28 @@ test('tower survivor remains enabled and above ground outside the rendered wreck
  assert.equal(soldier.flight,null);assert.equal(rig.root.isEnabled(),true);assert.equal(rig.root.position.y,0);assert.ok(Math.abs(rig.root.position.x)>6);assert.ok(world.wreckRigs.has('tower'));engine.dispose();
 });
 
+test('a deck lifts the rocket tower onto its top and is not a shot obstacle',async()=>{
+ const {MISSION_3_3}=await import('../content/missions/mission-3-3.ts');
+ const def=structuredClone(MISSION_3_3);
+ def.units=[{id:'own',kind:'union-assault',x:0,z:0,pilot:true},{id:'tower',kind:'scorp-rocket-tower',x:0,z:0,pilot:true}];
+ def.assignedUnitId='own';def.startMountedUnitId='own';def.companions=[];def.objectives=[];def.completionEnabled=false;def.base=undefined;def.rocks=[];def.minefields=[];def.terrain.peaks=[];def.terrain.biome='volcanic';
+ def.terrain.cliffs=[{id:'deck',x:0,z:0,width:40,depth:40,height:36,surface:'deck'}];
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation('Easy',def),world=new World({} as HTMLCanvasElement,sim,engine);
+  const tower=sim.units.find(unit=>unit.id==='tower')!,deck=world.scene.getMeshByName('deck')!,paint=deck.material as StandardMaterial,ground=world.scene.getMaterialByName('volcanic-ground') as StandardMaterial;
+  assert.equal(tower.hoverHeight,36);assert.equal(sim.mounted!.hoverHeight,36);
+  assert.equal(sim.terrainObstacles.some(obstacle=>'surface' in obstacle&&obstacle.surface==='deck'),false);
+  world.update(0);
+  assert.equal(deck.position.y,18);assert.equal(deck.metadata?.terrainDeck,'deck');assert.equal(paint.name,'map-deck');
+  assert.ok(ground.diffuseTexture);assert.equal(paint.diffuseTexture,ground.diffuseTexture);
+  assert.equal(world.rigs.get('tower')!.root.position.y,36);assert.equal(world.rigs.get('own')!.root.position.y,36);
+  sim.mounted!.x=80;sim.tick(1/60,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});world.update(0);
+  assert.equal(sim.mounted!.hoverHeight,0);assert.equal(world.rigs.get('own')!.root.position.y,0);
+  assert.equal(tower.hoverHeight,36);assert.equal(world.rigs.get('tower')!.root.position.y,36);
+ }finally{engine.dispose();}
+});
+
 test('Union Sentry has a low central cabin and high M-shaped shoulders with matching fixed hit regions',async()=>{
  const {VEHICLE_SHAPES}=await import('../content/vehicle-shapes.ts'),{intersectParts}=await import('../simulation/parts.ts');
  const s=new Simulation(),u=s.units[0],shape=VEHICLE_SHAPES['union-sentry'];
@@ -1305,8 +1355,36 @@ test('4-4 renders one lava ribbon and one bridge deck',async()=>{
   for(const side of [-1,1])assert.ok(world.scene.getTransformNodeByName(`bridge-hinge-delivery-bridge-${side}`));
   assert.equal(world.scene.transformNodes.filter(node=>node.name.startsWith('bridge-hinge-')).length,2);
   assert.equal(MISSION_4_4.terrain.biome,'volcanic');
+  assert.equal(MISSION_4_4.terrain.skyPalette,'amber');
+  assert.equal(MISSION_4_4.terrain.skyColor,undefined);
+  assert.ok(Math.abs(world.scene.clearColor.r-.78)<1e-6&&Math.abs(world.scene.clearColor.g-.48)<1e-6&&Math.abs(world.scene.clearColor.b-.12)<1e-6);
   assert.ok(world.scene.getMaterialByName('basalt-mountain'));
   assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='rocky-mountain').length,24+MISSION_4_4.terrain.peaks!.length);
+ }finally{engine.dispose();}
+});
+test('4-5 draws its dense ridges as one mesh and keeps every ellipse',async()=>{
+ const {MISSION_4_5}=await import('../content/missions/mission-4-5.ts');
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_4_5),engine);
+  const peaks=MISSION_4_5.terrain.peaks!,half=MISSION_4_5.terrain.halfWidth,minZ=MISSION_4_5.terrain.minZ,maxZ=MISSION_4_5.terrain.maxZ;
+  assert.ok(peaks.length>80);
+  assert.equal(MISSION_4_5.terrain.skyColor,'#bc8664');
+  assert.equal(MISSION_4_5.terrain.skyPalette,undefined);
+  assert.ok(Math.abs(world.scene.clearColor.r-0xbc/255)<1e-6&&Math.abs(world.scene.clearColor.g-0x86/255)<1e-6&&Math.abs(world.scene.clearColor.b-0x64/255)<1e-6);
+  const mountains=world.scene.meshes.filter(mesh=>mesh.name==='rocky-mountain');
+  assert.equal(mountains.length,25);
+  const outside=(mesh:typeof mountains[number])=>{mesh.computeWorldMatrix(true);const {minimumWorld:a,maximumWorld:b}=mesh.getBoundingInfo().boundingBox;return b.x<=-half||a.x>=half||a.z>=maxZ||b.z<=minZ;};
+  const field=mountains.filter(mesh=>!outside(mesh));
+  assert.equal(field.length,1);
+  const mesh=field[0]!;
+  assert.equal(mesh.isPickable,false);
+  assert.equal(mesh.material,world.scene.getMaterialByName('basalt-mountain'));
+  assert.ok(mesh.getTotalVertices()<40000);
+  const peak=peaks[0]!,positions=mesh.getVerticesData('position')!;
+  let near=false;
+  for(let i=0;i<positions.length;i+=3)if(Math.hypot(positions[i]!-peak.x,positions[i+2]!-peak.z)<Math.max(peak.width,peak.depth)/2&&positions[i+1]!>20)near=true;
+  assert.ok(near,'a ridge ellipse still has a raised mesh');
  }finally{engine.dispose();}
 });
 test('4-3 current-position marker uses the briefing image landmarks',async()=>{
@@ -1379,5 +1457,37 @@ test('2-2 projects the original map and renders two rivers in a snowfield',async
   assert.ok(world.scene.getMeshByName('2-2-slope-1'));
   assert.ok(world.scene.getMaterialByName('snow'));
   assert.ok(missionMapObjectives(sim,'ja').includes('MercのLatlon通信基地を破壊'));
+ }finally{engine.dispose();}
+});
+
+test('volcano buildings share one cone and stay closed',()=>{
+ const mission=structuredClone(MISSION);
+ mission.base={name:'volcano fixture',faction:'union',x:0,z:0,width:80,depth:80,buildings:[
+  {id:'cone',kind:'volcano',x:30,z:40,width:18,depth:18,height:14},
+  {id:'cone-b',kind:'volcano',name:'Second Cone',x:-24,z:10,width:10,depth:12,height:8,yaw:Math.PI/2,boardable:true},
+ ]};
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
+ try{
+  const sim=new Simulation('Easy',mission),world=new World({} as HTMLCanvasElement,sim,engine);
+  const first=sim.facilities.find(f=>f.id==='cone')!,second=sim.facilities.find(f=>f.id==='cone-b')!;
+  assert.equal(first.facilityType,'volcano');assert.equal(first.name,'火山');assert.equal(first.boardable,false);assert.equal(first.health,200);
+  assert.equal(second.name,'Second Cone');assert.equal(second.boardable,false);
+  const root=world.scene.getTransformNodeByName('facility-cone')!,other=world.scene.getTransformNodeByName('facility-cone-b')!;
+  assert.equal(root.position.x,30);assert.equal(root.position.z,40);assert.equal(root.metadata.facilityId,'cone');
+  const cone=world.scene.getMeshByName('volcano-cone')!,again=world.scene.getMeshByName('volcano-cone-b')!;
+  assert.equal(cone.metadata.facility,'volcano');assert.equal(cone.material,again.material);
+  assert.equal(cone.material,world.scene.getMaterialByName('volcano-rock'));
+  const rock=cone.material as StandardMaterial,lava=world.scene.getMaterialByName('volcano-lava') as StandardMaterial;
+  assert.ok(Math.abs(rock.diffuseColor.r-0x3b/255)<1e-6&&Math.abs(rock.diffuseColor.g-0x37/255)<1e-6&&Math.abs(rock.diffuseColor.b-0x2d/255)<1e-6);
+  assert.ok(Math.abs(lava.emissiveColor.r-0xaa/255)<1e-6&&Math.abs(lava.emissiveColor.g-0x4d/255)<1e-6&&Math.abs(lava.emissiveColor.b-0x2d/255)<1e-6);
+  assert.equal(lava.disableLighting,true);
+  cone.computeWorldMatrix(true);
+  const span=cone.getBoundingInfo().boundingBox.extendSizeWorld.y*2;
+  assert.ok(Math.abs(span-14)<.6,`cone height ${span}`);
+  const vent=world.scene.getMeshByName('volcano-vent-cone')!,turned=world.scene.getMeshByName('volcano-vent-cone-b')!;
+  vent.computeWorldMatrix(true);turned.computeWorldMatrix(true);
+  assert.ok(vent.getAbsolutePosition().z>root.position.z);
+  assert.ok(turned.getAbsolutePosition().x>other.position.x);
+  assert.equal(root.getChildMeshes().some(mesh=>mesh.name==='command-center'),false);
  }finally{engine.dispose();}
 });

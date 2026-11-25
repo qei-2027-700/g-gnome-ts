@@ -29,9 +29,9 @@
 | `bgm-fighting-on-the-tundra` | Track 12: Fighting on the Tundra（投稿動画の表記） | 投稿動画ではTrack 12、原作CDの正式曲名・番号・版は未照合 | MP3全長84.160秒・2-6ではファイル全体をループ（原作条件は未確認） | [ユーザー指定動画](https://www.youtube.com/watch?v=4OuRkv-MxXE) |
 | `bgm-credits` | Credits（配布ページの表記） | 原作CDの正式表記・番号は未照合 | 全長138秒・4-2では全長をループ | [G-Nome gameripのCredits](https://downloads.khinsider.com/game-soundtracks/album/gnome-windows-gamerip-1997/01.%2520Credits.mp3) |
 | `bgm-barren-landscape` | Track 03: Barren Landscape（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長80.064秒・4-3では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=ZJb2W-SxDAo) |
-| `bgm-infiltrating-darken-territory` | Track 04: Infiltrating Darken Territory（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長118.485秒・用途未指定 | [動画](https://www.youtube.com/watch?v=j_oylgkm3Fo) |
+| `bgm-infiltrating-darken-territory` | Track 04: Infiltrating Darken Territory（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長118.485秒・4-4では出撃時、4-5ではウェイポイント1到達後からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=j_oylgkm3Fo) |
 | `bgm-sneaking-in` | Track 07: Sneaking In（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長92.011秒・3-4では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=mziZW_QQPJI) |
-| `bgm-rescuing-kylie` | Track 09: Rescuing Kylie（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長125.333秒・用途未指定 | [動画](https://www.youtube.com/watch?v=FB664mAqM28) |
+| `bgm-rescuing-kylie` | Track 09: Rescuing Kylie（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長125.333秒・4-5では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=FB664mAqM28) |
 | `bgm-sheridan` | Track 11: Sheridan（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長121.173秒・3-5では出撃時からファイル全体をループ（原作位置は未確認） | [動画](https://www.youtube.com/watch?v=ckEY6gEo_2A) |
 | `bgm-merc-ambush` | Track 13: Merc Ambush（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長55.168秒・用途未指定 | [動画](https://www.youtube.com/watch?v=1JM8Vrm8TX8) |
 | `bgm-undercover-operations` | Track 14: Undercover Operations（投稿動画の表記） | 投稿動画の番号。原作CDは未照合 | MP3全長110.827秒・用途未指定 | [動画](https://www.youtube.com/watch?v=TxUlQ-EEK1o) |
@@ -84,6 +84,8 @@
 | 4-3・出撃 | 出撃時 | `bgm-barren-landscape` | 北の橋 `war-north-bridge` を渡り切ったとき、下の曲へ一度切り替える | ユーザー指定（2026-11-19）。音源は [barren-landscape-ZJb2W-SxDAo.mp3](../../assets/audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3)。待機なし。ファイル全体のループは仮設定。投稿動画の題であり正式曲名ではない |
 | 4-3・北の橋を渡ったあと | 出撃地点の対岸で、北の橋の橋幅に沿った岸へプレイヤーが出たとき | `bgm-merc-region` | 未確認 | ユーザー指定（2026-11-19）。音源は [merc-region.mp3](../../assets/audio/bgm/merc-region.mp3)。橋の上、橋が上がったまま溶岩で止まった位置、溶岩の端を回り込んだ位置では切り替えない。渡り切ったあとに対岸の奥へ進んでも、戻ってきても曲は維持する。一時停止中は保留し、再開で再生位置は戻さない。再出撃では Barren Landscape の先頭から。全長ループは仮設定 |
 | 4-4・出撃 | 出撃時 | `bgm-infiltrating-darken-territory` | 未確認 | ユーザー指定（2026-11-24）。音源は [infiltrating-darken-territory-j_oylgkm3Fo.mp3](../../assets/audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3)。待機なし。ファイル全体のループは仮設定。投稿動画の題であり正式曲名ではない |
+| 4-5・出撃 | 出撃時 | `bgm-rescuing-kylie` | ウェイポイント1の半径へ入ったとき、下の曲へ一度切り替える | ユーザー指定（2026-11-25）。音源は [rescuing-kylie-FB664mAqM28.mp3](../../assets/audio/bgm/rescuing-kylie-FB664mAqM28.mp3)。待機なし。ファイル全体のループは仮設定。投稿動画の題であり正式曲名ではない |
+| 4-5・第1ウェイポイント到達後 | ウェイポイント1の半径へプレイヤーが入ったとき | `bgm-infiltrating-darken-territory` | 未確認 | ユーザー指定（2026-11-25）。音源は [infiltrating-darken-territory-j_oylgkm3Fo.mp3](../../assets/audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3)。半径170は仮で、緑の「1」と西端の司令部・ミーゾンを含む。ウェイポイント2だけでは切り替えない。半径の外へ出ても曲は維持する。一時停止中は保留し、再開で再生位置は戻さない。再出撃では Rescuing Kylie の先頭から。全長ループは仮設定。投稿動画の題であり正式曲名ではない |
 | 全任務・他者が操縦するHAWCまたはScorp ASVへの同乗 | プレイヤーが、他者の操縦中のHAWC、または他者の操縦中のScorp ASVの乗客になったとき | `bgm-passenger` | 未確認 | ユーザー指定（2026-11-19。同日、4-2の味方Scorp ASVを追加）。音源は [passenger-icXcc3u4Po4.mp3](../../assets/audio/bgm/passenger-icXcc3u4Po4.mp3)。待機なし。任務ごとの曲指定ではなく、同乗状態で切り替える。自分で操縦席に乗った場合と、Union ASVへの同乗は切り替えない。自分で降りたときも、同乗先が破壊されて徒歩に戻ったときも、その時点の任務曲を先頭から再生する。一時停止中は保留し、再開で再生位置は戻さない。再出撃ではその任務の出撃曲の先頭から。撃破曲とイオン砲アナウンスの予告は同乗曲より優先する。4-2では全滅後の `bgm-snow-maze` が優先され、全滅前に同乗を終えると `bgm-credits` へ戻る。全長ループは仮設定。投稿動画の題であり正式曲名ではない |
 切り替え条件は、ミッション開始、任務イベント、領域への進入、戦闘状態、会話、曲の再生終了、経過時間などを候補として調べる。交戦開始と同時に曲が変わった1回の観察だけで、戦闘開始が原因と決めない。
 
@@ -234,7 +236,7 @@ Merc Sentry HAWKがプレイヤーを初めて視認した時点で開始曲か�
 
 ## 未配置曲の前半（2026-11-18）
 
-ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Sheridan は 3-5 の出撃曲、Barren Landscape は 4-3 の出撃曲、Sneaking In は 3-4 の出撃曲として接続した。ほかの3曲は任務へ未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
+ユーザー指定により、同じ再生リストで未配置だった11曲のうち、曲番の若い6曲を取得した。投稿動画の題を仮名にし、原作の正式曲名や再生場面にはしていない。Sheridan は 3-5 の出撃曲、Barren Landscape は 4-3 の出撃曲、Sneaking In は 3-4 の出撃曲、Infiltrating Darken Territory は 4-4 の出撃曲と 4-5 のウェイポイント1到達後、Rescuing Kylie は 4-5 の出撃曲として接続した。Merc Ambush は任務へ未接続。検査ログは `.artifacts/bgm-half-20261118/`。形式・全長・デコードの確認であり、ブラウザ再生や聴感の確認ではない。
 
 | 曲ID | 配置先 | 全長 | バイト数 | SHA-256 |
 | --- | --- | --- | ---: | --- |

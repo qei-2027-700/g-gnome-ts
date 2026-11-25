@@ -12,6 +12,7 @@ export function makeBase(scene:Scene,mission:MissionDefinition){const material=(
    const before=new Set(scene.meshes),id=b.id??`facility-${b.kind??'command'}-${index}`;
    if(base.faction==='scorp'&&(b.kind==='command'||b.kind==='power-plant'||b.kind==='shield-generator'||b.kind==='mine-control')){makeScorpFacility(scene,b,id);continue;}
    if(b.kind==='bridge-control'){makeBridgeControlBuilding(scene,b,id);continue;}
+   if(b.kind==='volcano'){makeVolcano(scene,b,id);continue;}
    const paint=b.color?material(`facility-${id}-armor`,b.color):armor;
    const name=b.kind==='comm-array'?'latlon-comm-array':b.kind==='power-plant'?'power-plant':b.kind==='citadel'?'citadel':b.kind==='mine-control'?'minefield-control':b.kind==='popup-turret-control'?'popup-turret-control':b.kind==='shield-generator'?'shield-generator':b.kind==='sweep-turret'?'sweep-turret':'command-center';
    const body=box(name,b.width,b.height*.8,b.depth,b.x,b.height*.4,b.z,paint);body.metadata={facility:b.kind??'command',facilityId:b.id};
@@ -71,4 +72,26 @@ export function makeBase(scene:Scene,mission:MissionDefinition){const material=(
   const root=new TransformNode(`minefield-${field.id}`,scene);for(const mesh of scene.meshes)if(!before.has(mesh))mesh.parent=root;
  }
  }
+}
+function volcanoMaterial(scene:Scene,name:string,hex:string,emissive:boolean){
+ const found=scene.getMaterialByName(name) as StandardMaterial|null;if(found)return found;
+ const paint=new StandardMaterial(name,scene);paint.diffuseColor=Color3.FromHexString(hex);paint.specularColor=Color3.Black();
+ if(emissive){paint.emissiveColor=Color3.FromHexString(hex);paint.disableLighting=true;}
+ return paint;
+}
+// One cone for every faction. Rock and lava colors are medians from the union-assault behind view.
+// The placement box is the collision. The cone stays inside it. Yaw turns the vent only.
+function makeVolcano(scene:Scene,b:NonNullable<MissionDefinition['base']>['buildings'][number],id:string){
+ const root=new TransformNode(`facility-${id}`,scene);root.position.set(b.x,0,b.z);root.rotation.y=b.yaw??0;root.metadata={facilityId:id};
+ const rock=volcanoMaterial(scene,'volcano-rock','#3b372d',false),lava=volcanoMaterial(scene,'volcano-lava','#aa4d2d',true);
+ const foot=Math.min(b.width,b.depth);
+ const cone=MeshBuilder.CreateCylinder(`volcano-${id}`,{height:b.height,diameterBottom:foot*.86,diameterTop:foot*.16,tessellation:12,updatable:true},scene);
+ const positions=cone.getVerticesData('position')!;
+ for(let i=0;i<positions.length;i+=3){const x=positions[i]!,y=positions[i+1]!,z=positions[i+2]!,angle=Math.atan2(z,x),n=Math.sin(angle*5+y)*.06+Math.sin(angle*2-y*.4)*.04;positions[i]=x*(1+n);positions[i+2]=z*(1+n);}
+ cone.updateVerticesData('position',positions);cone.createNormals(true);
+ cone.scaling.set(b.width/foot,1,b.depth/foot);cone.position.y=b.height/2;cone.material=rock;cone.metadata={facility:'volcano',facilityId:id};cone.parent=root;
+ const crater=MeshBuilder.CreateCylinder(`volcano-crater-${id}`,{height:b.height*.08,diameterBottom:foot*.28,diameterTop:foot*.14,tessellation:8},scene);
+ crater.scaling.set(b.width/foot,1,b.depth/foot);crater.position.y=b.height*.96;crater.material=lava;crater.parent=root;
+ const vent=MeshBuilder.CreateBox(`volcano-vent-${id}`,{width:b.width*.16,height:b.height*.42,depth:foot*.1},scene);
+ vent.position.set(0,b.height*.58,b.depth*.2);vent.rotation.x=.45;vent.material=lava;vent.parent=root;
 }

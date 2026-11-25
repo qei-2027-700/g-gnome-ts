@@ -22,14 +22,31 @@ export const MAP_4_4_LAVA=[
  [492,455],[476,470],[464,500],
 ] as const;
 
+// Unit and facility pixels were read from assets/map/4-4/4-4-map配置.png (760×756).
+// That image is stretched relative to 4-4map.png. The yellow start (103.2, 219.9) maps to (99, 181)
+// and the blue 1B (561.7, 592.0) maps to (494.7, 414.3). Scale is 0.863 in x and 0.627 in y.
+// Meters stay the provisional 3 above. A labeled center that landed on lava or a pale ridge
+// is the nearest dark pixel; those nudges are recorded in docs/missions/mission-4-4.md.
 export const MAP_4_4_POINTS={
  start:map44PixelToWorld(startPixel.x,startPixel.y),
  bridge:map44PixelToWorld(490,414),
- bridgeControl:map44PixelToWorld(450,400),
+ bridgeControl:map44PixelToWorld(450,414),
  labMarker:map44PixelToWorld(530,448),
- mineControl:map44PixelToWorld(340,220),
- minefield:map44PixelToWorld(360,240),
+ // South of the west rocket, in the dark valley past the pale ridge. The placement-diagram
+ // label sat on the north bank of the lava, inside the three southern TD detection ranges.
+ mineControl:map44PixelToWorld(230,400),
+ minefield:map44PixelToWorld(248,390),
  waypoint1:map44PixelToWorld(530,420),
+ sentryOpening:map44PixelToWorld(216,209),
+ tacticalWest:map44PixelToWorld(218,258),
+ asv:map44PixelToWorld(264,309),
+ aip:map44PixelToWorld(379,296),
+ rocketRight:map44PixelToWorld(533,316),
+ rocketLeft:map44PixelToWorld(300,335),
+ tacticalSouth1:map44PixelToWorld(407,345),
+ tacticalSouth2:map44PixelToWorld(416,352),
+ tacticalSouth3:map44PixelToWorld(420,358),
+ bridgeSentry:map44PixelToWorld(456,425),
 } as const;
 
 const lava:River={

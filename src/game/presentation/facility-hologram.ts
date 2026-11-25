@@ -10,6 +10,7 @@ const FACILITY_HOLOGRAMS:Record<FacilityType,{label:string;command:boolean}>={
  'popup-turret-control':{label:'ポップアップタレット制御施設',command:false},
  'shield-generator':{label:'シールドジェネレーター',command:false},
  'sweep-turret':{label:'スイープタレット',command:false},
+ volcano:{label:'火山',command:false},
 };
 export function facilityHologramSvg(kind:Facility['facilityType']){
  const {command,label}=FACILITY_HOLOGRAMS[kind];

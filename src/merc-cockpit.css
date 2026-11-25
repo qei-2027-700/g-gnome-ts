@@ -2,7 +2,7 @@
 .merc-cockpit{background:#000}
 .merc-cockpit #cockpit,.merc-cockpit #flightHud{inset:auto;left:calc((100% - var(--merc-width))/2);top:calc((100% - 38px - var(--merc-height))/2);width:var(--merc-width);height:var(--merc-height);color:#57ff22;font-family:monospace}
 .merc-cockpit .merc-reference{display:block;position:absolute;inset:0;width:100%;height:100%}
-.merc-cockpit #cockpit>.canopy,.merc-cockpit #cockpit>.pillar,.merc-cockpit #cockpit>.dashboard,.merc-cockpit #cockpit>.dash-rim,.merc-cockpit .cockpit-shell{display:none}
+.merc-cockpit #cockpit>.canopy,.merc-cockpit #cockpit>.pillar,.merc-cockpit #cockpit>.dashboard,.merc-cockpit #cockpit>.dash-rim,.merc-cockpit .cockpit-shell,.merc-cockpit .union-assault-shell{display:none}
 .merc-cockpit #world{left:calc((100% - var(--merc-width))/2);top:calc((100% - 38px - var(--merc-height))/2);width:var(--merc-width);height:var(--merc-height)}
 .merc-cockpit .weapon-panel{left:9%;top:8%;width:29%;height:9%;padding:0;border:0;background:none;box-shadow:none;font-size:clamp(9px,1.45vw,21px);line-height:1.9;overflow:visible;z-index:3}
 .merc-cockpit .weapon-panel>div{display:flex;align-items:center;gap:6%;height:50%;white-space:nowrap}

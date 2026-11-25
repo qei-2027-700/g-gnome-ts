@@ -28,6 +28,10 @@ export const INFANTRY_WEAPONS={
   // EGGER ballistics and capacity are provisional, pending original-game measurements.
   EGGER:{range:100,speed:60,cooldown:10,ammo:5},
 } as const;
+// On-foot designator. A mission opts in with footWeapons.laserSite. This is not a vehicle laser.
+// The 4-5 helmet frame shows the charge bar at 0. That frame is spent, not the charge at mission start.
+// The recharge time is unmeasured.
+export const INFANTRY_LASER_SITE={cooldown:1,displayName:'LaserSite'} as const;
 // VISOM flight speed in m/s; lifetime below preserves the 1000 m range.
 export const VISOM_SPEED=96;
 // Provisional shared firing intervals; individual mission weapon overrides can replace them.
@@ -75,7 +79,7 @@ export const AI_MISSILE_ACCURACY={
 // Provisional threshold for "stopped"; moving targets keep the scattered aim above.
 export const ROCKET_TOWER_STILL_SPEED=.75;
 
-// User-confirmed laser-only hold-fire exceptions; some chassis still await content/models.
+// User-confirmed laser-only hold-fire exceptions. Union Assault repeats P2MEC at its own interval.
 export const LASER_HOLD_FIRE_HAWCS=['scorp-assault','darken-tactical','merc-assault','union-assault'] as const;
 export function allowsLaserHoldFire(chassis:string,weapon:VehicleWeapon){return weapon in LASERS&&(LASER_HOLD_FIRE_HAWCS as readonly string[]).includes(chassis);}
 
@@ -86,6 +90,7 @@ export function weaponMountCount(chassis:string,weapon:string){
  if(chassis==='merc-aip'||chassis==='union-aip'||chassis==='airborne-insurgent-platform')return 1;
  if(chassis==='scorp-asv'&&weapon==='zWASP')return 1; // Duplicate slots already denote the ASV's left and right guns.
  if(chassis==='merc-assault'&&weapon==='RUPP')return 2;
+ if(chassis==='union-assault'&&weapon==='P2MEC')return 2;
  if(chassis==='scorp-assault'&&weapon==='LRIP')return 2;
  if(chassis==='union-sentry'&&weapon==='FIL-30')return 2;
  if(chassis==='darken-sentry'&&(weapon==='RUPP'||weapon==='CHUM'))return 2;

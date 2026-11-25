@@ -85,6 +85,13 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
  leftLeg:'M55 57L24 12 9 101h9l12-68 23 31 M65 65L43 24 29 105h8l10-58 15 24',
  rightLeg:'M105 57l31-45 15 89h-9l-12-68-23 31 M95 65l22-41 14 81h-8l-10-58-15 24'
  });
+ if(kind==='union-assault')Object.assign(paths,{
+  hull:'M46 40h68v14H46z',
+  cockpit:'M64 28h32v16H64z',
+  leftWeapon:'M70 46h8v8H70z',rightWeapon:'M82 46h8v8H82z',
+  leftLeg:'M38 38L30 104 M54 58L50 104',
+  rightLeg:'M122 38L130 104 M106 58L110 104'
+ });
  if(kind==='scorp-assault')Object.assign(paths,{
   hull:'M40 61L80 51 120 61 109 72H51Z M56 59h48v9H56z',
   cockpit:'M77 28L84 52H76L66 54 55 48Z M66 49l-17 9 8 4 22-7',

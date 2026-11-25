@@ -1,0 +1,42 @@
+.union-assault-shell{display:none}
+.union-assault-cockpit{background:#000}
+.union-assault-cockpit #cockpit,.union-assault-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--union-assault-width);height:var(--union-assault-height);transform:translate(-50%,-50%);container-type:size;color:#58ff29;font-family:monospace}
+.union-assault-cockpit #world{left:calc((100% - var(--union-assault-width))/2);top:calc((100% - 38px - var(--union-assault-height))/2);width:var(--union-assault-width);height:var(--union-assault-height)}
+.union-assault-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:visible}
+.union-assault-cockpit .union-assault-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.union-assault-cockpit .cockpit-shell,.union-assault-cockpit .union-tactical-shell,.union-assault-cockpit .union-aip-shell,.union-assault-cockpit .darken-sentry-shell,.union-assault-cockpit .scorp-sentry-shell,.union-assault-cockpit .scorp-tactical-shell,.union-assault-cockpit .scorp-assault-shell,.union-assault-cockpit .merc-reference,.union-assault-cockpit .merc-assault-reference,.union-assault-cockpit .meson-reference,.union-assault-cockpit .scorp-meson-reference,.union-assault-cockpit .asv-cockpit-shell,.union-assault-cockpit .scorp-cockpit-shell,.union-assault-cockpit .cockpit-reference-metal,.union-assault-cockpit .cockpit-well-underlay,.union-assault-cockpit .cockpit-grain,.union-assault-cockpit .overhead-display,.union-assault-cockpit #cockpit>.canopy,.union-assault-cockpit #cockpit>.pillar,.union-assault-cockpit #cockpit>.dashboard,.union-assault-cockpit #cockpit>.dash-rim{display:none}
+.union-assault-cockpit .weapon-panel{left:11.4%;top:6.5%;width:28%;height:14%;padding:0;border:0;background:none;box-shadow:none;font-size:1.35cqw;line-height:1;overflow:visible;z-index:3}
+.union-assault-cockpit .weapon-panel>div{display:flex;align-items:center;gap:4%;height:50%;white-space:nowrap}
+.union-assault-cockpit .weapon-panel>div[hidden]{display:none}
+.union-assault-cockpit .weapon-panel>div:nth-child(n+3){position:absolute;left:175%;top:0;width:100%;height:50%}
+.union-assault-cockpit .weapon-panel>div:nth-child(4){top:50%}
+.union-assault-cockpit .weapon-panel i{order:0;font-size:1.4cqw;padding:.1cqw .2cqw;margin:0;border:1px solid #54ff20}
+.union-assault-cockpit .weapon-panel b{order:1;min-width:27%;font-weight:400}
+.union-assault-cockpit .weapon-panel #ammo,.union-assault-cockpit .weapon-panel #ammo2,.union-assault-cockpit .weapon-panel #ammo3,.union-assault-cockpit .weapon-panel #ammo4{order:3;margin-left:auto;float:none;font-size:1.2cqw;color:#65ff27}
+.union-assault-cockpit .weapon-panel>div[data-state=empty]{opacity:.4}
+.union-assault-cockpit .iff-display{left:45%;top:7%;right:auto;width:10.5%;height:6%;padding:0;background:#000;border:0;box-shadow:none;font-size:0;z-index:3;display:flex;align-items:center;justify-content:center}
+.union-assault-cockpit .iff-display strong{margin:0;font:1.6cqw monospace}
+.union-assault-cockpit .instrument{border:0;background:transparent;box-shadow:none;border-radius:0;z-index:2;overflow:hidden}
+.union-assault-cockpit .target-instrument{left:1%;bottom:0;width:23%;height:33%}
+.union-assault-cockpit .self-instrument{right:1%;bottom:0;width:23%;height:33%}
+.union-assault-cockpit .holo-grid{inset:18% 8% 4%;transform:perspective(200px) rotateX(18deg);background:repeating-linear-gradient(0deg,transparent 0 15px,#42703080 16px 17px),repeating-linear-gradient(90deg,transparent 0 18px,#42703080 19px 20px)}
+.union-assault-cockpit #targetHologram,.union-assault-cockpit #selfHologram{left:12%;top:6%;width:76%;height:82%}
+.union-assault-cockpit .instrument .micro{top:2%;left:8%;font-size:.6cqw}
+.union-assault-cockpit #targetData{bottom:0;font-size:.65cqw;white-space:pre-line}
+.union-assault-cockpit .vertical-meter{height:62%;width:5%;bottom:8%;left:3%;background:#061400}
+.union-assault-cockpit .target-instrument .vertical-meter{left:auto;right:3%}
+.union-assault-cockpit .asv-energy-meter{display:block;position:absolute;right:2%;top:8%;bottom:auto;width:3%;height:50%;background:#061400;border:1px solid #79d7d0}
+.union-assault-cockpit #asvEnergyFill{position:absolute;bottom:0;width:100%;background:#f0ea22}
+.union-assault-cockpit .radar-instrument{left:33%;bottom:0;width:34%;height:26%;clip-path:ellipse(48% 62% at 50% 58%)}
+.union-assault-cockpit #radar{left:0;top:0;width:100%;height:100%}
+.union-assault-cockpit .radar-instrument .micro{top:auto;bottom:2%;z-index:3}
+.union-assault-cockpit .throttle-meter{left:57%;top:35%;width:1.2%;height:18%;border-color:#e2e629}
+.union-assault-cockpit .compass{top:59%;left:38%;width:20%;font-size:.75cqw}
+.union-assault-cockpit #pingLight,.union-assault-cockpit .objectives{display:none}
+.union-assault-cockpit .topbar{background:transparent;border:0;top:auto;bottom:0;height:38px;width:auto;right:auto;padding:4px 12px;z-index:15}
+.union-assault-cockpit .topbar .brand,.union-assault-cockpit .topbar .mission-id,.union-assault-cockpit footer #controls{display:none}
+.union-assault-cockpit .topbar button,.union-assault-cockpit footer button{font-size:9px;padding:5px 8px}
+.union-assault-cockpit footer{height:38px;min-height:38px;font-size:8px;justify-content:flex-end}
+.union-assault-cockpit .telemetry{top:auto;bottom:42px;left:3%;padding:3px 6px;background:#000b;font-size:10px;z-index:4}
+.union-assault-cockpit .telemetry .stat{display:none}
+.union-assault-cockpit .telemetry small{font-size:7px}.union-assault-cockpit .telemetry b{font-size:12px}

@@ -1,4 +1,4 @@
-import {VEHICLE_SHAPES,mercAssaultLegPose} from '../content/vehicle-shapes.ts';
+import {VEHICLE_SHAPES,mercAssaultLegPose,unionAssaultLegPose} from '../content/vehicle-shapes.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GAITS,legPose} from './locomotion.ts';
@@ -55,6 +55,35 @@ test('Merc Assault legs swing their knees sideways and carry raised feet outward
   assert.ok(Math.abs(swing.knee.x)-Math.abs(stance.knee.x)>1.5);assert.ok(Math.abs(swing.foot.x)-Math.abs(rest.foot.x)>1);assert.equal(stance.foot.x,rest.foot.x);assert.equal(stance.foot.y,.1);assert.ok(swing.foot.y>.1);assert.ok(Math.abs(slow.foot.x)<Math.abs(swing.foot.x));
   assert.deepEqual(mercAssaultLegPose(side,front,1.7,0),rest);
  }
+});
+test('Union Assault walks in a four-beat beast gait with planted paws',()=>{
+ const shape=VEHICLE_SHAPES['union-assault'],spider=shape.spider,belly=14.7*.6+shape.hull.y-shape.hull.h/2;
+ assert.ok(spider.kneeY<spider.hipY-2);assert.ok(spider.hipY<=belly+.05);assert.ok(spider.hipY>belly-1);assert.ok(spider.footX>shape.hull.w/2-.2);assert.ok(spider.footX<shape.hull.w/2+1.6);
+ const length=(a:{x:number;y:number;z:number},b:{x:number;y:number;z:number})=>Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
+ const peakAt=(side:number,front:number)=>{let best=0,height=-1;for(let i=0;i<64;i++){const y=unionAssaultLegPose(side,front,i/64*Math.PI*2,1).foot.y;if(y>height){height=y;best=i;}}return best;};
+ const apart=(a:number,b:number)=>{const d=Math.abs(a-b);return Math.min(d,64-d);};
+ const peaks=[[-1,-1],[-1,1],[1,-1],[1,1]].map(([side,front])=>peakAt(side,front));
+ assert.equal(new Set(peaks).size,4);for(let i=0;i<peaks.length;i++)for(let j=i+1;j<peaks.length;j++)assert.ok(apart(peaks[i],peaks[j])>=12);
+ for(const side of [-1,1])for(const front of [-1,1]){
+  const rest=unionAssaultLegPose(side,front),upper=length(rest.hip,rest.knee),lower=length(rest.knee,rest.foot);
+  assert.deepEqual(unionAssaultLegPose(side,front,1.7,0),rest);
+  assert.ok(rest.knee.y<rest.hip.y);assert.equal(rest.foot.y,.1);assert.equal(rest.footPitch,0);assert.ok(Math.abs(rest.foot.x)>shape.hull.w/2-.2);assert.ok(Math.abs(rest.foot.x)-Math.abs(rest.hip.x)<.6);
+  assert.ok(front>0||Math.abs(rest.foot.x)>Math.abs(unionAssaultLegPose(side,1).foot.x));
+  let lifted=0,swing=rest,ahead=-Infinity,back=Infinity;
+  for(let i=0;i<48;i++){
+   const pose=unionAssaultLegPose(side,front,i/48*Math.PI*2,1);
+   if(pose.foot.y>.1)lifted++;if(pose.foot.y>swing.foot.y)swing=pose;ahead=Math.max(ahead,pose.foot.z);if(pose.foot.y===.1)back=Math.min(back,pose.foot.z);
+   assert.equal(pose.foot.x,rest.foot.x);assert.ok(pose.foot.y>=.1);assert.ok(pose.knee.y<pose.hip.y);
+   assert.ok(Math.abs(pose.knee.x-pose.hip.x)<=Math.abs(pose.foot.x-pose.hip.x)+.05);
+   assert.ok(length(pose.hip,pose.knee)>upper*.9&&length(pose.hip,pose.knee)<upper*1.12);
+   assert.ok(length(pose.knee,pose.foot)>lower*.9&&length(pose.knee,pose.foot)<lower*1.12);
+   assert.ok(pose.foot.y===.1?pose.footPitch===0:pose.footPitch<0);
+  }
+  assert.ok(lifted>=12&&lifted<=22);assert.ok(swing.foot.y>rest.foot.y+1);assert.ok(ahead>rest.foot.z);assert.ok(back<rest.foot.z);assert.ok(swing.knee.y>rest.knee.y);
+ }
+ const stance:number[]=[];
+ for(let i=0;i<32;i++)stance.push(unionAssaultLegPose(-1,-1,(.36+i/32*.64)*Math.PI*2,1).foot.z);
+ for(let i=1;i<stance.length;i++)assert.ok(stance[i]<stance[i-1]);
 });
 
 test('legPose is deterministic for every vehicle kind and representative inputs',()=>{

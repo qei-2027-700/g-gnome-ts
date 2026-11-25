@@ -4,7 +4,7 @@
 .merc-assault-cockpit #world{left:calc((100% - var(--merc-assault-width))/2);top:calc((100% - 38px - var(--merc-assault-height))/2);width:var(--merc-assault-width);height:var(--merc-assault-height);transform:translateX(var(--assault-backdrop-sway,0%))}
 .merc-assault-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:visible}
 .merc-assault-cockpit .merc-assault-reference{display:block;position:absolute;inset:0;width:100%;height:100%}
-.merc-assault-cockpit #cockpit>.canopy,.merc-assault-cockpit #cockpit>.pillar,.merc-assault-cockpit #cockpit>.dashboard,.merc-assault-cockpit #cockpit>.dash-rim,.merc-assault-cockpit .cockpit-shell,.merc-assault-cockpit .cockpit-grain,.merc-assault-cockpit .overhead-display{display:none}
+.merc-assault-cockpit #cockpit>.canopy,.merc-assault-cockpit #cockpit>.pillar,.merc-assault-cockpit #cockpit>.dashboard,.merc-assault-cockpit #cockpit>.dash-rim,.merc-assault-cockpit .cockpit-shell,.merc-assault-cockpit .union-assault-shell,.merc-assault-cockpit .cockpit-grain,.merc-assault-cockpit .overhead-display{display:none}
 .merc-assault-cockpit .weapon-panel{left:7.5%;top:8.5%;width:31%;height:8%;padding:0;border:0;background:none;box-shadow:none;font-size:1.35cqw;line-height:1;overflow:visible;z-index:3}
 .merc-assault-cockpit .weapon-panel>div{display:flex;align-items:center;gap:4%;height:50%;white-space:nowrap}
 .merc-assault-cockpit .weapon-panel>div[hidden]{display:none}

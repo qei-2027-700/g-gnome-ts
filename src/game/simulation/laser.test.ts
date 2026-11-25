@@ -4,7 +4,7 @@ import {Simulation,makeUnit,type Input} from './simulation.ts';
 import {LASER_FLIGHT_SPEED,LASERS,weaponDisplayName,weaponMountCount} from '../content/weapons.ts';
 import {laserRange} from './weapons.ts';
 import {MISSION} from '../content/mission-1-1.ts';
-import {type VehicleKind} from '../content/vehicles.ts';
+import {VEHICLE_SHAPES,type VehicleKind} from '../content/vehicles.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function mounted(kind:VehicleKind='union-sentry'){const s=new Simulation();s.units=[makeUnit('own',kind,0,18,false)];s.human={...MISSION.vehicle};s.board();s.iff='6707';return s;}
 function step(s:Simulation,n=10){for(let i=0;i<n;i++)s.tick(.02,idle);}
@@ -23,6 +23,22 @@ test('partial charge changes beam endpoint and actual hit reach, and a zero-char
 });
 test('RAID on a captured Merc uses its own laser profile and charge display range',()=>{
  const s=mounted('merc-sentry');s.mounted!.laserCharge=.5;assert.equal(s.weaponRange(1),laserRange('RAID',.5));s.fire(1);assert.equal(s.events.at(-1)?.weapon,'RAID');assert.equal(s.mounted!.laserCharge,0);assert.equal(s.mounted!.energy,1098);assert.notEqual(LASERS.RAID.range,LASERS['FIL-30'].range);
+});
+test('Union AIP holds P2MEC until the beam can reach and closes from detection range',()=>{
+ const s=new Simulation();s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.mission.terrain.rivers=[];s.mission.minefields=[];
+ const aip=makeUnit('aip','union-aip',0,450,true);aip.iff='9999';aip.yaw=Math.PI;aip.aim=Math.PI;s.units=[aip];s.human={x:0,z:0};
+ let shots=0;
+ for(let i=0;i<30*20;i++){
+  s.tick(1/30,idle);
+  for(const event of s.events)if(event.type==='shot'&&event.unit===aip){
+   shots++;
+   const gap=Math.hypot(s.human.x-aip.x,s.human.z-aip.z),beam=event.to?Math.hypot(event.to.x-aip.x,event.to.z-aip.z):0;
+   assert.ok(gap<LASERS.P2MEC.range+1);assert.ok(beam+4>=gap);
+  }
+  s.events.length=0;
+ }
+ assert.ok(Math.hypot(aip.x-s.human.x,aip.z-s.human.z)<LASERS.P2MEC.range);
+ assert.ok(shots>0);
 });
 test('moving AI shares the charge penalty and an undercharged RAID cannot hit beyond its shortened beam',()=>{
  const s=new Simulation();s.human={...MISSION.vehicle};s.board();s.iff='2620';const enemy=s.units[1];s.units=[s.mounted!,enemy];enemy.x=0;enemy.z=130;enemy.yaw=Math.PI;enemy.aim=Math.PI;enemy.alert=true;enemy.attackCycle=1;enemy.laserCharge=0;
@@ -59,6 +75,24 @@ test('Union Sentry FIL-30 fires both lower cockpit mounts for player and AI; wea
   const bolts=s.missiles.filter(p=>p.weapon==='FIL-30'),shots=s.events.filter(e=>e.type==='shot'&&e.unit===unit);assert.equal(bolts.length,2,`${ai?'AI':'player'} yaw=${yaw}`);assert.equal(shots.length,2);assert.equal(unit.energy,1598);
   const [a,b]=shots.map(e=>e.from!);assert.ok(Math.abs(Math.hypot(a.x-b.x,a.z-b.z)-1.3)<1e-8);assert.ok(shots.every(e=>e.from!.y!<unit.spec.height*.5));
  }
+});
+test('Union Assault fires twin P2MEC from slot 1 and keeps the other racks single',()=>{
+ assert.equal(weaponMountCount('union-assault','P2MEC'),2);
+ assert.equal(weaponMountCount('union-assault','VISOM'),1);
+ assert.equal(weaponMountCount('union-assault','TCROCK'),1);
+ const s=mounted('union-assault'),unit=s.mounted!;
+ assert.equal(unit.spec.weapons[0],'P2MEC');
+ s.fire(1);
+ const beams=s.events.filter(e=>e.type==='shot'&&e.weapon==='P2MEC');
+ assert.equal(beams.length,2);
+ assert.ok(beams[0]!.from!.x*beams[1]!.from!.x<0);
+ const face=VEHICLE_SHAPES['union-assault'],chin=unit.spec.height*.6+face.cockpit.y-face.cockpit.h/2;
+ assert.ok(beams.every(e=>e.from!.y<chin));
+ assert.equal(unit.energy,2198);
+ unit.cooldown=0;s.fire(3);
+ const visom=s.events.find(e=>e.type==='shot'&&e.weapon==='VISOM');assert.ok(visom?.from);assert.ok(visom!.from!.y<chin);
+ const rack=mounted('union-assault');rack.fire(4);
+ const rock=rack.events.find(e=>e.type==='shot'&&e.weapon==='TCROCK');assert.ok(rock?.from);assert.ok(rock!.from!.y<chin);
 });
 test('Darken Sentry fires RUPP laser and CHUM missile pairs from opposite sides',()=>{
  assert.equal(weaponMountCount('darken-sentry','RUPP'),2);assert.equal(weaponMountCount('darken-sentry','CHUM'),2);

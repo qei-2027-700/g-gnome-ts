@@ -29,13 +29,16 @@ export function overcastSky(scene:Scene,seed:number,snow=false,amber=false){
 export function rockyMountains(scene:Scene,terrain:Terrain){
  const snow=terrain.biome==='snow',volcanic=terrain.biome==='volcanic';const paint=new StandardMaterial(snow?'snow-mountain':volcanic?'basalt-mountain':'ochre-mountain',scene);paint.diffuseColor=Color3.FromHexString(snow?'#e8f0f4':volcanic?'#85827c':'#b8a16b');paint.specularColor=Color3.Black();
  const rockTexture=texture(scene,'mountain-strata',128,(x,y)=>{const v=noise(x*(snow?7:42),y*(snow?5:9),terrain.seed)*.55+noise(x*(snow?18:90),y*(snow?15:70),terrain.seed+3)*.45;return snow?(v>.43?[205+v*45,218+v*35,229+v*25]:[40+v*60,57+v*70,76+v*80]):volcanic?[48+v*95,47+v*91,43+v*78]:[105+v*85,86+v*73,55+v*58];});rockTexture.uScale=snow?2:6;rockTexture.vScale=snow?2:6;paint.diffuseTexture=rockTexture;paint.backFaceCulling=false;
- const mountain=(x:number,z:number,i:number,peak?:{width:number;depth:number;height:number})=>{const width=peak?.width??220+(i%3)*65,depth=peak?.depth??230+(i%4)*35,h=peak?.height??terrain.ridgeHeight+(i%4)*terrain.ridgeVariation;
- const mesh=MeshBuilder.CreateGround('rocky-mountain',{width,height:depth,subdivisions:24,updatable:true},scene),v=mesh.getVerticesData('position')!,colors:number[]=[];
- for(let j=0;j<v.length;j+=3){const nx=v[j]/(width*.5),nz=v[j+2]/(depth*.5),edge=Math.max(0,1-Math.sqrt(nx*nx+nz*nz)),crag=.77+.23*noise(nx*8+i,nz*8,terrain.seed);v[j+1]=Math.pow(edge,.8)*h*crag-3;const c=.72+.28*noise(nx*21,nz*24,terrain.seed+i);colors.push(c,snow?c:c*.94,snow?c:c*.8,1);}mesh.updateVerticesData('position',v);mesh.createNormals(true);mesh.setVerticesData('color',colors);mesh.position.set(x,0,z);mesh.material=paint;mesh.isPickable=false;};
+ const mountain=(x:number,z:number,i:number,peak?:{width:number;depth:number;height:number},subdivisions=24)=>{const width=peak?.width??220+(i%3)*65,depth=peak?.depth??230+(i%4)*35,h=peak?.height??terrain.ridgeHeight+(i%4)*terrain.ridgeVariation;
+ const mesh=MeshBuilder.CreateGround('rocky-mountain',{width,height:depth,subdivisions,updatable:true},scene),v=mesh.getVerticesData('position')!,colors:number[]=[];
+ for(let j=0;j<v.length;j+=3){const nx=v[j]/(width*.5),nz=v[j+2]/(depth*.5),edge=Math.max(0,1-Math.sqrt(nx*nx+nz*nz)),crag=.77+.23*noise(nx*8+i,nz*8,terrain.seed);v[j+1]=Math.pow(edge,.8)*h*crag-3;const c=.72+.28*noise(nx*21,nz*24,terrain.seed+i);colors.push(c,snow?c:c*.94,snow?c:c*.8,1);}mesh.updateVerticesData('position',v);mesh.createNormals(true);mesh.setVerticesData('color',colors);mesh.position.set(x,0,z);mesh.material=paint;mesh.isPickable=false;return mesh;};
  for(let i=0;i<9;i++){const z=terrain.minZ-40+i*155,width=220+(i%3)*65;mountain(-terrain.halfWidth-width/2-10-(i%2)*70,z,i);const rightIndex=i+11,rightWidth=220+(rightIndex%3)*65;mountain(terrain.halfWidth+rightWidth/2+10+(i%2)*70,z,rightIndex);}
  for(let i=0;i<6;i++){const index=i+22,depth=230+(index%4)*35;mountain(-550+i*220,terrain.maxZ+depth/2+10+(i%2)*100,index);}
- for(const [i,peak] of (terrain.peaks??[]).entries())mountain(peak.x,peak.z,i+60,peak);
- const cliffs=terrain.cliffs??[];
+ // Many ridge ellipses share one mesh and a coarser grid. Movement and shots still use each ellipse.
+ const peaks=terrain.peaks??[],dense=peaks.length>80,drawn:Mesh[]=[];
+ for(const [i,peak] of peaks.entries()){const span=Math.max(peak.width,peak.depth),mesh=mountain(peak.x,peak.z,i+60,peak,dense?span>=120?8:4:24);if(dense)drawn.push(mesh);}
+ if(drawn.length>1){const merged=Mesh.MergeMeshes(drawn,true,true);if(merged){merged.name='rocky-mountain';merged.isPickable=false;}}
+ const cliffs=(terrain.cliffs??[]).filter(cliff=>cliff.surface!=='deck');
  if(cliffs.length){
   const cliffPaint=new StandardMaterial('cliff-strata',scene);cliffPaint.diffuseColor=Color3.White();cliffPaint.specularColor=Color3.Black();
   cliffPaint.diffuseTexture=texture(scene,'cliff-strata',128,(x,y)=>{const n=noise(x*32,y*24,terrain.seed),moss=y<.35&&n>.3;return snow?(n>.46?[225+n*25,232+n*20,239+n*15]:[29+n*60,44+n*65,65+n*70]):volcanic?[48+n*87,47+n*83,44+n*72]:moss?[38+n*40,90+n*65,20+n*25]:[123+n*62,103+n*50,60+n*36];});

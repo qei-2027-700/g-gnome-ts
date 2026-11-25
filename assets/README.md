@@ -15,6 +15,7 @@
 | [cockpits/scope-assault-hawk.png](cockpits/scope-assault-hawk.png) | Scorp Assaultの機内フレーム。窓と固定計器を除いて使用。[提供画像](reference/scope-assault/scope-assault-hawk.png) |
 | [cockpits/scorp-td-hawk.png](cockpits/scorp-td-hawk.png) | Scorp Tactical Defense HAWCの機内フレーム。窓と固定計器を除いて使用。[原画像](<map/3-4/sc- 2026-11-11 23.54.41.png>) |
 | [cockpits/merc-assault.png](cockpits/merc-assault.png) | ユーザー指定のMerc Assault HAWCの機内。窓と固定計器を除いて使用。[専用コックピット](../docs/gameplay/cockpit-hud.md#merc-assault-hawcの操縦席2026-10-29) |
+| [cockpits/union-assault-hawk.png](cockpits/union-assault-hawk.png) | Union Assault HAWCの機内フレーム。窓と固定計器を除いて使用。[原画像](reference/union-assault/union-assault-hawk.png)。[専用コックピット](../docs/gameplay/cockpit-hud.md#union-assault-hawcの操縦席2026-11-25) |
 | [cockpits/merc-mison-guard-tower.png](cockpits/merc-mison-guard-tower.png) | ユーザー提供のミーゾン・ガードタワーの機内とMerc AIP。窓・固定計器を除いたフレームに使用。[専用機内表示](../docs/gameplay/cockpit-hud.md#mercミーゾンガードタワーの機内2026-10-29) |
 | `cockpits/union-asv-reference.png` | [Union ASVの機内](../docs/reference/vehicles/union-asv/3-3-union-ASV内.png) |
 | `cockpits/scorp-reference.png` | [Scorp ASVの機内と基地](../docs/reference/vehicles/scope-asv/3-3-司令部左側-ul-urit基地突入.png) |
@@ -30,9 +31,9 @@
 | [audio/bgm/merc-region.mp3](audio/bgm/merc-region.mp3) | ユーザー指定のMerc領域のテーマ。4-3で北の橋を渡り切ったあとに再生する。仮の2-1への接続は未実装。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのmerc領域曲2026-11-18) |
 | [audio/bgm/scorp-region.mp3](audio/bgm/scorp-region.mp3) | ユーザー指定のScorp領域のテーマ。配置済み。任務へは未接続。投稿動画の題は Track 06: Credits で、既存の Credits とは別ファイル。[出典と検査値](../docs/audio/bgm-mapping.md#配置済みのscorp領域曲2026-11-18) |
 | [audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3](audio/bgm/barren-landscape-ZJb2W-SxDAo.mp3) | 投稿動画の Track 03: Barren Landscape。4-3の出撃時から再生し、北の橋を渡ると Merc 領域の曲へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
-| [audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3](audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3) | 投稿動画の Track 04: Infiltrating Darken Territory。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
+| [audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3](audio/bgm/infiltrating-darken-territory-j_oylgkm3Fo.mp3) | 投稿動画の Track 04: Infiltrating Darken Territory。4-4の出撃時と、4-5でウェイポイント1へ入ったあとに再生する。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/sneaking-in-mziZW_QQPJI.mp3](audio/bgm/sneaking-in-mziZW_QQPJI.mp3) | 投稿動画の Track 07: Sneaking In。3-4の出撃時から再生する。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
-| [audio/bgm/rescuing-kylie-FB664mAqM28.mp3](audio/bgm/rescuing-kylie-FB664mAqM28.mp3) | 投稿動画の Track 09: Rescuing Kylie。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
+| [audio/bgm/rescuing-kylie-FB664mAqM28.mp3](audio/bgm/rescuing-kylie-FB664mAqM28.mp3) | 投稿動画の Track 09: Rescuing Kylie。4-5の出撃時から再生し、ウェイポイント1で Infiltrating Darken Territory へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/sheridan-ckEY6gEo_2A.mp3](audio/bgm/sheridan-ckEY6gEo_2A.mp3) | 投稿動画の Track 11: Sheridan。3-5の出撃時から再生し、イオン砲アナウンスの2秒前に Defeated へ切り替える。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3](audio/bgm/merc-ambush-1JM8Vrm8TX8.mp3) | 投稿動画の Track 13: Merc Ambush。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の前半2026-11-18) |
 | [audio/bgm/undercover-operations-TxUlQ-EEK1o.mp3](audio/bgm/undercover-operations-TxUlQ-EEK1o.mp3) | 投稿動画の Track 14: Undercover Operations。任務へは未接続。[出典と検査値](../docs/audio/bgm-mapping.md#未配置曲の残り2026-11-18) |

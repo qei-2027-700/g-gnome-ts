@@ -408,6 +408,11 @@ test('mission 3-3 EGGER kills the cabin pilot without armor damage or a living e
  s.humanYaw=0;for(let i=0;i<14*60&&!s.mounted;i++)s.tick(1/60,{...idle,forward:true});assert.equal(s.mounted,unit);s.eject('ground');assert.equal(s.eggerAmmo,4);
  s.human={x:0,z:0};aimAt(s,unit.x,2,unit.z);s.fire(2);step(s,1);assert.equal(s.soldiers.length,1);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,1);
  assert.equal(new Simulation().footSecondaryWeapon,'GASHR');
+ const eggerShots=s.missiles.filter(m=>m.weapon==='EGGER').length,eggerLeft=s.eggerAmmo;
+ s.fire(3);s.fire(4);
+ assert.equal(s.missiles.filter(m=>m.weapon==='EGGER').length,eggerShots);
+ assert.equal(s.events.some(e=>e.weapon==='LaserSite'),false);
+ assert.equal(s.eggerAmmo,eggerLeft);
 });
 test('EGGER kills existing driver and passenger identities inside the cabin and preserves vehicle momentum',async()=>{
  const s=await eggerScenario(),unit=s.units[1];

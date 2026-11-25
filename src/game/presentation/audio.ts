@@ -23,6 +23,8 @@ export const DRIVE_PROFILES=VEHICLE_DRIVE_PROFILES;
 export const CHARACTER_VOICE_PROFILES={
  kylie:{pitch:.94,rate:1.04,preferred:/Otoya|Eddy|Alex|Tom/i},
  sheridan:{pitch:.78,rate:.88,preferred:/Reed|Takumi|Daniel|David/i},
+ // General Wilkins: a lower, slower male voice than Sheridan. The shipped clips use macOS Reed.
+ wilkins:{pitch:.74,rate:.84,preferred:/Reed|Grandpa|Albert|Gordon|Otoya/i},
 } as const;
 const maleVoiceName=/Otoya|Ichiro|Keita|Takumi|Naoki|Daichi|Eddy|Reed|Rocko|Grandpa|Alex|Daniel|David|Fred|George|James|Thomas|Aaron|Arthur|Gordon|Ralph|Albert|\bTom\b|\bMark\b|\bmale\b|男性/i;
 type VoiceProfile='young'|'solemn';
@@ -83,7 +85,7 @@ export class GameAudio {
   private fireSources=new Set<AudioBufferSourceNode>();
   private zWaspStep=0;
   private zWaspLast=-1;
-  private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;assault:boolean;radioEnded:boolean;bridged:boolean;track:string|null;missingReported:boolean}|null=null;
+  private missionMusic:{cues:NonNullable<MissionDefinition['bgm']>;boarded:boolean;detected:boolean;eliminated:boolean;assault:boolean;radioEnded:boolean;bridged:boolean;waypoint:boolean;track:string|null;missingReported:boolean}|null=null;
   private passengerHawk=false;private passengerLoose=false;private passengerMissing=false;
   private musicOwner:'manual'|'mission'|null=null;
   private musicPaused=true;private musicPending=false;private musicFailed=false;private musicGeneration=0;
@@ -97,7 +99,7 @@ export class GameAudio {
     this.missionRadioQueue=[];this.missionRadioCue=null;
     if(mission.bgm||this.musicOwner==='mission')this.stopMusic();
     this.passengerHawk=false;this.passengerLoose=false;this.passengerMissing=false;
-    this.missionMusic=mission.bgm?{cues:mission.bgm,boarded:false,detected:false,eliminated:false,assault:false,radioEnded:false,bridged:false,track:null,missingReported:false}:null;this.musicError=null;
+    this.missionMusic=mission.bgm?{cues:mission.bgm,boarded:false,detected:false,eliminated:false,assault:false,radioEnded:false,bridged:false,waypoint:false,track:null,missingReported:false}:null;this.musicError=null;
   }
   resetMissionMusic(){this.missionRadioQueue=[];this.missionRadioCue=null;if(this.musicOwner==='mission')this.stopMusic();this.missionMusic=null;this.passengerHawk=false;this.passengerLoose=false;this.passengerMissing=false;this.musicError=null;}
   missionMusicBoarded(unitId:string){if(this.missionMusic?.cues.afterBoard?.unitId===unitId)this.missionMusic.boarded=true;}
@@ -115,7 +117,7 @@ export class GameAudio {
     });
   }
   private get musicVolume(){return this.settings.music*(this.musicOwner==='mission'?(this.missionMusic?.cues.volumeScale??1):1);}
-  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false,ionAnnouncementAt:number|null=null,bridgeCrossed=false,passengerHawk=false){
+  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false,ionAnnouncementAt:number|null=null,bridgeCrossed=false,passengerHawk=false,waypointReached=false){
     this.musicPaused=paused;if(this.music)this.music.volume=this.musicVolume;
     if(paused){this.pauseMusic();return;}
     const releasePassenger=!passengerHawk&&this.passengerHawk;
@@ -128,10 +130,12 @@ export class GameAudio {
       if(!state.eliminated&&units&&elimination?.unitIds.length&&elimination.unitIds.every(id=>units.some(unit=>unit.id===id&&(!unit.alive||unit.defeated===true))))state.eliminated=true;
       if(!state.assault&&assaultReady&&state.cues.afterAssault)state.assault=true;
       if(!state.bridged&&bridgeCrossed&&state.cues.afterBridge)state.bridged=true;
+      if(!state.waypoint&&waypointReached&&state.cues.afterWaypoint)state.waypoint=true;
       const ion=state.cues.beforeIonLock,ionDue=!!ion&&ionAnnouncementAt!==null&&time+1e-8>=ionAnnouncementAt-ion.lead;
       const bridge=state.bridged?state.cues.afterBridge:undefined;
+      const waypoint=state.waypoint?state.cues.afterWaypoint:undefined;
       const passenger=this.passengerHawk?{trackId:'bgm-passenger'}:undefined;
-      const missionNext=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.assault?state.cues.afterAssault:state.radioEnded?state.cues.afterRadio:ionDue?ion:bridge;
+      const missionNext=state.eliminated?elimination:state.detected?state.cues.afterDetection:state.boarded?state.cues.afterBoard:state.assault?state.cues.afterAssault:state.radioEnded?state.cues.afterRadio:ionDue?ion:(bridge??waypoint);
       const next=(state.eliminated||ionDue)?missionNext:(passenger??missionNext),availableNext=next&&this.bgmAssets[next.trackId];
       if(next&&!availableNext&&!state.missingReported){state.missingReported=true;this.musicError='missing-next';}
       const track=availableNext?next!.trackId:time>=state.cues.start.delay?state.cues.start.trackId:null;
@@ -253,10 +257,10 @@ export class GameAudio {
   }
   private utterance(text:string,profile:VoiceProfile,personId?:string){
     const u=new SpeechSynthesisUtterance(text);u.lang=this.settings.locale==='ja'?'ja-JP':'en-US';u.pitch=profile==='young'?1.2:.82;u.rate=profile==='young'?1:.88;u.volume=this.settings.voice;
-    const voices=speechSynthesis.getVoices().filter(v=>v.lang.startsWith(u.lang.slice(0,2))),character=personId==='kylie'||personId==='sheridan'?CHARACTER_VOICE_PROFILES[personId]:null;
+    const voices=speechSynthesis.getVoices().filter(v=>v.lang.startsWith(u.lang.slice(0,2))),character=personId==='kylie'||personId==='sheridan'||personId==='wilkins'?CHARACTER_VOICE_PROFILES[personId]:null;
     if(character){
       const male=voices.filter(v=>maleVoiceName.test(v.name)),kylie=male.find(v=>CHARACTER_VOICE_PROFILES.kylie.preferred.test(v.name))??male[0];
-      const candidates=personId==='sheridan'&&male.length>1?male.filter(v=>v!==kylie):male;
+      const candidates=(personId==='sheridan'||personId==='wilkins')&&male.length>1?male.filter(v=>v!==kylie):male;
       u.voice=candidates.find(v=>character.preferred.test(v.name))??candidates[0]??null;u.pitch=character.pitch;u.rate=character.rate;
     }else u.voice=voices.find(v=>/Kyoko|Samantha|female|女性|O-Ren/i.test(v.name))??voices[0]??null;
     return u;

@@ -9,7 +9,7 @@ The clips were synthesized locally in a browser with [Kokoro.js](https://github.
 | Kylie | jm_kumo (male) | am_puck (male) | 0.94 | 1.04 |
 | Sheridan | jm_kumo (male) | am_fenrir (male) | 0.78 | 0.88 |
 | Thane | jf_alpha | af_heart | 1.2 | 1 |
-| Wilkins | jf_alpha | af_heart | 1.2 | 1 |
+| Wilkins | macOS Reed（日本語）。再生成時のKokoro目標は jm_kumo | macOS Reed（英語）。再生成時のKokoro目標は am_fenrir | 0.92（合成時）／プロフィール 0.74 | 0.85（say 148）／プロフィール 0.84 |
 
 Japanese readings are manually supplied in `tools/radio-voice-readings.json`; pronunciation and delivery remain provisional. Separate pitch and rate settings preserve the character profiles. Browser synthesis produces WAV data, then ffmpeg converts it to mono 22,050 Hz PCM16 and normalizes peaks to 0.45. The runtime mixes separate Web Audio sources, starting them 0.18 seconds apart.
 

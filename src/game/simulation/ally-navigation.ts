@@ -8,6 +8,7 @@ const CELL=110,LOCAL_REACH=220;
 // Short visibility routes around expanded obstacles. Margins are prototype navigation values.
 // Corners only link to nearby corners. A complete graph over a dense ridge field spends
 // longer than a frame on one search. The mover can still see every corner, and every corner can see the goal.
+// A segment tests the obstacles in the cells it crosses. The corner links stay the same.
 export function allyRoute(from:Vec,goal:Vec|Vec[],area:NavigationArea,circles:NavigationCircle[],boxes:NavigationBox[]):Vec[]|null{
  const goals=Array.isArray(goal)?goal:[goal];
  const inside=(p:Vec)=>Math.abs(p.x)<=area.halfWidth&&p.z>=area.minZ&&p.z<=area.maxZ;
@@ -23,14 +24,23 @@ export function allyRoute(from:Vec,goal:Vec|Vec[],area:NavigationArea,circles:Na
   const inMargin=Math.abs(start.x)<box.width/2&&Math.abs(start.z)<box.depth/2;
   return !inMargin||crossesBuilding(start,end,{...bounds,width:box.width-2,depth:box.depth-2});
  };
- const clear=(a:Vec,b:Vec)=>inside(b)&&!prepared.some(item=>hits(a,b,item))&&!circles.some(circle=>{
+ const boxCell=120,boxBuckets=new Map<number,number[]>(),boxSeen=new Uint32Array(prepared.length);let boxStamp=1;
+ for(let i=0;i<prepared.length;i++){const item=prepared[i]!,x0=Math.floor((item.box.x-item.reach)/boxCell),x1=Math.floor((item.box.x+item.reach)/boxCell),z0=Math.floor((item.box.z-item.reach)/boxCell),z1=Math.floor((item.box.z+item.reach)/boxCell);for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const key=x*100003+z,list=boxBuckets.get(key);if(list)list.push(i);else boxBuckets.set(key,[i]);}}
+ const boxHit=(a:Vec,b:Vec,visit:(item:(typeof prepared)[number])=>boolean)=>{
+  if(!prepared.length)return false;
+  if(++boxStamp>=0x100000000){boxSeen.fill(0);boxStamp=1;}
+  const x0=Math.floor(Math.min(a.x,b.x)/boxCell),x1=Math.floor(Math.max(a.x,b.x)/boxCell),z0=Math.floor(Math.min(a.z,b.z)/boxCell),z1=Math.floor(Math.max(a.z,b.z)/boxCell);
+  for(let x=x0;x<=x1;x++)for(let z=z0;z<=z1;z++){const list=boxBuckets.get(x*100003+z);if(!list)continue;for(const index of list){if(boxSeen[index]===boxStamp)continue;boxSeen[index]=boxStamp;if(visit(prepared[index]!))return true;}}
+  return false;
+ };
+ const clear=(a:Vec,b:Vec)=>inside(b)&&!boxHit(a,b,item=>hits(a,b,item))&&!circles.some(circle=>{
   if(dist(a,circle)<circle.r-.01){const dx=b.x-a.x,dz=b.z-a.z;return (a.x-circle.x)*dx+(a.z-circle.z)*dz<0;}
   return sweptCircle(a,b,circle,circle.r);
  });
  const reachableGoals=goals.filter(inside);if(!reachableGoals.length)return null;
  if(clear(from,reachableGoals[0]))return [{...reachableGoals[0]}];
  const nodes:Vec[]=[{...from},...reachableGoals.map(destination=>({...destination}))],groups:number[][]=[],cornerStart=nodes.length;
- const usable=(p:Vec)=>inside(p)&&!prepared.some(item=>contains(p,item))&&!circles.some(circle=>dist(p,circle)<circle.r);
+ const usable=(p:Vec)=>inside(p)&&!boxHit(p,p,item=>contains(p,item))&&!circles.some(circle=>dist(p,circle)<circle.r);
  for(const circle of circles)for(let i=0;i<12;i++){const angle=i*Math.PI/6,r=(circle.r+.4)/Math.cos(Math.PI/12),point={x:circle.x+Math.sin(angle)*r,z:circle.z+Math.cos(angle)*r};if(usable(point))nodes.push(point);}
  for(const item of prepared){const group:number[]=[];for(const x of [-1,1])for(const z of [-1,1]){const point=place(x*(item.hw+.5),z*(item.hd+.5),item);if(!usable(point))continue;group.push(nodes.length);nodes.push(point);}if(group.length>1)groups.push(group);}
  const bucket=new Map<number,number[]>(),cellOf=(p:Vec)=>Math.floor(p.x/CELL)*100000+Math.floor(p.z/CELL);

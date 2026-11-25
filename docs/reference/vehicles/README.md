@@ -11,6 +11,7 @@
 | [union-tactical/](union-tactical/README.md) | Union Tactical（Rampage）の機内資料 |
 | [merc-tactical/](merc-tactical/README.md) | Merc Tacticalの正面識別と2-4の機内資料 |
 | [merc-assault/](merc-assault/README.md) | Merc Assault（Venom）の横向き画像、蜘蛛のような4本脚、黄色のRUPPレーザー |
+| [union-assault/](union-assault/README.md) | Union Heavy Assault HAWC（Lion）の機内と背面。高い胴体と下へ伸びる4本脚 |
 | [scorp-assault/](scorp-assault/README.md) | Scorp Assaultの機内画像と外観画像、ユーザー指定の六本脚・脱出装置・緑色LRIP |
 | [union-asv/](union-asv/README.md) | Union ASVの機内資料 |
 | [scope-asv/](scope-asv/README.md) | Scorp ASVの機内・LAB・VISOM画面、両軍ASVの共通仕様 |

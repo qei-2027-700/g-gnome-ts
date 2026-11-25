@@ -2,9 +2,10 @@ import type {MissionDefinition} from './types.ts';
 import {MAP_4_4_POINTS,MAP_4_4_SOURCE,MAP_4_4_TERRAIN,map44PixelToWorld as p} from './mission-4-4-map.ts';
 const originalMap=new URL('../../../../assets/map/4-4/4-4map.png',import.meta.url).href;
 
-// Terrain scale, enemy positions, IFF codes and enemy count are provisional.
-// See docs/missions/mission-4-4.md for confirmed facts, known gaps and
-// the reference video: https://www.youtube.com/watch?v=8sXUAZLF9Tw
+// Terrain scale and IFF codes are provisional. Enemy positions follow
+// assets/map/4-4/4-4-map配置.png. See docs/missions/mission-4-4.md.
+// Reference video: https://www.youtube.com/watch?v=8sXUAZLF9Tw
+const faceStart=(point:{x:number;z:number})=>Math.atan2(MAP_4_4_POINTS.start.x-point.x,MAP_4_4_POINTS.start.z-point.z);
 export const MISSION_4_4:MissionDefinition={
  id:'4-4',title:'General Delivery',
  playerFaction:'union',
@@ -49,24 +50,24 @@ export const MISSION_4_4:MissionDefinition={
  footSecondaryWeapon:'GASHR',
  units:[
   {id:'player-td',kind:'union-tactical',...MAP_4_4_POINTS.start,yaw:Math.PI/2,pilot:false},
-  // Enemy Sheridan-side Union forces (IFF provisional: '2622')
-  // enemy-sentry-opening: 550 m east of start, behind cover. Provisional offset, kept level with the start.
-  {id:'enemy-sentry-opening',kind:'union-sentry',x:MAP_4_4_POINTS.start.x+550,z:MAP_4_4_POINTS.start.z,yaw:-Math.PI/2,pilot:true,iff:'2622'},
-  {id:'enemy-sentry-1',kind:'union-sentry',...p(190,210),yaw:Math.PI/2,pilot:true,iff:'2622'},
-  {id:'enemy-asv',kind:'union-asv',...p(350,230),yaw:-Math.PI/2,pilot:true,iff:'2622'},
-  {id:'enemy-aip',kind:'union-aip',...p(360,250),yaw:-Math.PI/2,pilot:true,iff:'2622'},
-  {id:'enemy-tactical',kind:'union-tactical',...p(380,360),yaw:-Math.PI/2,pilot:true,iff:'2622'},
-  // Rocket towers (scorp-rocket-tower recoloured as Union, provisional kind)
-  {id:'rocket-tower-1',kind:'scorp-rocket-tower',...p(400,180),yaw:-Math.PI/2,pilot:true,iff:'2622',
+  // Sheridan-side Union forces (IFF provisional: '2622'). Positions are the labels on 4-4-map配置.png.
+  // Each faces the start. Weapons and the two remaining assault times are unchanged.
+  {id:'enemy-sentry-opening',kind:'union-sentry',...MAP_4_4_POINTS.sentryOpening,yaw:faceStart(MAP_4_4_POINTS.sentryOpening),pilot:true,iff:'2622'},
+  {id:'enemy-tactical',kind:'union-tactical',...MAP_4_4_POINTS.tacticalWest,yaw:faceStart(MAP_4_4_POINTS.tacticalWest),pilot:true,iff:'2622'},
+  {id:'enemy-asv',kind:'union-asv',...MAP_4_4_POINTS.asv,yaw:faceStart(MAP_4_4_POINTS.asv),pilot:true,iff:'2622'},
+  {id:'enemy-aip',kind:'union-aip',...MAP_4_4_POINTS.aip,yaw:faceStart(MAP_4_4_POINTS.aip),pilot:true,iff:'2622'},
+  // Rocket towers (scorp-rocket-tower recoloured as Union, provisional kind). Left is the western label, right is the far label.
+  {id:'rocket-tower-1',kind:'scorp-rocket-tower',...MAP_4_4_POINTS.rocketLeft,yaw:faceStart(MAP_4_4_POINTS.rocketLeft),pilot:true,iff:'2622',
    overrides:{name:'Union Rocket Tower',jp:'ユニオン ロケットタワー',faction:'union',color:'#8fbcd0',missileHomingScale:{UNKPA:0}}},
-  {id:'rocket-tower-2',kind:'scorp-rocket-tower',...p(460,250),yaw:-Math.PI/2,pilot:true,iff:'2622',
+  {id:'rocket-tower-2',kind:'scorp-rocket-tower',...MAP_4_4_POINTS.rocketRight,yaw:faceStart(MAP_4_4_POINTS.rocketRight),pilot:true,iff:'2622',
    overrides:{name:'Union Rocket Tower',jp:'ユニオン ロケットタワー',faction:'union',color:'#8fbcd0',missileHomingScale:{UNKPA:0}}},
-  // Bridge guard, beside the control building on the near bank.
-  {id:'enemy-sentry-bridge',kind:'union-sentry',...p(440,390),yaw:Math.PI,pilot:true,iff:'2622'},
+  {id:'enemy-tactical-2',kind:'union-tactical',...MAP_4_4_POINTS.tacticalSouth1,yaw:faceStart(MAP_4_4_POINTS.tacticalSouth1),pilot:true,iff:'2622'},
+  {id:'enemy-tactical-3',kind:'union-tactical',...MAP_4_4_POINTS.tacticalSouth2,yaw:faceStart(MAP_4_4_POINTS.tacticalSouth2),pilot:true,iff:'2622'},
+  {id:'enemy-tactical-4',kind:'union-tactical',...MAP_4_4_POINTS.tacticalSouth3,yaw:faceStart(MAP_4_4_POINTS.tacticalSouth3),pilot:true,iff:'2622'},
+  {id:'enemy-sentry-bridge',kind:'union-sentry',...MAP_4_4_POINTS.bridgeSentry,yaw:faceStart(MAP_4_4_POINTS.bridgeSentry),pilot:true,iff:'2622'},
  ],
  assaults:[
   {unitId:'enemy-sentry-opening',targetId:'player-td',startAt:5},
-  {unitId:'enemy-sentry-1',targetId:'player-td',startAt:8},
   {unitId:'enemy-tactical',targetId:'player-td',startAt:10},
  ],
  base:{
@@ -93,16 +94,16 @@ export const MISSION_4_4:MissionDefinition={
  minefields:[{
   id:'delivery-minefield',
   controlFacilityId:'mine-control-building',
-  ...MAP_4_4_POINTS.minefield,width:80,depth:70,
+  ...MAP_4_4_POINTS.minefield,width:72,depth:40,
   triggerRadius:7,warningRange:100,
   visual:'markers',
   mines:[
-   {id:'mine-1',...p(345,230)},
-   {id:'mine-2',...p(370,232)},
-   {id:'mine-3',...p(385,238)},
-   {id:'mine-4',...p(348,250)},
-   {id:'mine-5',...p(372,252)},
-   {id:'mine-6',...p(388,248)},
+   {id:'mine-1',...p(242,386)},
+   {id:'mine-2',...p(250,386)},
+   {id:'mine-3',...p(258,388)},
+   {id:'mine-4',...p(240,392)},
+   {id:'mine-5',...p(248,392)},
+   {id:'mine-6',...p(256,394)},
   ],
  }],
  waypoints:[

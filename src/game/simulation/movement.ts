@@ -1,7 +1,7 @@
 import {VEHICLES,type VehicleKind,type VehicleSpec} from '../content/vehicles.ts';
 // Manual input tuning: smaller keyboard steps and finer mouse aiming. AI turn rates are separate.
 export const MANUAL_AIM={vehicleYaw:.6,towerYaw:1.5,towerTracking:2.0,infantryYaw:1.8,pitch:.55,mousePerPixel:.0025,mouseYawPerPixel:.0025} as const;
-const HAWC_KINDS=new Set<VehicleKind>(['union-sentry','union-tactical','merc-sentry','merc-tactical','merc-assault','scorp-assault','scorp-sentry','scorp-tactical','merc-cruiser','darken-sentry','darken-tactical']);
+const HAWC_KINDS=new Set<VehicleKind>(['union-sentry','union-tactical','union-assault','merc-sentry','merc-tactical','merc-assault','scorp-assault','scorp-sentry','scorp-tactical','merc-cruiser','darken-sentry','darken-tactical']);
 const COMMON_HORIZONTAL_AIM_KINDS=new Set<VehicleKind>([...HAWC_KINDS,'union-asv','scorp-asv','darken-asv','union-aip','merc-aip','darken-aip','scorp-aip']);
 export const canFlyAcrossRiver=(kind?:VehicleKind)=>!!kind&&(VEHICLES[kind] as VehicleSpec).category==='hovercraft';
 export const isHawc=(kind:VehicleKind)=>HAWC_KINDS.has(kind);

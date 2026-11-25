@@ -103,9 +103,21 @@
 .union-infantry-view #unionInfantryHelmet{display:block;position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none}
 .union-infantry-view #vignette{display:none}
 .union-infantry-view #flightHud{inset:0;z-index:4}
-.union-infantry-view .infantry-weapons{left:18%;top:1.5%;width:64%;height:11.3%;padding:7px 16px;border:0;background:#050807eF;box-shadow:none;z-index:5;display:grid;grid-template-rows:1fr 1fr;color:#80ef70}
+/* The visor hole starts near 14.4% of the helmet (viewBox y 140/970). The band sits inside that glass, matching the reference strip. */
+.union-infantry-view .infantry-weapons{left:18%;top:14.8%;width:64%;height:9.2%;padding:7px 16px;border:0;background:#050807eF;box-shadow:none;z-index:5;display:grid;grid-template-rows:1fr 1fr;color:#80ef70}
+.union-infantry-view .infantry-weapons.quad{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;column-gap:3%;height:12.4%;padding:6px 10px}
+.union-infantry-view .infantry-weapons.quad #rifleWeapon{grid-area:1/1}
+.union-infantry-view .infantry-weapons.quad #gasWeapon{grid-area:2/1}
+.union-infantry-view .infantry-weapons.quad #eggerWeapon{grid-area:1/2}
+.union-infantry-view .infantry-weapons.quad #laserSiteWeapon{grid-area:2/2}
+.union-infantry-view .infantry-weapons.quad .foot-weapon+.foot-weapon{border-top:0}
+.union-infantry-view .infantry-weapons.quad #eggerWeapon,.union-infantry-view .infantry-weapons.quad #laserSiteWeapon{border-left:1px solid #354238}
+.union-infantry-view .infantry-weapons.quad .foot-weapon{grid-template-columns:minmax(0,.9fr) 1fr;padding:0 2%}
+.union-infantry-view .infantry-weapons.quad .foot-weapon-label{gap:6px;font-size:clamp(11px,1.05vw,16px)}
+.union-infantry-view .infantry-weapons.quad .foot-weapon-label>b{letter-spacing:.04em}
 .union-infantry-view .foot-panel-heading{display:none}
 .union-infantry-view .foot-weapon{display:grid;grid-template-columns:minmax(150px,.72fr) 1fr;align-items:center;margin:0;padding:0 3%;border:0;height:100%}
+.union-infantry-view .foot-weapon[hidden]{display:none}
 .union-infantry-view .foot-weapon+.foot-weapon{margin:0;border-top:1px solid #354238}
 .union-infantry-view .foot-weapon-label{gap:12px;color:#7fff70;font-size:clamp(12px,1.25vw,18px)}
 .union-infantry-view .foot-weapon-label>i{min-width:24px;padding:2px 4px;border:2px solid #6bea63;font-style:normal;text-align:center}
@@ -133,6 +145,6 @@
 .union-infantry-view #waypointMarker,.union-infantry-view .throttle-meter{display:none!important}
 .union-infantry-view #infantryIff{position:absolute;z-index:5;left:50%;top:61.5%;transform:translateX(-50%);font:700 clamp(14px,1.5vw,22px) monospace;color:#70f568;text-shadow:0 0 7px #38ed43a0;pointer-events:none}
 .union-infantry-view #infantryIff small{display:none}
-@media(max-width:600px){.union-infantry-view .infantry-weapons{left:17%;width:66%;top:1%;height:12%}.union-infantry-view .foot-weapon{grid-template-columns:1fr .8fr;padding:0 2%}.union-infantry-view #gasCartridges{gap:1px}.union-infantry-view #gasCartridges i{width:5px;height:12px;border-width:1px}.union-infantry-view .compass{left:13%;width:23%}}
+@media(max-width:600px){.union-infantry-view .infantry-weapons{left:17%;width:66%;top:14.8%;height:10%}.union-infantry-view .infantry-weapons.quad{height:13%}.union-infantry-view .foot-weapon{grid-template-columns:1fr .8fr;padding:0 2%}.union-infantry-view #gasCartridges{gap:1px}.union-infantry-view #gasCartridges i{width:5px;height:12px;border-width:1px}.union-infantry-view .compass{left:13%;width:23%}}
 
 .union-infantry-view #notice{top:auto;left:auto;right:4%;bottom:34%;transform:none;max-width:28%;white-space:normal;text-align:right;background:#101915cc;font-size:11px}

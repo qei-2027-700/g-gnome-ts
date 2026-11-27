@@ -80,10 +80,10 @@ test('Union AIP holds ARC-M until the beam can reach and closes from detection r
  assert.ok(shots>0);
  assert.ok(gunShots>0);
 });
-test('Union AIP 3cREAP waits for its slower interval on repeated player shots',()=>{
- const s=mounted('union-aip'),u=s.mounted!,before=u.slotAmmo[1]!;s.fire(2);assert.equal(u.slotAmmo[1],before-1);assert.equal(u.slotCooldown[1],MACHINE_GUNS['3cREAP'].interval);assert.equal(MACHINE_GUNS['3cREAP'].interval,.5);
- step(s,21);s.fire(2);assert.equal(u.slotAmmo[1],before-1);
- step(s,5);s.fire(2);assert.equal(u.slotAmmo[1],before-2);
+test('Union AIP 3cREAP waits for its faster interval on repeated player shots',()=>{
+ const s=mounted('union-aip'),u=s.mounted!,before=u.slotAmmo[1]!;s.fire(2);assert.equal(u.slotAmmo[1],before-1);assert.equal(u.slotCooldown[1],MACHINE_GUNS['3cREAP'].interval);assert.equal(MACHINE_GUNS['3cREAP'].interval,.4);
+ step(s,19);s.fire(2);assert.equal(u.slotAmmo[1],before-1);
+ step(s,2);s.fire(2);assert.equal(u.slotAmmo[1],before-2);
 });
 test('3cREAP uses its slower projectile speed and deals damage only after contact',()=>{
  const s=mounted('union-aip'),target=makeUnit('target','merc-sentry',0,118);s.units.push(target);s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];

@@ -37,7 +37,6 @@ export const INFANTRY_LASER_SITE={cooldown:1,displayName:'LaserSite'} as const;
 export const VISOM_SPEED=96;
 // Provisional shared firing intervals; individual mission weapon overrides can replace them.
 export const MACHINE_GUN_INTERVAL=.36;
-export const SLOW_MACHINE_GUN_INTERVAL=.5;
 export const MISSILE_INTERVAL=2;
 // Manual p.46: PUG range/velocity/armor damage; radius and homing remain provisional.
 export const MISSILES={
@@ -51,7 +50,7 @@ export const MISSILES={
   VISOM:{interval:MISSILE_INTERVAL,speed:VISOM_SPEED,damage:4,radius:.45,lifetime:1000/VISOM_SPEED}
 };
 
-export const MACHINE_GUNS={FLECH:{range:150,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5},DASY:{range:180,interval:MACHINE_GUN_INTERVAL,damage:4,infantryDamage:6},TCREAP:{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},'3cREAP':{range:160,interval:SLOW_MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:40},zWASP:{range:180,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60}};
+export const MACHINE_GUNS={FLECH:{range:150,interval:.45,damage:3,infantryDamage:4.5},DASY:{range:180,interval:MACHINE_GUN_INTERVAL,damage:4,infantryDamage:6},TCREAP:{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},'3cREAP':{range:160,interval:.4,damage:3,infantryDamage:4.5,projectileSpeed:40},zWASP:{range:180,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60}};
 export type MachineGun=keyof typeof MACHINE_GUNS;
 export type MissileWeapon=keyof typeof MISSILES;
 export type VehicleWeapon=LaserWeapon|MachineGun|MissileWeapon;

@@ -1,4 +1,4 @@
-import {LASERS,MACHINE_GUNS,MACHINE_GUN_INTERVAL,SLOW_MACHINE_GUN_INTERVAL,MISSILE_INTERVAL,weaponMountCount} from '../content/weapons.ts';
+import {LASERS,MACHINE_GUNS,MACHINE_GUN_INTERVAL,MISSILE_INTERVAL,weaponMountCount} from '../content/weapons.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,angle,AI_TARGET_SETTLE,type Input} from './simulation.ts';
@@ -19,16 +19,16 @@ test('different weapon slots fire together and only the used slot waits out its 
  const blocked=s.events.length;s.fire(1);s.fire(2);assert.equal(s.events.length,blocked);u.slotCooldown[0]=0;s.fire(1);assert.equal(u.ammo,398);s.fire(2);assert.equal(u.energy,1598);
  const held=mounted();held.units=held.units.slice(0,1);const hawk=held.mounted!;held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,399);assert.ok(hawk.energy<1600&&hawk.energy>1597);
  const beforeRepeat=hawk.energy;held.tick(1/60,idle);held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,399);assert.ok(hawk.energy>=beforeRepeat);
- step(held,.4);const energy=hawk.energy;held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,398);assert.ok(hawk.energy>=energy);
+ step(held,.5);const energy=hawk.energy;held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,398);assert.ok(hawk.energy>=energy);
  const mission=structuredClone(new Simulation().mission);mission.units=[{id:'scorp',kind:'scorp-asv',x:0,z:0,pilot:false}];mission.assignedUnitId='scorp';mission.startMountedUnitId='scorp';mission.completionEnabled=false;
  const asv=new Simulation('Easy',mission),vehicle=asv.mounted!;asv.tick(1/60,{...idle,fire1:true,fire2:true,fire3:true,fire4:true});assert.deepEqual(vehicle.slotAmmo,[799,799,19,9]);assert.deepEqual(asv.missiles.map(p=>p.weapon),['zWASP','zWASP','SREM','UNKPA']);
 });
-test('machine guns and missiles use shared intervals across chassis and missions, with per-mission overrides',async()=>{
- assert.equal(MACHINE_GUN_INTERVAL,.36);assert.equal(SLOW_MACHINE_GUN_INTERVAL,.5);assert.ok(Object.entries(MACHINE_GUNS).every(([name,weapon])=>weapon.interval===(name==='3cREAP'?SLOW_MACHINE_GUN_INTERVAL:MACHINE_GUN_INTERVAL)));
+test('machine guns and missiles use weapon intervals across chassis and missions, with per-mission overrides',async()=>{
+ assert.equal(MACHINE_GUN_INTERVAL,.36);assert.equal(MACHINE_GUNS.FLECH.interval,.45);assert.equal(MACHINE_GUNS['3cREAP'].interval,.4);assert.ok(Object.entries(MACHINE_GUNS).every(([name,weapon])=>weapon.interval===(name==='FLECH'?.45:name==='3cREAP'?.4:MACHINE_GUN_INTERVAL)));
  const held=mounted(),sentry=held.mounted!,before=sentry.ammo;for(let i=0;i<60;i++)held.tick(1/60,{...idle,fire1:true});assert.equal(before-sentry.ammo,3,'a held Union Sentry FLECH fires three times in the first second');
  const {MISSION_2_4}=await import('../content/missions/mission-2-4.ts');
  for(const [mission,kind,weapon] of [[DEFAULT_MISSION,'union-sentry','FLECH'],[MISSION_2_4,'merc-tactical','DASY'],[MISSION_2_4,'merc-tactical','SAG5T']] as const){
-  const s=new Simulation('Easy',mission),u=makeUnit('shooter',kind,0,0,false,{weapons:[weapon]});if(s.mounted)s.eject('ground');s.units=[u];s.human={x:0,z:0};assert.ok(s.board());s.fire(1);assert.equal(u.cooldown,weapon==='SAG5T'?MISSILE_INTERVAL:MACHINE_GUN_INTERVAL,`${mission.id}/${kind}/${weapon}`);
+  const s=new Simulation('Easy',mission),u=makeUnit('shooter',kind,0,0,false,{weapons:[weapon]});if(s.mounted)s.eject('ground');s.units=[u];s.human={x:0,z:0};assert.ok(s.board());s.fire(1);assert.equal(u.cooldown,weapon==='SAG5T'?MISSILE_INTERVAL:weapon==='FLECH'?MACHINE_GUNS.FLECH.interval:MACHINE_GUN_INTERVAL,`${mission.id}/${kind}/${weapon}`);
  }
  const mission=structuredClone(MISSION_2_4);mission.weaponOverrides={guns:{DASY:{interval:.2}},missiles:{SAG5T:{interval:3}}};
  const s=new Simulation('Easy',mission),u=s.mounted!;s.fire(1);assert.equal(u.cooldown,.2);u.cooldown=0;s.fire(2);assert.equal(u.cooldown,3);

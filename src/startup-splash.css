@@ -1,0 +1,10 @@
+.startup-splash{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:hidden;background:radial-gradient(ellipse at 50% 44%,#243129 0,#0b120f 46%,#020403 100%);opacity:1;transition:opacity .4s ease;pointer-events:auto}
+.startup-splash::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,#0005 4px 5px);pointer-events:none}
+.startup-splash.is-leaving{opacity:0;pointer-events:none}
+.startup-splash[hidden]{display:none}
+.startup-logo{position:relative;width:min(82vw,900px);height:auto;overflow:visible;filter:drop-shadow(0 0 24px #759b8d55)}
+.startup-logo text{font-family:Impact,"Arial Black",sans-serif;font-size:150px;font-weight:900;letter-spacing:8px;text-anchor:middle;paint-order:stroke fill}
+.startup-logo .logo-shadow{fill:#020504;stroke:#020504;stroke-width:22px;transform:translate(8px,12px)}
+.startup-logo .logo-face{fill:url(#startupMetal);stroke:#1c2b2b;stroke-width:14px}
+.startup-logo .logo-edge{fill:none;stroke:#cad4ce;stroke-width:2px}
+@media(prefers-reduced-motion:reduce){.startup-splash{transition:none}}

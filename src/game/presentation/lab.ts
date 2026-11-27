@@ -27,6 +27,9 @@ const referenceByVehicle:Partial<Record<VehicleKind,string>>={
  'darken-sentry':'docs/reference/vehicles/darken/README.md',
  'darken-tactical':'assets/reference/darken-tactical/darken-td-front-hawk.png',
  'scorp-asv':'docs/reference/vehicles/scope-asv/user-scorp-asv-lab-2026-10-24.png',
+ 'union-rocket-tower':'docs/reference/vehicles/union-rocket-tower/README.md',
+ 'scorp-rocket-tower':'docs/reference/vehicles/scorp-rocket-tower/README.md',
+ 'scorp-meson-tower':'docs/reference/vehicles/scorp-meson-tower/README.md',
 };
 const repoUrl='https://github.com/qei-2027-700/g-gnome-ts/blob/main/';
 const escape=(value:string)=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));

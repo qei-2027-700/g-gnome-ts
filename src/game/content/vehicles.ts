@@ -4,9 +4,10 @@ import type {
 export type Faction = 'union' | 'merc' | 'darken' | 'scorp';
 // Fixed towers do not fire at targets inside this provisional close range.
 export const TOWER_MINIMUM_ATTACK_RANGE=40;
+export const MESON_TOWER_DOWN_PITCH_LIMIT=-.28; // Provisional original-game view limit.
 export type VehicleSpec={
   missileHomingScale?:Partial<Record<VehicleWeapon,
-  number>>;powerSupply?:'external';boardable?:boolean;ejectionSeat?:boolean;category?:'vehicle'|'tower'|'hovercraft';hoverHeight?:number;mineDetectorRange?:number;name:string;jp:string;faction:Faction;speed:number;shield:number;energy:number;armor:number;height:number;passengerCapacity:number;color:string;weapons:readonly VehicleWeapon[
+  number>>;weaponIntervals?:Partial<Record<VehicleWeapon,number>>;powerSupply?:'external';boardable?:boolean;ejectionSeat?:boolean;category?:'vehicle'|'tower'|'hovercraft';hoverHeight?:number;mineDetectorRange?:number;name:string;jp:string;faction:Faction;speed:number;shield:number;energy:number;armor:number;height:number;passengerCapacity:number;color:string;weapons:readonly VehicleWeapon[
   ];torsoLimit:number;voice:'young'|'solemn';initialAmmo:Partial<Record<VehicleWeapon,
 number>>;ai:{
   minimumRange?:number;detection:number;pursuitRange?:number;waitForClearShot?:boolean;strafe:number;keepMoving:boolean;stopDistance:number;missileVolley:number
@@ -354,7 +355,7 @@ const BASE_VEHICLES = {
       SREM:20,
     },
     ai:{
-      detection:140,
+      detection:300,
       strafe:.7,
       keepMoving:false,
       stopDistance:65,
@@ -388,7 +389,7 @@ const BASE_VEHICLES = {
       HSSO:15,
     },
     ai:{
-      detection:170,
+      detection:350,
       strafe:.4,
       keepMoving:false,
       stopDistance:70,
@@ -436,13 +437,13 @@ const BASE_VEHICLES = {
   },
   'union-aip':{
     category:'hovercraft',
-    // Provisional cruise. The original altitude is unconfirmed. A stop uses the hull tip on the ground, not this value.
+    // Provisional hover altitude. A stop uses the hull tip on the ground, not this value.
     hoverHeight:1.8,
     ejectionSeat:true,
     name:'Union Airborne Insurgence Platform',
     jp:'Union エアーボーン インサージェンス プラットフォーム',
     faction:'union',
-    speed:90,
+    speed:100,
     shield:30,
     energy:1200,
     armor:80,
@@ -450,12 +451,13 @@ const BASE_VEHICLES = {
     // Three passenger seats besides the pilot. Provisional; the original count is unconfirmed.
     passengerCapacity:3,
     color:'#7890a4',
+    // The 3-2 cockpit identifies both weapons; this loadout applies to every Union AIP.
     weapons:[
-      'P2MEC'],
+      'ARC-M',
+      '3cREAP'],
     torsoLimit:Math.PI,
     voice:'young',
-    initialAmmo:{
-    },
+    initialAmmo:{'3cREAP':220},
     ai:{
       detection:650,
       strafe:.3,
@@ -517,7 +519,7 @@ const BASE_VEHICLES = {
     energy:1200,
     armor:360,
     height:12,
-    passengerCapacity:0,
+    passengerCapacity:1,
     color:MERC_MESON_PALETTE.blue,
     weapons:[
       'GAUS30'],
@@ -526,7 +528,7 @@ const BASE_VEHICLES = {
     initialAmmo:{
     },
     ai:{
-      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
+      minimumRange:0,
       detection:1000,
       strafe:0,
       keepMoving:false,
@@ -549,7 +551,7 @@ const BASE_VEHICLES = {
     energy:1200,
     armor:360,
     height:12,
-    passengerCapacity:0,
+    passengerCapacity:1,
     color:SCORP_TOWER_PALETTE.green,
     weapons:[
       'GAUS30'],
@@ -558,14 +560,14 @@ const BASE_VEHICLES = {
     initialAmmo:{
     },
     ai:{
-      minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
+      minimumRange:0,
       detection:1000,
       strafe:0,
       keepMoving:false,
       stopDistance:0,
       missileVolley:1
     },
-    shape:{hull:{w:5.4,h:9.6,d:5.4,y:-2.4,z:0},cockpit:{w:8,h:1.6,d:8,y:3.2,z:0},weapon:{w:.8,h:.8,d:7,x:0,y:4.5,z:3.8},legX:2.8,support:{w:3.4,h:5.6,d:7,y:2.8,z:0}},
+    shape:{hull:{w:5.4,h:9.6,d:5.4,y:-2.4,z:0},cockpit:{w:6.8,h:1.3,d:6.7,y:3.2,z:0},weapon:{w:.8,h:.8,d:7,x:0,y:4.5,z:3.8},legX:2.8,support:{w:3.4,h:5.6,d:7,y:2.8,z:0}},
     gait:{stride:1,lift:0,lean:0,bounce:0},
     drive:{idle:0,rev:0,harmonic:1,filter:300,volume:0,wave:'sine'}
   },
@@ -579,7 +581,7 @@ const BASE_VEHICLES = {
     energy:1200,
     armor:360,
     height:12,
-    passengerCapacity:0,
+    passengerCapacity:1,
     color:SCORP_TOWER_PALETTE.green,
     weapons:[
       'SREM',
@@ -595,7 +597,7 @@ const BASE_VEHICLES = {
     },
     ai:{
       minimumRange:TOWER_MINIMUM_ATTACK_RANGE,
-      detection:240,
+      detection:400,
       strafe:0,
       keepMoving:false,
       stopDistance:0,
@@ -640,21 +642,26 @@ export function pitchDarkenTactical(localY:number,localZ:number){
  return {y:DARKEN_TACTICAL_TORSO_Y+localY*c-localZ*s,z:localY*s+localZ*c};
 }
 export const VEHICLES={...BASE_VEHICLES,
+ // The Union card shows a square gray tower with red corner rails and paired rocket racks.
+ // Chassis dimensions and combat values remain provisional until measured from gameplay.
+ 'union-rocket-tower':{...BASE_VEHICLES['scorp-rocket-tower'],name:'Union Rocket Tower',jp:'ユニオン ロケットタワー',faction:'union',color:'#aeb2ae',
+  weapons:['TCROCK','TCROCK'],initialAmmo:{TCROCK:120},missileHomingScale:{TCROCK:1.2},
+  shape:{hull:{w:5.4,h:9.6,d:5.4,y:-2.4,z:0},cockpit:{w:6.2,h:2.5,d:5.8,y:3.2,z:0},weapon:{w:1.1,h:2.1,d:2.8,x:2.45,y:1.15,z:0},legX:2.8,support:{w:3.4,h:5.6,d:7,y:2.8,z:0}}},
  // Rear view, torso width = 1. Pods are 1.15 wide at x 2.05, so the inner gap is about 2.95. The head sits on the rear top of the dark center. Metres use the 7.9 m card height as a prototype scale.
- 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1.05,h:1.8,d:1.05,y:.4,z:.05},cockpit:{w:.58,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:1.5,y:.7,z:.35},legX:1.5,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:1.15,h:3.5,d:3.4,y:1.75,z:.85}}},
+ 'darken-tactical':{...BASE_VEHICLES['merc-tactical'],ejectionSeat:true,name:'Darken Tactical Defense HAWC',jp:'ダーケン軍 タクティカル ディフェンス ホーク',faction:'darken',speed:67.5,shield:50,energy:1500,height:7.9,color:'#a77d26',weapons:['HOMP11','DASY'],weaponIntervals:{HOMP11:.4},initialAmmo:{DASY:200},gait:{...BASE_VEHICLES['merc-tactical'].gait,lean:0},shape:{hull:{w:1.05,h:1.8,d:1.05,y:.4,z:.05},cockpit:{w:.58,h:.46,d:.5,y:1.44,z:-.37},weapon:{w:1.15,h:1.25,d:1.95,x:1.5,y:.7,z:.35},legX:1.5,legHip:DARKEN_TACTICAL_HIP_Y,leg:{w:1.15,h:3.5,d:3.4,y:1.75,z:.85}}},
  'darken-asv':{...BASE_VEHICLES['union-asv'],name:'Darken ASV',jp:'ダーケン軍 ASV',faction:'darken',color:'#a6522b'},
- 'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',color:'#a6522b'},
- 'scorp-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',color:'#548565'},
+ 'darken-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Darken AIP',jp:'ダーケン軍 AIP',faction:'darken',speed:95,color:'#a6522b'},
+ 'scorp-aip':{...BASE_VEHICLES['merc-aip'],ejectionSeat:true,name:'Scorp AIP',jp:'スコープ軍 AIP',faction:'scorp',speed:90,color:'#548565'},
  // Manual p.32: Scorpion speed, shield, energy and height. Armor is not on the card and stays the provisional 160.
  // Hull, canopy and gun origins drop by (8.6-7.9)*0.6 so the photo-matched body stays on the legs.
- 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',speed:30,shield:72,energy:1900,height:8.6,color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],initialAmmo:{zWASP:1000,VISOM:20,SREM:80},
+ 'scorp-assault':{...BASE_VEHICLES['merc-assault'],ejectionSeat:true,name:'Scorp Assault HAWC',jp:'スコープ軍 アサルト ホーク',faction:'scorp',speed:30,shield:72,energy:1900,height:8.6,color:'#4b795e',weapons:['zWASP','LRIP','VISOM','SREM'],weaponIntervals:{LRIP:.5},initialAmmo:{zWASP:1000,VISOM:20,SREM:80},ai:{...BASE_VEHICLES['merc-assault'].ai,detection:450},
   shape:{hull:{w:2.45,h:1.25,d:5.6,y:-1.92,z:.5},cockpit:{w:1.55,h:.9,d:4.7,y:-1.37,z:1.9},weapon:{w:.48,h:.52,d:1.8,x:.35,y:.33,z:-1.25},legX:3.2,spider:{hipX:1.2,hipY:3.45,hipZ:1.65,kneeX:2.7,kneeY:5.15,kneeZ:2.35,footX:3.2,footZ:2.9,upperWidth:.38,lowerWidth:.25,step:.55,lift:.75,kneeLift:.3,sway:.38,sideStep:.35}}},
  // Manual Union Heavy Assault HAWC (Lion): 90 km/h, shield 90, energy 2200, height 14.7 m, mass 57 t. Armor is not on the card.
  // Behind view: a low central chassis between legs that drop from the outer corners. The gray waist is wider and shorter than the first box. Side length stays long. Guns sit under the jaw. The walk is a provisional four-beat beast gait. Metres and armor 240 are provisional.
  'union-assault':{
   name:'Union Assault HAWC',jp:'ユニオン軍 アサルト ホーク',faction:'union',
   speed:90,shield:90,energy:2200,armor:240,height:14.7,passengerCapacity:0,color:'#c8cbc4',
-  weapons:['P2MEC','TCREAP','VISOM','TCROCK'],torsoLimit:Math.PI/3,voice:'solemn',
+  weapons:['P2MEC','TCREAP','VISOM','TCROCK'],weaponIntervals:{P2MEC:.6,TCREAP:.5},torsoLimit:Math.PI/3,voice:'solemn',
   initialAmmo:{TCREAP:3000,VISOM:30,TCROCK:50},
   ai:{detection:220,strafe:.2,keepMoving:false,stopDistance:120,missileVolley:1},
   shape:{hull:{w:9,h:2.4,d:10.6,y:2.38,z:-.3},cockpit:{w:3.2,h:1.7,d:3.2,y:2.4,z:5.3},weapon:{w:.5,h:.38,d:1.7,x:.95,y:1.05,z:6.3},legX:4.65,spider:{hipX:4.35,hipY:9.85,hipZ:3.2,kneeX:4.5,kneeY:5.2,kneeZ:3.35,footX:4.65,footZ:3.6,upperWidth:1.45,lowerWidth:.78,step:1.2,lift:2.2,kneeLift:.26,sway:0,sideStep:0}},

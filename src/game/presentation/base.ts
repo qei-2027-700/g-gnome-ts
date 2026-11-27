@@ -15,6 +15,13 @@ export function makeBase(scene:Scene,mission:MissionDefinition){const material=(
    if(b.kind==='volcano'){makeVolcano(scene,b,id);continue;}
    const paint=b.color?material(`facility-${id}-armor`,b.color):armor;
    const name=b.kind==='comm-array'?'latlon-comm-array':b.kind==='power-plant'?'power-plant':b.kind==='citadel'?'citadel':b.kind==='mine-control'?'minefield-control':b.kind==='popup-turret-control'?'popup-turret-control':b.kind==='shield-generator'?'shield-generator':b.kind==='sweep-turret'?'sweep-turret':'command-center';
+   if(b.visual==='pyramid-fortress'){
+    const root=new TransformNode(`facility-${id}`,scene);root.metadata={facilityId:id};
+    const fortress=MeshBuilder.CreateCylinder(`${name}-pyramid`,{height:b.height,diameterBottom:1,diameterTop:.16,tessellation:4},scene);
+    fortress.rotation.y=Math.PI/4;fortress.scaling.set(b.width*Math.SQRT2,1,b.depth*Math.SQRT2);
+    fortress.position.set(b.x,b.height/2,b.z);fortress.material=paint;fortress.metadata={facility:b.kind??'citadel',facilityId:b.id};fortress.parent=root;
+    continue;
+   }
    const body=box(name,b.width,b.height*.8,b.depth,b.x,b.height*.4,b.z,paint);body.metadata={facility:b.kind??'command',facilityId:b.id};
    const roof=MeshBuilder.CreateCylinder(`${name}-roof`,{height:b.height*.2,diameterTop:.82,diameterBottom:1,tessellation:4},scene);
    roof.rotation.y=Math.PI/4;roof.scaling.set(b.width*Math.SQRT2,1,b.depth*Math.SQRT2);roof.position.set(b.x,b.height*.9,b.z);roof.material=b.color?paint:roofPaint;

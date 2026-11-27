@@ -187,7 +187,7 @@ F7で搭乗先への移動を中止し、予約を解除する。搭乗後は同
 
 ## ミッション開始前の操作（2026-10-24）
 
-起動時は3-3の開始前画面を表示する。下部の任務選択で対象を選び、右上の「LAUNCH」をクリックして開始する。Tabでボタンへ移動してEnter／Spaceでも開始できる。開始前のB・P・Escでは任務へ進まず、設定から戻った場合も「LAUNCH」を待つ。項目をクリックして説明を確認できる。表示内容と任務中の地図との違いは[任務地図の仕様](../gameplay/mission-map-and-waypoints.md#ミッション開始前の画面2026-10-24)を参照する。
+起動直後は中央に「G-NOME」のロゴを約2秒表示し、フェード後に1-1の開始前画面を表示する。ロゴ表示中は画面操作と任務時間の進行を止める。機体確認用の`previewVehicle`画面ではロゴを省く。開始前画面の下部で任務を選び、右上の「LAUNCH」をクリックして開始する。Tabでボタンへ移動してEnter／Spaceでも開始できる。開始前のB・P・Escでは任務へ進まず、設定から戻った場合も「LAUNCH」を待つ。項目をクリックして説明を確認できる。表示内容と任務中の地図との違いは[任務地図の仕様](../gameplay/mission-map-and-waypoints.md#ミッション開始前の画面2026-10-24)を参照する。
 
 設定画面ではEscまたはBackspaceで、変更を保存せず元の画面へ戻る。キー割り当ての受付中はEscで受付を取り消し、設定画面に留まる。開始前から開いた設定を閉じても任務は開始しない。
 
@@ -233,7 +233,7 @@ Qは遮蔽物越しの目標も選択できる。照準付近の判定は左右�
 
 1〜4の武器キーとマウスは、長押しで攻撃を続けられる。異なる番号は同時に押せ、それぞれがその武器の間隔だけを待つ。レーザーと歩兵武器の長押しには試作値0.5秒の入力間隔を適用する。機銃とミサイルは武器定義の間隔で繰り返す。武器本来の発射間隔、弾数、エネルギーとレーザー充填も判定する。離せば停止し、押し直しても武器本来の発射間隔は無視できない。カスタムキーにも適用する。
 
-レーザーの長押しでは通常は充填完了を待ち、Scorp Assault・Darken Tactical Defense・Merc Assault・Union Assault HAWCだけを例外とする。Darken Tactical Defense、Merc Assault、Scorp Assault、Union Assaultは登録済み。Union AssaultのレーザーはP2MECで、長押しは武器間隔0.8秒の連射になる。詳細は[共通武器仕様](../gameplay/weapons-and-missile-camera.md#長押し射撃と高速連射の制限確定仕様2026-10-24)を参照。
+プレイヤーのレーザー長押しでは通常は充填完了を待ち、Scorp Assault・Darken Tactical Defense・Merc Assault・Union Assault HAWCだけを例外とする。AIはEasy・MediumとHardの初弾でREADYを待ち、Hardの近距離でのみ未充填の再射撃を行う。Darken Tactical Defense、Merc Assault、Scorp Assault、Union Assaultは登録済み。Union AssaultのP2MECは機体別設定の0.6秒間隔で連射する。詳細は[共通武器仕様](../gameplay/weapons-and-missile-camera.md#長押し射撃と高速連射の制限確定仕様2026-10-24)を参照。
 
 
 開始メニューのEXITでは「よろしいですか？」の確認後、Yでタブの終了を要求する。N・Esc・Backspaceでメニューへ戻る。ブラウザがタブ終了を許可しない場合は、Ctrl+W（Macは⌘W）の案内を表示する。任務中の中断確認とは別の処理とする。

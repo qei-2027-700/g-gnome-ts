@@ -1,0 +1,27 @@
+.scorp-meson-tower-shell{display:none}
+.scorp-meson-tower-cockpit #cockpit,.scorp-meson-tower-cockpit #flightHud{inset:auto;left:50%;top:calc((100% - 38px)/2);width:var(--scorp-meson-width);height:var(--scorp-meson-height);transform:translate(-50%,-50%);container-type:size;color:#5aff2e;font-family:monospace}
+.scorp-meson-tower-cockpit #world{left:calc((100% - var(--scorp-meson-width))/2);top:calc((100% - 38px - var(--scorp-meson-height))/2);width:var(--scorp-meson-width);height:var(--scorp-meson-height)}
+.scorp-meson-tower-cockpit #cockpit{box-shadow:0 0 0 100vmax #000;overflow:hidden}
+.scorp-meson-tower-cockpit .scorp-meson-tower-shell{display:block;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.scorp-meson-tower-cockpit .cockpit-shell,.scorp-meson-tower-cockpit .union-tactical-shell,.scorp-meson-tower-cockpit .union-aip-shell,.scorp-meson-tower-cockpit .union-rocket-tower-shell,.scorp-meson-tower-cockpit .darken-sentry-shell,.scorp-meson-tower-cockpit .scorp-sentry-shell,.scorp-meson-tower-cockpit .scorp-tactical-shell,.scorp-meson-tower-cockpit .scorp-assault-shell,.scorp-meson-tower-cockpit .merc-reference,.scorp-meson-tower-cockpit .merc-assault-reference,.scorp-meson-tower-cockpit .union-assault-shell,.scorp-meson-tower-cockpit .meson-reference,.scorp-meson-tower-cockpit .scorp-meson-reference,.scorp-meson-tower-cockpit .asv-cockpit-shell,.scorp-meson-tower-cockpit .scorp-cockpit-shell,.scorp-meson-tower-cockpit .cockpit-reference-metal,.scorp-meson-tower-cockpit .cockpit-well-underlay,.scorp-meson-tower-cockpit .cockpit-grain,.scorp-meson-tower-cockpit .overhead-display,.scorp-meson-tower-cockpit #cockpit>.canopy,.scorp-meson-tower-cockpit #cockpit>.pillar,.scorp-meson-tower-cockpit #cockpit>.dashboard,.scorp-meson-tower-cockpit #cockpit>.dash-rim{display:none}
+.scorp-meson-tower-cockpit .instrument{position:absolute;background:transparent;border:0;border-radius:0;box-shadow:none;z-index:2}
+.scorp-meson-tower-cockpit .instrument .micro,.scorp-meson-tower-cockpit .holo-grid{display:none}
+.scorp-meson-tower-cockpit .weapon-panel{left:1%;top:2%;width:25%;height:13%;min-height:0;padding:0;border:0;background:none;box-shadow:none;color:#59ff24;font:1.7cqw/1.2 monospace;z-index:3}
+.scorp-meson-tower-cockpit .weapon-panel>div{display:flex;align-items:center;height:50%;white-space:nowrap}
+.scorp-meson-tower-cockpit .weapon-panel span[id^=ammo]{margin-left:auto}
+.scorp-meson-tower-cockpit .iff-display{left:45%;top:7%;right:auto;width:10%;height:4%;padding:0;transform:none;border:0;background:#000;box-shadow:none;display:flex;align-items:center;justify-content:center;font-size:0}
+.scorp-meson-tower-cockpit .iff-display strong{font:2cqw monospace;color:#56ff24}
+.scorp-meson-tower-cockpit .target-instrument{left:0;bottom:0;width:27%;height:35%}
+.scorp-meson-tower-cockpit .self-instrument{right:0;bottom:0;width:27%;height:35%}
+.scorp-meson-tower-cockpit #targetHologram,.scorp-meson-tower-cockpit #selfHologram{left:15%;top:17%;width:65%;height:72%}
+.scorp-meson-tower-cockpit #targetData{left:18%;right:5%;bottom:4%;top:auto;font-size:.85cqw;line-height:1.1}
+.scorp-meson-tower-cockpit .radar-instrument{left:32%;bottom:2%;width:36%;height:23%;background:#000;clip-path:polygon(8% 0,92% 0,100% 100%,0 100%)}
+.scorp-meson-tower-cockpit #radar{inset:0;width:100%;height:100%}
+.scorp-meson-tower-cockpit .vertical-meter{left:8%;right:auto;bottom:8%;height:65%;width:6px}
+.scorp-meson-tower-cockpit #targetShieldMeter:not([hidden]){left:auto;right:8%;bottom:8%;height:65%;width:6px}
+.scorp-meson-tower-cockpit .compass{left:41%;top:17%;width:19%;font:1.4cqw monospace;color:#56ff24}
+.scorp-meson-tower-cockpit .compass .ticks{display:block;white-space:nowrap;overflow:hidden}
+.scorp-meson-tower-cockpit .telemetry,.scorp-meson-tower-cockpit .objectives,.scorp-meson-tower-cockpit #squadOrders,.scorp-meson-tower-cockpit #controls,.scorp-meson-tower-cockpit #viewLabel{display:none}
+.scorp-meson-tower-cockpit .topbar{position:static;height:0;padding:0;border:0;background:none}
+.scorp-meson-tower-cockpit .topbar .brand,.scorp-meson-tower-cockpit .topbar .mission-id{display:none}
+.scorp-meson-tower-cockpit .topbar nav{position:fixed;left:8px;bottom:7px;display:flex;gap:5px;z-index:30}

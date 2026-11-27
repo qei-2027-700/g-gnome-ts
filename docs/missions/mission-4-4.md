@@ -171,7 +171,7 @@ Kylie と Wilkins は `personnel` にフィールド外 `z:-1200` と `z:-1250` 
 
 **未実装・仮値のまま：**
 - 敵IFF 4桁コード（`'2622'` は仮）
-- ロケットタワーの `kind`（`scorp-rocket-tower` を Union 色でオーバーライド。動画確認後に変更）
+- ロケットタワーの `kind` は `union-rocket-tower` に変更済み。外観と機内枠は[Unionの画像](../reference/vehicles/union-rocket-tower/README.md)を反映し、TCROCKを各60発の2スロットにした。寸法と武器性能は仮値
 - 地雷原制御施設での IFF 取得挙動（`set-iff` 目標でモデル化、施設搭乗タイミングとの接続は未実装）
 - Laboratory 位置（`(530, 448)` 画素。`(560, 450)` はクリームの山だったので、その南の暗い地面への仮置き）
 - BGM 未設定

@@ -110,6 +110,12 @@ export function hologramSvg(kind:VehicleKind,parts:PartState=freshParts(),crewNa
   leftLeg:'M68 69L40 101h15l21-25z M40 101h19v5H36v-3z M49 91l14-13',
   rightLeg:'M92 69l28 32h-15L84 76z M101 101h19l4 2v3h-23z M97 78l14 13'
  });
+ if(kind==='union-rocket-tower')Object.assign(paths,{
+  hull:'M56 102L60 45H100L104 102Z M66 78H94 M72 102V82H88V102',
+  cockpit:'M46 20H114L119 48H41Z M51 17H109 M60 30H100 M64 38h8m8 0h8m8 0h8 M78 11h4v8',
+  leftWeapon:'M58 49h18v20H58z M61 51h12',rightWeapon:'M84 49h18v20H84z M87 51h12',
+  leftLeg:'',rightLeg:''
+ });
  const labelY=kind==='scorp-asv'?27:kind.endsWith('-asv')?35:kind==='scorp-rocket-tower'?30:heavy?33:merc?29:50;
  const safeName=crewName.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!)),labelWidth=Math.min(144,crewName.length*5+8);
  const label=crewName?`<g data-role="crew-name"><rect x="${80-labelWidth/2}" y="${labelY-9}" width="${labelWidth}" height="12" fill="#001006"/><text x="80" y="${labelY}" text-anchor="middle" font-family="monospace" font-size="9" fill="#baff9e" textLength="${labelWidth-6}" lengthAdjust="spacingAndGlyphs">${safeName}</text></g>`:'';

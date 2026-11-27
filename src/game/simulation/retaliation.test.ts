@@ -77,6 +77,8 @@ test('4-2 delayed assault retaliates after an actual hostile shot before its sta
  enemy.x=own.x;enemy.z=own.z-80;own.yaw=own.aim=Math.PI;
  const start={x:enemy.x,z:enemy.z};tick(s,.25);assert.equal(enemy.aggressorId,null);assert.deepEqual({x:enemy.x,z:enemy.z},start);
  s.tick(1/60,{...idle,fire1:true});
+ assert.equal(enemy.shield,enemy.spec.shield);
+ tick(s,1.6);
  assert.ok(enemy.shield<enemy.spec.shield);assert.equal(enemy.aggressorId,'player');assert.ok(s.time<12);
  tick(s,5);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy));assert.ok(s.time<12);
 });

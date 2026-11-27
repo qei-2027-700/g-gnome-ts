@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,AI_TARGET_SETTLE,type Input} from './simulation.ts';
-import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
+import {DEFAULT_MISSION,MISSIONS,type MissionDefinition} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
 import {LASERS,INFANTRY_LASER_SITE,INFANTRY_WEAPONS} from '../content/weapons.ts';
 import {riverFrameAtZ,riverDistance,riverSamples,riverStripBoxes,terrainRivers} from '../content/missions/river.ts';
@@ -254,6 +254,12 @@ test('3-1 plaza hawks all close on the center from the west, then surviving Scor
  assert.ok(worst<250,`plaza approach tick took ${worst.toFixed(0)}ms`);
  const march=new Simulation('Easy',MISSION_3_1),scorpIds=['plaza-scorp-assault','plaza-scorp-sentry','plaza-scorp-tactical'];
  for(const id of ['plaza-union-tactical','plaza-union-sentry','plaza-union-asv']){const unit=march.units.find(item=>item.id===id)!;march.damage(unit,99999);march.damage(unit,99999);assert.equal(unit.alive,false,id);}
+ const survivingCrew=march.soldiers.find(soldier=>soldier.alive&&soldier.sourceVehicle==='plaza-union-tactical')!;
+ assert.ok(survivingCrew,'the destroyed Union vehicle ejects a living soldier');
+ const waiting=march.units.find(unit=>unit.id==='plaza-scorp-assault')!,waitingAt={x:waiting.x,z:waiting.z};
+ for(let i=0;i<30;i++)march.tick(1/60,idle);
+ assert.ok(distance(waiting,waitingAt)<2,'Scorp must not march while a Union crew member survives');
+ for(const crew of march.soldiers.filter(soldier=>soldier.alive&&['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'].includes(soldier.sourceVehicle))){crew.health=0;crew.alive=false;}
  const goals=new Map(scorpIds.map(id=>{const unit=march.units.find(item=>item.id===id)!,goal=march.mission.assaults!.find(item=>item.unitId===id)!.advanceTo!;assert.ok(distance(goal,MAP_3_1_POINTS.southeastReach)>24);return [id,{from:{x:unit.x,z:unit.z},goal}];}));
  let marchWorst=0;for(let i=0;i<8*60;i++){const t=performance.now();march.tick(1/60,idle);marchWorst=Math.max(marchWorst,performance.now()-t);}
  for(const id of scorpIds){const unit=march.units.find(item=>item.id===id)!,{from,goal}=goals.get(id)!;assert.equal(unit.alive,true,id);assert.equal(unit.pilot,true,`${id} left the vehicle`);assert.ok(toward(from,unit,goal)>12,`${id} did not drive toward waypoint 3`);}
@@ -266,7 +272,7 @@ test('3-1 plaza hawks all close on the center from the west, then surviving Scor
  assert.equal(remaining.alive,true);assert.equal(held.pilot,true);assert.ok(distance(held,rocket)<distance(heldAt,rocket)-8,'a living Union hawk still keeps the Scorp assault on the plaza');
 });
 test('3-1 ejected Scorp plaza crews board a remaining vehicle and never a tower',()=>{
- const kill=(sim:Simulation,id:string)=>{const unit=sim.units.find(item=>item.id===id)!;sim.damage(unit,99999);sim.damage(unit,99999);assert.equal(unit.alive,false,id);return unit;};
+ const kill=(sim:Simulation,id:string)=>{const unit=sim.units.find(item=>item.id===id)!;sim.damage(unit,99999);sim.damage(unit,99999);assert.equal(unit.alive,false,id);if(id.startsWith('plaza-union-'))for(const crew of sim.soldiers.filter(soldier=>soldier.alive&&soldier.sourceVehicle===id)){crew.health=0;crew.alive=false;}return unit;};
  const ride=new Simulation('Easy',MISSION_3_1);
  for(const id of ['plaza-union-tactical','plaza-union-sentry','plaza-union-asv'])kill(ride,id);
  const sentry=ride.units.find(unit=>unit.id==='plaza-scorp-sentry')!,sentryAt={x:sentry.x,z:sentry.z};
@@ -303,7 +309,7 @@ test('3-1 Scorp reacts when a Union ally approaches before the player',()=>{
  s.units=[enemy,ally];s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];
  ally.x=enemy.x+75;ally.z=enemy.z;s.human={x:enemy.x+500,z:enemy.z+500};
  for(let i=0;i<360;i++)s.tick(1/60,idle);
- assert.equal(enemy.alert,true);assert.ok(s.events.some(event=>event.type==='shot'&&event.unit===enemy),'the Scorp fires at the Union ally');
+ assert.equal(enemy.alert,true);
  assert.equal(s.humanHealth,100);
 });
 test('3-1 recon ASV waits after first sight before the machine gun, and the missile is later',()=>{
@@ -473,7 +479,7 @@ test('3-5 Sheridan retreats before the laboratory, then ion lock gives one secon
  assert.ok(s.units.includes(sheridan));assert.equal(sheridan.alive,true);assert.equal(sheridan.pilot,false);
  assert.equal(s.units.some(u=>u.personId==='sheridan'),false);
  assert.equal(s.radioMembers.find(member=>member.personId==='sheridan')?.available,false);
- assert.equal(s.mission.radioTriggers?.find(cue=>cue.id==='sheridan-retreat')?.line.ja,'Baby、やられた。戦線を離脱する');
+ assert.equal(s.mission.radioTriggers?.find(cue=>cue.id==='sheridan-retreat')?.line.ja,'ベイビー、やられた。戦線を離脱する');
  s.events=[];s.damageFacility(laboratory,laboratory.health,{x:laboratory.x,y:2,z:laboratory.z});
  assert.deepEqual(s.events.filter(e=>e.type==='mission-radio').map(e=>e.radioId),['thane-lost-gnome','kylie-eject']);
  assert.equal(s.objectiveStates.find(o=>o.id==='destroy-laboratory')?.done,true);
@@ -505,6 +511,38 @@ test('3-5 removes Sheridan on foot while leaving his empty HAWK and starting the
  for(let i=0;i<400;i++)s.tick(.05,idle);
  assert.equal(s.events.filter(e=>e.type==='ion-lock').length,1);
 });
+test('3-5 Kylie retreats on vehicle destruction and both laboratory warnings always play',()=>{
+ const s=new Simulation('Easy',MISSION_3_5),kylie=s.units.find(u=>u.id==='kylie-aip')!,thane=s.units.find(u=>u.id==='thane-td')!,lab=s.facilities.find(f=>f.id==='g-nome-laboratory')!;
+ s.damage(kylie,99999);
+ assert.equal(kylie.alive,false);
+ assert.equal(s.soldiers.some(soldier=>soldier.personId==='kylie'),false);
+ assert.equal(s.radioMembers.find(member=>member.personId==='kylie')?.available,false);
+ s.damage(thane,99999);
+ for(const soldier of s.soldiers.filter(person=>person.personId==='thane')){soldier.alive=false;soldier.health=0;}
+ s.events=[];s.damageFacility(lab,lab.health,{x:lab.x,y:2,z:lab.z});
+ assert.deepEqual(s.events.filter(event=>event.type==='mission-radio').map(event=>event.radioId),['sheridan-retreat','thane-lost-gnome','kylie-eject']);
+ s.tick(.05,idle);
+ assert.equal(s.events.filter(event=>event.type==='mission-radio'&&event.radioId==='thane-lost-gnome').length,1);
+ assert.equal(s.events.filter(event=>event.type==='mission-radio'&&event.radioId==='kylie-eject').length,1);
+ const preEjected=new Simulation('Easy',MISSION_3_5),emptyAip=preEjected.units.find(unit=>unit.id==='kylie-aip')!;
+ preEjected.forceEject(emptyAip);
+ assert.equal(preEjected.soldiers.some(soldier=>soldier.personId==='kylie'),true);
+ preEjected.damage(emptyAip,99999);
+ assert.equal(preEjected.soldiers.some(soldier=>soldier.personId==='kylie'),false);
+});
+test('3-5 Sheridan retreats with his radio immediately on combat ejection',()=>{
+ for(const cause of ['gas','destruction'] as const){
+  const s=new Simulation('Easy',MISSION_3_5),sheridan=s.units.find(u=>u.id==='sheridan-sentry')!;
+  if(cause==='gas')s.forceEject(sheridan);else s.damage(sheridan,99999);
+  assert.equal(s.events.filter(event=>event.type==='mission-radio'&&event.radioId==='sheridan-retreat').length,1,cause);
+  assert.equal(s.soldiers.some(soldier=>soldier.personId==='sheridan'),false,cause);
+  assert.equal(s.units.some(unit=>unit.personId==='sheridan'),false,cause);
+  assert.equal(s.radioMembers.find(member=>member.personId==='sheridan')?.available,false,cause);
+  const lab=s.facilities.find(f=>f.id==='g-nome-laboratory')!;
+  s.damageFacility(lab,lab.health,{x:lab.x,y:2,z:lab.z});
+  assert.equal(s.events.filter(event=>event.type==='mission-radio'&&event.radioId==='sheridan-retreat').length,1,cause);
+ }
+});
 test('3-5 ion strike fails if the player remains aboard or ejects without reaching safety',()=>{
  for(const escape of [false,true]){
   const s=new Simulation('Easy',MISSION_3_5),laboratory=s.facilities.find(f=>f.id==='g-nome-laboratory')!;
@@ -515,6 +553,17 @@ test('3-5 ion strike fails if the player remains aboard or ejects without reachi
   for(let i=0;i<20;i++)s.tick(.05,idle);
   assert.equal(s.status,'lost');assert.equal(s.events.filter(e=>e.type==='lose').length,1);
   assert.equal(s.objectiveStates.find(o=>o.id==='survive-betrayal')?.done,false);
+ }
+});
+test('3-5 ion impact accepts a 65 m escape and rejects a 55 m escape',()=>{
+ for(const [offset,expected] of [[55,'lost'],[65,'won']] as const){
+  const s=new Simulation('Easy',MISSION_3_5),lab=s.facilities.find(f=>f.id==='g-nome-laboratory')!,target=s.mounted!;
+  for(const enemy of s.units.filter(unit=>unit.iff==='3317'))enemy.pilot=false;
+  s.damageFacility(lab,lab.health,{x:lab.x,y:2,z:lab.z});
+  for(let i=0;i<400;i++)s.tick(.05,idle);
+  s.eject('ground');s.human={x:target.x+offset,z:target.z};
+  for(let i=0;i<20;i++)s.tick(.05,idle);
+  assert.equal(s.status,expected,`${offset} m from the targeted vehicle`);
  }
 });
 test('3-5 ion strike stays on the vehicle selected when the laboratory was destroyed',()=>{
@@ -598,6 +647,18 @@ test('3-2 starts with Thane on the left in a Sentry and Kylie and Sheridan in se
  assert.ok(s.units.find(u=>u.id==='meson-north')!.z>comm.z&&s.units.find(u=>u.id==='meson-south')!.z<comm.z,'the guard towers straddle the central comm area');
  assert.ok(s.facilities.find(f=>f.id==='scorp-shield-generator')!.z<MAP_3_2_POINTS.waypoint2.z,'the shield generator is south of the central waypoint');
  assert.ok(s.units.find(u=>u.id==='rocket-tower')!.z<MAP_3_2_POINTS.waypoint2.z,'the rocket tower is in the south');
+});
+
+test('Union AIP has the same two weapons and ammunition in every mission',()=>{
+ const expected=['ARC-M','3cREAP'],missions=MISSIONS.filter(mission=>mission.units.some(unit=>unit.kind==='union-aip'));
+ assert.ok(missions.some(mission=>mission.id==='4-2'));
+ for(const mission of missions){
+  const sim=new Simulation('Easy',mission);
+  for(const unit of sim.units.filter(unit=>unit.kind==='union-aip')){
+   assert.deepEqual(unit.spec.weapons,expected,mission.id);
+   assert.equal(unit.slotAmmo[1],220,mission.id);
+  }
+ }
 });
 test('3-2 completes after both the Latlon base is destroyed and the southwest passage is reached',()=>{
  const passage=MAP_3_2_POINTS.waypoint3;
@@ -1137,6 +1198,8 @@ test('4-4 labeled units and facilities follow the placement diagram',()=>{
  at('enemy-aip',[379,296]);
  at('rocket-tower-1',[300,335]);
  at('rocket-tower-2',[533,316]);
+ const unionRocket=new Simulation('Easy',MISSION_4_4).units.find(unit=>unit.id==='rocket-tower-1')!;
+ assert.equal(unionRocket.kind,'union-rocket-tower');assert.deepEqual(unionRocket.spec.weapons,['TCROCK','TCROCK']);assert.deepEqual(unionRocket.slotAmmo,[60,60]);assert.equal(unionRocket.spec.missileHomingScale?.TCROCK,0);
  at('enemy-tactical-2',[407,345]);
  at('enemy-tactical-3',[416,352]);
  at('enemy-tactical-4',[420,358]);
@@ -1167,12 +1230,12 @@ test('4-4 labeled units and facilities follow the placement diagram',()=>{
   assert.ok(distance(westRocket,td)<distance(control,td),`${td.id} is closer to the mine control than to the rocket`);
  }
 });
-test('4-4 Union AIP closes inside P2MEC range instead of firing across the ridge',()=>{
+test('4-4 Union AIP closes inside ARC-M range instead of firing across the ridge',()=>{
  const def={...MISSION_4_4,units:MISSION_4_4.units.filter(unit=>unit.id==='player-td'||unit.id==='enemy-aip'),assaults:[],minefields:[],rocks:[],objectives:[],completionEnabled:false,radioTriggers:[]};
- const s=new Simulation('Easy',def),aip=s.units.find(unit=>unit.id==='enemy-aip')!,origin={x:aip.x,z:aip.z};
+ const s=new Simulation('Easy',def),aip=s.units.find(unit=>unit.id==='enemy-aip')!,origin={x:aip.x,z:aip.z},arcRange=LASERS['ARC-M'].range;
  Object.assign(s.mounted!,map44PixelToWorld(260,300));
  const player={x:s.mounted!.x,z:s.mounted!.z};
- assert.ok(distance(aip,player)>LASERS.P2MEC.range);
+ assert.ok(distance(aip,player)>arcRange);
  let shots=0,closest=distance(aip,player);
  for(let i=0;i<30*25&&s.mounted;i++){
   s.tick(1/30,idle);
@@ -1181,12 +1244,12 @@ test('4-4 Union AIP closes inside P2MEC range instead of firing across the ridge
   for(const event of s.events)if(event.type==='shot'&&event.unit===aip){
    shots++;
    const beam=event.to?Math.hypot(event.to.x-aip.x,event.to.z-aip.z):0;
-   assert.ok(gap<LASERS.P2MEC.range+1,`shot from ${gap}`);
+   assert.ok(gap<arcRange+1,`shot from ${gap}`);
    assert.ok(beam+4>=gap,`beam ${beam} stops short of ${gap}`);
   }
   s.events.length=0;
  }
- assert.ok(closest<LASERS.P2MEC.range,`closest ${closest}`);
+ assert.ok(closest<arcRange,`closest ${closest}`);
  assert.ok(distance(aip,origin)>40,'the AIP stayed on the ridge');
  assert.ok(shots>0);
 });
@@ -1289,8 +1352,10 @@ test('4-5 starts on the eastern passage facing west and keeps the route west of 
  const basin=map45PixelToWorld(230,250),startGap=Math.hypot(spawn('player-assault').x-basin.x,spawn('player-assault').z-basin.z);
  for(const id of ['rocket-north','rocket-south']){
   const rocket=spawn(id);
-  assert.equal(rocket.kind,'scorp-rocket-tower');
-  assert.equal(at(id).spec.missileHomingScale?.UNKPA,1.2);
+  assert.equal(rocket.kind,'union-rocket-tower');
+  assert.deepEqual(at(id).spec.weapons,['TCROCK','TCROCK']);
+  assert.deepEqual(at(id).slotAmmo,[60,60]);
+  assert.equal(at(id).spec.missileHomingScale?.TCROCK,1.2);
   assert.ok(Math.hypot(rocket.x-basin.x,rocket.z-basin.z)<startGap,id);
   assert.ok(Math.hypot(rocket.x-spawn('player-assault').x,rocket.z-spawn('player-assault').z)>240,id);
  }
@@ -1396,7 +1461,7 @@ test('4-5 central basin is a walkable deck and the rocket towers stand on it',()
  assert.ok(player.shield<shield,'a stopped assault is hit from the deck');
  assert.ok(tower.shield<towerShield,'the assault can hit the tower');
  assert.equal(tower.hoverHeight,MAP_4_5_DECK_HEIGHT);
- assert.equal(tower.spec.missileHomingScale?.UNKPA,1.2);
+ assert.equal(tower.spec.missileHomingScale?.TCROCK,1.2);
 });
 test('4-5 marking or destroying the laboratory wins, and Keeley dying first loses',()=>{
  const paintAt=(sim:Simulation)=>{
@@ -1451,13 +1516,29 @@ test('4-5 marking or destroying the laboratory wins, and Keeley dying first lose
  assert.equal(hawk.units.find(u=>u.id==='kylie')!.alive,true);
  assert.equal(hawk.status,'running');
  const destroyed=new Simulation('Easy',MISSION_4_5),destroyedLab=destroyed.facilities.find(f=>f.id==='genetics-lab')!;
+ assert.equal(destroyed.mission.radioTriggers?.find(cue=>cue.id==='kylie-lab-destroyed')?.line.ja,'やられた！ベイビー、ベイビー、ベイビー！');
  destroyed.damageFacility(destroyedLab,destroyedLab.health,{x:destroyedLab.x,y:1,z:destroyedLab.z});
  destroyed.tick(1/60,idle);
  assert.equal(destroyedLab.alive,false);
  assert.equal(destroyed.units.find(u=>u.id==='kylie')!.alive,true);
- assert.equal(destroyed.status,'won');
+ assert.equal(destroyed.status,'running');
  assert.equal(destroyed.objectiveStates[0]!.done,true);
+ assert.equal(destroyed.events.filter(event=>event.type==='mission-radio'&&event.radioId==='kylie-lab-destroyed').length,1);
+ for(let i=0;i<79;i++)destroyed.tick(.05,idle);
+ assert.equal(destroyed.units.find(u=>u.id==='kylie')!.alive,true);
+ assert.equal(destroyed.status,'running');
+ destroyed.tick(.05,idle);
+ destroyed.tick(.05,idle);
+ assert.equal(destroyed.units.find(u=>u.id==='kylie')!.alive,false);
+ assert.equal(destroyed.soldiers.some(soldier=>soldier.personId==='kylie'&&soldier.alive),false);
+ assert.equal(destroyed.status,'running');
+ for(let i=0;i<18;i++)destroyed.tick(.05,idle);
+ assert.equal(destroyed.status,'running');
+ destroyed.tick(.05,idle);
+ destroyed.tick(.05,idle);
+ assert.equal(destroyed.status,'won');
  assert.equal(destroyed.events.filter(event=>event.type==='win').length,1);
+ assert.equal(destroyed.events.filter(event=>event.type==='lose').length,0);
  const markedOnly={...MISSION_4_5,objectives:[{...MISSION_4_5.objectives[0]!,completeOnDestroy:false}]};
  const intact=new Simulation('Easy',markedOnly),intactLab=intact.facilities.find(f=>f.id==='genetics-lab')!;
  intact.damageFacility(intactLab,intactLab.health,{x:intactLab.x,y:1,z:intactLab.z});
@@ -1536,10 +1617,31 @@ test('4-5 on foot fires EGGER from slot 3 and LaserSite from slot 4 destroys onl
  assert.equal(kylie.alive,true);
  assert.equal(kylie.pilot,true);
  s.tick(1/60,idle);
+ assert.equal(s.status,'running');
+ assert.equal(s.events.filter(e=>e.type==='mission-radio'&&e.radioId==='kylie-lab-destroyed').length,1);
+ for(let i=0;i<81;i++)s.tick(.05,idle);
+ assert.equal(kylie.alive,false);
+ assert.equal(s.status,'running');
+ for(let i=0;i<20;i++)s.tick(.05,idle);
  assert.equal(s.status,'won');
  assert.equal(s.events.filter(e=>e.type==='win').length,1);
  assert.equal(s.events.filter(e=>e.type==='lose').length,0);
- assert.equal(kylie.alive,true);
+ const onFoot=new Simulation('Easy',MISSION_4_5),footKylie=onFoot.units.find(u=>u.id==='kylie')!;
+ onFoot.damage(footKylie,99999);
+ onFoot.tick(1/60,idle);
+ assert.equal(onFoot.soldiers.some(soldier=>soldier.personId==='kylie'&&soldier.alive),true);
+ const footLab=onFoot.facilities.find(f=>f.id==='genetics-lab')!;
+ onFoot.damageFacility(footLab,footLab.health,{x:footLab.x,y:1,z:footLab.z});
+ onFoot.tick(1/60,idle);
+ for(let i=0;i<79;i++)onFoot.tick(.05,idle);
+ assert.equal(onFoot.soldiers.some(soldier=>soldier.personId==='kylie'&&soldier.alive),true);
+ onFoot.tick(.05,idle);
+ onFoot.tick(.05,idle);
+ assert.equal(onFoot.soldiers.some(soldier=>soldier.personId==='kylie'&&soldier.alive),false);
+ assert.equal(onFoot.status,'running');
+ for(let i=0;i<20;i++)onFoot.tick(.05,idle);
+ assert.equal(onFoot.status,'won');
+ assert.equal(onFoot.events.filter(e=>e.type==='lose').length,0);
  const lost=new Simulation('Easy',MISSION_4_5);
  const lostKylie=lost.units.find(u=>u.id==='kylie')!;
  lost.damage(lostKylie,99999);
@@ -1666,7 +1768,7 @@ test('AI uses both configured weapons even when the loadout contains no missile'
 });
 
 
-function boardDefense(s:Simulation){for(let i=0;i<240&&!s.mounted;i++)s.tick(1/60,{...idle,forward:true});assert.equal(s.mounted?.id,'defense-tower');assert.ok(s.time<12);}
+function boardDefense(s:Simulation){const tower=s.units.find(u=>u.id==='defense-tower')!,start=s.time;for(let i=0;i<1800&&!s.mounted;i++){s.humanYaw=Math.atan2(tower.x-s.human.x,tower.z-s.human.z);s.tick(1/60,{...idle,forward:true,boost:true});}assert.equal(s.mounted?.id,'defense-tower');assert.ok(s.time-start<25,`boarded after ${s.time-start}s`);}
 
 test('Meson held fire uses the slower cadence and slower flight while external power remains unlimited',()=>{
  const s=new Simulation(),tower=makeUnit('cadence','merc-meson-tower',0,20,false);s.units=[tower];s.human={x:0,z:20};assert.ok(s.board());s.events=[];
@@ -1700,9 +1802,9 @@ test('2-6 links both Meson towers to its Merc power plant; its fixed tower fires
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);const tower=s.mounted!,start={x:tower.x,z:tower.z};
  for(let i=0;i<60;i++)s.tick(1/60,{...idle,forward:true,right:true,lookDown:true});
  assert.deepEqual({x:tower.x,z:tower.z},start);assert.equal(tower.yaw,0);assert.notEqual(tower.aim,0);assert.ok(s.pitch<0);
- s.events=[];s.tick(.01,{...idle,fire1:true});const shots=s.events.filter(e=>e.type==='shot'&&e.unit===tower);assert.equal(shots.length,1);assert.equal(shots[0].weapon,'GAUS30');assert.ok(shots[0].from!.y!<9.7);assert.ok(Math.hypot(shots[0].from!.x-tower.x,shots[0].from!.z-tower.z)>3);assert.equal(tower.energy,1200);const plant=s.facilities.find(f=>f.id==='merc-power-plant')!,citadel=s.facilities.find(f=>f.id==='citadel')!,comm=s.facilities.find(f=>f.id==='merc-latlon')!;assert.equal(plant.facilityType,'power-plant');assert.equal(comm.facilityType,'comm-array');assert.ok(citadel.x>plant.x&&plant.x>comm.x);assert.ok([citadel,plant,comm].every(f=>f.faction==='merc'));assert.ok(s.mission.units.filter(u=>u.kind==='merc-meson-tower').every(u=>u.powerSourceId===plant.id));plant.alive=false;assert.ok(s.units.filter(u=>u.kind==='merc-meson-tower').every(u=>!s.unitPowered(u)));tower.cooldown=0;s.events=[];s.tick(.05,{...idle,fire1:true});assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
+ s.events=[];s.tick(.01,{...idle,fire1:true});const shots=s.events.filter(e=>e.type==='shot'&&e.unit===tower);assert.equal(shots.length,1);assert.equal(shots[0].weapon,'GAUS30');assert.equal(s.pitch,-.28);assert.ok(Math.hypot(shots[0].from!.x-tower.x,shots[0].from!.z-tower.z)>3);assert.equal(tower.energy,1200);const plant=s.facilities.find(f=>f.id==='merc-power-plant')!,citadel=s.facilities.find(f=>f.id==='citadel')!,comm=s.facilities.find(f=>f.id==='merc-latlon')!;assert.equal(plant.facilityType,'power-plant');assert.equal(comm.facilityType,'comm-array');assert.ok(citadel.z>plant.z&&plant.z>comm.z);assert.ok([citadel,plant,comm].every(f=>f.faction==='merc'));assert.ok(s.mission.units.filter(u=>u.kind==='merc-meson-tower').every(u=>u.powerSourceId===plant.id));plant.alive=false;assert.ok(s.units.filter(u=>u.kind==='merc-meson-tower').every(u=>!s.unitPowered(u)));tower.cooldown=0;s.events=[];s.tick(.05,{...idle,fire1:true});assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
 
- const retry=new Simulation('Easy',MISSION_2_6);assert.equal(retry.time,0);assert.equal(retry.mounted,null);boardDefense(retry);assert.equal(retry.status,'running');assert.ok(retry.unitPowered(retry.mounted!));assert.equal(retry.mounted!.energy,1200);assert.ok(retry.facilities.every(f=>f.alive));assert.ok(retry.units.every(u=>u.alive));
+ const retry=new Simulation('Easy',MISSION_2_6);assert.equal(retry.time,0);assert.equal(retry.mounted,null);assert.ok(retry.units.every(u=>u.alive));boardDefense(retry);assert.equal(retry.status,'running');assert.ok(retry.unitPowered(retry.mounted!));assert.equal(retry.mounted!.energy,1200);assert.ok(retry.facilities.every(f=>f.alive));
 });
 
 test('2-6 timed Merc assaults damage the Citadel even under a Merc disguise, cause one defeat, and cannot complete by waiting',async()=>{
@@ -1713,20 +1815,68 @@ test('2-6 timed Merc assaults damage the Citadel even under a Merc disguise, cau
  assert.ok(damaged);assert.equal(citadel.alive,false);assert.equal(s.status,'lost');assert.equal(s.events.filter(e=>e.type==='lose').length,1);s.tick(.05,idle);assert.equal(s.events.filter(e=>e.type==='lose').length,1);assert.ok(!s.objectiveStates[0].done);
 });
 
-test('2-6 progresses through real GAUS shots, Thane leaving the fortress and boarding a reserved HAWC',async()=>{
- const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);let shots=0;const thane=s.soldiers.find(p=>p.personId==='thane')!;
- const pilotedHostile=()=>{const target=s.target;return !!target&&'pilot' in target&&target.pilot&&s.isHostile(target)&&!!s.targetState?.inSight;};
- for(let i=0;i<12000&&s.status==='running'&&thane.insideFacility;i++){
-  // E can select an empty enemy HAWC. The nearby reserve vehicles are that nearest target, so keep the defense fire on a piloted aircraft.
-  if(!pilotedHostile()){s.selectTarget();for(let n=0;n<s.selectionTargets.length&&!pilotedHostile();n++)s.cycleTarget();}s.tracking=true;
-  s.tick(1/60,{...idle,fire1:pilotedHostile()&&!!s.targetState?.locked&&s.mounted?.laserCharge===1});shots+=s.events.filter(e=>e.type==='shot'&&e.unit===s.mounted).length;s.events=[];
- }
- assert.ok(shots>0);assert.equal(thane.insideFacility,undefined);assert.equal(s.status,'running');assert.ok(s.objectiveStates[0].done);assert.ok(!s.objectiveStates[1].done);assert.ok(!thane.passengerOf);
- s.eject();for(let i=0;i<600&&s.flight;i++)s.tick(1/60,idle);const reserve=s.units.find(u=>u.id==='reserve-assault'&&u.alive)??s.units.find(u=>u.id==='reserve-cruiser'&&u.alive)!;assert.ok(reserve?.alive);
- for(let i=0;i<4000&&!s.mounted&&s.status==='running';i++){const yaw=Math.atan2(reserve.x-s.player.x,reserve.z-s.player.z);s.aimBy(yaw-s.aim);s.tick(1/60,{...idle,forward:true});}
- assert.equal(s.mounted?.id,reserve.id,JSON.stringify({player:s.player,status:s.status,health:s.humanHealth,reserve:{x:reserve.x,z:reserve.z,alive:reserve.alive,pilot:reserve.pilot},distance:s.entryDistance(reserve)}));assert.equal(s.mounted?.spec.passengerCapacity,1);
- const drive=[{x:reserve.x,z:195},{x:70,z:195}];for(let i=0;i<12000&&s.status==='running';i++){if(drive.length&&Math.hypot(drive[0].x-s.player.x,drive[0].z-s.player.z)<4)drive.shift();const goal=drive[0]??s.player,bearing=Math.atan2(goal.x-s.player.x,goal.z-s.player.z),delta=Math.atan2(Math.sin(bearing-s.yaw),Math.cos(bearing-s.yaw)),near=!drive.length||Math.hypot(thane.x-s.player.x,thane.z-s.player.z)<10;s.tick(1/60,{...idle,forward:!near&&Math.abs(delta)<.45,left:!near&&delta<-.03,right:!near&&delta>.03,stop:near});}
- assert.equal(thane.passengerOf,reserve.id,JSON.stringify({thane,player:s.player,status:s.status,reserveAlive:reserve.alive,reservePassengers:reserve.passengers}));assert.equal(s.status,'won');assert.ok(thane.alive);
+test('2-6 Thane radios after six AIPs, then seven AIPs and her boarding complete the mission',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);const thane=s.soldiers.find(p=>p.personId==='thane')!;
+ const raiders=s.units.filter(u=>u.kind==='merc-aip');for(const raider of raiders)raider.pilot=false;
+ for(const raider of raiders.slice(0,5))s.damage(raider,10000);
+ s.tick(1/60,idle);assert.equal(thane.insideFacility,'citadel');assert.equal(s.status,'running');assert.ok(!s.events.some(e=>e.radioId==='pickup-thane'));
+ s.damage(raiders[5]!,10000);s.tick(1/60,idle);
+ assert.equal(thane.insideFacility,undefined);assert.equal(thane.boardingTarget,s.mounted?.id);
+ assert.equal(s.events.filter(e=>e.type==='mission-radio'&&e.radioId==='pickup-thane').length,1);
+ assert.equal(s.mission.radioTriggers?.find(cue=>cue.id==='pickup-thane')?.line.ja,'脱出よ！');
+ s.damage(raiders[6]!,10000);s.tick(1/60,idle);
+ assert.equal(s.status,'running');assert.equal(s.objectiveStates.find(o=>o.id==='repel-aips')?.done,true);assert.equal(s.objectiveStates.find(o=>o.id==='rescue-thane')?.done,false);
+ for(let i=0;i<12000&&s.status==='running'&&!thane.passengerOf;i++)s.tick(1/60,idle);
+ assert.equal(thane.passengerOf,s.mounted?.id);assert.equal(s.status,'won');assert.ok(s.objectiveStates.every(o=>o.done));assert.ok(thane.alive);
+ assert.equal(s.events.filter(e=>e.type==='mission-radio'&&e.radioId==='pickup-thane').length,1);
+});
+test('2-6 keeps the casualty rule, conditional tower warning, and shared tower passenger seats',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');
+ const unboarded=new Simulation('Easy',MISSION_2_6);for(let i=0;i<23*60;i++)unboarded.tick(1/60,idle);
+ assert.ok(unboarded.events.some(e=>e.type==='mission-radio'&&e.radioId==='kylie-aip-arrival'));
+ assert.ok(unboarded.events.some(e=>e.type==='mission-radio'&&e.radioId==='kylie-tower-urgent'));
+ const boarded=new Simulation('Easy',MISSION_2_6);boardDefense(boarded);for(let i=0;i<15*60;i++)boarded.tick(1/60,idle);
+ assert.ok(!boarded.events.some(e=>e.type==='mission-radio'&&e.radioId==='kylie-tower-urgent'));
+ for(const kind of ['merc-meson-tower','scorp-meson-tower','scorp-rocket-tower','union-rocket-tower'] as const)assert.equal(makeUnit(kind,kind,0,0).spec.passengerCapacity,1);
+ const casualty=new Simulation('Easy',MISSION_2_6);casualty.soldiers.find(p=>p.personId==='kylie')!.alive=false;casualty.tick(1/60,idle);assert.equal(casualty.status,'lost');
+});
+test('2-6 Thane can join the player inside the occupied Meson tower',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);
+ const raiders=s.units.filter(u=>u.kind==='merc-aip');for(const raider of raiders.slice(0,6))s.damage(raider,10000);for(const raider of raiders.slice(6)){raider.pilot=false;raider.x=900;raider.z=900;}
+ s.units.find(u=>u.id==='kylie-tower')!.cooldown=9999;
+ const thane=s.soldiers.find(p=>p.personId==='thane')!;
+ for(let i=0;i<12000&&s.status==='running'&&!thane.passengerOf;i++)s.tick(1/60,idle);
+ assert.equal(thane.passengerOf,'defense-tower',JSON.stringify({thane,x:s.mounted?.x,z:s.mounted?.z,status:s.status}));
+ assert.equal(s.status,'running',JSON.stringify({raiders:raiders.map(u=>({id:u.id,alive:u.alive,pilot:u.pilot})),objectives:s.objectiveStates.map(o=>({id:o.id,current:o.current,done:o.done}))}));assert.equal(s.objectiveStates.find(o=>o.id==='rescue-thane')?.done,true);
+ s.damage(raiders[6]!,1e9);s.tick(1/60,idle);assert.equal(s.status,'won');
+});
+test('2-6 player tower damages an AIP pressed against Kylie tower',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);
+ const own=s.mounted!,kylieTower=s.units.find(u=>u.id==='kylie-tower')!,raider=s.units.find(u=>u.id==='merc-aip-north')!;
+ for(const unit of s.units.filter(u=>u.kind==='merc-aip'&&u!==raider))unit.pilot=false;
+ Object.assign(raider,{x:kylieTower.x+5,z:kylieTower.z+5,speed:0,cooldown:999});
+ const bearing=Math.atan2(raider.x-own.x,raider.z-own.z);s.aimBy(bearing-own.aim);s.lookBy(s.targetElevation(raider));
+ const shield=raider.shield;s.fire(1);for(let i=0;i<50;i++)s.tick(1/60,idle);
+ assert.ok(raider.shield<shield,`AIP shield ${raider.shield}/${shield} at ${Math.hypot(raider.x-own.x,raider.z-own.z)}m`);
+});
+test('2-6 Kylie cannot hit her own tower foot but can defend the player tower foot',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');
+ const setup=()=>{const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);const kylie=s.units.find(u=>u.id==='kylie-tower')!,player=s.mounted!,raider=s.units.find(u=>u.id==='merc-aip-north')!;for(const unit of s.units.filter(u=>u.kind==='merc-aip'&&u!==raider))unit.pilot=false;raider.cooldown=999;raider.speed=0;raider.spec={...raider.spec,speed:0};s.events=[];return {s,kylie,player,raider};};
+ const close=setup();Object.assign(close.raider,{x:close.kylie.x+5,z:close.kylie.z+5});
+ const closeShield=close.raider.shield;for(let i=0;i<240;i++)close.s.tick(1/60,idle);
+ assert.equal(close.raider.shield,closeShield);assert.ok(!close.s.events.some(e=>e.type==='shot'&&e.unit===close.kylie));
+ const cross=setup();Object.assign(cross.raider,{x:cross.player.x-5,z:cross.player.z-5});
+ const crossShield=cross.raider.shield;for(let i=0;i<240&&cross.raider.shield===crossShield;i++)cross.s.tick(1/60,idle);
+ assert.ok(cross.raider.shield<crossShield,`Kylie shot result: shield ${cross.raider.shield}/${crossShield}`);
+});
+test('2-6 AIP retreats from the Meson tower after its close attack phase',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);boardDefense(s);
+ const raider=s.units.find(u=>u.id==='merc-aip-north')!,tower=s.mounted!;
+ for(const unit of s.units.filter(u=>u.kind==='merc-aip'&&u!==raider))unit.pilot=false;
+ Object.assign(raider,{x:tower.x+28,z:tower.z,speed:0,aggressorId:null});s.time=64.9;
+ const before=Math.hypot(raider.x-tower.x,raider.z-tower.z);
+ for(let i=0;i<240&&s.status==='running';i++)s.tick(1/60,idle);
+ assert.ok(Math.hypot(raider.x-tower.x,raider.z-tower.z)>before+5,JSON.stringify({before,after:Math.hypot(raider.x-tower.x,raider.z-tower.z),x:raider.x,z:raider.z,alive:raider.alive,towerAlive:tower.alive,status:s.status,time:s.time}));
 });
 
 test('Merc Meson tower destruction ejects living occupants, including the player, while Merc HAWCs keep their own rule',async()=>{
@@ -1738,19 +1888,47 @@ test('Merc Meson tower destruction ejects living occupants, including the player
 test('2-6 reserve Merc Assault can be reached on foot, piloted, exited and boarded again with ammunition preserved',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);
  const assault=s.units.find(u=>u.id==='reserve-assault')!;assert.equal(assault.kind,'merc-assault');assert.equal(assault.pilot,false);assert.equal(assault.spec.boardable,true);
- const approach=()=>{s.humanYaw=Math.atan2(assault.x-s.human.x,assault.z-s.human.z);for(let i=0;i<1200&&!s.mounted&&s.status==='running';i++)s.tick(1/60,{...idle,forward:true,boost:true});};
- approach();assert.equal(s.mounted,assault);assert.equal(s.passenger,null);assert.ok(s.time<20);assert.ok(s.events.some(e=>e.type==='board'&&e.unit===assault));
+ const approach=()=>{s.humanYaw=Math.atan2(assault.x-s.human.x,assault.z-s.human.z);for(let i=0;i<3600&&!s.mounted&&s.status==='running';i++)s.tick(1/60,{...idle,forward:true,boost:true});};
+ approach();assert.equal(s.mounted,assault);assert.equal(s.passenger,null);assert.ok(s.time<45);assert.ok(s.events.some(e=>e.type==='board'&&e.unit===assault));
  const ammo=assault.slotAmmo[1]!;s.fire(2);assert.equal(assault.slotAmmo[1],ammo-1);
  s.eject('ground');assert.equal(s.mounted,null);assert.equal(assault.pilot,false);assert.equal(s.flight,null);
  approach();assert.equal(s.mounted,assault);assert.equal(assault.slotAmmo[1],ammo-1);
  const retry=new Simulation('Easy',MISSION_2_6),fresh=retry.units.find(u=>u.id===assault.id)!;assert.equal(retry.mounted,null);assert.equal(fresh.pilot,false);assert.equal(fresh.slotAmmo[1],ammo);
 });
+test('2-6 straight boosted run through the fortress and plant reaches the empty Assault HAWK before AIPs',async()=>{
+ const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);
+ const assault=s.units.find(u=>u.id==='reserve-assault')!,fort=s.facilities.find(f=>f.id==='citadel')!,plant=s.facilities.find(f=>f.id==='merc-power-plant')!;
+ assert.ok(s.human.x<fort.x&&fort.x<assault.x&&assault.x<plant.x);
+ s.humanYaw=Math.atan2(assault.x-s.human.x,assault.z-s.human.z);
+ for(let i=0;i<3600&&!s.mounted&&s.status==='running';i++)s.tick(1/60,{...idle,forward:true,boost:true});
+ assert.equal(s.mounted,assault);assert.ok(s.time<45,`boarded at ${s.time}s`);
+ assert.ok(Math.min(...s.units.filter(u=>u.kind==='merc-aip'&&u.alive).map(u=>Math.hypot(u.x-assault.x,u.z-assault.z)))>35,'AIPs have not reached the Assault HAWK');
+});
 test('2-6 starts on foot with Thane inside the giant fortress, Kylie boards the other tower before eight low Merc AIPs attack, and reserve HAWCs are empty',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const s=new Simulation('Easy',MISSION_2_6);assert.equal(s.mounted,null);assert.equal(s.mission.companions?.length,2);
+ const near=s.units.find(u=>u.id==='kylie-tower')!,far=s.units.find(u=>u.id==='defense-tower')!,plant=s.facilities.find(f=>f.id==='merc-power-plant')!,fort=s.facilities.find(f=>f.id==='citadel')!,assault=s.units.find(u=>u.id==='reserve-assault')!;
+ const bearing=(point:{x:number;z:number})=>Math.atan2(point.x-s.player.x,point.z-s.player.z);
+ assert.equal(s.humanYaw,0);assert.ok(bearing(near)<bearing(far)&&Math.hypot(near.x-s.player.x,near.z-s.player.z)<Math.hypot(far.x-s.player.x,far.z-s.player.z)*.55);
+ assert.ok(Math.abs(bearing(far))<.25&&bearing(fort)>.55&&bearing(fort)<.75,'the fortress sits at the right edge of the starting view');
+ const halfHorizontalFov=Math.atan(Math.tan(1.15/2)*1122/834),screenX=(point:{x:number;z:number})=>561+Math.tan(bearing(point))/Math.tan(halfHorizontalFov)*561;
+ assert.ok(Math.abs(screenX(near)-345)<65&&Math.abs(screenX(far)-475)<65);
+ assert.ok(Math.abs(screenX({x:fort.x-fort.width/2,z:fort.z})-875)<75,'the fortress edge appears on the right');
+ const towerBearing=bearing(far);
+ assert.ok(s.facilities.every(facility=>{
+  const left=Math.atan2(facility.x-facility.width/2-s.player.x,facility.z+facility.depth/2-s.player.z);
+  return left-towerBearing>.35;
+ }),'every facility footprint stays to the right of the player tower and the open sky behind it');
+ const kylieFoot=s.soldiers.find(p=>p.personId==='kylie')!;assert.ok(bearing(kylieFoot)>.6&&bearing(kylieFoot)<.72,'Kylie starts on the right edge on foot');
+ const eastward=.68;for(const point of [plant,fort,assault])assert.ok(Math.abs(bearing(point)-eastward)<.8,'the eastward view includes both facilities and the empty Assault HAWK');
+ const projection=s.mission.briefingPresentation!.mapPreview!.mapProjection!,mapX=projection.pixelOrigin.x+(s.player.x-projection.worldOrigin.x)*projection.pixelPerWorldX.x,mapY=projection.pixelOrigin.y+(s.player.z-projection.worldOrigin.z)*projection.pixelPerWorldZ.y;
+ assert.ok(mapX>195&&mapX<220&&mapY>230&&mapY<260,'the player start projects near the central map area');
+ const towerMapX=projection.pixelOrigin.x+(far.x-projection.worldOrigin.x)*projection.pixelPerWorldX.x,towerMapY=projection.pixelOrigin.y+(far.z-projection.worldOrigin.z)*projection.pixelPerWorldZ.y;
+ assert.ok(Math.abs(towerMapX-200)<1&&Math.abs(towerMapY-200)<1,'the player tower projects near the field center');
+ assert.equal(projection.pixelPerWorldX.x,.3,'the mission uses the enlarged map scale');
  const thane=s.soldiers.find(p=>p.personId==='thane')!;assert.equal(thane.insideFacility,'citadel');assert.ok(!s.combatTargets.includes(thane));assert.equal(s.radioMembers.find(m=>m.personId==='thane')!.reason,'busy');assert.ok(s.facilities.find(f=>f.id==='citadel')!.height>40);
- const aip=s.units.filter(u=>u.kind==='merc-aip');assert.equal(aip.length,8);assert.ok(aip.some(u=>u.x>400));assert.ok(aip.some(u=>u.x< -400));assert.ok(aip.some(u=>u.z>600));assert.ok(aip.some(u=>u.z< -400));assert.ok(aip.every(u=>!!u.spec.hoverHeight&&u.spec.hoverHeight<2&&u.spec.height===3.7));
+ const aip=s.units.filter(u=>u.kind==='merc-aip');assert.equal(aip.length,8);assert.ok(aip.some(u=>u.x>400));assert.ok(aip.some(u=>u.x< -200));assert.ok(aip.some(u=>u.z>400));assert.ok(aip.some(u=>u.z<=-250));assert.ok(aip.every(u=>!!u.spec.hoverHeight&&u.spec.hoverHeight<2&&u.spec.height===3.7));
  for(const id of ['reserve-assault','reserve-cruiser'])assert.equal(s.units.find(u=>u.id===id)!.pilot,false);
- for(let i=0;i<180;i++)s.tick(1/60,idle);const kylie=s.units.find(u=>u.id==='kylie-tower')!;assert.equal(kylie.pilot,true);assert.equal(kylie.personId,'kylie');assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit?.kind==='merc-aip'));
+ const kylie=s.units.find(u=>u.id==='kylie-tower')!;for(let i=0;i<900&&!kylie.pilot;i++)s.tick(1/60,idle);assert.equal(kylie.pilot,true);assert.equal(kylie.personId,'kylie');assert.ok(s.time>3&&s.time<12,'Kylie reaches the near tower after a delay');
  boardDefense(s);assert.equal(thane.insideFacility,'citadel');assert.ok(thane.alive);
 });
 
@@ -1795,14 +1973,11 @@ test('4-2 annotated positions use the expanded terrain scale',async()=>{
  assert.ok(near(mission.player,unit('scorp-meson'),50),'the unmanned Meson tower is reachable on foot from the start');
  assert.ok(unit('scorp-rocket').z<unit('scorp-meson').z&&unit('thane-meson').z<unit('scorp-rocket').z);
  const assault=unit('scorp-assault2'),shield=building('ur-kinsk-shield'),assaultRiverGap=riverDistance(mission.terrain.river!,assault.x,assault.z);
- assert.ok(assault.x>shield.x&&assaultRiverGap>mission.terrain.river!.width/2+8&&assaultRiverGap<220,'the piloted Assault HAWC stands on dry ground between the Scorp facilities and river');
+ assert.ok(near(assault,shield,80)&&assaultRiverGap>mission.terrain.river!.width/2+100,'the piloted Assault HAWC guards the shield generator away from the river');
  assert.ok(mission.garrison?.includes(assault.id),'the Assault HAWC takes part in active Scorp defense');
  const assaultSpec=new Simulation('Easy',mission).units.find(u=>u.id===assault.id)!.spec;
  assert.equal(assaultSpec.shield,70);assert.equal(assaultSpec.armor,160);assert.equal(assaultSpec.energy,1800);
  assert.ok(near(unit('scorp-tactical-guard'),building('ur-kinsk-power'),90),'one Tactical HAWC guards the power plant');
- const riverGuard=unit('scorp-tactical-guard2'),riverGap=riverDistance(mission.terrain.river!,riverGuard.x,riverGuard.z);
- assert.ok(riverGap>mission.terrain.river!.width/2+5&&riverGap<75,'the other Tactical HAWC stands on dry ground near the river');
- assert.ok(riverGuard.z>building('bridge-control').z,'the riverside guard is north of the bridge');
  assert.ok(building('ur-kinsk-hq').z>mission.player.z&&building('ur-kinsk-power').z>mission.player.z);
  assert.ok(near(building('bridge-control'),mission.terrain.river!,170));
  assert.ok(unit('bridge-rocket').z>building('bridge-control').z);
@@ -1810,6 +1985,31 @@ test('4-2 annotated positions use the expanded terrain scale',async()=>{
  assert.ok(mission.units.filter(u=>u.id.startsWith('sheridan-union-')).slice(0,4).every(u=>near(u,building('bridge-control'),135)));
  assert.equal(mission.units.filter(u=>u.kind==='union-aip').length,2);
  assert.ok(mission.units.filter(u=>u.kind==='union-aip').every(u=>u.x<mission.player.x&&u.z<building('bridge-control').z));
+});
+test('4-2 second Scorp Tactical HAWC guards the power plant away from the river',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ const unit=(id:string)=>MISSION_4_2.units.find(u=>u.id===id)!,plant=MISSION_4_2.base!.buildings.find(b=>b.id==='ur-kinsk-power')!,second=unit('scorp-tactical-guard2'),river=MISSION_4_2.terrain.river!;
+ assert.ok(distance(second,plant)<90,'the second Tactical HAWC stands near the power plant');
+ assert.ok(distance(second,unit('scorp-tactical-guard'))>60,'the two Tactical HAWCs have separate positions');
+ assert.ok(riverDistance(river,second.x,second.z)>river.width/2+100,'the second Tactical HAWC stays clear of the river');
+});
+test('4-2 Scorp Assault HAWC starts near headquarters and shield generator on clear ground',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const mission=MISSION_4_2,assault=mission.units.find(unit=>unit.id==='scorp-assault2')!,hq=mission.base!.buildings.find(building=>building.id==='ur-kinsk-hq')!,shield=mission.base!.buildings.find(building=>building.id==='ur-kinsk-shield')!,plant=mission.base!.buildings.find(building=>building.id==='ur-kinsk-power')!;
+ assert.ok(distance(assault,hq)<155&&distance(assault,shield)<80);
+ assert.ok(riverDistance(mission.terrain.river!,assault.x,assault.z)>mission.terrain.river!.width/2+100);
+ for(const building of [hq,shield,plant])assert.ok(Math.abs(assault.x-building.x)>building.width/2+5||Math.abs(assault.z-building.z)>building.depth/2+5,`${building.id} does not overlap the Assault HAWC`);
+ assert.ok(mission.terrain.peaks!.every(peak=>Math.hypot((assault.x-peak.x)/(peak.width/2+5),(assault.z-peak.z)/(peak.depth/2+5))>1),'the Assault HAWC starts outside the mountain footprint');
+});
+test('4-2 Scorp defenders use their shared detection ranges and notice a distant Union HAWC',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ const mission=structuredClone(MISSION_4_2);mission.base=undefined;mission.rocks=[];mission.assaults=[];mission.personnel=[];mission.companions=[];mission.objectives=[];mission.completionEnabled=false;mission.terrain={...mission.terrain,river:undefined,peaks:[]};mission.units=mission.units.filter(unit=>unit.id==='scorp-tactical-guard2'||unit.id==='sheridan-union-1');
+ const s=new Simulation('Easy',mission),guard=s.units.find(unit=>unit.id==='scorp-tactical-guard2')!,enemy=s.units.find(unit=>unit.id==='sheridan-union-1')!;
+ assert.ok(mission.garrison?.includes(guard.id));
+ assert.equal(guard.spec.ai.detection,350);assert.equal(s.units.find(unit=>unit.id==='scorp-tactical-guard2')?.spec.ai.detection,VEHICLES['scorp-tactical'].ai.detection);
+ assert.equal(VEHICLES['scorp-sentry'].ai.detection,300);assert.equal(VEHICLES['scorp-assault'].ai.detection,450);assert.equal(VEHICLES['scorp-rocket-tower'].ai.detection,400);
+ enemy.x=guard.x;enemy.z=guard.z+250;enemy.energy=0;enemy.slotAmmo.fill(0);const start=distance(guard,enemy);
+ for(let i=0;i<120;i++)s.tick(1/60,idle);
+ assert.ok(distance(guard,enemy)<start-10,'the Tactical HAWC closes on an enemy first seen beyond its old 170 m limit');
 });
 test('4-2 Scorp garrison engages Union without shooting the player and the defense can win or fail once',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),tower=s.units.find(u=>u.id==='scorp-meson')!;s.human={x:tower.x,z:tower.z};assert.ok(s.board());
@@ -1845,7 +2045,7 @@ test('4-2 has exactly two Union AIPs that attack the power plant and disable bot
  assert.equal(fired.size,2);assert.ok(aimedAtPlant,'both AIPs keep attacking the power plant after one hit');assert.equal(plant.alive,false);assert.ok(s.units.filter(u=>u.kind==='scorp-meson-tower').every(u=>!s.unitPowered(u)));tower.cooldown=0;s.events=[];s.fire(1);assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===tower));
 });
 
-test('4-2 AIPs retaliate after three hits while an idle defender loses the power plant',async()=>{
+test('4-2 AIPs retaliate after three hits while the relocated Assault survives the opening minute',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  const mission=structuredClone(MISSION_4_2);mission.units=mission.units.filter(u=>u.id==='union-aip-1'||u.id==='scorp-meson');mission.assaults=mission.assaults!.filter(a=>a.unitId==='union-aip-1').map(a=>({...a,startAt:0}));mission.personnel=[];mission.companions=[];mission.garrison=[];mission.objectives=[];mission.completionEnabled=false;mission.terrain={...mission.terrain,peaks:[],river:undefined};
  const s=new Simulation('Easy',mission),plant=s.facilities.find(f=>f.id==='ur-kinsk-power')!,tower=s.units.find(u=>u.id==='scorp-meson')!,aip=s.units.find(u=>u.id==='union-aip-1')!;
@@ -1854,15 +2054,34 @@ test('4-2 AIPs retaliate after three hits while an idle defender loses the power
  tower.spec.shield=100000;tower.shield=100000;let firedAtPlayer=false;
  for(let i=0;i<420&&!firedAtPlayer;i++){s.tick(1/60,idle);firedAtPlayer=s.events.some(event=>event.type==='shot'&&event.unit===aip&&event.to&&distance(event.to,tower)<distance(event.to,plant));s.events=[];}
  assert.ok(firedAtPlayer,'the AIP retaliates against the repeated attacker');
- const passive=new Simulation('Easy',MISSION_4_2),power=passive.facilities.find(f=>f.id==='ur-kinsk-power')!,defense=passive.units.find(u=>u.id==='scorp-meson')!;passive.human={x:defense.x,z:defense.z};assert.ok(passive.board());
- for(let i=0;i<6000&&power.alive&&passive.status==='running';i++)passive.tick(1/60,idle);
- assert.equal(power.alive,false,'the untouched AIP assault destroys the plant before the idle mission ends');
+ const passive=new Simulation('Easy',MISSION_4_2),defense=passive.units.find(u=>u.id==='scorp-meson')!,assault=passive.units.find(u=>u.id==='scorp-assault2')!;passive.human={x:defense.x,z:defense.z};assert.ok(passive.board());
+ for(let i=0;i<3600&&passive.status==='running';i++)passive.tick(1/60,idle);
+ assert.ok(assault.alive,'the Scorp Assault HAWC survives the opening minute near the base');
+ assert.ok(passive.events.some(event=>event.type==='shot'&&event.unit?.kind==='union-aip'),'the AIPs continue attacking the defended base');
+});
+test('4-2 far-bank Union pilots eject alive while their vehicles respawn farther across the river',async()=>{
+ const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
+ for(const id of MISSION_4_2.respawningUnits!){
+  const mission=structuredClone(MISSION_4_2);mission.units=mission.units.filter(unit=>unit.id===id);mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.base=undefined;mission.rocks=[];mission.objectives=[];mission.completionEnabled=false;mission.terrain={...mission.terrain,peaks:[]};
+  const s=new Simulation('Easy',mission),spawn=mission.units[0]!;s.human={x:spawn.x+800,z:spawn.z+800};
+  assert.ok(riverDistance(mission.terrain.river!,spawn.x,spawn.z)>110);
+  assert.ok(MISSION_4_2.terrain.peaks!.every(peak=>Math.hypot((spawn.x-peak.x)/(peak.width/2+5),(spawn.z-peak.z)/(peak.depth/2+5))>1),`${id} respawns outside the mountain footprint`);
+  for(let cycle=0;cycle<2;cycle++){
+   const vehicle=s.units[0]!;s.events=[];s.damage(vehicle,99999);
+   const pilots=s.soldiers.filter(soldier=>soldier.originVehicleId===id&&soldier.alive);
+   assert.equal(pilots.length,cycle+1);assert.ok(s.events.some(event=>event.type==='pilot-eject'&&event.unit===vehicle&&event.soldier===pilots.at(-1)));
+   for(let i=0;i<601;i++)s.tick(.05,idle);
+   assert.notEqual(s.units[0],vehicle);assert.equal(s.units[0]!.pilot,true);assert.deepEqual({x:s.units[0]!.x,z:s.units[0]!.z},{x:spawn.x,z:spawn.z});
+   assert.ok(pilots.every(pilot=>pilot.alive),'the previous pilots remain in the field after the replacement appears');
+  }
+ }
 });
 test('4-2 far-bank Union guards return after a delay and attack the nearest enemy',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');
  assert.deepEqual(MISSION_4_2.respawningUnits,['bridge-union-sentry','bridge-union-asv']);
  assert.equal(MISSION_4_2.respawnDelay,30);
  assert.equal(MISSION_4_2.units.filter(u=>u.kind==='scorp-assault'&&!u.pilot).length,0);
+ for(const spawn of MISSION_4_2.units.filter(unit=>MISSION_4_2.respawningUnits!.includes(unit.id)))assert.ok(riverDistance(MISSION_4_2.terrain.river!,spawn.x,spawn.z)>110,`${spawn.id} respawns deeper on the far bank`);
  for(const id of MISSION_4_2.respawningUnits!){
   const mission=structuredClone(MISSION_4_2);mission.units=mission.units.filter(u=>[id,'scorp-sentry-guard','scorp-assault2'].includes(u.id));mission.personnel=[];mission.companions=[];mission.garrison=[];mission.assaults=[];mission.base=undefined;mission.rocks=[];mission.objectives=[];mission.completionEnabled=false;mission.terrain={...mission.terrain,river:undefined,peaks:[]};
   const s=new Simulation('Easy',mission),spawn=mission.units.find(u=>u.id===id)!,near=s.units.find(u=>u.id==='scorp-sentry-guard')!,far=s.units.find(u=>u.id==='scorp-assault2')!;
@@ -1872,7 +2091,8 @@ test('4-2 far-bank Union guards return after a delay and attack the nearest enem
   for(let cycle=0;cycle<2;cycle++){
    original.x+=25;original.shield=0;original.ammo=0;s.damage(original,99999);
    assert.equal(s.units.find(u=>u.id===id),original);assert.equal(original.alive,false);
-   assert.ok(!s.soldiers.some(soldier=>soldier.sourceVehicle===id&&soldier.alive));
+   const ejected=s.soldiers.filter(soldier=>soldier.sourceVehicle===id&&soldier.alive);assert.equal(ejected.length,cycle+1,`${id} releases a living pilot on each destruction`);
+   assert.ok(s.events.some(event=>event.type==='pilot-eject'&&event.unit===original&&event.soldier===ejected.at(-1)));
    for(let i=0;i<599;i++)s.tick(.05,idle);
    assert.equal(s.units.find(u=>u.id===id),original,'the destroyed guard stays absent until the cooldown ends');
    for(let i=0;i<3&&s.units.find(u=>u.id===id)===original;i++)s.tick(.05,idle);
@@ -1912,4 +2132,15 @@ test('the empty bridge Scorp rocket tower boards and fires SREM and UNKPA from s
 test('raising the 4-2 bridge does not destroy AIPs hovering above its deck',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const s=new Simulation('Easy',MISSION_4_2),r=s.mission.terrain.river!,control=s.facilities.find(f=>f.id==='bridge-control')!;
  const aip=s.units.find(u=>u.kind==='union-aip')!,bridge=riverFrameAtZ(r,r.bridgeZ);aip.x=bridge.x;aip.z=bridge.z;assert.ok(aip.hoverHeight>0);s.human={x:control.x-control.width/2-1,z:control.z};assert.ok(s.board());assert.ok(s.raiseBridge());assert.ok(aip.alive);assert.ok(aip.pilot);assert.equal(s.events.filter(e=>e.type==='destroy'&&e.unit===aip).length,0);
+});
+
+test('mission data selects optional enemy vehicles and towers by difficulty',()=>{
+ const mission=structuredClone(DEFAULT_MISSION);
+ mission.units=[...mission.units,{id:'medium-guard',kind:'merc-sentry',x:30,z:160,pilot:true,difficulties:['Medium','Hard']},{id:'hard-tower',kind:'merc-meson-tower',x:-30,z:180,pilot:true,difficulties:['Hard']}];
+ for(const [difficulty,expected] of [['Easy',[]],['Medium',['medium-guard']],['Hard',['medium-guard','hard-tower']]] as const){
+  const s=new Simulation(difficulty,mission),optional=s.units.filter(unit=>unit.id==='medium-guard'||unit.id==='hard-tower').map(unit=>unit.id);
+  assert.deepEqual(optional,expected);assert.deepEqual(s.mission.units.filter(unit=>unit.difficulties).map(unit=>unit.id),expected);
+  assert.ok(s.units.some(unit=>unit.id===mission.assignedUnitId));
+ }
+ assert.equal(mission.units.filter(unit=>unit.difficulties).length,2,'the source mission stays reusable at every difficulty');
 });

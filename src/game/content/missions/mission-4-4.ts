@@ -56,11 +56,9 @@ export const MISSION_4_4:MissionDefinition={
   {id:'enemy-tactical',kind:'union-tactical',...MAP_4_4_POINTS.tacticalWest,yaw:faceStart(MAP_4_4_POINTS.tacticalWest),pilot:true,iff:'2622'},
   {id:'enemy-asv',kind:'union-asv',...MAP_4_4_POINTS.asv,yaw:faceStart(MAP_4_4_POINTS.asv),pilot:true,iff:'2622'},
   {id:'enemy-aip',kind:'union-aip',...MAP_4_4_POINTS.aip,yaw:faceStart(MAP_4_4_POINTS.aip),pilot:true,iff:'2622'},
-  // Rocket towers (scorp-rocket-tower recoloured as Union, provisional kind). Left is the western label, right is the far label.
-  {id:'rocket-tower-1',kind:'scorp-rocket-tower',...MAP_4_4_POINTS.rocketLeft,yaw:faceStart(MAP_4_4_POINTS.rocketLeft),pilot:true,iff:'2622',
-   overrides:{name:'Union Rocket Tower',jp:'ユニオン ロケットタワー',faction:'union',color:'#8fbcd0',missileHomingScale:{UNKPA:0}}},
-  {id:'rocket-tower-2',kind:'scorp-rocket-tower',...MAP_4_4_POINTS.rocketRight,yaw:faceStart(MAP_4_4_POINTS.rocketRight),pilot:true,iff:'2622',
-   overrides:{name:'Union Rocket Tower',jp:'ユニオン ロケットタワー',faction:'union',color:'#8fbcd0',missileHomingScale:{UNKPA:0}}},
+  // Left is the western label, right is the far label.
+  {id:'rocket-tower-1',kind:'union-rocket-tower',...MAP_4_4_POINTS.rocketLeft,yaw:faceStart(MAP_4_4_POINTS.rocketLeft),pilot:true,iff:'2622',overrides:{missileHomingScale:{TCROCK:0}}},
+  {id:'rocket-tower-2',kind:'union-rocket-tower',...MAP_4_4_POINTS.rocketRight,yaw:faceStart(MAP_4_4_POINTS.rocketRight),pilot:true,iff:'2622',overrides:{missileHomingScale:{TCROCK:0}}},
   {id:'enemy-tactical-2',kind:'union-tactical',...MAP_4_4_POINTS.tacticalSouth1,yaw:faceStart(MAP_4_4_POINTS.tacticalSouth1),pilot:true,iff:'2622'},
   {id:'enemy-tactical-3',kind:'union-tactical',...MAP_4_4_POINTS.tacticalSouth2,yaw:faceStart(MAP_4_4_POINTS.tacticalSouth2),pilot:true,iff:'2622'},
   {id:'enemy-tactical-4',kind:'union-tactical',...MAP_4_4_POINTS.tacticalSouth3,yaw:faceStart(MAP_4_4_POINTS.tacticalSouth3),pilot:true,iff:'2622'},

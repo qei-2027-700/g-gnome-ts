@@ -18,7 +18,6 @@ export const MISSION_3_2:MissionDefinition={
  playerFaction:'union',initialIff:'4044',factionCodes:{union:'4044',scorp:'3317'},
  // Opening stays silent. The same combat file as 1-5 starts once Sheridan's encounter line finishes.
  bgm:{start:{trackId:'bgm-crossing-the-war-zone',delay:0},afterRadio:{radioId:'sheridan-encounter',trackId:'bgm-mission-1-1-sentry-combat'}},
- vehicleOverrides:{'union-aip':{weapons:['ARC-M','3cREAP'],initialAmmo:{'3cREAP':220}}},
  player:MAP_3_2_POINTS.start,initialYaw:-Math.PI/2,assignedUnitId:'player-aip',startMountedUnitId:'player-aip',initialView:'first-person',
  units:[
   {id:'player-aip',kind:'union-aip',...MAP_3_2_POINTS.start,yaw:-Math.PI/2,pilot:false},

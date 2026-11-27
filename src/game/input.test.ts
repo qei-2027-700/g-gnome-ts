@@ -34,6 +34,12 @@ test('old key settings migrate Q and pitch actions while preserving valid custom
  const old=defaults();delete old.bindings.targetCursor;delete old.bindings.lookUp;delete old.bindings.lookDown;old.bindings.forward='KeyH';
  const settings=validateSettings(old);assert.equal(settings.bindings.forward,'KeyH');assert.equal(settings.bindings.targetCursor,'KeyQ');assert.equal(settings.bindings.lookUp,'PageUp');assert.equal(settings.bindings.lookDown,'PageDown');
 });
+test('player vehicle GASHR setting defaults to immunity and accepts only booleans',()=>{
+ assert.equal(defaults().playerGashrVulnerable,false);
+ assert.equal(validateSettings({playerGashrVulnerable:true}).playerGashrVulnerable,true);
+ assert.equal(validateSettings({playerGashrVulnerable:'true'}).playerGashrVulnerable,false);
+ assert.equal(validateSettings({}).playerGashrVulnerable,false);
+});
 
 test('legacy Space stop migrates to Enter while Space centers without stopping or speaking',()=>{
  const old=defaults();delete old.bindings.center;old.bindings.stop='Space';old.bindings.forward='KeyH';
@@ -90,7 +96,7 @@ test('held custom keys and mouse repeat at weapon intervals while releases and p
   for(let i=0;i<300;i++){const before=count();s.tick(1/60,readInput(settings,new Set([key])));if(count()>before)times.push(s.time);}const interval=weapon==='DASY'?s.weapons.guns.DASY.interval:weapon==='SAG5T'?s.weapons.missiles.SAG5T.interval:Math.max(.5,s.weapons.lasers.RAID.interval);assert.ok(times.length>=2,weapon);for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=interval-1e-8&&times[i]-times[i-1]<interval+1/60+1e-8,weapon);
   for(let i=0;i<120;i++)s.tick(1/60,readInput(settings,new Set()));const before=count();s.tick(1/60,readInput(settings,new Set([key])));assert.equal(count(),before+weaponMountCount(s.mounted!.kind,weapon));s.tick(1/60,readInput(settings,new Set()));s.tick(1/60,readInput(settings,new Set([key])));assert.equal(count(),before+weaponMountCount(s.mounted!.kind,weapon),'repress cannot bypass weapon cooldown');
  }
- const mouse=new Simulation('Easy',MISSION_2_4);for(let i=0;i<120;i++)mouse.tick(1/60,readInput(settings,new Set(),true));assert.ok(mouse.mounted!.ammunition.DASY!<=284);assert.ok(mouse.mounted!.ammunition.DASY!>=282);
+ const mouse=new Simulation('Easy',MISSION_2_4);for(let i=0;i<120;i++)mouse.tick(1/60,readInput(settings,new Set(),true));const mouseShots=mouse.events.filter(e=>e.type==='shot'&&e.weapon==='DASY').length;assert.ok(mouseShots>0);assert.equal(mouse.mounted!.ammunition.DASY,300-mouseShots/weaponMountCount(mouse.mounted!.kind,'DASY'));
 });
 test('holding a firearm while boarding does not trigger another shot from the new chassis',async()=>{
  const {MISSION_2_4}=await import('./content/missions/mission-2-4.ts');const s=new Simulation('Easy',MISSION_2_4),u=s.mounted!,keys=new Set(['Digit1']),settings=defaults();s.eject('ground');s.units=[u];s.human={x:0,z:-10};
@@ -107,8 +113,8 @@ test('Darken TD HOMP11 fires rapidly with held 1 key or mouse before READY',()=>
  const s=new Simulation(),unit=makeUnit('darken-td','darken-tactical',0,0,false),settings=defaults();s.units=[unit];s.human={x:0,z:0};assert.ok(s.board());unit.laserCharge=0;
  const count=()=>s.events.filter(e=>e.type==='shot'&&e.weapon==='HOMP11').length;
  const times:number[]=[];for(let i=0;i<75;i++){const before=count();s.tick(1/60,readInput(settings,new Set(['Digit1'])));if(count()>before)times.push(s.time);}
- assert.ok(times.length>=4&&times.length<=6);assert.equal(count(),times.length*2);
- for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.25-1e-8&&times[i]-times[i-1]<.3);
+ assert.ok(times.length>=3&&times.length<=4);assert.equal(count(),times.length*2);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.4-1e-8&&times[i]-times[i-1]<.4+1/60+1e-8);
  const before=count();for(let i=0;i<30;i++)s.tick(1/60,readInput(settings,new Set()));assert.equal(count(),before);
  s.tick(1/60,readInput(settings,new Set(),true));assert.equal(count(),before+2);
 });
@@ -120,7 +126,7 @@ test('Union Assault P2MEC repeats while held at the weapon interval',()=>{
  for(let i=0;i<200;i++){const before=count();s.tick(1/60,readInput(settings,new Set(['Digit1'])));if(count()>before)times.push(s.time);}
  assert.ok(times.length>=3);
  assert.equal(count(),times.length*2);
- for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.8-1e-8&&times[i]-times[i-1]<.8+1/60+1e-8);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.6-1e-8&&times[i]-times[i-1]<.6+1/60+1e-8);
  const before=count();
  for(let i=0;i<40;i++)s.tick(1/60,readInput(settings,new Set()));
  assert.equal(count(),before);

@@ -1,4 +1,4 @@
-import {LASERS,MACHINE_GUN_INTERVAL,MISSILE_INTERVAL,weaponMountCount} from '../content/weapons.ts';
+import {LASERS,MACHINE_GUNS,MACHINE_GUN_INTERVAL,SLOW_MACHINE_GUN_INTERVAL,MISSILE_INTERVAL,weaponMountCount} from '../content/weapons.ts';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Simulation,makeUnit,distance,angle,AI_TARGET_SETTLE,type Input} from './simulation.ts';
@@ -6,6 +6,7 @@ import {KEYBOARD_AIM_RAMP} from './movement.ts';
 import {MISSION} from '../content/mission-1-1.ts';
 import {DEFAULT_MISSION} from '../content/missions/index.ts';
 import {VEHICLES} from '../content/vehicles.ts';
+import {SCORP_ROCKET_TOWER_PORTS} from '../content/vehicle-shapes.ts';
 import {validateSettings,defaults} from '../settings.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 const step=(s:Simulation,seconds:number,input:Partial<Input>={})=>{for(let i=0;i<seconds*60;i++)s.tick(1/60,{...idle,...input});};
@@ -18,11 +19,13 @@ test('different weapon slots fire together and only the used slot waits out its 
  const blocked=s.events.length;s.fire(1);s.fire(2);assert.equal(s.events.length,blocked);u.slotCooldown[0]=0;s.fire(1);assert.equal(u.ammo,398);s.fire(2);assert.equal(u.energy,1598);
  const held=mounted();held.units=held.units.slice(0,1);const hawk=held.mounted!;held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,399);assert.ok(hawk.energy<1600&&hawk.energy>1597);
  const beforeRepeat=hawk.energy;held.tick(1/60,idle);held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,399);assert.ok(hawk.energy>=beforeRepeat);
- step(held,.2);const energy=hawk.energy;held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,398);assert.ok(hawk.energy>=energy);
+ step(held,.4);const energy=hawk.energy;held.tick(1/60,{...idle,fire1:true,fire2:true});assert.equal(hawk.ammo,398);assert.ok(hawk.energy>=energy);
  const mission=structuredClone(new Simulation().mission);mission.units=[{id:'scorp',kind:'scorp-asv',x:0,z:0,pilot:false}];mission.assignedUnitId='scorp';mission.startMountedUnitId='scorp';mission.completionEnabled=false;
- const asv=new Simulation('Easy',mission),vehicle=asv.mounted!;asv.tick(1/60,{...idle,fire1:true,fire2:true,fire3:true,fire4:true});assert.deepEqual(vehicle.slotAmmo,[799,799,19,9]);assert.deepEqual(asv.missiles.map(p=>p.weapon),['SREM','UNKPA']);
+ const asv=new Simulation('Easy',mission),vehicle=asv.mounted!;asv.tick(1/60,{...idle,fire1:true,fire2:true,fire3:true,fire4:true});assert.deepEqual(vehicle.slotAmmo,[799,799,19,9]);assert.deepEqual(asv.missiles.map(p=>p.weapon),['zWASP','zWASP','SREM','UNKPA']);
 });
 test('machine guns and missiles use shared intervals across chassis and missions, with per-mission overrides',async()=>{
+ assert.equal(MACHINE_GUN_INTERVAL,.36);assert.equal(SLOW_MACHINE_GUN_INTERVAL,.5);assert.ok(Object.entries(MACHINE_GUNS).every(([name,weapon])=>weapon.interval===(name==='3cREAP'?SLOW_MACHINE_GUN_INTERVAL:MACHINE_GUN_INTERVAL)));
+ const held=mounted(),sentry=held.mounted!,before=sentry.ammo;for(let i=0;i<60;i++)held.tick(1/60,{...idle,fire1:true});assert.equal(before-sentry.ammo,3,'a held Union Sentry FLECH fires three times in the first second');
  const {MISSION_2_4}=await import('../content/missions/mission-2-4.ts');
  for(const [mission,kind,weapon] of [[DEFAULT_MISSION,'union-sentry','FLECH'],[MISSION_2_4,'merc-tactical','DASY'],[MISSION_2_4,'merc-tactical','SAG5T']] as const){
   const s=new Simulation('Easy',mission),u=makeUnit('shooter',kind,0,0,false,{weapons:[weapon]});if(s.mounted)s.eject('ground');s.units=[u];s.human={x:0,z:0};assert.ok(s.board());s.fire(1);assert.equal(u.cooldown,weapon==='SAG5T'?MISSILE_INTERVAL:MACHINE_GUN_INTERVAL,`${mission.id}/${kind}/${weapon}`);
@@ -173,7 +176,7 @@ test('Scorp slots consume independently through custom fire bindings, survive re
  shoot('KeyK');assert.deepEqual(u.slotAmmo,[799,799,20,10]);
  u.slotAmmo[0]=0;const before=s.events.filter(e=>e.type==='shot').length;shoot('KeyJ');assert.equal(s.events.filter(e=>e.type==='shot').length,before);
  shoot('KeyK');assert.equal(u.slotAmmo[1],798);assert.equal(u.ammunition.zWASP,798);
- shoot('KeyL');shoot('KeyU');assert.deepEqual(u.slotAmmo,[0,798,19,9]);assert.deepEqual(s.missiles.map(m=>m.weapon),['SREM','UNKPA']);
+ shoot('KeyL');shoot('KeyU');assert.deepEqual(u.slotAmmo,[0,798,19,9]);assert.deepEqual(s.missiles.map(m=>m.weapon),['zWASP','zWASP','zWASP','SREM','UNKPA']);
  s.eject();s.flight=null;s.human={x:u.x,z:u.z};step(s,3);s.human={x:u.x,z:u.z};if(!s.mounted)assert.ok(s.board());assert.equal(s.mounted,u);assert.deepEqual(u.slotAmmo,[0,798,19,9]);
  const retry=new Simulation('Easy',mission).mounted!;assert.deepEqual(retry.slotAmmo,[800,800,20,10]);assert.equal(retry.ammunition.zWASP,1600);
  retry.ammunition.zWASP=5;assert.deepEqual(retry.slotAmmo.slice(0,2),[3,2]);retry.slotAmmo[0]!--;assert.equal(retry.ammunition.zWASP,4);
@@ -366,6 +369,8 @@ test('a stopped vehicle is hit by both Scorp rocket tower missiles, while a movi
   const s=new Simulation('Easy',mission),own=s.mounted!;if(moving){s.throttle=1;s.speed=own.speed=16;}
   const tower=makeUnit(`tower-${slot}-${place[0]}`,'scorp-rocket-tower',place[0],place[1],true);tower.iff='enemy';tower.alert=true;tower.attackCycle=slot;tower.yaw=tower.aim=Math.atan2(own.x-tower.x,own.z-tower.z);s.units.push(tower);
   s.tick(1/60,idle);tower.cooldown=999;const shots=s.missiles.filter(m=>m.owner===tower.id);assert.equal(shots.length,2);assert.ok(shots.every(m=>m.weapon===(slot===1?'SREM':'UNKPA')));
+  const launches=s.events.filter(e=>e.type==='shot'&&e.unit===tower);assert.equal(launches.length,2);
+  for(const [index,event] of launches.entries()){const port=SCORP_ROCKET_TOWER_PORTS[index]!,from=event.from!;assert.ok(Math.abs(from.x-(tower.x+Math.cos(tower.aim)*port.x+Math.sin(tower.aim)*port.z))<1e-8);assert.ok(Math.abs(from.y!-port.y)<1e-8);assert.ok(Math.abs(from.z-(tower.z-Math.sin(tower.aim)*port.x+Math.cos(tower.aim)*port.z))<1e-8);}
   if(moving)assert.ok(shots.every(m=>Math.hypot(m.aiGuidance!.offset.x,m.aiGuidance!.offset.y,m.aiGuidance!.offset.z)>0));
   else assert.ok(shots.every(m=>m.aiGuidance!.offset.x===0&&m.aiGuidance!.offset.y===0&&m.aiGuidance!.offset.z===0));
   for(let i=0;i<400&&s.missiles.some(m=>m.owner===tower.id);i++){if(moving){s.throttle=1;s.speed=own.speed=16;}s.tick(1/60,idle);}
@@ -390,6 +395,21 @@ test('mounted Merc AIP accelerates and brakes with more inertia without lowering
   const s=new Simulation('Easy',mission);for(let i=0;i<60;i++)s.tick(1/60,{...idle,boost:true});const afterOneSecond=s.speed;for(let i=0;i<1800;i++)s.tick(1/60,{...idle,boost:true});const maximum=s.mounted!.spec.speed/3.6;assert.ok(Math.abs(s.speed-maximum)<1e-7);for(let i=0;i<60;i++)s.tick(1/60,{...idle,stop:true});return {afterOneSecond,remainingFraction:s.speed/maximum};
  };
  const merc=run('merc-aip'),union=run('union-aip');assert.ok(merc.afterOneSecond<union.afterOneSecond*.8);assert.ok(merc.remainingFraction>union.remainingFraction*1.7);
+});
+
+test('each faction AIP uses its own listed top speed in mounted movement',()=>{
+ const speeds=[['scorp-aip',90],['darken-aip',95],['union-aip',100],['merc-aip',103.5]] as const;
+ for(const [kind,expected] of speeds){
+  const unit=makeUnit(`speed-${kind}`,kind,0,0,false);
+  assert.equal(unit.spec.speed,expected,kind);
+  const mission=structuredClone(DEFAULT_MISSION);mission.units=[{id:unit.id,kind,x:0,z:0,pilot:false}];mission.assignedUnitId=unit.id;mission.startMountedUnitId=unit.id;mission.companions=[];mission.personnel=[];mission.garrison=[];mission.assaults=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];mission.terrain={...mission.terrain,halfWidth:2000,minZ:-2000,maxZ:3000,cliffs:[],river:undefined};
+  const sim=new Simulation('Easy',mission);step(sim,20,{boost:true});
+  assert.ok(Math.abs(sim.speed*3.6-expected)<.01,`${kind} reached ${sim.speed*3.6} km/h`);
+ }
+ const patrolMission=structuredClone(DEFAULT_MISSION);patrolMission.units=[{id:'speed-patrol',kind:'scorp-aip',x:0,z:0,pilot:true,iff:'hostile',overrides:{weapons:[],ai:{detection:2000,strafe:0,keepMoving:true,stopDistance:0,missileVolley:1}}}];patrolMission.player={x:0,z:1000};patrolMission.assignedUnitId='speed-patrol';patrolMission.startMountedUnitId=undefined;patrolMission.companions=[];patrolMission.personnel=[];patrolMission.garrison=[];patrolMission.assaults=[];patrolMission.objectives=[];patrolMission.completionEnabled=false;patrolMission.base=undefined;patrolMission.rocks=[];patrolMission.terrain={...patrolMission.terrain,halfWidth:2000,minZ:-2000,maxZ:3000,cliffs:[],river:undefined};
+ const patrol=new Simulation('Easy',patrolMission);step(patrol,8);
+ assert.ok(patrol.units[0].speed*3.6<=90.01,'AI Scorp AIP respects its speed limit');
+ assert.ok(patrol.units[0].speed*3.6>85,'AI Scorp AIP accelerates toward the player');
 });
 
 

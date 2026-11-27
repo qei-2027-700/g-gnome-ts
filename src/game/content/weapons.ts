@@ -1,24 +1,25 @@
 export const LASER_RECHARGE_SECONDS=.55; // Provisional until measured against the original.
 // Charge/range curves, movement penalty and firing intervals still need measurement.
-// Provisional visible speed in m/s. RAID and FIL-30 share it. TAR12 and HOMP11 share it.
-export const LASER_FLIGHT_SPEED=72;
+// Provisional visible speed tiers in m/s. Weapon profiles choose a tier for every chassis using them.
+export const LASER_SPEED_TIERS={slow:72,medium:90,fast:180} as const;
+export const LASER_FLIGHT_SPEED=LASER_SPEED_TIERS.slow;
 export const LASERS = {
   // Manual pp.41/57. Charge timing and the visible TAR12 bolt speed are provisional.
   TAR12:{range:500.5,minRange:50.05,recharge:1,movingRechargeFactor:.5,interval:1,energy:0,damage:10,speed:LASER_FLIGHT_SPEED},
   // Darken Tactical Defense HAWC card and W1 weapon table. Recharge and interval are provisional; visible bolt speed follows the other lasers.
   HOMP11:{range:635,minRange:62.5,recharge:1,movingRechargeFactor:.5,interval:.25,energy:3,damage:10,speed:LASER_FLIGHT_SPEED},
-  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:90},
+  GAUS20:{range:300,minRange:30,recharge:1.2,movingRechargeFactor:.5,interval:1.2,energy:6,damage:14,speed:LASER_SPEED_TIERS.medium},
   // Manual p.46: RUPP range/energy/armor damage. Charge timing and visible bolt speed are provisional.
   RUPP:{range:325,minRange:32.5,recharge:1,movingRechargeFactor:.5,interval:1,energy:2,damage:12,speed:LASER_FLIGHT_SPEED},
   // Manual p.57 lists 800 m range and 1000 m/s; current requested tuning widens range/hit width and slows flight.
-  GAUS30:{range:1000,minRange:90,recharge:3.6,movingRechargeFactor:1,interval:2.8,energy:5,damage:28,speed:180,hitPadding:1.5},
+  GAUS30:{range:1000,recharge:3.6,movingRechargeFactor:1,interval:2.8,energy:5,damage:28,speed:LASER_SPEED_TIERS.fast,hitPadding:1.5,chargeEffect:'damage'},
   P2MEC:{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:11,speed:LASER_FLIGHT_SPEED},
   // 3-2 Union AIP cockpit confirms the name; P2MEC values are provisional stand-ins.
   'ARC-M':{range:315,minRange:31.5,recharge:.8,movingRechargeFactor:.5,interval:.8,energy:2,damage:11,speed:LASER_FLIGHT_SPEED},
   'FIL-30': {range:220,minRange:22,recharge:LASER_RECHARGE_SECONDS,movingRechargeFactor:.5,interval:1,energy:2,damage:9,speed:LASER_FLIGHT_SPEED},
   CETI: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
   // Scorp Assault cockpit reference confirms the LRIP name and green beam; performance remains provisional.
-  LRIP: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.6,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
+  LRIP: {range:800,minRange:80,recharge:.7,movingRechargeFactor:.5,interval:.6,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
   RAID: {range:180,minRange:18,recharge:.7,movingRechargeFactor:.5,interval:.7,energy:2,damage:10,speed:LASER_FLIGHT_SPEED},
 } as const;
 export type LaserWeapon = keyof typeof LASERS;
@@ -35,7 +36,8 @@ export const INFANTRY_LASER_SITE={cooldown:1,displayName:'LaserSite'} as const;
 // VISOM flight speed in m/s; lifetime below preserves the 1000 m range.
 export const VISOM_SPEED=96;
 // Provisional shared firing intervals; individual mission weapon overrides can replace them.
-export const MACHINE_GUN_INTERVAL=.11;
+export const MACHINE_GUN_INTERVAL=.36;
+export const SLOW_MACHINE_GUN_INTERVAL=.5;
 export const MISSILE_INTERVAL=2;
 // Manual p.46: PUG range/velocity/armor damage; radius and homing remain provisional.
 export const MISSILES={
@@ -49,11 +51,11 @@ export const MISSILES={
   VISOM:{interval:MISSILE_INTERVAL,speed:VISOM_SPEED,damage:4,radius:.45,lifetime:1000/VISOM_SPEED}
 };
 
-export const MACHINE_GUNS={FLECH:{range:150,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5},DASY:{range:180,interval:MACHINE_GUN_INTERVAL,damage:4,infantryDamage:6},TCREAP:{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},'3cREAP':{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},zWASP:{range:180,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5}};
+export const MACHINE_GUNS={FLECH:{range:150,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5},DASY:{range:180,interval:MACHINE_GUN_INTERVAL,damage:4,infantryDamage:6},TCREAP:{range:160,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60},'3cREAP':{range:160,interval:SLOW_MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:40},zWASP:{range:180,interval:MACHINE_GUN_INTERVAL,damage:3,infantryDamage:4.5,projectileSpeed:60}};
 export type MachineGun=keyof typeof MACHINE_GUNS;
 export type MissileWeapon=keyof typeof MISSILES;
 export type VehicleWeapon=LaserWeapon|MachineGun|MissileWeapon;
-export type LaserSpec={hitPadding?:number;range:number;minRange:number;recharge:number;movingRechargeFactor:number;interval:number;energy:number;damage:number;speed:number};
+export type LaserSpec={hitPadding?:number;chargeEffect?:'damage';range:number;minRange?:number;recharge:number;movingRechargeFactor:number;interval:number;energy:number;damage:number;speed:number};
 export type GunSpec={projectileSpeed?:number;infantryDamage?:number;range:number;interval:number;damage:number};
 export type MissileSpec={interval:number;infantryBlastDamage?:number;infantryBlastRadius?:number;speed:number;damage:number;radius:number;lifetime:number};
 export type WeaponOverrides={lasers?:Partial<Record<LaserWeapon,Partial<LaserSpec>>>;guns?:Partial<Record<MachineGun,Partial<GunSpec>>>;missiles?:Partial<Record<MissileWeapon,Partial<MissileSpec>>>};

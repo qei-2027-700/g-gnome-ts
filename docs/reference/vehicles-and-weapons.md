@@ -58,6 +58,10 @@ V1の掲載値。速度はkm/h、シールドとエネルギーは資料の値�
 
 この表はV1に掲載された20機種の整理であり、原作に存在する全機体の確定一覧ではない。特にUnion Heavy Assaultの90km/hは掲載値を保持し、重量級という印象だけで修正しない。原作での優先照合対象にする。機種名・分類の抜けもマニュアルとLABで確認する。
 
+### AIPの速度照合（2026-11-26）
+
+Scorp AIPの最高速度は[原作の機体紹介画像](../../assets/reference/scope-aip/scope-aip.png)で90km/hと確認した。従来はMerc AIPの103.5km/hを継承していたため、Scorp固有の90km/hへ修正した。Unionは[機体紹介画像](<../../assets/reference/union-aip/sc- 2026-11-26 0.04.43.png>)の100km/h、Darkenは上表の95km/h、Mercは103.5km/hを機種ごとに設定する。加速・減速の応答はこの変更では調整しない。
+
 ### Scorp Heavy Assaultの速度照合（2026-11-19）
 
 原作英語マニュアル本文p.32の Scorp Heavy Assault HAWC（Scorpion）は、最高速度30km/h、シールド72、エネルギー1900、全高8.6m、質量36.4t。上の表および実装の `scorp-assault` はこの4項目に合わせた。装甲の掲載はなく、実装の160は仮値。標準武装はzWASP、LRIP、HSSO、SREM、VISOMで、ゲームの4枠には機内画像のzWASP、LRIP、VISOM、SREMを使っている。

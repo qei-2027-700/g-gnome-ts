@@ -10,6 +10,9 @@ export const MERC_TACTICAL_RAID_MUZZLE={x:0,y:.15,z:2.1} as const;
 // Paired RAID barrels below the Scorp Tactical cockpit; tips relative to the upper assembly.
 export const SCORP_TACTICAL_RAID_MUZZLES={x:.55,y:-.05,z:2.3} as const;
 
+// World-height positions of the eight ports on the Scorp Rocket Tower's turning roof.
+export const SCORP_ROCKET_TOWER_PORTS=[10.36,11.05].flatMap(y=>[-.36,.49,1.34,2.19].map(x=>({x,y,z:2.23})));
+
 // Front and rear pairs alternate diagonally. Shared points drive the model and hit envelopes.
 export function mercAssaultLegPose(side:number,front:number,phase=0,run=0){
  const s=VEHICLE_SHAPES['merc-assault'].spider,strength=Math.max(0,Math.min(1,run)),cycle=phase+(side*front>0?0:Math.PI),stride=Math.cos(cycle)*s.step*strength,lift=Math.max(0,Math.sin(cycle))*s.lift*strength,lateral=Math.sin(cycle)*strength;

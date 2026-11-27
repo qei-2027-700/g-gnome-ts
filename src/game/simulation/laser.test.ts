@@ -1,9 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {Simulation,makeUnit,type Input} from './simulation.ts';
-import {LASER_FLIGHT_SPEED,LASERS,weaponDisplayName,weaponMountCount} from '../content/weapons.ts';
-import {laserRange} from './weapons.ts';
+import {Simulation,makeUnit,HARD_AI_RAPID_MIN_CHARGE,HARD_AI_RAPID_RANGE_FRACTION,type Input} from './simulation.ts';
+import {LASER_FLIGHT_SPEED,LASER_SPEED_TIERS,LASERS,MACHINE_GUNS,weaponDisplayName,weaponMountCount} from '../content/weapons.ts';
+import {laserRange,laserDamage} from './weapons.ts';
 import {MISSION} from '../content/mission-1-1.ts';
+import {MISSION_4_2} from '../content/missions/mission-4-2.ts';
 import {VEHICLE_SHAPES,type VehicleKind} from '../content/vehicles.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 function mounted(kind:VehicleKind='union-sentry'){const s=new Simulation();s.units=[makeUnit('own',kind,0,18,false)];s.human={...MISSION.vehicle};s.board();s.iff='6707';return s;}
@@ -21,28 +22,135 @@ test('partial charge changes beam endpoint and actual hit reach, and a zero-char
  for(const charge of [.1,1]){const s=mounted(),target=makeUnit('target','merc-sentry',0,118);s.units.push(target);s.mounted!.laserCharge=charge;s.fire(2);assert.equal(target.shield,22);step(s,100);assert.equal(target.shield,charge===1?4:22);}
  const s=mounted();s.fire(2);s.fire(2);assert.equal(s.mounted!.energy,1598);step(s,6);assert.ok(s.mounted!.laserCharge<1);const energy=s.mounted!.energy;s.fire(2);assert.equal(s.mounted!.energy,energy);step(s,Math.ceil(LASERS['FIL-30'].interval*60));const readyEnergy=s.mounted!.energy;s.fire(2);assert.equal(s.mounted!.energy,readyEnergy-2);
 });
+test('Scorp Assault LRIP reach depends on charge and not target selection',()=>{
+ assert.equal(LASERS.LRIP.range,800);assert.equal(LASERS.LRIP.minRange,80);assert.notEqual(LASERS.LRIP.range,LASERS.CETI.range);
+ for(const selected of [false,true])for(const charge of [.25,1]){
+  const s=mounted('scorp-assault'),unit=s.mounted!,target=makeUnit('distant','merc-sentry',0,unit.z+400,false);s.units=[unit,target];s.mission.completionEnabled=false;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.mission.terrain.rivers=[];
+  s.pitch=0;if(selected)s.selected=target.id;unit.laserCharge=charge;
+  const range=80+720*charge,shield=target.shield;assert.equal(s.weaponRange(2),range);
+  s.fire(2);const bolts=s.missiles.filter(p=>p.weapon==='LRIP');assert.equal(bolts.length,2);assert.ok(bolts.every(p=>Math.abs(p.life-range/LASERS.LRIP.speed)<1e-8));assert.equal(target.shield,shield);
+  step(s,320);assert.equal(target.shield<shield,charge===1,`selected=${selected}, charge=${charge}`);
+ }
+});
+test('charge changes reach for every laser except GAUS30, whose charge changes damage',()=>{
+ for(const weapon of Object.keys(LASERS) as (keyof typeof LASERS)[]){
+  const profile=LASERS[weapon];
+  if(weapon==='GAUS30'){
+   for(const charge of [0,.5,1]){assert.equal(laserRange(weapon,charge),profile.range);assert.equal(laserDamage(weapon,charge),profile.damage*charge);}
+   assert.equal(laserRange(weapon,.5,{...profile,range:480}),480);
+  }else{
+   const minRange='minRange' in profile?profile.minRange:profile.range;
+   assert.equal(laserRange(weapon,0),minRange);assert.equal(laserRange(weapon,1),profile.range);
+   assert.equal(laserRange(weapon,.5),(minRange+profile.range)/2);assert.equal(laserDamage(weapon,.5),profile.damage);
+  }
+ }
+});
+test('both Meson guard towers fire GAUS30 to fixed range with charge-scaled damage',()=>{
+ for(const kind of ['merc-meson-tower','scorp-meson-tower'] as const)for(const charge of [0,.5,1]){
+  const s=mounted(kind),tower=s.mounted!,target=makeUnit('target','merc-aip',0,100,false);s.units=[tower,target];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];tower.laserCharge=charge;
+  assert.equal(s.weaponRange(1),s.weapons.lasers.GAUS30.range);
+  s.fire(1);const beam=s.missiles.find(p=>p.weapon==='GAUS30')!;
+  assert.ok(beam);assert.equal(beam.damage,s.weapons.lasers.GAUS30.damage*charge);assert.equal(beam.life,s.weapons.lasers.GAUS30.range/s.weapons.lasers.GAUS30.speed);
+  const shield=target.shield;Object.assign(beam,{x:0,y:target.hoverHeight+target.spec.height*.6-.4,z:80,vx:0,vy:0,vz:450});s.tick(.05,idle);
+  assert.equal(target.shield,shield-Math.min(shield,s.weapons.lasers.GAUS30.damage*charge));
+ }
+ const s=new Simulation(),tower=makeUnit('tower','scorp-meson-tower',0,100,true);s.units=[tower];s.human={x:0,z:0};tower.iff='enemy';tower.yaw=tower.aim=Math.PI;tower.alert=true;tower.laserCharge=.5;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
+ s.tick(.02,idle);assert.equal(s.missiles.some(p=>p.weapon==='GAUS30'),false);
+ let chargeAtShot=0;for(let i=0;i<120;i++){const before=tower.laserCharge;s.tick(.02,idle);if(s.events.some(e=>e.type==='shot'&&e.unit===tower&&e.weapon==='GAUS30')){chargeAtShot=before;break;}s.events=[];}
+ const beam=s.missiles.find(p=>p.weapon==='GAUS30')!;assert.ok(beam);assert.equal(chargeAtShot,1);assert.equal(beam.damage,s.weapons.lasers.GAUS30.damage);assert.ok(beam.life<=s.weapons.lasers.GAUS30.range/s.weapons.lasers.GAUS30.speed);
+});
 test('RAID on a captured Merc uses its own laser profile and charge display range',()=>{
  const s=mounted('merc-sentry');s.mounted!.laserCharge=.5;assert.equal(s.weaponRange(1),laserRange('RAID',.5));s.fire(1);assert.equal(s.events.at(-1)?.weapon,'RAID');assert.equal(s.mounted!.laserCharge,0);assert.equal(s.mounted!.energy,1098);assert.notEqual(LASERS.RAID.range,LASERS['FIL-30'].range);
 });
-test('Union AIP holds P2MEC until the beam can reach and closes from detection range',()=>{
+test('Union AIP holds ARC-M until the beam can reach and closes from detection range',()=>{
  const s=new Simulation();s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.mission.terrain.rivers=[];s.mission.minefields=[];
- const aip=makeUnit('aip','union-aip',0,450,true);aip.iff='9999';aip.yaw=Math.PI;aip.aim=Math.PI;s.units=[aip];s.human={x:0,z:0};
- let shots=0;
+ const aip=makeUnit('aip','union-aip',0,450,true);aip.iff='9999';aip.yaw=Math.PI;aip.aim=Math.PI;s.units=[aip];s.human={x:0,z:0};s.humanHealth=10000;
+ let shots=0,gunShots=0;
  for(let i=0;i<30*20;i++){
   s.tick(1/30,idle);
   for(const event of s.events)if(event.type==='shot'&&event.unit===aip){
    shots++;
    const gap=Math.hypot(s.human.x-aip.x,s.human.z-aip.z),beam=event.to?Math.hypot(event.to.x-aip.x,event.to.z-aip.z):0;
-   assert.ok(gap<LASERS.P2MEC.range+1);assert.ok(beam+4>=gap);
+   assert.ok(gap<LASERS['ARC-M'].range+1);assert.ok(beam+4>=gap);
+   if(event.weapon==='3cREAP'){gunShots++;assert.ok(gap<160+1);}
   }
   s.events.length=0;
  }
- assert.ok(Math.hypot(aip.x-s.human.x,aip.z-s.human.z)<LASERS.P2MEC.range);
+ assert.ok(Math.hypot(aip.x-s.human.x,aip.z-s.human.z)<LASERS['ARC-M'].range);
  assert.ok(shots>0);
+ assert.ok(gunShots>0);
 });
-test('moving AI shares the charge penalty and an undercharged RAID cannot hit beyond its shortened beam',()=>{
+test('Union AIP 3cREAP waits for its slower interval on repeated player shots',()=>{
+ const s=mounted('union-aip'),u=s.mounted!,before=u.slotAmmo[1]!;s.fire(2);assert.equal(u.slotAmmo[1],before-1);assert.equal(u.slotCooldown[1],MACHINE_GUNS['3cREAP'].interval);assert.equal(MACHINE_GUNS['3cREAP'].interval,.5);
+ step(s,21);s.fire(2);assert.equal(u.slotAmmo[1],before-1);
+ step(s,5);s.fire(2);assert.equal(u.slotAmmo[1],before-2);
+});
+test('3cREAP uses its slower projectile speed and deals damage only after contact',()=>{
+ const s=mounted('union-aip'),target=makeUnit('target','merc-sentry',0,118);s.units.push(target);s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
+ const shield=target.shield;s.fire(2);const bolt=s.missiles.find(p=>p.weapon==='3cREAP')!;
+ assert.ok(bolt);assert.equal(MACHINE_GUNS['3cREAP'].projectileSpeed,40);assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-40)<1e-8);assert.equal(bolt.life,MACHINE_GUNS['3cREAP'].range/40);assert.equal(target.shield,shield);
+ const start={x:bolt.x,z:bolt.z};step(s,50);assert.ok(s.missiles.includes(bolt));assert.ok(Math.abs(Math.hypot(bolt.x-start.x,bolt.z-start.z)-40)<2);assert.equal(target.shield,shield);
+ step(s,100);assert.ok(target.shield<shield);
+});
+test('Scorp Tactical zWASP reaches a target after visible flight',()=>{
+ const s=mounted('scorp-tactical'),target=makeUnit('target','merc-sentry',0,118,false);s.units.push(target);s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
+ const shield=target.shield;s.fire(2);const bolt=s.missiles.find(p=>p.weapon==='zWASP')!;
+ assert.ok(bolt);assert.equal(MACHINE_GUNS.zWASP.projectileSpeed,60);assert.ok(Math.abs(Math.hypot(bolt.vx,bolt.vy,bolt.vz)-60)<1e-8);assert.equal(bolt.life,MACHINE_GUNS.zWASP.range/60);assert.equal(target.shield,shield);
+ step(s,50);assert.ok(s.missiles.includes(bolt));assert.equal(target.shield,shield);
+ step(s,60);assert.ok(target.shield<shield);
+});
+test('Union AIP AI 3cREAP repeats no faster than its weapon interval',()=>{
+ const s=new Simulation();s.mission.rocks=[];s.mission.base=undefined;s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.mission.terrain.rivers=[];
+ const aip=makeUnit('aip-gun','union-aip',0,100,true,{weapons:['3cREAP'],speed:0});aip.iff='enemy';aip.yaw=aip.aim=Math.PI;aip.alert=true;s.units=[aip];s.human={x:0,z:0};s.humanHealth=10000;
+ const shots:number[]=[];for(let i=0;i<300;i++){s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===aip&&event.weapon==='3cREAP'))shots.push(s.time);s.events=[];}
+ assert.ok(shots.length>=3,`AI 3cREAP shots: ${shots.length}`);
+ assert.ok(s.missiles.some(p=>p.weapon==='3cREAP'&&Math.abs(Math.hypot(p.vx,p.vy,p.vz)-40)<1e-8));
+ for(let i=1;i<shots.length;i++)assert.ok(shots[i]-shots[i-1]>=MACHINE_GUNS['3cREAP'].interval-1e-8);
+});
+test('laser weapons use one of three shared flight-speed tiers',()=>{
+ assert.deepEqual(LASER_SPEED_TIERS,{slow:72,medium:90,fast:180});
+ assert.ok(Object.values(LASERS).every(weapon=>Object.values(LASER_SPEED_TIERS).includes(weapon.speed as 72|90|180)));
+ assert.equal(LASERS.GAUS20.speed,LASER_SPEED_TIERS.medium);assert.equal(LASERS.GAUS30.speed,LASER_SPEED_TIERS.fast);assert.equal(LASERS['ARC-M'].speed,LASER_SPEED_TIERS.slow);
+});
+test('AI waits for READY before firing every laser, including rapid-fire HOMP11',()=>{
+ for(const weapon of Object.keys(LASERS) as (keyof typeof LASERS)[]){
+  const kind=weapon==='HOMP11'?'darken-tactical':'union-sentry';
+  const s=new Simulation(),attacker=makeUnit(`ai-${weapon}`,kind,0,80,true,{weapons:[weapon],speed:0});attacker.iff='enemy';attacker.yaw=attacker.aim=Math.PI;attacker.alert=true;attacker.laserCharge=.5;s.units=[attacker];s.human={x:0,z:0};s.humanHealth=10000;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
+  let shot=false;
+  for(let i=0;i<360;i++){
+   const charge=attacker.laserCharge;s.tick(1/60,idle);
+   const fired=s.events.some(event=>event.type==='shot'&&event.unit===attacker&&event.weapon===weapon);
+   if(fired){assert.equal(charge,1,`${weapon} fired below READY`);const beam=s.missiles.find(p=>p.weapon===weapon);assert.ok(beam);assert.equal(beam.damage,LASERS[weapon].damage);shot=true;break;}
+   s.events=[];
+  }
+  assert.ok(shot,`${weapon} never fired after READY`);
+ }
+});
+test('Hard AI uses partial-charge laser follow-up only near a target',()=>{
+ assert.equal(HARD_AI_RAPID_MIN_CHARGE,.5);assert.equal(HARD_AI_RAPID_RANGE_FRACTION,.35);
+ for(const difficulty of ['Easy','Medium','Hard'] as const)for(const range of [80,150]){
+  const s=new Simulation(difficulty),attacker=makeUnit('rapid-p2mec','union-assault',0,range,true,{weapons:['P2MEC'],speed:0});attacker.iff='enemy';attacker.yaw=attacker.aim=Math.PI;attacker.alert=true;attacker.laserCharge=.5;s.units=[attacker];s.human={x:0,z:0};s.humanHealth=10000;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.facilities=[];
+  const shots:{time:number;charge:number;range:number}[]=[];
+  for(let i=0;i<180&&shots.length<2;i++){
+   const charge=attacker.laserCharge;s.tick(1/60,idle);
+   const event=s.events.find(e=>e.type==='shot'&&e.unit===attacker&&e.weapon==='P2MEC');
+   if(event){const beam=s.missiles.find(p=>p.id===event.projectileId)!;shots.push({time:s.time,charge,range:beam.life*LASERS.P2MEC.speed});}
+   s.events=[];
+  }
+  assert.equal(shots.length,2,`${difficulty} at ${range}m`);assert.equal(shots[0]!.charge,1);
+  if(difficulty==='Hard'&&range===80){assert.ok(shots[1]!.charge>=.5&&shots[1]!.charge<1);assert.ok(shots[1]!.range<LASERS.P2MEC.range);}
+  else assert.equal(shots[1]!.charge,1,`${difficulty} at ${range}m`);
+ }
+});
+test('Hard AI GAUS30 follow-up trades damage for cadence at close range',()=>{
+ const s=new Simulation('Hard'),tower=makeUnit('hard-tower','scorp-meson-tower',0,100,true,{speed:0});s.units=[tower];s.human={x:0,z:0};s.humanHealth=10000;tower.iff='enemy';tower.yaw=tower.aim=Math.PI;tower.alert=true;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
+ const shots:{charge:number;damage:number}[]=[];
+ for(let i=0;i<270&&shots.length<2;i++){const charge=tower.laserCharge;s.tick(1/60,idle);const event=s.events.find(e=>e.type==='shot'&&e.unit===tower&&e.weapon==='GAUS30');if(event){const beam=s.missiles.find(p=>p.id===event.projectileId)!;shots.push({charge,damage:beam.damage});}s.events=[];}
+ assert.equal(shots.length,2);assert.equal(shots[0]!.charge,1);assert.equal(shots[0]!.damage,LASERS.GAUS30.damage);assert.ok(shots[1]!.charge>=.5&&shots[1]!.charge<1);assert.equal(shots[1]!.damage,LASERS.GAUS30.damage*shots[1]!.charge);
+});
+test('moving AI shares the charge penalty and does not fire an undercharged RAID',()=>{
  const s=new Simulation();s.human={...MISSION.vehicle};s.board();s.iff='2620';const enemy=s.units[1];s.units=[s.mounted!,enemy];enemy.x=0;enemy.z=130;enemy.yaw=Math.PI;enemy.aim=Math.PI;enemy.alert=true;enemy.attackCycle=1;enemy.laserCharge=0;
- const shield=s.mounted!.shield;s.tick(.02,idle);const beam=s.events.find(e=>e.type==='shot'&&e.weapon==='RAID');assert.ok(beam);assert.equal(s.mounted!.shield,shield);assert.ok(enemy.laserCharge<=.02/LASERS.RAID.recharge*LASERS.RAID.movingRechargeFactor+1e-8);
+ const shield=s.mounted!.shield;s.tick(.02,idle);const beam=s.events.find(e=>e.type==='shot'&&e.weapon==='RAID');assert.equal(beam,undefined);assert.equal(s.mounted!.shield,shield);assert.ok(enemy.laserCharge<=.02/LASERS.RAID.recharge*LASERS.RAID.movingRechargeFactor+1e-8);
 });
 
 test('laser bolts take time, can miss a moving target, and manual firing observes the slower interval',()=>{
@@ -94,6 +202,25 @@ test('Union Assault fires twin P2MEC from slot 1 and keeps the other racks singl
  const rack=mounted('union-assault');rack.fire(4);
  const rock=rack.events.find(e=>e.type==='shot'&&e.weapon==='TCROCK');assert.ok(rock?.from);assert.ok(rock!.from!.y<chin);
 });
+test('Union Assault repeats P2MEC faster while its TCREAP uses the slower machine-gun interval',()=>{
+ const laser=mounted('union-assault'),unit=laser.mounted!,times:number[]=[];
+ for(let i=0;i<120;i++){const before=laser.events.length;laser.tick(1/60,{...idle,fire1:true});if(laser.events.length>before)times.push(laser.time);}
+ assert.equal(unit.spec.weaponIntervals?.P2MEC,.6);assert.equal(times.length,4);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.6-1e-8&&times[i]-times[i-1]<.65);
+ const gun=mounted('union-assault'),shooter=gun.mounted!,ammo=shooter.slotAmmo[1]!;gun.fire(2);assert.equal(shooter.slotAmmo[1],ammo-1);assert.equal(shooter.slotCooldown[1],.5);
+ step(gun,20);gun.fire(2);assert.equal(shooter.slotAmmo[1],ammo-1);
+ step(gun,6);gun.fire(2);assert.equal(shooter.slotAmmo[1],ammo-2);
+ assert.equal(MACHINE_GUNS.TCREAP.interval,.36);
+});
+test('Union Assault AI uses its chassis intervals for P2MEC and TCREAP',()=>{
+ for(const [weapon,interval] of [['P2MEC',.6],['TCREAP',.5]] as const){
+  const s=new Simulation(),attacker=makeUnit('assault','union-assault',0,80,true,{weapons:[weapon],speed:0});attacker.iff='enemy';attacker.yaw=attacker.aim=Math.PI;attacker.alert=true;s.units=[attacker];s.human={x:0,z:0};s.humanHealth=10000;s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];
+  const times:number[]=[];for(let i=0;i<180;i++){const charge=attacker.laserCharge;s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===attacker&&event.weapon===weapon)){if(weapon==='P2MEC')assert.equal(charge,1);times.push(s.time);}s.events=[];}
+  assert.ok(times.length>=3,`${weapon} shots: ${times.join(',')}`);
+  const minimum=weapon==='P2MEC'?Math.max(interval,LASERS.P2MEC.recharge):interval;
+  for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=minimum-1e-8&&times[i]-times[i-1]<minimum+.1);
+ }
+});
 test('Darken Sentry fires RUPP laser and CHUM missile pairs from opposite sides',()=>{
  assert.equal(weaponMountCount('darken-sentry','RUPP'),2);assert.equal(weaponMountCount('darken-sentry','CHUM'),2);
  const laser=mounted('darken-sentry'),unit=laser.mounted!;laser.fire(2);
@@ -114,8 +241,8 @@ test('Darken Tactical Defense fires paired HOMP11 lasers and DASY guns from its 
 test('Darken Tactical Defense repeats HOMP11 fire while held and stops on release',()=>{
  const s=mounted('darken-tactical'),unit=s.mounted!,fire=()=>s.events.filter(e=>e.type==='shot'&&e.weapon==='HOMP11').length;
  unit.laserCharge=0;s.throttle=.4;const charges:number[]=[],times:number[]=[];for(let i=0;i<75;i++){const before=fire(),charge=unit.laserCharge;s.tick(1/60,{...idle,fire1:true});if(fire()>before){charges.push(charge);times.push(s.time);}}
- assert.equal(LASERS.HOMP11.interval,.25);assert.equal(charges[0],0);assert.ok(charges.length>=4&&charges.length<=6);assert.ok(charges.slice(1).every(charge=>charge<.9));assert.equal(fire(),charges.length*2);
- for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.25-1e-8&&times[i]-times[i-1]<.3);
+ assert.equal(unit.spec.weaponIntervals?.HOMP11,.4);assert.equal(charges[0],0);assert.ok(charges.length>=3&&charges.length<=4);assert.ok(charges.slice(1).every(charge=>charge<.9));assert.equal(fire(),charges.length*2);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.4-1e-8&&times[i]-times[i-1]<.45);
  const count=fire();for(let i=0;i<90;i++)s.tick(1/60,idle);assert.equal(fire(),count);
  s.tick(1/60,{...idle,fire1:true});assert.equal(fire(),count+2);
 });
@@ -188,8 +315,29 @@ test('Scorp Assault LRIP repeats paired shots at its shorter interval while held
   const shots=s.events.filter(event=>event.type==='shot'&&event.weapon==='LRIP').length;
   if(shots>count){assert.equal(shots-count,2);times.push(s.time);count=shots;}
  }
- assert.equal(LASERS.LRIP.interval,.6);assert.equal(times.length,3);
- for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.6-1e-8&&times[i]-times[i-1]<.65);
+ assert.equal(u.spec.weaponIntervals?.LRIP,.5);assert.equal(times.length,4);
+ for(let i=1;i<times.length;i++)assert.ok(times[i]-times[i-1]>=.5-1e-8&&times[i]-times[i-1]<.55);
+});
+
+test('4-2 Scorp Assault AI repeats LRIP at the weapon interval inside laser range',()=>{
+ const mission=structuredClone(MISSION_4_2);mission.units=mission.units.filter(unit=>unit.id==='scorp-assault2'||unit.id==='union-aip-1');mission.assaults=[];mission.personnel=[];mission.companions=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];mission.terrain={...mission.terrain,river:undefined,peaks:[]};
+ const s=new Simulation('Easy',mission),assault=s.units.find(unit=>unit.id==='scorp-assault2')!,target=s.units.find(unit=>unit.id==='union-aip-1')!;
+ target.x=assault.x;target.z=assault.z+60;target.spec.speed=0;target.energy=0;target.slotAmmo.fill(0);target.spec.shield=100000;target.shield=100000;assault.spec.speed=0;assault.alert=true;
+ const shots:number[]=[];let otherShots=0;
+ for(let i=0;i<300;i++){const charge=assault.laserCharge;s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===assault&&event.weapon==='LRIP')){assert.equal(charge,1);shots.push(s.time);}otherShots+=s.events.filter(event=>event.type==='shot'&&event.unit===assault&&event.weapon!=='LRIP').length;s.events=[];}
+ assert.ok(shots.length>=4,`LRIP shots: ${shots.join(',')}; distance ${Math.hypot(target.x-assault.x,target.z-assault.z)}; charge ${assault.laserCharge}; status ${s.status}`);
+ for(let i=1;i<shots.length;i++)assert.ok(shots[i]-shots[i-1]>=assault.spec.weaponIntervals!.LRIP!-1e-8&&shots[i]-shots[i-1]<.75,`LRIP gap ${shots[i]-shots[i-1]}`);
+ assert.ok(otherShots>0,'the AI keeps using its other weapons while LRIP repeats');
+});
+
+test('moving 4-2 Scorp Assault AI waits for enough LRIP charge instead of switching to a slow volley',()=>{
+ const mission=structuredClone(MISSION_4_2);mission.units=mission.units.filter(unit=>unit.id==='scorp-assault2'||unit.id==='union-aip-1');mission.assaults=[];mission.personnel=[];mission.companions=[];mission.objectives=[];mission.completionEnabled=false;mission.base=undefined;mission.rocks=[];mission.terrain={...mission.terrain,river:undefined,peaks:[]};
+ const s=new Simulation('Easy',mission),assault=s.units.find(unit=>unit.id==='scorp-assault2')!,target=s.units.find(unit=>unit.id==='union-aip-1')!;
+ target.x=assault.x;target.z=assault.z+100;target.spec.speed=0;target.energy=0;target.slotAmmo.fill(0);target.spec.shield=100000;target.shield=100000;assault.alert=true;
+ const shots:number[]=[];
+ for(let i=0;i<360;i++){const charge=assault.laserCharge;s.tick(1/60,idle);if(s.events.some(event=>event.type==='shot'&&event.unit===assault&&event.weapon==='LRIP')){assert.equal(charge,1);shots.push(s.time);}s.events=[];}
+ assert.ok(shots.length>=2,`LRIP shots: ${shots.join(',')}`);
+ assert.ok(shots.some((time,index)=>index>0&&time-shots[index-1]!<1.5),'the AI repeats LRIP without the mission-wide delay');
 });
 
 test('GAUS30 has a wider hit area without accepting clear misses or shots through cover',()=>{
@@ -201,6 +349,21 @@ test('GAUS30 has a wider hit area without accepting clear misses or shots throug
   const shield=target.shield;s.tick(.01,idle);assert.equal(target.shield,shield);assert.ok(Math.abs(beam.z-84.5)<1e-8);s.tick(.04,idle);
   assert.equal(target.shield,hit?shield-18:shield,JSON.stringify({padding,offset,cover}));
  }
+});
+test('Meson tower can hit an AIP beside the other tower inside 40 m',()=>{
+ const s=new Simulation(),tower=makeUnit('own','merc-meson-tower',0,20,false),kylieTower=makeUnit('kylie','merc-meson-tower',0,60,true),target=makeUnit('target','merc-aip',5,55,true,{speed:0,ai:{detection:0}});
+ s.mission={...s.mission,rocks:[],base:undefined,terrain:{...s.mission.terrain,cliffs:[]}};s.facilities=[];s.units=[tower,kylieTower,target];s.soldiers=[];s.human={x:0,z:20};assert.ok(s.board());target.iff='enemy';kylieTower.iff=tower.iff;
+ s.aimBy(Math.atan2(target.x-tower.x,target.z-tower.z));s.lookBy(s.targetElevation(target));assert.ok(s.pitch>-.28);
+ const shield=target.shield;s.fire(1);for(let i=0;i<70;i++)s.tick(1/60,idle);
+ assert.ok(target.shield<shield,'the nearby AIP takes damage');
+});
+test('Meson tower downward view stops above an AIP at its own base',()=>{
+ const s=new Simulation(),tower=makeUnit('own','merc-meson-tower',0,20,false),target=makeUnit('target','merc-aip',0,28,true,{speed:0,ai:{detection:0}});
+ s.mission={...s.mission,rocks:[],base:undefined,terrain:{...s.mission.terrain,cliffs:[]}};s.facilities=[];s.units=[tower,target];s.soldiers=[];s.human={x:0,z:20};assert.ok(s.board());target.iff='enemy';
+ s.lookBy(-2);assert.equal(s.pitch,-.28);for(let i=0;i<60;i++)s.tick(1/60,{...idle,lookDown:true});assert.equal(s.pitch,-.28);
+ s.selected=target.id;s.tracking=true;for(let i=0;i<60;i++)s.tick(1/60,idle);assert.equal(s.pitch,-.28);assert.equal(s.targetState?.locked,false);
+ const shield=target.shield;s.fire(1);for(let i=0;i<70;i++)s.tick(1/60,idle);
+ assert.equal(target.shield,shield,'the AIP below the view limit stays out of the firing line');
 });
 test('GAUS30 near misses infantry without the vehicle hit padding but direct shots still hit',()=>{
  for(const kind of ['merc-meson-tower','scorp-meson-tower'] as const)for(const offset of [0,1.8]){

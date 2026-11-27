@@ -138,6 +138,7 @@ try {
       });
     })()`);
   }
+  await sleep(800);
   const shot = await cdp.send('Page.captureScreenshot', {format: 'png'});
   writeFileSync(outFile, Buffer.from(shot.data, 'base64'));
   console.log(outFile);

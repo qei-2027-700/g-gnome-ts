@@ -11,7 +11,14 @@ export const freshParts=():PartState=>({hull:1,cockpit:1,leftWeapon:1,rightWeapo
 export const mobilityMultiplier=(parts:PartState)=>.2+.8*(parts.leftLeg+parts.rightLeg)/2;
 // Prototype boxes follow the procedural models; original hit zones/HP await measurement.
 const durability:Record<BodyPart,number>={hull:.6,cockpit:.3,leftWeapon:.35,rightWeapon:.35,leftLeg:.35,rightLeg:.35};
-export function applyPartDamage(parts:PartState,part:BodyPart,damage:number,armor:number){parts[part]=Math.max(0,parts[part]-damage/(armor*durability[part]));}
+const MERC_AIP_UPPER_TURRET_DURABILITY=.1;
+export function applyPartDamage(parts:PartState,part:BodyPart,damage:number,armor:number,weakSpot=false){parts[part]=Math.max(0,parts[part]-damage/(armor*(weakSpot?MERC_AIP_UPPER_TURRET_DURABILITY:durability[part])));}
+export function mercAipUpperTurret(body:Body,point:Point){
+ if(body.kind!=='merc-aip')return false;
+ const shape=VEHICLE_SHAPES[body.kind],height=(body.spec??VEHICLES[body.kind]).height,top=(body.hoverHeight??(body.spec??VEHICLES[body.kind]).hoverHeight??0)+height*.6+shape.weapon.y+shape.weapon.h/2;
+ const c=Math.cos(body.aim),s=Math.sin(body.aim),dx=point.x-body.x,dz=point.z-body.z,x=dx*c-dz*s,z=dx*s+dz*c;
+ return point.y>=top&&Math.abs(Math.abs(x)-shape.weapon.x)<=shape.weapon.w/2+1.7&&Math.abs(z-shape.weapon.z)<=shape.weapon.d/2+1.7;
+}
 function spiderBoxes(kind:'merc-assault'|'scorp-assault'|'union-assault'){
  const shape=VEHICLE_SHAPES[kind].spider;
  return [-1,1].flatMap(side=>(kind==='scorp-assault'?[-1,0,1]:[-1,1]).flatMap(front=>{
@@ -34,8 +41,9 @@ function boxes(body:Body):PartBox[]{const h=(body.spec??VEHICLES[body.kind]).hei
  {part:'cockpit' as const,x:0,...shape.cockpit,y:torsoY+shape.cockpit.y,upper:!('track' in shape)},
  ...('gunHousing' in shape?[{part:'leftWeapon' as const,x:0,...shape.gunHousing,y:torsoY+shape.gunHousing.y,upper:true}]:[]),
  ...('roof' in shape?[{part:'cockpit' as const,x:0,...shape.roof,y:torsoY+shape.roof.y,upper:true}]:[]),
- {part:'hull' as const,x:0,...shape.hull,y:torsoY+shape.hull.y,upper:!('track' in shape)&&body.kind!=='merc-meson-tower'&&body.kind!=='scorp-meson-tower'},
- ...([-1,1] as const).map(side=>{const upright=body.kind==='darken-tactical'?pitchDarkenTactical(shape.weapon.y,shape.weapon.z):null;return {part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.weapon,x:side*shape.weapon.x,y:upright?upright.y:torsoY+shape.weapon.y,z:upright?upright.z:shape.weapon.z,upper:!upright};}),
+ {part:'hull' as const,x:0,...shape.hull,d:body.kind==='merc-aip'?4:shape.hull.d,y:torsoY+shape.hull.y,upper:!('track' in shape)&&body.kind!=='merc-meson-tower'&&body.kind!=='scorp-meson-tower'&&body.kind!=='scorp-rocket-tower'},
+ ...([-1,1] as const).map(side=>{const upright=body.kind==='darken-tactical'?pitchDarkenTactical(shape.weapon.y,shape.weapon.z):null;return {part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.weapon,x:side*shape.weapon.x,y:upright?upright.y:torsoY+shape.weapon.y,z:upright?upright.z:shape.weapon.z,upper:!upright&&body.kind!=='scorp-rocket-tower'};}),
+ ...(body.kind==='merc-aip'?([-1,1] as const).map(side=>({part:'cockpit' as const,x:side*shape.weapon.x,y:torsoY+shape.weapon.y+shape.weapon.h/2+.15,z:shape.weapon.z,w:shape.weapon.w,h:.3,d:shape.weapon.d*.7,upper:true})):[]),
  ...('chinWeapon' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftWeapon':'rightWeapon') as BodyPart,...shape.chinWeapon,x:side*shape.chinWeapon.x,y:torsoY+shape.chinWeapon.y,upper:true})):[]),
  ...('shoulder' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.shoulder,x:side*shape.shoulder.x,y:torsoY+shape.shoulder.y,upper:false})):[]),
  ...('upperLeg' in shape?([-1,1] as const).map(side=>({part:(side<0?'leftLeg':'rightLeg') as BodyPart,...shape.upperLeg,x:side*shape.legX,upper:false})):[]),
@@ -50,7 +58,7 @@ export function buildingClearance(body:Body){
 export function intersectParts(body:Body,from:Point,to:Point,padding=0){
  let best:{part:BodyPart;t:number;point:Point}|null=null;
  for(const box of boxes(body)){
-  const yaw=body.kind==='scorp-rocket-tower'?0:box.upper&&(body.spec??VEHICLES[body.kind]).torsoLimit!==0?body.aim:body.yaw,c=Math.cos(yaw),s=Math.sin(yaw);
+  const yaw=body.kind==='union-rocket-tower'?0:box.upper&&(body.spec??VEHICLES[body.kind]).torsoLimit!==0?body.aim:(body.spec??VEHICLES[body.kind]).category==='tower'?0:body.yaw,c=Math.cos(yaw),s=Math.sin(yaw);
   const local=(p:Point)=>{let y=p.y,z=(p.x-body.x)*s+(p.z-body.z)*c;if((body.kind==='merc-meson-tower'||body.kind==='scorp-meson-tower')&&(box.part==='leftWeapon'||box.part==='rightWeapon')){const pivot=(body.spec??VEHICLES[body.kind]).height*.6+VEHICLE_SHAPES[body.kind].weapon.y,pitch=body.aimPitch??0,relative=y-pivot;y=pivot+relative*Math.cos(pitch)-z*Math.sin(pitch);z=relative*Math.sin(pitch)+z*Math.cos(pitch);}if(body.kind==='darken-tactical'&&box.upper){const dy=y-DARKEN_TACTICAL_TORSO_Y,c=Math.cos(DARKEN_TACTICAL_HUNCH),s=Math.sin(DARKEN_TACTICAL_HUNCH),ly=dy*c+z*s,lz=-dy*s+z*c;y=DARKEN_TACTICAL_TORSO_Y+ly;z=lz;}const point={x:(p.x-body.x)*c-(p.z-body.z)*s-box.x,y:y-box.y,z:z-box.z};
     if(box.segment){const a=box.segment.from,b=box.segment.to,dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,length=Math.hypot(dx,dy,dz),flat=Math.hypot(dx,dz),ux=dz/flat,uz=-dx/flat,vx=dy*uz/length,vy=(dz*ux-dx*uz)/length,vz=-dy*ux/length;return {x:point.x*ux+point.z*uz,y:(point.x*dx+point.y*dy+point.z*dz)/length,z:point.x*vx+point.y*vy+point.z*vz};}
     return point;};
@@ -58,6 +66,7 @@ export function intersectParts(body:Body,from:Point,to:Point,padding=0){
   for(const [axis,half] of [['x',box.w/2+padding],['y',box.h/2+padding],['z',box.d/2+padding]] as const){const delta=b[axis]-a[axis];if(Math.abs(delta)<1e-9){if(Math.abs(a[axis])>half){far=-1;break;}}else{const t1=(-half-a[axis])/delta,t2=(half-a[axis])/delta;near=Math.max(near,Math.min(t1,t2));far=Math.min(far,Math.max(t1,t2));}}
   if(near<=far&&near>=0&&near<=1&&(!best||near<best.t))best={part:box.part,t:near,point:{x:from.x+(to.x-from.x)*near,y:from.y+(to.y-from.y)*near,z:from.z+(to.z-from.z)*near}};
  }
+ if(best&&(best.part==='leftWeapon'||best.part==='rightWeapon')&&mercAipUpperTurret(body,best.point))best.part='cockpit';
  return best;
 }
 
@@ -75,7 +84,7 @@ export function sweptVehicleContact(body:Body,previous:{x:number;z:number},from:
 
 
 // Conservative horizontal envelopes for the current procedural HAWC models.
-export const vehicleRadius=(kind:VehicleKind)=>kind==='scorp-rocket-tower'?5.7:kind.endsWith('-tactical')?4.1:3.5;
+export const vehicleRadius=(kind:VehicleKind)=>kind==='scorp-rocket-tower'||kind==='union-rocket-tower'?5.7:kind.endsWith('-tactical')?4.1:3.5;
 export function vehicleContactFraction(body:Body,to:{x:number;z:number},other:Body):number|null{
  const dx=to.x-body.x,dz=to.z-body.z,ox=body.x-other.x,oz=body.z-other.z;
  const radius=vehicleRadius(body.kind)+vehicleRadius(other.kind),a=dx*dx+dz*dz,b=ox*dx+oz*dz,c=ox*ox+oz*oz-radius*radius;

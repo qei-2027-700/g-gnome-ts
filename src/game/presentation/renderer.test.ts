@@ -215,11 +215,19 @@ test('3-2 ground shield display shares its collision footprint and disappears wi
   const bounds=mesh.getBoundingInfo().boundingBox;
   assert.ok(Math.abs(bounds.maximum.x-bounds.minimum.x-shield.width)<.01);
   assert.ok(Math.abs(bounds.maximum.z-bounds.minimum.z-shield.depth)<.01);
+  assert.ok(bounds.maximum.y<2.5,'the visible shield stays close to the ground');
+  assert.equal((mesh.material as StandardMaterial).diffuseColor.toHexString(),'#FFAE1C');
+  const flame=world.scene.getMeshByName(`ground-shield-flame-${shield.id}-1`)!;
+  assert.ok(flame.isEnabled());
+  const before=flame.getVerticesData('position')!;
+  world.update(.1);
+  assert.notDeepEqual(flame.getVerticesData('position'),before,'the flames keep rising and changing shape');
   assert.equal(world.scene.meshes.filter(item=>item.name==='red-minefield'||item.name==='minefield-red-mark'||item.name==='minefield-border'||item.name==='minefield-warning-post'||item.name==='detected-mine').length,0);
   assert.equal(world.scene.transformNodes.filter(node=>node.name.startsWith('minefield-')).length,0);
   const plant=sim.facilities.find(f=>f.id===shield.powerPlantId)!;
   sim.damageFacility(plant,plant.health,{x:plant.x,y:1,z:plant.z});world.update(0);
   assert.equal(mesh.isEnabled(),false);
+  assert.equal(flame.isEnabled(),false);
  }finally{engine.dispose();}
 });
 test('switching from a minefield mission to 3-2 removes the previous red area',async()=>{
@@ -759,10 +767,24 @@ test('selected-vehicle boarding hides only the identified driver body, then F6 r
 test('rocket tower reference model has a green faceted body, metal canopy, ochre bands and fixed flared supports',async()=>{
  const {SCORP_TOWER_PALETTE}=await import('../content/vehicles.ts');const sim=new Simulation();sim.units=[makeUnit('tower-reference','scorp-rocket-tower',0,20)];
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get('tower-reference')!;world.update(0);
- const meshes=rig.root.getChildMeshes(),column=meshes.find(m=>m.name==='tower-column')!,canopy=meshes.find(m=>m.name==='tower-metal-canopy')!;assert.ok(column&&canopy);assert.equal(meshes.filter(m=>m.name==='tower-support-strut').length,4);assert.equal(meshes.filter(m=>m.name==='tower-footing').length,4);assert.equal(meshes.filter(m=>m.name==='rocket-launcher').length,0);
+ const meshes=rig.root.getChildMeshes(),column=meshes.find(m=>m.name==='tower-column')!,canopy=meshes.find(m=>m.name==='tower-metal-canopy')!;assert.ok(column&&canopy);assert.equal(meshes.filter(m=>m.name==='tower-support-strut').length,4);assert.equal(meshes.filter(m=>m.name==='tower-footing').length,4);assert.equal(meshes.filter(m=>m.name==='tower-rocket-port').length,8);assert.equal(meshes.filter(m=>m.name==='tower-round-sensor-face').length,1);assert.equal(meshes.filter(m=>m.name==='rocket-launcher').length,0);
  assert.equal(rig.parts.hull.paint.find(p=>p.base.toHexString()===SCORP_TOWER_PALETTE.green.toUpperCase())?.base.toHexString(),SCORP_TOWER_PALETTE.green.toUpperCase());
  const before=column.computeWorldMatrix(true).clone();sim.units[0].yaw=1.2;sim.units[0].aim=2;rig.recoil=1;world.update(.01);assert.ok(column.computeWorldMatrix(true).equals(before));assert.equal(rig.root.rotation.y,0);assert.equal(rig.torso.rotation.y,0);assert.equal(rig.torso.rotation.x,0);
  sim.units[0].parts.leftLeg=.4;world.update(0);assert.ok(rig.parts.leftLeg.paint.every(p=>p.material.diffuseColor.r<p.base.r&&p.material.diffuseColor.g<p.base.g&&p.material.diffuseColor.b<p.base.b));assert.ok(rig.parts.rightLeg.paint.some(p=>p.material.diffuseColor.toHexString()===SCORP_TOWER_PALETTE.metal.toUpperCase()));
+ engine.dispose();
+});
+
+test('Scorp rocket tower cockpit uses its reference frame with live instrument wells',async()=>{
+ const {scorpRocketTowerCockpitShellSvg}=await import('./scorp-rocket-tower-cockpit.ts');const shell=scorpRocketTowerCockpitShellSvg();
+ assert.ok(shell.includes('assets/cockpits/scorp-rocket-tower.png'));assert.ok(shell.includes('scorp-rocket-tower-metal-mask'));assert.equal(shell.includes('0127'),false);
+});
+
+test('Union rocket tower uses a separate square tower model and cockpit frame',async()=>{
+ const {unionRocketTowerCockpitShellSvg}=await import('./union-rocket-tower-cockpit.ts');
+ const shell=unionRocketTowerCockpitShellSvg();assert.ok(shell.includes('assets/cockpits/union-rocket-tower.png'));assert.ok(shell.includes('union-rocket-tower-metal-mask'));
+ const sim=new Simulation();sim.units=[makeUnit('union-rocket-reference','union-rocket-tower',0,20)];
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine),rig=world.rigs.get('union-rocket-reference')!;
+ const meshes=rig.root.getChildMeshes();assert.ok(meshes.some(mesh=>mesh.name==='union-tower-head'));assert.equal(meshes.filter(mesh=>mesh.name==='union-tower-window').length,3);assert.equal(meshes.filter(mesh=>mesh.name==='union-tower-rack').length,2);assert.equal(meshes.some(mesh=>mesh.name==='tower-column'),false);
  engine.dispose();
 });
 
@@ -884,13 +906,13 @@ test('passenger boarding enters first person and mounted mission starts override
  const shell=unionTacticalCockpitShellSvg();assert.ok(shell.includes('assets/cockpits/union-tactical-reference.png'));assert.ok(shell.includes('tactical-metal-mask'));assert.ok(shell.includes('tactical-holo-grid'));engine.dispose();
 });
 
-test('TCREAP draws a thin moving red line for both player and AI, without a diamond or laser core',()=>{
- for(const ai of [false,true]){
-  const sim=new Simulation(),unit=makeUnit('reap','union-asv',0,ai?40:0,ai,{weapons:['TCREAP'],faction:ai?'scorp':'union'});sim.units=[unit];sim.human={x:0,z:ai?0:-5};unit.yaw=unit.aim=ai?Math.PI:0;unit.spec.speed=0;
+test('projectile machine guns draw a thin moving red line for both player and AI',()=>{
+ for(const {weapon,chassis,remaining} of [{weapon:'TCREAP',chassis:'union-asv',remaining:299},{weapon:'3cREAP',chassis:'union-aip',remaining:219},{weapon:'zWASP',chassis:'scorp-tactical',remaining:999}] as const)for(const ai of [false,true]){
+  const sim=new Simulation(),unit=makeUnit('reap',chassis,0,ai?40:0,ai,{weapons:[weapon],faction:ai?'scorp':'union'});sim.units=[unit];sim.human={x:0,z:ai?0:-5};unit.yaw=unit.aim=ai?Math.PI:0;unit.spec.speed=0;
   const energy=unit.energy;if(ai){unit.alert=true;sim.tick(.01,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});}else{sim.human={x:0,z:0};sim.board();sim.fire(1);}
-  const projectile=sim.missiles.find(p=>p.weapon==='TCREAP')!;assert.ok(projectile);assert.equal(unit.energy,energy);assert.equal(unit.ammunition.TCREAP,299);
+  const projectile=sim.missiles.find(p=>p.weapon===weapon)!;assert.ok(projectile,`${weapon} ${ai?'AI':'player'}`);assert.equal(unit.energy,energy);assert.equal(unit.ammunition[weapon],remaining);
   const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4}),world=new World({} as HTMLCanvasElement,sim,engine);world.update(0);
-  const bolt=world.scene.meshes.find(m=>m.metadata?.weapon==='TCREAP')!;assert.ok(bolt);assert.equal(bolt.getClassName(),'Mesh');assert.equal(bolt.billboardMode,0);assert.equal(bolt.metadata.visual,'dashed-mg-tracer');assert.ok(bolt.metadata.segments>1);assert.equal(world.scene.getMeshByName('laser-white-core'),null);assert.equal(world.scene.getMeshByName('rocket-smoke'),null);engine.dispose();
+  const bolt=world.scene.meshes.find(m=>m.metadata?.weapon===weapon)!;assert.ok(bolt);assert.equal(bolt.getClassName(),'Mesh');assert.equal(bolt.billboardMode,0);assert.equal(bolt.metadata.visual,'dashed-mg-tracer');assert.ok(bolt.metadata.segments>1);assert.equal(world.scene.getMeshByName('laser-white-core'),null);assert.equal(world.scene.getMeshByName('rocket-smoke'),null);engine.dispose();
  }
 });
 
@@ -1124,13 +1146,14 @@ test('Meson reference cockpit keeps only its frame while live tower instruments 
  }finally{engine.dispose();}
 });
 
-test('2-6 renders a blue Merc fortress, a power plant and a named Latlon array in reference order',async()=>{
+test('2-6 renders the blue Merc pyramid fortress, a power plant and a named Latlon array to the right of the towers',async()=>{
  const {MISSION_2_6}=await import('../content/missions/mission-2-6.ts');const {facilityHologramSvg}=await import('./facility-hologram.ts');
  const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{
   const world=new World({} as HTMLCanvasElement,new Simulation('Easy',MISSION_2_6),engine);world.update(0);
-  const fortress=world.scene.getMeshByName('citadel')!,plant=world.scene.getMeshByName('power-plant')!,comm=world.scene.getMeshByName('latlon-comm-array')!;
-  assert.ok(fortress.position.x>plant.position.x&&plant.position.x>comm.position.x);
+  const fortress=world.scene.getMeshByName('citadel-pyramid')!,plant=world.scene.getMeshByName('power-plant')!,comm=world.scene.getMeshByName('latlon-comm-array')!;
+  assert.ok(fortress.position.z>plant.position.z&&plant.position.z>comm.position.z);
+  assert.ok(fortress.getBoundingInfo().boundingBox.extendSizeWorld.x>0);
   assert.equal((fortress.material as import('@babylonjs/core/Materials/standardMaterial.js').StandardMaterial).diffuseColor.toHexString(),'#334F9B');
   assert.ok(world.scene.getMeshByName('latlon-transmitter-band'));assert.ok(facilityHologramSvg('comm-array').includes('Latlon通信基地'));
  }finally{engine.dispose();}
@@ -1204,11 +1227,50 @@ test('Merc Meson photo model has a navy bowl over a weathered flared base, red m
 test('4-2 renders grassland under amber skies, a dedicated rotating Scorp Meson cannon and the right rocket tower',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512,deterministicLockstep:true,lockstepMaxSteps:4});
  try{const s=new Simulation('Easy',MISSION_4_2),world=new World({} as HTMLCanvasElement,s,engine);world.update(0);
- assert.ok(world.scene.getMeshByName('scorp-meson-column'));assert.ok(world.scene.getMeshByName('scorp-meson-brace'));assert.ok(world.scene.getMeshByName('scorp-meson-cannon'));assert.ok(world.scene.getMeshByName('tower-launch-panel'));assert.ok(world.scene.clearColor.r>world.scene.clearColor.b);assert.ok(world.scene.getMaterialByName('grass'));
+ assert.ok(world.scene.getMeshByName('scorp-meson-column'));assert.ok(world.scene.getMeshByName('scorp-meson-brace'));assert.ok(world.scene.getMeshByName('scorp-meson-cannon'));assert.ok(world.scene.getMeshByName('scorp-meson-gun-socket'));assert.equal(world.scene.meshes.filter(mesh=>mesh.name==='scorp-meson-roof-rim').length,16);assert.ok(world.scene.getMeshByName('tower-launch-panel'));assert.ok(world.scene.clearColor.r>world.scene.clearColor.b);assert.ok(world.scene.getMaterialByName('grass'));
  const mountains=world.scene.meshes.filter(mesh=>mesh.name==='rocky-mountain');assert.ok(mountains.length>=s.mission.terrain.peaks!.length);assert.equal(world.scene.getMeshByName('urkinsk-back-left-cliff'),null);
  const ridge=mountains.at(-1)!.getVerticesData('position')!;assert.ok(Math.max(...Array.from(ridge).filter((_,i)=>i%3===1))>50);assert.ok(Math.min(...Array.from(ridge).filter((_,i)=>i%3===1))<0);
  const tower=s.units.find(u=>u.id==='scorp-meson')!;tower.aim=.7;world.update(0);assert.equal(world.rigs.get(tower.id)!.torso.rotation.y,.7);assert.equal(world.rigs.get(tower.id)!.root.rotation.y,0);
- const {scorpMesonCockpitShellSvg}=await import('./scorp-meson-cockpit.ts');assert.ok(scorpMesonCockpitShellSvg().includes('scorp-meson-reference'));assert.ok(!scorpMesonCockpitShellSvg().includes('merc-mison'));
+ const {scorpMesonCockpitShellSvg}=await import('./scorp-meson-cockpit.ts');const shell=scorpMesonCockpitShellSvg();assert.ok(shell.includes('scorp-meson-tower-shell'));assert.ok(shell.includes('assets/cockpits/scorp-meson-tower.png'));assert.equal(shell.includes('0127'),false);
+ }finally{engine.dispose();}
+});
+
+test('Scorp Rocket Tower turns only its roof and eight front launch ports',()=>{
+ const sim=new Simulation(),tower=makeUnit('turning-rocket','scorp-rocket-tower',0,0,false);sim.units=[tower];sim.mounted=null;
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,sim,engine);world.mode=2;world.update(0);
+  const ports=world.scene.meshes.filter(mesh=>mesh.name==='tower-rocket-port');assert.equal(ports.length,8);
+  const port=ports[0]!,column=world.scene.getMeshByName('tower-column')!,support=world.scene.getMeshByName('tower-support-strut')!;
+  const fixed=['tower-upper-housing','tower-ochre-rim','tower-face-armor','tower-launch-panel'].map(name=>world.scene.getMeshByName(name)!);
+  const fixedPose=fixed.map(mesh=>{mesh.computeWorldMatrix(true);return {position:mesh.getAbsolutePosition().clone(),forward:mesh.getDirection(Vector3.Forward()).clone()};});
+  port.computeWorldMatrix(true);column.computeWorldMatrix(true);support.computeWorldMatrix(true);
+  const before=port.getAbsolutePosition().clone(),base=column.getAbsolutePosition().clone(),leg=support.getAbsolutePosition().clone();
+  assert.ok(port.getDirection(Vector3.Up()).z>.99);
+  tower.aim=Math.PI/2;world.update(0);port.computeWorldMatrix(true);column.computeWorldMatrix(true);support.computeWorldMatrix(true);
+  const after=port.getAbsolutePosition();assert.equal(world.rigs.get(tower.id)!.torso.rotation.y,Math.PI/2);
+  assert.ok(Math.abs(after.x-before.z)<1e-5&&Math.abs(after.z+before.x)<1e-5);
+  assert.ok(port.getDirection(Vector3.Up()).x>.99);
+  assert.ok(Vector3.Distance(column.getAbsolutePosition(),base)<1e-5);
+  assert.ok(Vector3.Distance(support.getAbsolutePosition(),leg)<1e-5);
+  for(const [index,mesh] of fixed.entries()){mesh.computeWorldMatrix(true);assert.ok(Vector3.Distance(mesh.getAbsolutePosition(),fixedPose[index]!.position)<1e-5);assert.ok(Vector3.Distance(mesh.getDirection(Vector3.Forward()),fixedPose[index]!.forward)<1e-5);}
+ }finally{engine.dispose();}
+});
+
+test('Scorp Rocket Tower missiles start at each rotating launch port',()=>{
+ const sim=new Simulation(),tower=makeUnit('rocket-muzzles','scorp-rocket-tower',0,0,false);sim.units=[tower];sim.mounted=null;
+ const engine=new NullEngine({renderWidth:800,renderHeight:600,textureSize:512});
+ try{
+  const world=new World({} as HTMLCanvasElement,sim,engine);world.mode=2;
+  const ports=world.scene.meshes.filter(mesh=>mesh.name==='tower-rocket-port');assert.equal(ports.length,8);
+  for(const yaw of [0,Math.PI/2]){
+   tower.aim=yaw;world.update(0);
+   for(const [index,port] of ports.entries()){
+    const missile=sim.fireMissile(tower,index%2===0?'SREM':'UNKPA');port.computeWorldMatrix(true);
+    const muzzle=port.getAbsolutePosition();assert.ok(Vector3.Distance(new Vector3(missile.x,missile.y,missile.z),muzzle)<1e-5);
+    const shot=sim.events.at(-1)!;assert.equal(shot.type,'shot');assert.deepEqual(shot.from,{x:missile.x,y:missile.y,z:missile.z});
+   }
+  }
  }finally{engine.dispose();}
 });
 

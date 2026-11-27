@@ -36,7 +36,7 @@ export const MISSION_4_2:MissionDefinition={
   {label:{ja:'ガードタワーを占拠せよ',en:'Occupy guard towers'},detail:{ja:'左手のScorpミーゾンタワーへ搭乗する。キリーは右手のロケットタワー、ターンはもう1基へ向かう。搭乗は任意。',en:'Board the Scorp Meson tower on the left. Kylie takes the right rocket tower and Thane the other Meson tower. Boarding is optional.'}},
   {label:{ja:'橋を上げよ',en:'Raise the bridge'},detail:{ja:'川辺のBridge Control Buildingへ入り、スイッチで橋を上げると完了する。',en:'Enter the riverside Bridge Control Building and raise the bridge to finish.'}}
  ]},
- bgm:{volumeScale:.8,start:{trackId:'bgm-credits',delay:0},afterEliminate:{unitIds:attackers.map(u=>u.id),trackId:'bgm-snow-maze'}},
+ bgm:{volumeScale:.8,start:{trackId:'bgm-credits',delay:0},afterEliminate:{unitIds:attackers.map(u=>u.id),trackId:'bgm-snow-maze',when:'crew-dead'}},
  shieldProtectionRadius:80,respawningUnits:['bridge-union-sentry','bridge-union-asv'],respawnDelay:30,
  subtitle:{ja:'ScorpとともにシェリダンのUnion軍を迎撃',en:'Defend Ur-Kinsk alongside Scorp against Sheridan’s Union forces'},
  briefing:{ja:'シェリダン率いるUnion軍がUr-Kinskへ迫っている。徒歩の開始地点から左手のScorpミーゾン・ガードタワーへ搭乗し、友軍Scorpとともに基地を守れ。キリーは右手のロケットタワー、ターンはもう1基のミーゾンタワーへ搭乗する。Union AIP2機が電力プラントを狙うため優先して迎撃せよ。最後は川辺のBridge Control Buildingへ入り、スイッチで橋を上げると即座に完了する。地上編成・配置・数値は試作設定。',en:'Sheridan’s Union forces are approaching Ur-Kinsk. Occupy the Scorp Meson tower to your left and defend the base alongside Scorp. Kylie boards the right rocket tower; Thane boards the second Meson tower. Two Union AIPs attack the power plant: intercept them before both Meson towers lose power. Finish by entering the riverside Bridge Control Building and raising the bridge. Ground roster, positions and statistics are provisional.'},
@@ -50,16 +50,16 @@ export const MISSION_4_2:MissionDefinition={
   // {id:'thane-meson',kind:'scorp-meson-tower',...markedPoint(476,194),pilot:false,powerSourceId:'ur-kinsk-power'},
   {id:'thane-meson',kind:'scorp-meson-tower',...markedPoint(526,194),pilot:false,powerSourceId:'ur-kinsk-power'},
   {id:'scorp-sentry-guard',kind:'scorp-sentry',...markedPoint(420,170),pilot:true},
-  {id:'scorp-assault2',kind:'scorp-assault',...markedPoint(535,135),pilot:true},
+  {id:'scorp-assault2',kind:'scorp-assault',...markedPoint(555,115),pilot:true},
   // {id:'scorp-assault3',kind:'scorp-assault',...markedPoint(385,355),pilot:false},
   // {id:'scorp-asv-guard',kind:'scorp-asv',...markedPoint(558,214),pilot:true},
   // {id:'scorp-asv-guard5',kind:'scorp-asv',x:15,z:610,pilot:false},
   {id:'scorp-tactical-guard',kind:'scorp-tactical',...markedPoint(522,123),pilot:true},
-  {id:'scorp-tactical-guard2',kind:'scorp-tactical',...markedPoint(690,275),pilot:true},
+  {id:'scorp-tactical-guard2',kind:'scorp-tactical',...markedPoint(500,85),pilot:true},
   // {id:'scorp-tactical-guard3',kind:'scorp-tactical',x:-600,z:5,pilot:true},
   {id:'bridge-rocket',kind:'scorp-rocket-tower',...markedPoint(630,205),pilot:false},
-  {id:'bridge-union-sentry',kind:'union-sentry',...markedPoint(726,345),yaw:-Math.PI/2,pilot:true},
-  {id:'bridge-union-asv',kind:'union-asv',...markedPoint(737,375),yaw:-Math.PI/2,pilot:true},
+  {id:'bridge-union-sentry',kind:'union-sentry',...markedPoint(760,325),yaw:-Math.PI/2,pilot:true},
+  {id:'bridge-union-asv',kind:'union-asv',...markedPoint(760,375),yaw:-Math.PI/2,pilot:true},
   ...attackers
  ],
  personnel:[
@@ -69,7 +69,7 @@ export const MISSION_4_2:MissionDefinition={
  companions:[
   {personId:'kylie',unitId:'scorp-rocket',key:'F2',name:{ja:'キリー',en:'Kylie'}},{personId:'thane',unitId:'thane-meson',key:'F3',name:{ja:'ターン',en:'Thane'}}
  ],
- garrison:['thane-meson','scorp-rocket','scorp-sentry-guard','scorp-assault2','scorp-tactical-guard'],
+ garrison:['thane-meson','scorp-rocket','scorp-sentry-guard','scorp-assault2','scorp-tactical-guard','scorp-tactical-guard2'],
  //  garrison:['thane-meson','scorp-rocket',],
  assaults:[...groundAttackers.map((u,i)=>({unitId:u.id,targetId:'ur-kinsk-hq',startAt:12+Math.floor(i/2)*12})),...airAttackers.map((u,i)=>({unitId:u.id,targetId:'ur-kinsk-power',startAt:8+i*12,retaliateAfterHits:3}))],
  base:{
@@ -80,7 +80,7 @@ export const MISSION_4_2:MissionDefinition={
   depth:180,
   buildings:[
    {id:'ur-kinsk-hq',kind:'command',name:'Ur-Kinsk HQ · 司令部',...markedPoint(504,62),width:45,depth:35,height:18,health:1600,color:'#466b4c',boardable:false},
-   {id:'ur-kinsk-power',kind:'power-plant',name:'Scorp Power Plant · 電力プラント',...markedPoint(537,89),width:38,depth:35,height:15,health:180,boardable:false},
+   {id:'ur-kinsk-power',kind:'power-plant',name:'Scorp Power Plant · 電力プラント',...markedPoint(537,89),width:38,depth:35,height:15,health:80,boardable:false},
    {id:'ur-kinsk-shield',kind:'shield-generator',name:'Scorp Shield Generator · シールド発生装置',...markedPoint(575,135),width:35,depth:30,height:15,health:500,boardable:false},
   //  {id:'ur-kinsk-latlon',kind:'comm-array',name:'Scorp Latlon COMM Array',x:105,z:700,width:35,depth:30,height:15,health:500,boardable:false},
    {id:'bridge-control',kind:'bridge-control',bridgeId:'ur-kinsk-bridge',name:'Bridge Control Building',...markedPoint(626,349),width:32,depth:25,height:12,health:800,boardable:true}

@@ -9,6 +9,9 @@
 | `cockpits/union-sentry-reference.png` | [Union Sentryの提供画像](../docs/reference/vehicles/union-sentry/user-sentry-identification-2026-10-23.png) |
 | `cockpits/union-tactical-reference.png` | [Union Tacticalの機内参照](../docs/reference/vehicles/union-tactical/1-3-darken軍-sentry-hawk.png)。適用先はユーザー指定 |
 | [cockpits/union-aip.png](cockpits/union-aip.png) | [確認済みのUnion AIP機内写真](reference/union-aip/union-aip.png)。3-2の機内画像と同じ画素で、窓と計器はSVGマスクで抜く |
+| [cockpits/union-rocket-tower.png](cockpits/union-rocket-tower.png) | [Unionロケットタワーの機内画像](reference/union-rocket-tower/internal.png)。窓と固定計器をSVGマスクで抜く |
+| [cockpits/scorp-rocket-tower.png](cockpits/scorp-rocket-tower.png) | [Scorpロケットタワーの機内画像](reference/scorp-rocket-tower/internal.png)。窓と固定計器をSVGマスクで抜く |
+| [cockpits/scorp-meson-tower.png](cockpits/scorp-meson-tower.png) | [Scorpミーゾン・ガードタワーの機内画像](reference/scope-mison-guard-tower/internal.png)。窓と固定計器をSVGマスクで抜く |
 | [cockpits/merc-td-hawk.png](cockpits/merc-td-hawk.png) | Merc Tacticalの機内フレーム。窓とHUDを除いて使用。[機内資料](../docs/reference/vehicles/merc-tactical/2-4-merc軍-タクティカルディフェンスhawk内view.png) |
 | [cockpits/darken-sentry-hawk.png](cockpits/darken-sentry-hawk.png) | Darken Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/darken/README.md) |
 | [cockpits/scope-sentry-hawk.png](cockpits/scope-sentry-hawk.png) | Scorp Sentryの機内フレーム。窓と固定表示を除いて使用。[観察記録](../docs/reference/vehicles/scope-sentry/README.md) |
@@ -57,6 +60,9 @@
 | --- | --- |
 | [reference/missions/4-2-scope.png](reference/missions/4-2-scope.png) | 4-2 Scorp Defenseの開始画面。地図・防衛とタワー搭乗の項目・Scorpミーゾンタワーの外観。[実装準備](../docs/missions/mission-4-2.md) |
 | [reference/scorp-rocket-tower/4-2-開始時-右手にscopeロケットタワー.png](reference/scorp-rocket-tower/4-2-開始時-右手にscopeロケットタワー.png) | 4-2出撃直後の徒歩一人称。右手はScorpロケットタワー。迎撃時に搭乗するScorpミーゾンタワーとは区別。[開始状態の仕様](../docs/missions/mission-4-2.md#出撃直後の視点と迎撃任務ユーザー指定2026-10-30) |
+| [reference/scorp-rocket-tower/](reference/scorp-rocket-tower/) | Scorpロケットタワーの正面カードと機内画像。[観察記録](../docs/reference/vehicles/scorp-rocket-tower/README.md) |
+| [reference/scope-mison-guard-tower/](reference/scope-mison-guard-tower/) | Scorpミーゾン・ガードタワーの正面・側面カードと機内画像。[観察記録](../docs/reference/vehicles/scorp-meson-tower/README.md) |
+| [reference/union-rocket-tower/](reference/union-rocket-tower/) | Unionロケットタワーの正面カードと機内画像。[観察記録](../docs/reference/vehicles/union-rocket-tower/README.md) |
 | [reference/merc-meson-tower/merc-mison.png](reference/merc-meson-tower/merc-mison.png) | Mercミーゾン・ガードタワーの外観基準。濃紺の先広がりの頭部、灰色の台座、赤い塗装片。[専用外観](../docs/reference/vehicles/merc-meson-tower/README.md#merc-misonpngに基づく専用外観2026-10-30) |
 | [reference/merc-assault/merc-assult-hawk-yoko.png](reference/merc-assault/merc-assult-hawk-yoko.png) | ユーザー提供のMerc Assault横向き画像。[4本脚と配色の参照](../docs/reference/vehicles/merc-assault/README.md)。ゲーム画面の背景には使用しない |
 | [reference/darken-tactical/darken-td-front-hawk.png](reference/darken-tactical/darken-td-front-hawk.png) | Darken Tactical Defense HAWCの前面形状と性能・武装。[観察記録](../docs/reference/vehicles/darken/README.md#tactical-defense-hawcstalker) |

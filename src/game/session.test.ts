@@ -47,6 +47,9 @@ test('pre-launch briefing and live map share content panels but never share laun
   const sim=new Simulation('Easy',mission),briefing=missionBriefing(mission,MISSIONS,locale),map=missionMap(sim,locale);
   for(const component of ['mission-map-panel','mission-preview-panel','mission-objective-list']){assert.ok(briefing.includes(component));assert.ok(map.includes(component));}
   assert.ok(briefing.includes('data-action="start"'));assert.ok(briefing.includes('id="missionSelect"'));
+  assert.ok(briefing.includes('class="console-button console-load" data-action="loadMissions"'));
+  assert.ok(briefing.includes('class="console-mission-list" role="dialog"'));
+  for(const candidate of MISSIONS)assert.ok(briefing.includes(`data-action="selectMission:${candidate.id}"`));
   for(const forbidden of ['LAUNCH','mission-console','console-reference','data-action="start"','id="missionSelect"','data-action="newMission"','data-review='])assert.ok(!map.includes(forbidden),forbidden);
   assert.ok(map.includes('data-action="close"'));assert.ok(map.includes('id="map"'));assert.ok(map.includes('id="mapObjectives"'));
  }

@@ -594,7 +594,7 @@ test('riding a piloted HAWC switches to Passenger, holds across pause, returns t
   audio.updateMissionMusic(1,false,[{id:'enemy',alive:true}],false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).volume,audio.settings.music*.8);
   audio.updateMissionMusic(1.2,false,[{id:'enemy',alive:true}],false,null,false,false);await Promise.resolve();assert.equal(tracks.at(-1).src,'credits.mp3');assert.equal(tracks.at(-1).currentTime,0);assert.equal(tracks.at(-1).volume,audio.settings.music*.8);
   audio.updateMissionMusic(1.4,false,[{id:'enemy',alive:true}],false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');
-  audio.updateMissionMusic(2,false,MISSION_4_2.bgm!.afterEliminate!.unitIds.map(id=>({id,alive:false})),false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'snow-maze.mp3');
+  audio.updateMissionMusic(2,false,MISSION_4_2.bgm!.afterEliminate!.unitIds.map(id=>({id,alive:true,crewDead:true})),false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'snow-maze.mp3');
   audio.beginMissionMusic(MISSION_3_5);audio.updateMissionMusic(0,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');
   audio.updateMissionMusic(18,false,undefined,false,20,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'defeated.mp3');
   audio.beginMissionMusic({...MISSION,bgm:undefined});audio.updateMissionMusic(0,false,undefined,false,null,false,true);await Promise.resolve();assert.equal(tracks.at(-1).src,'passenger.mp3');assert.equal(tracks.at(-1).currentTime,0);
@@ -647,15 +647,19 @@ test('missing elimination BGM keeps the current cue playing and reports the miss
 });
 
 
-test('4-2 changes Credits to Snow Maze after the base assault is destroyed even while the bridge guard remains alive',async()=>{
+test('4-2 changes Credits to Snow Maze after the assault crews die while the bridge guard remains alive',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const {Simulation}=await import('../simulation/simulation.ts');const sim=new Simulation('Easy',MISSION_4_2),ids=MISSION_4_2.bgm!.afterEliminate!.unitIds;
  assert.equal(ids.length,8);assert.deepEqual(ids,MISSION_4_2.assaults!.map(assault=>assault.unitId));assert.ok(sim.units.filter(u=>ids.includes(u.id)).every(u=>u.spec.faction==='union'));assert.ok(!ids.includes(MISSION_4_2.assignedUnitId));const bridgeGuard=sim.units.find(u=>u.id==='bridge-union-sentry')!;assert.ok(bridgeGuard?.alive);assert.ok(!ids.includes(bridgeGuard.id));
  await musicFixture(async(audio,tracks)=>{
-  audio.beginMissionMusic(MISSION_4_2);audio.updateMissionMusic(0,false,sim.units);await Promise.resolve();assert.equal(tracks[0].src,'credits.mp3');
-  for(const unit of sim.units)if(ids.includes(unit.id)&&unit.id!==ids.at(-1))unit.alive=false;
-  audio.updateMissionMusic(1,false,sim.units);assert.equal(tracks.length,1);sim.units.find(u=>u.id===ids.at(-1))!.alive=false;
-  audio.updateMissionMusic(2,false,sim.units);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].src,'snow-maze.mp3');assert.equal(tracks[0].paused,true);assert.equal(tracks[1].paused,false);assert.equal(sim.status,'running');assert.ok(bridgeGuard.alive);assert.ok(sim.units.find(u=>u.id===MISSION_4_2.assignedUnitId)!.alive);
-  tracks[1].currentTime=8;audio.updateMissionMusic(3,false,sim.units);assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,8);
+  audio.beginMissionMusic(MISSION_4_2);audio.updateMissionMusic(0,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks[0].src,'credits.mp3');
+  for(const unit of sim.units)if(ids.includes(unit.id))sim.damage(unit,99999);
+  audio.updateMissionMusic(1,false,sim.missionMusicUnits);assert.equal(tracks.length,1,'destroyed hulls leave living pilots');
+  const pilots=sim.soldiers.filter(soldier=>ids.includes(soldier.sourceVehicle));assert.equal(pilots.length,ids.length);assert.ok(pilots.every(soldier=>soldier.alive));
+  for(const pilot of pilots.slice(0,-1)){pilot.alive=false;pilot.health=0;}
+  audio.updateMissionMusic(2,false,sim.missionMusicUnits);assert.equal(tracks.length,1,'the last pilot is still alive');
+  pilots.at(-1)!.sourceVehicle='bridge-union-asv';pilots.at(-1)!.alive=false;pilots.at(-1)!.health=0;
+  audio.updateMissionMusic(3,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].src,'snow-maze.mp3');assert.equal(tracks[0].paused,true);assert.equal(tracks[1].paused,false);assert.equal(sim.status,'running');assert.ok(bridgeGuard.alive);assert.ok(sim.units.find(u=>u.id===MISSION_4_2.assignedUnitId)!.alive);
+  tracks[1].currentTime=8;audio.updateMissionMusic(4,false,sim.missionMusicUnits);assert.equal(tracks.length,2);assert.equal(tracks[1].currentTime,8);
  });
 });
 
@@ -676,9 +680,10 @@ test('HAWC destruction plays one cached collapse, respects SFX mute, bounds over
 
 test('4-2 switches BGM after the last ejected enemy pilot is shot even though the empty chassis and bridge guard survive',async()=>{
  const {MISSION_4_2}=await import('../content/missions/mission-4-2.ts');const {Simulation}=await import('../simulation/simulation.ts');const mission=structuredClone(MISSION_4_2);mission.rocks=[];const sim=new Simulation('Easy',mission),ids=mission.bgm!.afterEliminate!.unitIds,last=sim.units.find(u=>u.id===ids.at(-1))!;
- for(const unit of sim.units)if(ids.includes(unit.id)&&unit!==last)sim.damage(unit,99999);sim.soldiers=[];last.x=-300;last.z=-150;const pilot=sim.forceEject(last)!;assert.ok(pilot.alive);pilot.flight=null;pilot.x=-300;pilot.z=-170;sim.human={x:-300,z:-200};sim.humanYaw=0;sim.pitch=sim.targetElevation(pilot);
+ for(const unit of sim.units)if(ids.includes(unit.id)&&unit!==last){const crew=sim.forceEject(unit)!;crew.alive=false;crew.health=0;}
+ last.x=-300;last.z=-150;const pilot=sim.forceEject(last)!;assert.ok(pilot.alive);pilot.flight=null;pilot.x=-300;pilot.z=-170;sim.human={x:-300,z:-200};sim.humanYaw=0;sim.pitch=sim.targetElevation(pilot);
  await musicFixture(async(audio,tracks)=>{
-  audio.beginMissionMusic(mission);audio.updateMissionMusic(sim.time,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks[0].src,'credits.mp3');assert.equal(sim.missionMusicUnits.find(u=>u.id===last.id)!.defeated,false);
+  audio.beginMissionMusic(mission);audio.updateMissionMusic(sim.time,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks[0].src,'credits.mp3');assert.equal(sim.missionMusicUnits.find(u=>u.id===last.id)!.crewDead,false);
   for(let i=0;i<6&&pilot.alive;i++){sim.footCooldown.PRIF44=0;sim.fire(1);for(let step=0;step<30&&pilot.alive;step++)sim.tick(1/60,{forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false});}assert.equal(pilot.alive,false);assert.equal(last.alive,true);assert.equal(last.pilot,false);assert.ok(sim.units.find(u=>u.id==='bridge-union-sentry')!.alive);
   audio.updateMissionMusic(sim.time,false,sim.missionMusicUnits);await Promise.resolve();assert.equal(tracks.length,2);assert.equal(tracks[1].src,'snow-maze.mp3');assert.equal(tracks[1].paused,false);assert.equal(sim.status,'running');
  });

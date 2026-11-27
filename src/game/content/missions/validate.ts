@@ -12,13 +12,19 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   if(mission.footWeapons?.laserSite){const site=mission.footWeapons.laserSite;if(!Number.isFinite(site.range)||site.range<=0)fail('laser site range must be positive');if(!site.facilityIds.length)fail('laser site has no facilities');unique(site.facilityIds,'laser site facility ID');for(const id of site.facilityIds)if(!mission.base?.buildings.some(building=>building.id===id))fail(`laser site references missing facility: ${id}`);}
   const allUnits=[...mission.units,...(mission.rendezvous?.units??[])];
   const units=unique(allUnits.map(u=>u.id),'unit ID');
+  const conditionalUnits=new Set(mission.units.filter(unit=>unit.difficulties).map(unit=>unit.id));
+  for(const unit of mission.units)if(unit.difficulties){
+   if(!unit.difficulties.length||new Set(unit.difficulties).size!==unit.difficulties.length||unit.difficulties.some(difficulty=>!['Easy','Medium','Hard'].includes(difficulty)))fail(`unit ${unit.id} has invalid difficulties`);
+   if(unit.personId)fail(`difficulty-limited unit has a crew reference: ${unit.id}`);
+  }
+  for(const unit of mission.rendezvous?.units??[])if(unit.difficulties)fail(`rendezvous unit cannot be difficulty-limited: ${unit.id}`);
   const waypoints=unique(mission.waypoints.map(w=>w.id),'waypoint ID');
   unique(mission.objectives.map(o=>o.id),'objective ID');
   const people=unique([...allUnits.flatMap(u=>u.personId?[u.personId]:[]),...(mission.personnel??[]).map(p=>p.personId)],'person ID');
   if(mission.rendezvous){const meeting=mission.rendezvous;if(!waypoints.has(meeting.waypointId))fail(`rendezvous references missing waypoint: ${meeting.waypointId}`);if(!meeting.units.length)fail('rendezvous needs units');for(const unit of meeting.units)if(!unit.personId||!mission.companions?.some(member=>member.personId===unit.personId&&member.unitId===unit.id))fail(`rendezvous unit lacks matching companion: ${unit.id}`);}
   if(mission.vehicleElevator){const e=mission.vehicleElevator;if(![e.x,e.z,e.width,e.depth].every(Number.isFinite)||e.width<=0||e.depth<=0)fail('invalid vehicle elevator');}
   if(mission.shieldProtectionRadius!==undefined&&(!Number.isFinite(mission.shieldProtectionRadius)||mission.shieldProtectionRadius<=0))fail('invalid shield protection radius');
-  const unitRef=(id:string,label:string)=>{if(!units.has(id))fail(`${label} references missing unit: ${id}`);};
+  const unitRef=(id:string,label:string)=>{if(!units.has(id))fail(`${label} references missing unit: ${id}`);else if(conditionalUnits.has(id))fail(`${label} references difficulty-limited unit: ${id}`);};
   unitRef(mission.assignedUnitId,'assignedUnitId');
   if(mission.startMountedUnitId)unitRef(mission.startMountedUnitId,'startMountedUnitId');
   if(mission.bgm?.afterEliminate){const cue=mission.bgm.afterEliminate;if(!cue.unitIds.length)fail('BGM afterEliminate has no units');unique(cue.unitIds,'BGM afterEliminate unit ID');for(const id of cue.unitIds)unitRef(id,'BGM afterEliminate');}
@@ -34,7 +40,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
    if(!disguise.vehicleIds.length)fail('IFF disguise has no vehicles');
    unique(disguise.vehicleIds,'IFF disguise vehicle ID');for(const id of disguise.vehicleIds)unitRef(id,'IFF disguise');
   }
-  const targetRef=(id:string,label:string)=>{if(!targets.has(id))fail(`${label} references missing target: ${id}`);};
+  const targetRef=(id:string,label:string)=>{if(!targets.has(id))fail(`${label} references missing target: ${id}`);else if(conditionalUnits.has(id))fail(`${label} references difficulty-limited unit: ${id}`);};
   for(const unit of allUnits)if(unit.powerSourceId){const source=mission.base?.buildings.find(b=>b.id===unit.powerSourceId);if(!source||source.kind!=='power-plant')fail(`unit ${unit.id} references missing power plant: ${unit.powerSourceId}`);}
   for(const unit of allUnits)if(unit.controlFacilityId){const source=mission.base?.buildings.find(b=>b.id===unit.controlFacilityId);if(!source||source.kind!=='popup-turret-control')fail(`unit ${unit.id} references missing turret control: ${unit.controlFacilityId}`);}
   for(const person of mission.personnel??[]){if(person.facilityId){if(!mission.base?.buildings.some(b=>b.id===person.facilityId))fail(`person ${person.personId} references missing facility: ${person.facilityId}`);}if(person.boardingTargetId)unitRef(person.boardingTargetId,`person ${person.personId}`);if(person.facilityId&&person.boardingTargetId)fail(`person ${person.personId} has conflicting locations`);if(person.follow&&(person.facilityId||person.boardingTargetId))fail(`person ${person.personId} cannot follow from another location`);if(person.follow&&(person.faction||person.iff))fail(`person ${person.personId} cannot follow from another faction`);if(person.iff!==undefined&&person.iff==='')fail(`person ${person.personId} has an empty IFF`);}
@@ -47,6 +53,10 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   if(mission.vehicleClaim){const claim=mission.vehicleClaim;if(!['union','merc','darken','scorp'].includes(claim.faction))fail('vehicle claim has invalid faction');if(!Number.isFinite(claim.range)||claim.range<=0)fail('vehicle claim range must be positive');if(!claim.unitIds.length)fail('vehicle claim has no units');unique(claim.unitIds,'vehicle claim unit');for(const id of claim.unitIds)unitRef(id,'vehicle claim');}
   for(const assault of mission.assaults??[]){unitRef(assault.unitId,'assault');targetRef(assault.targetId,'assault');if(!Number.isFinite(assault.startAt)||assault.startAt<0)fail('assault startAt must be nonnegative');if(assault.engageRange!==undefined&&(!Number.isFinite(assault.engageRange)||assault.engageRange<=0))fail('assault engageRange must be positive');if(assault.afterEliminateUnitId){unitRef(assault.afterEliminateUnitId,'assault trigger');if(assault.afterEliminateUnitId===assault.unitId)fail('assault cannot trigger itself');}if(assault.stopWhenBridgeRaisedId&&![mission.terrain.river,...mission.terrain.rivers??[]].some(r=>r?.bridgeId===assault.stopWhenBridgeRaisedId))fail(`assault references missing bridge: ${assault.stopWhenBridgeRaisedId}`);}
   for(const assault of mission.assaults??[])if(assault.retaliateAfterHits!==undefined&&(!Number.isInteger(assault.retaliateAfterHits)||assault.retaliateAfterHits<1))fail(`assault retaliation hit count must be a positive integer: ${assault.unitId}`);
+  for(const assault of mission.assaults??[])if(assault.retreatAt!==undefined||assault.retreatToRange!==undefined){
+   const at=assault.retreatAt??NaN,range=assault.retreatToRange??NaN;
+   if(!Number.isFinite(at)||at<=assault.startAt||!Number.isFinite(range)||range<=0)fail(`assault retreat needs a time after its start and a positive range: ${assault.unitId}`);
+  }
   for(const assault of mission.assaults??[]){
    if(assault.engageUnitIds){unique(assault.engageUnitIds,`assault engage unit ${assault.unitId}`);for(const id of assault.engageUnitIds)unitRef(id,'assault engage');}
    if(assault.rally&&![assault.rally.x,assault.rally.z].every(Number.isFinite))fail(`assault rally is invalid: ${assault.unitId}`);
@@ -70,6 +80,7 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
    if(objective.type==='defend'){if(objective.requiredKills!==undefined&&(!Number.isInteger(objective.requiredKills)||objective.requiredKills<1||objective.requiredKills>objective.attackerIds.length))fail(`objective ${objective.id} has invalid requiredKills`);if(!objective.targetIds.length||!objective.attackerIds.length)fail(`objective ${objective.id} has no defense targets or attackers`);for(const id of objective.targetIds)targetRef(id,`objective ${objective.id}`);for(const id of objective.attackerIds)unitRef(id,`objective ${objective.id}`);}
    if(objective.type==='reach'&&!waypoints.has(objective.waypointId))fail(`objective ${objective.id} references missing waypoint: ${objective.waypointId}`);
    if(objective.type==='eliminate'){if(!objective.unitIds.length)fail(`objective ${objective.id} has no targets`);for(const id of objective.unitIds)unitRef(id,`objective ${objective.id}`);}
+   if(objective.type==='eliminate-count'){if(!Number.isInteger(objective.requiredKills)||objective.requiredKills<1||objective.requiredKills>objective.unitIds.length)fail(`objective ${objective.id} has invalid requiredKills`);for(const id of objective.unitIds)unitRef(id,`objective ${objective.id}`);}
    if(objective.type==='neutralize'){
     if(!objective.unitIds.length&&!objective.facilityIds.length&&!objective.loweredBridgeId)fail(`objective ${objective.id} has no targets`);
     for(const id of objective.unitIds)unitRef(id,`objective ${objective.id}`);
@@ -113,7 +124,8 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
   unique((mission.radioTriggers??[]).map(r=>r.id),'radio trigger ID');
   for(const trigger of mission.radioTriggers??[]){
    if(!people.has(trigger.speakerId))fail(`radio trigger ${trigger.id} references missing speaker: ${trigger.speakerId}`);
-   if(trigger.event==='time'&&(!Number.isFinite(trigger.at)||trigger.at<0))fail(`radio trigger ${trigger.id} has invalid time`);
+   if((trigger.event==='time'||trigger.event==='time-if-unit-unoccupied')&&(!Number.isFinite(trigger.at)||trigger.at<0))fail(`radio trigger ${trigger.id} has invalid time`);
+   if(trigger.event==='time-if-unit-unoccupied')unitRef(trigger.unitId,`radio trigger ${trigger.id}`);
    if(trigger.event==='encounter'){
     if(!Number.isFinite(trigger.at)||trigger.at<0||!Number.isFinite(trigger.range)||trigger.range<=0)fail(`radio trigger ${trigger.id} has invalid encounter timing or range`);
     if(!trigger.unitIds.length||!trigger.enemyUnitIds.length)fail(`radio trigger ${trigger.id} needs encounter units`);
@@ -124,17 +136,24 @@ export function validateMissions(missions:readonly MissionDefinition[]):string[]
     for(const id of trigger.unitIds)unitRef(id,`radio trigger ${trigger.id}`);
    }
    if(trigger.event==='iff'&&(!/^[0-7]{4}$/.test(trigger.iff)||(!!trigger.unitId&&!units.has(trigger.unitId))))fail(`radio trigger ${trigger.id} has invalid IFF or unit`);
+   if(trigger.event==='iff'&&trigger.unitId&&conditionalUnits.has(trigger.unitId))fail(`radio trigger ${trigger.id} references difficulty-limited unit: ${trigger.unitId}`);
    if(trigger.event==='player-hit'){if(!trigger.unitIds.length)fail(`radio trigger ${trigger.id} has no units`);for(const id of trigger.unitIds)unitRef(id,`radio trigger ${trigger.id}`);}
   }
   if(mission.ionStrike){const strike=mission.ionStrike;
    if(!mission.base?.buildings.some(b=>b.id===strike.facilityId))fail(`ion strike references missing facility: ${strike.facilityId}`);
    unitRef(strike.retreatUnitId,'ion strike retreat');
+   for(const id of strike.retreatOnDestroyedUnitIds??[])unitRef(id,'ion strike destroyed-unit retreat');
    if(![strike.retreatRange,strike.delay,strike.safeRadius].every(value=>Number.isFinite(value)&&value>0))fail('ion strike needs positive range, delay and safe radius');
    for(const id of [strike.retreatRadioId,...strike.warningRadioIds])if(!mission.radioTriggers?.some(cue=>cue.id===id&&cue.event==='scripted'))fail(`ion strike references missing scripted radio: ${id}`);
    if(!mission.objectives.some(o=>o.type==='survive-ion-strike'))fail('ion strike needs a survival objective');
   }
   if(mission.objectives.some(o=>o.type==='survive-ion-strike')&&!mission.ionStrike)fail('ion survival objective needs ion strike configuration');
-  if(mission.completionSequence){if(!mission.radioTriggers?.some(r=>r.id===mission.completionSequence?.radioId&&r.event==='completion'))fail('completion sequence references missing radio trigger');if(!Number.isFinite(mission.completionSequence.delay)||mission.completionSequence.delay<0)fail('completion sequence has invalid delay');}
+  if(mission.completionSequence){const sequence=mission.completionSequence;
+   if(!mission.radioTriggers?.some(r=>r.id===sequence.radioId&&r.event==='completion'))fail('completion sequence references missing radio trigger');
+   if(!Number.isFinite(sequence.delay)||sequence.delay<0)fail('completion sequence has invalid delay');
+   if(sequence.whenFacilityDestroyedId&&!mission.base?.buildings.some(b=>b.id===sequence.whenFacilityDestroyedId))fail(`completion sequence references missing facility: ${sequence.whenFacilityDestroyedId}`);
+   if(sequence.casualty){if(!mission.companions?.some(c=>c.personId===sequence.casualty?.personId))fail(`completion sequence references missing companion: ${sequence.casualty.personId}`);if(!Number.isFinite(sequence.casualty.after)||sequence.casualty.after<0||sequence.casualty.after>=sequence.delay)fail('completion sequence has invalid casualty time');}
+  }
   unique([...allUnits.map(u=>u.id),...(mission.base?.buildings??[]).flatMap(b=>b.id?[b.id]:[])],'selection ID');
   unique((mission.minefields??[]).map(f=>f.id),'minefield ID');
   unique((mission.minefields??[]).flatMap(f=>f.mines.map(m=>m.id)),'mine ID');

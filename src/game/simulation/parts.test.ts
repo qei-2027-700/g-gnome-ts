@@ -14,6 +14,13 @@ test('pop-up turret hit regions match its low rendered gun and body',()=>{
  assert.equal(intersectParts(turret,{x:0,y:2.1,z:10},{x:0,y:2.1,z:-10})?.part,'leftWeapon');
  assert.equal(intersectParts(turret,{x:0,y:6,z:10},{x:0,y:6,z:-10}),null);
 });
+test('Scorp Rocket Tower lower launch panel hit region stays fixed as its roof turns',()=>{
+ const tower=makeUnit('rocket','scorp-rocket-tower',0,0,false);
+ const from={x:2.95,y:8.35,z:15},to={x:2.95,y:8.35,z:-15};
+ assert.equal(intersectParts(tower,from,to)?.part,'rightWeapon');
+ tower.aim=Math.PI/2;
+ assert.equal(intersectParts(tower,from,to)?.part,'rightWeapon');
+});
 test('self and enemy damage is local; shields absorb hits and regeneration does not repair parts',()=>{
  for(const own of [true,false]){
   const s=mounted(),u=own?s.mounted!:s.units[1];u.shield=0;const initial=freshParts();s.damage(u,VEHICLES[u.kind].armor*.3,'leftLeg');
@@ -34,6 +41,39 @@ test('Sentry hit regions distinguish the low Union cabin from the tall Merc cabi
  assert.equal(intersectParts(union,from,to),null);
  assert.equal(intersectParts(merc,from,to)?.part,'cockpit');
  assert.equal(intersectParts(union,{x:0,y:4.3,z:10},{x:0,y:4.3,z:-10})?.part,'cockpit');
+});
+test('Merc AIP upper gun housing is a vulnerable cockpit hit, while the gun body remains a weapon part',()=>{
+ const u=makeUnit('aip','merc-aip',0,0);
+ const upper=intersectParts(u,{x:2.4,y:4.62,z:10},{x:2.4,y:4.62,z:-10});
+ const lower=intersectParts(u,{x:2.4,y:4.2,z:10},{x:2.4,y:4.2,z:-10});
+ assert.equal(upper?.part,'cockpit');assert.equal(lower?.part,'rightWeapon');
+ const s=new Simulation();s.units=[u];
+ s.damage(u,LASERS.GAUS30.damage,'cockpit',upper?.point);
+ assert.equal(u.alive,false);
+ const lowerTarget=makeUnit('lower','merc-aip',0,0);s.units=[lowerTarget];lowerTarget.shield=0;
+ s.damage(lowerTarget,lowerTarget.spec.armor*.35,'rightWeapon',lower?.point);
+ assert.equal(lowerTarget.alive,false);
+});
+test('an actual GAUS shot can destroy a fresh Merc AIP through its upper turret',()=>{
+ const s=new Simulation(),tower=makeUnit('tower','merc-meson-tower',2.4,0),target=makeUnit('aip','merc-aip',0,100);
+ s.units=[tower,target];s.mounted=tower;tower.aim=0;s.pitch=-.04;
+ s.fire(1);for(let i=0;i<80&&target.alive;i++)s.tick(1/60,idle);
+ assert.ok(s.events.some(e=>e.type==='hit'&&e.unit===target&&e.part==='cockpit'));
+ assert.equal(target.alive,false);
+});
+test('ASV broken side stops its guns while the vehicle and opposite gun keep working',()=>{
+ const s=new Simulation(),u=makeUnit('asv','union-asv',0,0);s.units=[u];s.mounted=u;
+ s.fire(1);assert.equal(s.events.filter(e=>e.type==='shot'&&e.unit===u).length,2);
+ u.slotCooldown[0]=0;u.shield=0;s.damage(u,u.spec.armor*.35,'leftWeapon');
+ assert.equal(u.alive,true);assert.equal(u.parts.leftWeapon,0);
+ s.events=[];const ammo=u.slotAmmo[0];s.fire(1);
+ assert.equal(s.events.filter(e=>e.type==='shot'&&e.unit===u).length,1);assert.equal(u.slotAmmo[0],ammo!-1);
+ u.slotCooldown[0]=0;s.damage(u,u.spec.armor*.35,'rightWeapon');
+ s.events=[];const remaining=u.slotAmmo[0];s.fire(1);s.fire(2);
+ assert.equal(s.events.filter(e=>e.type==='shot'&&e.unit===u).length,0);assert.equal(u.slotAmmo[0],remaining);assert.ok((u.slotAmmo[1]??0)>0);assert.equal(u.alive,true);
+ const scorp=makeUnit('scorp','scorp-asv',0,0);s.units=[scorp];s.mounted=scorp;scorp.shield=0;s.damage(scorp,scorp.spec.armor*.35,'leftWeapon');
+ s.events=[];const leftAmmo=scorp.slotAmmo[0],rightAmmo=scorp.slotAmmo[1];s.fire(1);s.fire(2);s.fire(3);
+ assert.equal(scorp.slotAmmo[0],leftAmmo);assert.equal(scorp.slotAmmo[1],rightAmmo!-1);assert.ok(s.events.some(e=>e.type==='shot'&&e.unit===scorp&&e.weapon==='zWASP'));assert.ok(!s.events.some(e=>e.type==='shot'&&e.unit===scorp&&e.weapon==='SREM'));
 });
 test('aiming at a leg damages that leg and the shot event ends at the real contact point',()=>{
  const s=mounted(),target=s.units[1];target.x=0;target.z=100;target.shield=0;
@@ -95,13 +135,15 @@ test('Scorp ASV leaves a central gap below the bridge while both separated track
  u.aim=Math.PI/2;assert.equal(intersectParts(u,{x:12,y:2.12,z:0},{x:-12,y:2.12,z:0})?.part,'hull');
 });
 
-test('rocket tower canopy, column, launch panels and flared supports have separate fixed hit regions',()=>{
+test('rocket tower canopy turns while its column, launch panels and supports stay fixed',()=>{
  const u=makeUnit('tower','scorp-rocket-tower',0,0);
- for(const rotation of [0,Math.PI/2]){u.yaw=rotation;u.aim=rotation+.3;
+ for(const rotation of [0,Math.PI/2]){u.yaw=rotation;u.aim=rotation;
   assert.equal(intersectParts(u,{x:0,y:10.8,z:15},{x:0,y:10.8,z:-15})?.part,'cockpit');
   assert.equal(intersectParts(u,{x:0,y:4,z:15},{x:0,y:4,z:-15})?.part,'hull');
   for(const side of [-1,1]){
-   assert.equal(intersectParts(u,{x:side*2.95,y:8.35,z:15},{x:side*2.95,y:8.35,z:-15})?.part,side<0?'leftWeapon':'rightWeapon');
+   const from={x:side*2.95,y:8.35,z:15};
+   const to={x:side*2.95,y:8.35,z:-15};
+   assert.equal(intersectParts(u,from,to)?.part,side<0?'leftWeapon':'rightWeapon');
    assert.equal(intersectParts(u,{x:side*3.6,y:1,z:15},{x:side*3.6,y:1,z:-15})?.part,side<0?'leftLeg':'rightLeg');
   }
   assert.equal(intersectParts(u,{x:0,y:12.5,z:15},{x:0,y:12.5,z:-15}),null);

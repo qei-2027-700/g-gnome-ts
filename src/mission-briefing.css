@@ -11,7 +11,16 @@
 .console-orders button span{color:#d0d217;font-size:1.9cqw}.console-orders button:hover,.console-orders button[aria-pressed="true"]{color:#c4ff9c;background:#0e2108}.console-orders button:focus-visible{outline:2px solid #d2e634;outline-offset:1px}
 .console-hint{position:absolute;left:25%;top:79.5%;width:50%;margin:0;text-align:center;color:#d6da21;font-size:1.55cqw}
 .console-mission-select{position:absolute;left:25.3%;top:85.55%;width:50.2%;height:2.8%;display:flex;align-items:center;gap:1cqw;background:#000;color:#95b991;font-size:1cqw}
-.console-mission-select select{flex:1;min-width:0;height:100%;padding:0 .4cqw;border:0;background:#000;color:#5fff31;font-size:1.15cqw;cursor:pointer}
+.console-mission-select button{flex:1;min-width:0;height:100%;padding:0 .4cqw;border:1px solid #3c8a31;background:#071507;color:#5fff31;font-size:1.35cqw;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.console-mission-select button:hover,.console-mission-select button:focus-visible{border-color:#b7ff54;background:#145532;outline:2px solid #b7ff54}
+.console-mission-list{position:absolute;z-index:4;left:20%;top:14%;width:62%;height:64%;display:flex;flex-direction:column;border:.35cqw solid #5cba43;background:#050d05;box-shadow:0 0 0 100vw #000a,0 1cqw 4cqw #000;color:#6eff4d;font-family:Arial,sans-serif}
+.console-mission-list[hidden]{display:none}
+.console-mission-list-header{display:flex;align-items:center;justify-content:space-between;flex:none;padding:1cqw 1.5cqw;border-bottom:1px solid #3c8a31;font-size:clamp(14px,1.8cqw,26px);letter-spacing:.08em}
+.console-mission-list-header button{padding:0 .7cqw;border:1px solid #3c8a31;background:#0a1b0b;color:#8eff68;font-size:2.5cqw;line-height:1}
+.console-mission-options{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:.7cqw}
+.console-mission-options button{display:flex;align-items:center;gap:1.8cqw;width:100%;min-height:max(44px,4.2cqw);padding:.7cqw 1cqw;border:1px solid transparent;background:#091609;color:#bcf2a7;text-align:left;font-size:clamp(14px,1.6cqw,24px);line-height:1.35}
+.console-mission-options button+button{margin-top:.35cqw}.console-mission-options button span:first-child{flex:none;min-width:4cqw;color:#5fff31;font-weight:bold}
+.console-mission-options button:hover,.console-mission-options button:focus-visible,.console-mission-options button[aria-current]{border-color:#69c851;background:#17391a;outline:none}
 .console-button{position:absolute;margin:0;padding:0;border:0;border-radius:0;background:#020302;color:#22ff08;font:bold 2.3cqw/1 "Arial Narrow",monospace;text-shadow:0 0 .2cqw #24750d;letter-spacing:-.07em;box-shadow:none}
 .console-button:hover,.console-button:focus-visible{background:#145532;color:#aeff8d;outline:2px solid #b7ff54}.console-button:disabled{cursor:default;color:#46843e;background:#050a04;opacity:1}
 .console-launch{left:88.15%;top:33.3%;width:10.9%;height:3.9%}.console-new,.console-load,.console-save,.console-credits{left:1.9%;width:11.4%;height:3.7%}

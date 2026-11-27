@@ -46,9 +46,9 @@ export const MISSION_3_5:MissionDefinition={
   {id:'destroy-laboratory',type:'destroy-facility',facilityIds:['g-nome-laboratory'],label:{ja:'G-NOMEの研究所を破壊せよ',en:'Destroy the G-NOME laboratory'}},
   {id:'survive-betrayal',type:'survive-ion-strike',label:{ja:'研究所への作戦を完遂せよ',en:'Complete the laboratory operation'}},
  ],
- ionStrike:{facilityId:'g-nome-laboratory',retreatUnitId:'sheridan-sentry',retreatRadioId:'sheridan-retreat',retreatRange:220,warningRadioIds:['thane-lost-gnome','kylie-eject'],delay:20,safeRadius:80},
+ ionStrike:{facilityId:'g-nome-laboratory',retreatUnitId:'sheridan-sentry',retreatRadioId:'sheridan-retreat',retreatRange:220,retreatOnDestroyedUnitIds:['kylie-aip'],warningRadioIds:['thane-lost-gnome','kylie-eject'],delay:20,safeRadius:60},
  radioTriggers:[
-  {id:'sheridan-retreat',event:'scripted',speakerId:'sheridan',vehicleKind:'scorp-sentry',line:{ja:'Baby、やられた。戦線を離脱する',en:'Baby, I’ve been hit. I’m leaving the battlefield.'}},
+  {id:'sheridan-retreat',event:'scripted',speakerId:'sheridan',vehicleKind:'scorp-sentry',line:{ja:'ベイビー、やられた。戦線を離脱する',en:'Baby, I’ve been hit. I’m leaving the battlefield.'}},
   {id:'thane-lost-gnome',event:'scripted',speakerId:'thane',vehicleKind:'scorp-tactical',line:{ja:'ガンツ！Gnomeを見失ったわ！',en:'Gantz! I’ve lost sight of G-Nome!'}},
   {id:'kylie-eject',event:'scripted',speakerId:'kylie',vehicleKind:'scorp-aip',line:{ja:'ガンツ！お前が狙われてるぞ。脱出脱出脱出だ！',en:'Gantz! You’re the target. Eject, eject, eject!'}},
  ],
@@ -66,6 +66,6 @@ export const MISSION_3_5:MissionDefinition={
    {label:{ja:'イオン砲を用いて研究所を破壊せよ',en:'Destroy the laboratory with the ion cannon'},detail:{ja:'研究所への攻撃を進める。',en:'Continue the attack on the laboratory.'}},
   ],
  },
- weaponOverrides:{lasers:{GAUS30:{range:480},LRIP:{range:800}}},
+ weaponOverrides:{lasers:{GAUS30:{range:480}}},
  tuning:{Easy:{interval:2.6},Medium:{interval:1.9},Hard:{interval:1.35}},
 };

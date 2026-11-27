@@ -7,6 +7,8 @@ import {MISSION_3_2} from './mission-3-2.ts';
 import {MISSION_3_4} from './mission-3-4.ts';
 import {MISSION_3_5} from './mission-3-5.ts';
 import {MISSION_2_2} from './mission-2-2.ts';
+import {MISSION} from './mission-1-1.ts';
+import {MISSION_4_5} from './mission-4-5.ts';
 
 test('2-2 reinforcement requires an existing defeated unit and bridge',()=>{
  const mission=structuredClone(MISSION_2_2);
@@ -18,9 +20,9 @@ test('2-2 reinforcement requires an existing defeated unit and bridge',()=>{
 
 test('ion strike requires valid targets, radio cues and positive timing',()=>{
  const mission=structuredClone(MISSION_3_5);
- mission.ionStrike={...mission.ionStrike!,facilityId:'missing-laboratory',retreatUnitId:'missing-ally',warningRadioIds:['missing-radio'],delay:0,safeRadius:0};
+ mission.ionStrike={...mission.ionStrike!,facilityId:'missing-laboratory',retreatUnitId:'missing-ally',retreatOnDestroyedUnitIds:['missing-kylie'],warningRadioIds:['missing-radio'],delay:0,safeRadius:0};
  const errors=validateMissions([mission]).join('\n');
- for(const expected of ['missing-laboratory','missing-ally','missing-radio','positive range, delay and safe radius'])assert.ok(errors.includes(expected),expected);
+ for(const expected of ['missing-laboratory','missing-ally','missing-kylie','missing-radio','positive range, delay and safe radius'])assert.ok(errors.includes(expected),expected);
 });
 test('beforeIonLock requires an ion strike and a lead inside its delay',()=>{
  const late=structuredClone(MISSION_3_5);late.bgm={...late.bgm!,beforeIonLock:{lead:late.ionStrike!.delay+1,trackId:'bgm-defeated'}};
@@ -36,6 +38,20 @@ test('pop-up turrets require their control facility',()=>{
 
 test('every registered mission has valid identities, references and completion data',()=>{
  assert.deepEqual(validateMissions(MISSIONS),[]);
+});
+test('4-5 completion sequence requires an existing facility, companion and casualty time before victory',()=>{
+ const mission=structuredClone(MISSION_4_5);
+ mission.completionSequence={...mission.completionSequence!,whenFacilityDestroyedId:'missing-lab',casualty:{personId:'missing-person',after:5}};
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['missing-lab','missing-person','invalid casualty time'])assert.ok(errors.includes(expected),expected);
+});
+test('2-6 rejects impossible AIP counts, invalid retreats and missing conditional radio towers',async()=>{
+ const {MISSION_2_6}=await import('./mission-2-6.ts');const mission=structuredClone(MISSION_2_6);
+ mission.objectives=[{id:'impossible',type:'eliminate-count',unitIds:['merc-aip-north'],requiredKills:9,label:{ja:'試験',en:'Test'}}];
+ mission.assaults=[{...mission.assaults![0]!,retreatAt:1,retreatToRange:0}];
+ mission.radioTriggers=[{id:'missing',event:'time-if-unit-unoccupied',at:1,unitId:'missing-tower',speakerId:'kylie',vehicleKind:'merc-meson-tower',line:{ja:'試験',en:'Test'}}];
+ const errors=validateMissions([mission]).join('\n');
+ for(const expected of ['invalid requiredKills','retreat needs a time','missing-tower'])assert.ok(errors.includes(expected),expected);
 });
 test('3-2 scripted routes and encounter radio require valid units and timing',()=>{
  const mission=structuredClone(MISSION_3_2);
@@ -131,6 +147,16 @@ test('catalog validation always reports an assigned unit reference absent from t
   const mission=structuredClone(MISSION_3_3);mission.assignedUnitId=`missing-unit-${index}`;
   assert.ok(validateMissions([mission]).length>0,mission.assignedUnitId);
  }
+});
+
+test('difficulty-limited reinforcements cannot be required by mission progress',()=>{
+ const mission=structuredClone(MISSION);
+ mission.units=[...mission.units,{id:'hard-extra',kind:'merc-sentry',x:40,z:180,pilot:true,difficulties:['Hard']}];
+ assert.deepEqual(validateMissions([mission]),[]);
+ mission.objectives=[...mission.objectives,{id:'extra-target',type:'eliminate',unitIds:['hard-extra'],label:{ja:'追加機を倒す',en:'Destroy extra unit'}}];
+ assert.ok(validateMissions([mission]).some(error=>error.includes('objective extra-target references difficulty-limited unit: hard-extra')));
+ mission.objectives=mission.objectives.slice(0,-1);mission.units=[...mission.units.slice(0,-1),{...mission.units.at(-1)!,difficulties:[]}];
+ assert.ok(validateMissions([mission]).some(error=>error.includes('invalid difficulties')));
 });
 
 test('Codex content rules document all three content-addition templates',async()=>{

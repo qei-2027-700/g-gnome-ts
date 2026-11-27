@@ -17,6 +17,17 @@ test('PRIF44 damages without ejecting; GASHR has five canisters and ejects after
  step(s,1.1);assert.equal(enemy.pilot,false);assert.equal(s.soldiers.length,1);assert.equal(enemy.shield,shield);assert.equal(enemy.armor,armor);assert.equal(s.soldiers[0].flight,null);assert.ok(Math.hypot(s.soldiers[0].x-enemy.x,s.soldiers[0].z-enemy.z)>4);assert.ok(s.events.some(e=>e.type==='pilot-eject'));
  s.footCooldown.GASHR=0;s.fire(2);step(s,1.1);assert.equal(s.soldiers.length,1);
 });
+test('NPC GASHR ejects the mounted player only when the setting is enabled',()=>{
+ for(const enabled of [false,true]){
+  const s=new Simulation('Easy',MISSION,{playerGashrVulnerable:enabled}),own=s.units[0];s.human={x:own.x,z:own.z};assert.ok(s.board());s.iff='2620';
+  const soldier=s.forceEject(makeUnit('gas-attacker','merc-sentry',own.x,own.z+60,true))!;soldier.flight=null;soldier.x=own.x;soldier.z=own.z+60;soldier.yaw=Math.PI;soldier.iff='6707';soldier.cooldown=0;soldier.gashrObserveUntil=0;
+  s.units=[own];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.facilities=[];
+  let impact=false;for(let i=0;i<180;i++){s.tick(1/60,idle);if(s.events.some(event=>event.type==='impact'&&event.weapon==='GASHR')){impact=true;break;}s.events=[];}
+  assert.equal(impact,true,`GASHR impact with enabled=${enabled}`);
+  assert.equal(s.mounted,enabled?null:own);assert.equal(own.pilot,!enabled);assert.equal(s.humanHealth,100);assert.equal(s.status,'running');
+  assert.equal(s.events.some(event=>event.type==='eject'&&event.unit===own),enabled);
+ }
+});
 for(const kind of ['union-aip','merc-aip','darken-aip','scorp-aip'] as const)test(`GASHR aimed at a hovering ${kind} ejects its pilot on contact`,()=>{
  const s=foot(),aip=makeUnit('hover-target',kind,0,40,true,{speed:0,ai:{detection:0}});
  s.units=[aip];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];
@@ -128,11 +139,13 @@ test('vehicle machine guns apply their higher infantry damage to exposed soldier
   const gunner=makeUnit('gunner',kind,0,0,true,{weapons:[weapon],speed:0,ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});
   const target=s.forceEject(makeUnit('target','merc-sentry',0,40,true))!;target.flight=null;target.x=0;target.z=40;target.iff='target';gunner.iff='attacker';gunner.alert=true;gunner.aggressorId=target.id;gunner.aggressorUntil=10;gunner.aim=gunner.yaw=0;s.units=[gunner];
   for(let i=0;i<120&&!s.events.some(e=>e.type==='shot'&&e.unit===gunner);i++)s.tick(.02,idle);
+  if(weapon==='zWASP'){gunner.cooldown=999;step(s,1.2);}
   assert.equal(target.health,35-damage*weaponMountCount(gunner.kind,weapon),weapon);
   const againstPlayer=new Simulation();againstPlayer.units=[];againstPlayer.mission.base=undefined;againstPlayer.mission.rocks=[];againstPlayer.mission.terrain.cliffs=[];againstPlayer.human={x:0,z:40};againstPlayer.iff='player';
   const playerTarget=makeUnit('gunner',kind,0,0,true,{weapons:[weapon],speed:0,ai:{detection:180,strafe:0,keepMoving:false,stopDistance:60,missileVolley:1}});
   playerTarget.iff='attacker';playerTarget.alert=true;playerTarget.aggressorId='player';playerTarget.aggressorUntil=10;playerTarget.aim=playerTarget.yaw=0;againstPlayer.units=[playerTarget];
   for(let i=0;i<120&&!againstPlayer.events.some(e=>e.type==='shot'&&e.unit===playerTarget);i++)againstPlayer.tick(.02,idle);
+  if(weapon==='zWASP'){playerTarget.cooldown=999;step(againstPlayer,1.2);}
   assert.equal(againstPlayer.humanHealth,100-damage*weaponMountCount(playerTarget.kind,weapon),`${weapon} player`);
  }
 });

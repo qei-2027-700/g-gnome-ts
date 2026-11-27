@@ -2,20 +2,20 @@ import {MANUAL_AIM,manualAimFor,keyboardAimScale,isHawc,canFlyAcrossRiver,aiTurn
 export {accelerateSpeed} from './movement.ts';
 import {makeFacilities,isFacility,facilityDistance,facilityExit,entryAllowed,type Facility} from './facilities.ts';
 export {isFacility} from './facilities.ts';
-import {VEHICLE_SHAPES,FACILITY_WRECK,MERC_TACTICAL_RAID_MUZZLE,SCORP_TACTICAL_RAID_MUZZLES} from '../content/vehicle-shapes.ts';
+import {VEHICLE_SHAPES,FACILITY_WRECK,MERC_TACTICAL_RAID_MUZZLE,SCORP_TACTICAL_RAID_MUZZLES,SCORP_ROCKET_TOWER_PORTS} from '../content/vehicle-shapes.ts';
 import {allyRoute} from './ally-navigation.ts';
 import {sweptCircle,crossesBuilding,buildingContact,buildingMotionContact,rotatedBuildingMotionContact,circleMotionContact,peakFootprint,peakMotionContact,peakSegmentContact,somePeakNearSegment,rockSegmentContact,deckAltitude,ROCK_COVER_MARGIN} from './battlefield.ts';
 import {riverFrameAtZ,riverStripBoxes,terrainRivers} from '../content/missions/river.ts';
 import {followPosition,type AllyOrder,type AllyCommand,type RadioRecipient,type RadioFailure,type OrderResult} from './ally-orders.ts';
 import {INFANTRY_LASER_SITE,INFANTRY_WEAPONS} from '../content/weapons.ts';
 import {INFANTRY_MOVEMENT,INFANTRY_HIT_RADIUS,INFANTRY_AI_AIM_TOLERANCE,INFANTRY_AUTO_BOARD_DELAY,INFANTRY_AUTO_BOARD_RANGE,BOARDING_DISTANCE,launchFlight,isEmbarked,type Flight,type Soldier} from './infantry.ts';
-import {PARTS,PART_DAMAGE_THRESHOLDS,freshParts,applyPartDamage,intersectParts,mobilityMultiplier,sweptVehicleContact,vehicleContactFraction,vehicleRadius,buildingClearance,type BodyPart,type PartState} from './parts.ts';
+import {PARTS,PART_DAMAGE_THRESHOLDS,freshParts,applyPartDamage,intersectParts,mobilityMultiplier,sweptVehicleContact,vehicleContactFraction,vehicleRadius,buildingClearance,mercAipUpperTurret,type BodyPart,type PartState} from './parts.ts';
 import {DEFAULT_MISSION,type MissionDefinition} from '../content/missions/index.ts';
 import type {River,Spawn} from '../content/missions/types.ts';
-import {pitchDarkenTactical,resolveVehicle,type Faction,type VehicleKind,type VehicleOverride,type VehicleSpec} from '../content/vehicles.ts';
+import {pitchDarkenTactical,resolveVehicle,MESON_TOWER_DOWN_PITCH_LIMIT,type Faction,type VehicleKind,type VehicleOverride,type VehicleSpec} from '../content/vehicles.ts';
 import {resolveWeapons,allowsLaserHoldFire,HELD_TRIGGER_INTERVAL,MISSILE_HOMING,AI_MISSILE_ACCURACY,ROCKET_TOWER_STILL_SPEED,weaponMountCount,type VehicleWeapon,type LaserWeapon,type MachineGun,type MissileWeapon,VISOM_GUIDANCE} from '../content/weapons.ts';
 import {steerMissile,homeMissile} from './guided-flight.ts';
-import {isLaser,isMissile,laserRange} from './weapons.ts';
+import {isLaser,isMissile,laserRange,laserDamage} from './weapons.ts';
 import {type Difficulty} from '../settings.ts';
 export type Vec = {x:number;z:number};
 type MovementObstacle=Vec&{width:number;depth:number;yaw?:number};
@@ -31,11 +31,14 @@ export const targetName=(target:SelectionTarget,companions:MissionDefinition['co
 };
 export type Input = {forward:boolean;back:boolean;left:boolean;right:boolean;boost:boolean;stop:boolean;fire1:boolean;fire2:boolean;fire3?:boolean;fire4?:boolean;lookUp?:boolean;lookDown?:boolean;center?:boolean};
 export type Point3 = Vec & {y:number};
-export type Missile = Point3 & {id:number;owner:string;weapon:MissileWeapon|'GASHR'|'EGGER'|'TCREAP'|'PRIF44'|LaserWeapon;playerOwned?:boolean;homingScale?:number;homingTargetId?:string;aiGuidance?:{point:Point3;offset:Point3;refreshAt:number};vx:number;vy:number;vz:number;damage:number;infantryDamage?:number;facilityDamage?:number;radius:number;life:number;fresh?:boolean};
+export type Missile = Point3 & {id:number;owner:string;weapon:MissileWeapon|'GASHR'|'EGGER'|'PRIF44'|LaserWeapon|MachineGun;playerOwned?:boolean;homingScale?:number;homingTargetId?:string;aiGuidance?:{point:Point3;offset:Point3;refreshAt:number};vx:number;vy:number;vz:number;damage:number;infantryDamage?:number;facilityDamage?:number;radius:number;life:number;fresh?:boolean};
 export type GameEvent = {type:'supply'|'air-support'|'ion-lock'|'bridge-raised'|'enemy-detected'|'minefield-found'|'occupied-contact'|'vehicle-contact'|'mission-radio'|'mine'|'ally-order'|'ally-order-complete'|'lured'|'guidance-end'|'pilot-eject'|'soldier-hit'|'soldier-death'|'stop'|'center'|'target-select'|'laser-ready'|'foot-ready'|'target'|'impact'|'board'|'shot'|'hit'|'facility-hit'|'destroy'|'waypoint'|'win'|'lose'|'boost'|'eject'|'warning';text?:string;minefieldId?:string;faction?:Faction;radioId?:string;otherUnitId?:string;unit?:Unit;from?:Vec&{y?:number};to?:Vec&{y?:number};weapon?:string;projectileId?:number;position?:Point3;part?:BodyPart;soldier?:Soldier;facility?:Facility;launch?:boolean;ejection?:'gas'|'destruction';command?:AllyCommand;recipients?:string[];targetId?:string};
 export const AGGRO_LOCK_SECONDS=3;
 // Provisional seconds after a vehicle AI picks a new target before it may fire. Not a measured original delay.
 export const AI_TARGET_SETTLE=2.5;
+// Hard AI may trade laser reach (or GAUS30 damage) for cadence after its first fully charged shot.
+export const HARD_AI_RAPID_MIN_CHARGE=.5;
+export const HARD_AI_RAPID_RANGE_FRACTION=.35;
 // Once an assault rally is this close, the unit fights its target instead of holding on the point. Prototype metres.
 export const ASSAULT_RALLY_ARRIVE=36;
 export const CROSSHAIR_SELECTION={range:800,horizontalAngle:12*Math.PI/180,verticalAngle:8*Math.PI/180};
@@ -68,8 +71,8 @@ export function makeUnit(id:string,kind:VehicleKind,x:number,z:number,pilot=true
 }
 export class Simulation {
   soldiers:Soldier[]=[];flight:Flight|null=null;gashrAmmo:number=INFANTRY_WEAPONS.GASHR.ammo;eggerAmmo:number=INFANTRY_WEAPONS.EGGER.ammo;laserSiteCooldown=0;footCooldown={PRIF44:0,GASHR:0,EGGER:0};
-  missiles:Missile[]=[];guidedMissileId:number|null=null;private nextMissileId=1;private laserRechargePending=new WeakSet<Unit>();private footRechargePending=new Set<'PRIF44'|'GASHR'|'EGGER'>();
-  time=0; difficulty:Difficulty; status:'running'|'won'|'lost'='running';
+  missiles:Missile[]=[];guidedMissileId:number|null=null;private nextMissileId=1;private rocketPortIndex=new WeakMap<Unit,number>();private laserRechargePending=new WeakSet<Unit>();private aiLaserFired=new WeakSet<Unit>();private footRechargePending=new Set<'PRIF44'|'GASHR'|'EGGER'>();
+  time=0; difficulty:Difficulty; playerGashrVulnerable:boolean; status:'running'|'won'|'lost'='running';
   human:Vec; humanHealth=100; humanYaw=0;pitch=0;prone=false;
   units:Unit[]; mounted:Unit|null=null;insideFacility:Facility|null=null;passenger:Unit|null=null; private playerIff:string='';
   private facilityIffAcquired=false;
@@ -105,13 +108,13 @@ export class Simulation {
     this.pendingRespawns.set(unit.id,this.time+delay);
     this.emit({type:'destroy',unit});
   }
-  constructor(difficulty:Difficulty='Easy',mission:MissionDefinition=DEFAULT_MISSION){
-    this.difficulty=difficulty;this.mission=structuredClone(mission);this.weapons=resolveWeapons(mission.weaponOverrides);
+  constructor(difficulty:Difficulty='Easy',mission:MissionDefinition=DEFAULT_MISSION,options:{playerGashrVulnerable?:boolean}={}){
+    this.difficulty=difficulty;this.playerGashrVulnerable=options.playerGashrVulnerable===true;this.mission=structuredClone(mission);this.mission.units=this.mission.units.filter(spawn=>!spawn.difficulties||spawn.difficulties.includes(difficulty));this.weapons=resolveWeapons(mission.weaponOverrides);
     if(this.mission.footWeapons?.egger)this.eggerAmmo=this.mission.footWeapons.egger.ammo;
     for(const id of mission.initialRaisedBridges??[])this.raisedBridges.add(id);
     this.human={...mission.player};this.humanYaw=mission.initialYaw??0;this.iff=mission.initialIff;this.facilities=makeFacilities(this.mission.base,mission.factionCodes[mission.base?.faction??'scorp']??mission.base?.faction??'scorp');
     this.mines=(mission.minefields??[]).flatMap(field=>field.mines.map(mine=>({...mine,radius:field.triggerRadius,spent:false})));
-    this.units=mission.units.map(spawn=>this.spawnVehicle(spawn));
+    this.units=this.mission.units.map(spawn=>this.spawnVehicle(spawn));
     for(const person of mission.personnel??[]){const facility=this.facilities.find(f=>f.id===person.facilityId);this.soldiers.push({id:`person-${person.personId}`,personId:person.personId,sourceVehicle:person.boardingTargetId??person.facilityId??person.personId,insideFacility:person.facilityId,boardingTarget:person.boardingTargetId,boardingRole:person.boardingTargetId?'pilot':undefined,order:person.follow?{kind:'follow'}:undefined,iff:person.iff??this.iff,faction:person.faction??mission.playerFaction,x:facility?.x??person.x,z:facility?.z??person.z,yaw:person.follow?this.humanYaw:0,health:100,alive:true,alert:false,cooldown:0,flight:null,aggressorId:null,aggressorUntil:0});}
     if(mission.startMountedUnitId){const unit=this.units.find(u=>u.id===mission.startMountedUnitId);if(!unit||!unit.alive)throw new Error('Invalid mounted start');this.mounted=unit;this.boardedUnits.add(unit.id);unit.iff=this.iff;unit.pilot=true;this.human={x:unit.x,z:unit.z};this.syncWarningLevel(unit);this.applyBoardingOrders(unit);}
     this.applyDeckAltitude();
@@ -131,7 +134,7 @@ export class Simulation {
   private passengerIffApplied=false;
   private ionRetreated=false;private ionStartedAt:number|null=null;private ionLockAt:number|null=null;private ionImpactAt:number|null=null;private ionImpactSurvived=false;private ionTargetUnitId:string|null=null;
   private suspendedUnitRoutes=new Set<string>();
-  private scriptedRadio(id:string){const cue=this.mission.radioTriggers?.find(item=>item.id===id&&item.event==='scripted');if(cue&&this.radioSpeakerAlive(cue.speakerId))this.emit({type:'mission-radio',radioId:id});}
+  private scriptedRadio(id:string,required=false){const cue=this.mission.radioTriggers?.find(item=>item.id===id&&item.event==='scripted');if(cue&&(required||this.radioSpeakerAlive(cue.speakerId)))this.emit({type:'mission-radio',radioId:id});}
   private playIffRadios(){
     for(const cue of this.mission.radioTriggers??[]){
       if(cue.event!=='iff'||this.playedMissionRadio.has(cue.id)||this.iff!==cue.iff||(!!cue.unitId&&this.mounted?.id!==cue.unitId)||!this.radioSpeakerAlive(cue.speakerId))continue;
@@ -156,7 +159,9 @@ export class Simulation {
     const strike=this.mission.ionStrike;if(!strike||this.ionRetreated)return;
     this.ionRetreated=true;this.scriptedRadio(strike.retreatRadioId);
     const personId=this.mission.companions?.find(member=>member.unitId===strike.retreatUnitId)?.personId??this.units.find(unit=>unit.id===strike.retreatUnitId)?.personId;
-    if(!personId)return;
+    if(personId)this.retreatCompanion(personId);
+  }
+  private retreatCompanion(personId:string){
     for(const soldier of this.soldiers.filter(item=>item.personId===personId)){
       if(soldier.passengerOf){const carrier=this.units.find(unit=>unit.id===soldier.passengerOf);if(carrier)carrier.passengers=carrier.passengers.filter(id=>id!==soldier.id);}
       this.cancelBoarding(soldier);
@@ -166,6 +171,11 @@ export class Simulation {
       if(unit.pilot){unit.pilot=false;unit.order=null;unit.speed=0;unit.alert=false;unit.aggressorId=null;unit.aggressorUntil=0;}
       delete unit.personId;
     }
+  }
+  private retreatDestroyedCompanion(unit:Unit){
+    if(!this.mission.ionStrike?.retreatOnDestroyedUnitIds?.includes(unit.id))return;
+    const personId=this.mission.companions?.find(member=>member.unitId===unit.id)?.personId??unit.personId;
+    if(personId)this.retreatCompanion(personId);
   }
   private tickIonStrike(){
     const strike=this.mission.ionStrike;if(!strike)return;
@@ -188,8 +198,12 @@ export class Simulation {
     const carrier=this.mounted??this.passenger,base=this.mission.base;
     for(const cue of this.mission.radioTriggers??[]){
       if(cue.event==='board'||cue.event==='completion'||cue.event==='scripted'||cue.event==='iff'||cue.event==='player-hit'||this.playedMissionRadio.has(cue.id))continue;
-      if(cue.event!=='time'&&cue.event!=='encounter'&&cue.event!=='near-units'&&carrier?.kind!==cue.vehicleKind)continue;
+      if(cue.event!=='time'&&cue.event!=='time-if-unit-unoccupied'&&cue.event!=='encounter'&&cue.event!=='near-units'&&carrier?.kind!==cue.vehicleKind)continue;
       if(cue.event==='time'&&this.time<cue.at)continue;
+      if(cue.event==='time-if-unit-unoccupied'){
+        if(this.time<cue.at)continue;
+        if(this.units.some(unit=>unit.id===cue.unitId&&unit.pilot)){this.playedMissionRadio.add(cue.id);continue;}
+      }
       if(cue.event==='near-units'&&!cue.unitIds.some(id=>{const unit=this.units.find(item=>item.id===id&&item.alive);return !!unit&&distance(this.player,unit)<=cue.range;}))continue;
       if(cue.event==='encounter'&&(this.time<cue.at||!cue.unitIds.some(id=>{
         const ally=this.units.find(unit=>unit.id===id&&unit.alive&&unit.pilot);
@@ -300,10 +314,10 @@ export class Simulation {
     let route=this.personRoutes.get(soldier.id);if(!route||this.time>=route.until||distance(route.goal,goal)>4){const path=allyRoute(soldier,goal,this.mission.terrain,[...this.mission.rocks.map(r=>({...r,r:r.r+2.3})),...this.units.filter(u=>u.alive&&u!==goal).map(u=>({...u,r:vehicleRadius(u.kind)+.65}))],this.navigationObstacles().map(b=>({...b,width:b.width+4.6,depth:b.depth+4.6})))??[];route={until:this.time+.8,goal:{...goal},route:path};this.personRoutes.set(soldier.id,route);}
     while(route.route.length>1&&distance(soldier,route.route[0])<1)route.route.shift();const next=route.route[0]??goal;soldier.yaw=Math.atan2(next.x-soldier.x,next.z-soldier.z);this.moveInfantry(soldier,soldier.yaw,Math.min(walk,distance(soldier,next)/dt),dt);
   }
-  private tickPickups(){for(const pickup of this.mission.pickups??[]){const soldier=this.soldiers.find(s=>s.personId===pickup.personId);if(!soldier?.alive||soldier.order!==undefined)continue;if(soldier.insideFacility){if(pickup.attackerIds.filter(id=>this.eliminated(id)).length<pickup.requiredKills)continue;const facility=this.facilities.find(f=>f.id===pickup.facilityId&&f.alive);if(!facility)continue;soldier.insideFacility=undefined;Object.assign(soldier,facilityExit(facility));this.emit({type:'mission-radio',radioId:`pickup-${pickup.personId}`,text:'pickup-ready'});}
+  private tickPickups(){for(const pickup of this.mission.pickups??[]){const soldier=this.soldiers.find(s=>s.personId===pickup.personId);if(!soldier?.alive||soldier.order!==undefined)continue;if(soldier.insideFacility){if(pickup.attackerIds.filter(id=>this.eliminated(id)).length<pickup.requiredKills)continue;const facility=this.facilities.find(f=>f.id===pickup.facilityId&&f.alive);if(!facility)continue;this.emit({type:'mission-radio',radioId:`pickup-${pickup.personId}`,text:'pickup-ready'});soldier.insideFacility=undefined;Object.assign(soldier,facilityExit(facility));}
     if(soldier.passengerOf||soldier.driverOf)continue;const carrier=this.mounted;if(soldier.boardingTarget!==carrier?.id)this.cancelBoarding(soldier);if(carrier&&this.canReserve(carrier,soldier.iff,soldier.id)){soldier.boardingTarget=carrier.id;soldier.boardingRole='passenger';}
   }}
-  get missionMusicUnits(){return this.units.map(unit=>({id:unit.id,alive:unit.alive,defeated:this.eliminated(unit.id)}));}
+  get missionMusicUnits(){const deadCrews=new Set(this.soldiers.filter(soldier=>!soldier.alive).map(soldier=>soldier.originVehicleId??soldier.sourceVehicle));return this.units.map(unit=>({id:unit.id,alive:unit.alive,defeated:this.eliminated(unit.id),crewDead:deadCrews.has(unit.id)||!unit.alive&&!unit.pilot&&unit.spec.ejectionSeat===false}));}
   get missionMusicAssaultReady(){
     const cue=this.mission.bgm?.afterAssault;if(!cue||this.mounted?.id!==cue.boardUnitId)return false;
     return cue.unitIds.every(id=>{const assault=this.mission.assaults?.find(item=>item.unitId===id),unit=this.units.find(item=>item.id===id);return !!assault&&!!unit&&this.assaultBegun(assault,unit);});
@@ -335,6 +349,7 @@ export class Simulation {
     if(objective.type==='board-unit'){const done=this.boardedUnits.has(objective.unitId);return {...objective,current:Number(done),total:1,done};}
     if(objective.type==='board-player'){const person=this.soldiers.find(s=>s.personId===objective.personId),done=!!person?.alive&&!!this.mounted&&person.passengerOf===this.mounted.id;return {...objective,current:Number(done),total:1,done};}
     if(objective.type==='defend'){const targets=objective.targetIds.map(id=>this.selectionTargets.find(t=>t.id===id&&t.alive));const integrity=Math.min(...targets.map(t=>!t?0:isFacility(t)?this.facilityIntegrity(t):isVehicle(t)?t.armor/t.spec.armor:t.health/35));const total=objective.untilBridgeId?1:objective.requiredKills??objective.attackerIds.length,current=objective.untilBridgeId?Number(this.raisedBridges.has(objective.untilBridgeId)):Math.min(total,objective.attackerIds.filter(id=>this.eliminated(id)).length);return {...objective,current,total,integrity,done:this.securedDefenses.has(objective.id)||total>0&&current===total&&objective.targetIds.every(id=>this.selectionTargets.some(t=>t.id===id&&t.alive))};}
+    if(objective.type==='eliminate-count'){const current=Math.min(objective.requiredKills,objective.unitIds.filter(id=>this.eliminated(id)).length);return {...objective,current,total:objective.requiredKills,done:current===objective.requiredKills};}
     if(objective.type==='board-faction'){
       const current=objective.personIds.filter(id=>this.units.some(u=>u.spec.faction===objective.faction&&u.pilot&&u.personId===id&&this.companionCrew(u).some(member=>member.personId===id))).length,total=objective.personIds.length;
       return {...objective,current,total,done:total>0&&current===total};
@@ -495,7 +510,7 @@ export class Simulation {
     while(plan.route.length&&distance(unit,plan.route[0])<2)plan.route.shift();
     const next=plan.route[0];if(next)this.moveAllyToward(unit,next,0,dt,dist<preferred*.75);else this.coastVehicle(unit,dt);
   }
-  private aimAI(unit:Unit,target:SelectionTarget,dt:number){unit.aimPitch=Math.atan2(targetHeight(target)-(unit.hoverHeight+unit.spec.height*.6),distance(unit,target));const bearing=Math.atan2(target.x-unit.x,target.z-unit.z),limit=unit.spec.torsoLimit;if(unit.spec.category!=='tower'&&(Math.abs(unit.speed)<.1||this.brakingUnits.has(unit.id))&&Math.abs(angle(bearing-unit.yaw))>limit*.8)unit.yaw+=aiTurnStep(unit.kind,angle(bearing-unit.yaw),dt);const desired=unit.yaw+Math.max(-limit,Math.min(limit,angle(bearing-unit.yaw)));unit.aim+=aiAimTurnStep(unit.kind,angle(desired-unit.aim),dt);unit.aim=unit.yaw+Math.max(-limit,Math.min(limit,angle(unit.aim-unit.yaw)));}
+  private aimAI(unit:Unit,target:SelectionTarget,dt:number){const pitch=Math.atan2(targetHeight(target)-(unit.hoverHeight+unit.spec.height*.6),distance(unit,target));unit.aimPitch=this.isMesonTower(unit)?Math.max(MESON_TOWER_DOWN_PITCH_LIMIT,pitch):pitch;const bearing=Math.atan2(target.x-unit.x,target.z-unit.z),limit=unit.spec.torsoLimit;if(unit.spec.category!=='tower'&&(Math.abs(unit.speed)<.1||this.brakingUnits.has(unit.id))&&Math.abs(angle(bearing-unit.yaw))>limit*.8)unit.yaw+=aiTurnStep(unit.kind,angle(bearing-unit.yaw),dt);const desired=unit.yaw+Math.max(-limit,Math.min(limit,angle(bearing-unit.yaw)));unit.aim+=aiAimTurnStep(unit.kind,angle(desired-unit.aim),dt);unit.aim=unit.yaw+Math.max(-limit,Math.min(limit,angle(unit.aim-unit.yaw)));}
   private aiWeaponRange(unit:Unit){return Math.max(0,...unit.spec.weapons.map(weapon=>isLaser(weapon)?this.weapons.lasers[weapon].range:isMissile(weapon)?this.weapons.missiles[weapon].speed*this.weapons.missiles[weapon].lifetime:this.weapons.guns[weapon].range));}
   private tickAllies(dt:number){
     const allies=[...(this.mission.companions??[]).map(member=>this.units.find(u=>u.pilot&&u.personId===member.personId)),...(this.mission.garrison??[]).map(id=>this.units.find(u=>u.id===id))];
@@ -530,7 +545,7 @@ export class Simulation {
       if((order?.kind==='attack'&&!disguisedOrder||!order&&!!threat&&!provokedBeyondDetection)&&target)this.maneuverAlly(unit,target,range,index,dt);
       else if(!order&&facility&&route){const goal=route.attackPositions?.[facilityIndex]??route;if(distance(unit,goal)>12&&(distance(unit,facility)>range*.7||!this.lineOfSight(unit,facility)))this.followAlly(unit,goal,`facility:${route.unitId}:${facility.id}`,goal,dt);else this.coastVehicle(unit,dt);}
       else if(!route)this.coastVehicle(unit,dt);const wasAlert=unit.alert||!!provoked;this.aimAI(unit,target!,dt);
-      const bearing=Math.atan2(target!.x-unit.x,target!.z-unit.z),settled=this.trackAiFocus(unit,target!.id,wasAlert);if(distance(unit,target!)<=range&&Math.abs(angle(unit.aim-bearing))<.12&&unit.cooldown<=0&&settled)this.fireAI(unit,target!);
+      const bearing=Math.atan2(target!.x-unit.x,target!.z-unit.z),settled=this.trackAiFocus(unit,target!.id,wasAlert);if(distance(unit,target!)<=range&&Math.abs(angle(unit.aim-bearing))<.12&&settled){if(unit.cooldown<=0)this.fireAI(unit,target!);const rapidSlot=this.rapidAISlot(unit,target!);if(rapidSlot>=0)this.fireAI(unit,target!,rapidSlot);}
     }
   }
   private clearAIShot(unit:CombatTarget,from:Point3,to:Point3,target:SelectionTarget|null){
@@ -546,11 +561,30 @@ export class Simulation {
       &&!this.mission.rocks.some(rock=>rockSegmentContact(from,to,rock,.1)!==null)
       &&!somePeakNearSegment(this.mission.terrain.peaks,from.x,from.z,to.x,to.z,0,(peak)=>peakSegmentContact(from,to,peak)!==null);
   }
-  private fireAI(unit:Unit,target:SelectionTarget|null){
+  private aiLaserReady(unit:Unit,weapon:LaserWeapon,point:Vec){
+    if(unit.laserCharge>=1)return true;
+    if(this.difficulty!=='Hard'||!this.aiLaserFired.has(unit)||unit.laserCharge<HARD_AI_RAPID_MIN_CHARGE)return false;
+    const profile=this.weapons.lasers[weapon];
+    return distance(unit,point)<=Math.min(laserRange(weapon,unit.laserCharge,profile),profile.range*HARD_AI_RAPID_RANGE_FRACTION);
+  }
+  private mountIntact(unit:Unit,side:number){return unit.parts[side<0?'leftWeapon':'rightWeapon']>0;}
+  private weaponSlotIntact(unit:Unit,weapon:VehicleWeapon,slot:number){
+    if(unit.kind==='scorp-asv'){
+      if(weapon==='zWASP')return this.mountIntact(unit,slot===0?-1:1);
+      if(weapon==='SREM'||weapon==='UNKPA')return this.mountIntact(unit,weapon==='SREM'?-1:1);
+    }
+    if(unit.kind==='union-asv'&&weapon==='TCROCK')return this.mountIntact(unit,1);
+    return weaponMountCount(unit.kind,weapon)!==2||this.mountIntact(unit,-1)||this.mountIntact(unit,1);
+  }
+  private rapidAISlot(unit:Unit,target:SelectionTarget|null){const point=target??this.human;return unit.spec.weapons.findIndex((weapon,slot)=>isLaser(weapon)&&this.weaponSlotIntact(unit,weapon,slot)&&allowsLaserHoldFire(unit.kind,weapon)&&this.aiLaserReady(unit,weapon,point)&&unit.slotCooldown[slot]<=0&&unit.energy>=this.laserEnergyCost(unit,weapon)&&distance(unit,point)<=this.weapons.lasers[weapon].range);}
+  private fireAI(unit:Unit,target:SelectionTarget|null,rapidSlot=-1){
     if(!this.unitPowered(unit))return;
     const spec=unit.spec,point={x:target?.x??this.human.x,y:target?targetHeight(target):(this.flight?.altitude??this.deckAt(this.human.x,this.human.z))+(this.prone?.5:1),z:target?.z??this.human.z};
     if(distance(unit,point)<(spec.ai.minimumRange??0))return;
-    const slot=(unit.attackCycle++ +1)%spec.weapons.length,weapon=spec.weapons[slot];if(!weapon)return;
+    if(this.isMesonTower(unit)&&Math.atan2(point.y-(unit.hoverHeight+spec.height*.6),distance(unit,point))<MESON_TOWER_DOWN_PITCH_LIMIT)return;
+    let slot=rapidSlot>=0?rapidSlot:(unit.attackCycle+1)%spec.weapons.length;
+    if(rapidSlot<0){for(let i=0;i<spec.weapons.length;i++){const candidate=spec.weapons[slot];if(!candidate||!isLaser(candidate)||!allowsLaserHoldFire(unit.kind,candidate))break;slot=(slot+1)%spec.weapons.length;}unit.attackCycle=slot;}
+    const weapon=spec.weapons[slot];if(!weapon||!this.weaponSlotIntact(unit,weapon,slot)||rapidSlot<0&&isLaser(weapon)&&allowsLaserHoldFire(unit.kind,weapon))return;
     if(isMissile(weapon)){
       let fired=false;for(let i=0;i<spec.ai.missileVolley;i++){if((unit.slotAmmo[slot]??0)<=0)break;
         const side=spec.ai.missileVolley===1?1:i%2===0?-1:1,from=this.missileOrigin(unit,weapon,side);
@@ -558,7 +592,7 @@ export class Simulation {
         const accuracy=airborne?AI_MISSILE_ACCURACY.airborne:AI_MISSILE_ACCURACY.ground;
         const seed=[...unit.id].reduce((n,c)=>(Math.imul(n,31)+c.charCodeAt(0))|0,this.nextMissileId);
         const sample=(salt:number)=>{const n=Math.sin(seed+salt)*43758.5453;return (n-Math.floor(n))*2-1;};
-        const stillTower=unit.kind==='scorp-rocket-tower'&&this.targetIsStill(target,!target),bearing=Math.atan2(point.x-from.x,point.z-from.z),range=distance(from,point),lateral=Math.tan(stillTower?0:accuracy.yawSpread)*range*sample(1),vertical=Math.tan(stillTower?0:accuracy.pitchSpread)*range*sample(2);
+        const stillTower=(unit.kind==='scorp-rocket-tower'||unit.kind==='union-rocket-tower')&&this.targetIsStill(target,!target),bearing=Math.atan2(point.x-from.x,point.z-from.z),range=distance(from,point),lateral=Math.tan(stillTower?0:accuracy.yawSpread)*range*sample(1),vertical=Math.tan(stillTower?0:accuracy.pitchSpread)*range*sample(2);
         let offset={x:Math.cos(bearing)*lateral,y:vertical,z:-Math.sin(bearing)*lateral},aimPoint={x:point.x+offset.x,y:point.y+offset.y,z:point.z+offset.z};
         // Scatter may miss the target on purpose. Pull it back only when another body is actually on that line.
         const body=this.weapons.missiles[weapon].radius;
@@ -567,18 +601,20 @@ export class Simulation {
         unit.slotAmmo[slot]!--;const missile=this.fireMissile(unit,weapon,side,aimPoint,target);
         missile.aiGuidance={point:aimPoint,offset,refreshAt:this.time+accuracy.updateInterval};fired=true;
       }
-      if(fired){unit.cooldown=this.weapons.missiles[weapon].interval;unit.slotCooldown[slot]=unit.cooldown;}return;
+      if(fired){unit.cooldown=this.weaponInterval(unit,weapon);unit.slotCooldown[slot]=unit.cooldown;}return;
     }
     const profile=isLaser(weapon)?this.weapons.lasers[weapon]:this.weapons.guns[weapon],range=isLaser(weapon)?laserRange(weapon,unit.laserCharge,this.weapons.lasers[weapon]):profile.range;
-    if(isLaser(weapon)?unit.energy<this.laserEnergyCost(unit,weapon):(unit.slotAmmo[slot]??0)<=0)return;
+    if(isLaser(weapon)?!this.aiLaserReady(unit,weapon,point)||unit.energy<this.laserEnergyCost(unit,weapon):(unit.slotAmmo[slot]??0)<=0)return;
     const origin=this.sentryMuzzle(unit,weapon,{x:unit.x,y:unit.hoverHeight+spec.height*.6,z:unit.z});
-    const length=Math.hypot(point.x-origin.x,point.y-origin.y,point.z-origin.z),fraction=Math.min(1,range/(length||1)),endpoint={x:origin.x+(point.x-origin.x)*fraction,y:origin.y+(point.y-origin.y)*fraction,z:origin.z+(point.z-origin.z)*fraction};
+    const length=Math.hypot(point.x-origin.x,point.y-origin.y,point.z-origin.z);if(rapidSlot>=0&&length>range||unit.kind==='union-aip'&&!isLaser(weapon)&&length>range)return;
+    const fraction=Math.min(1,range/(length||1)),endpoint={x:origin.x+(point.x-origin.x)*fraction,y:origin.y+(point.y-origin.y)*fraction,z:origin.z+(point.z-origin.z)*fraction};
     const gunMuzzles=!isLaser(weapon)?this.weaponOrigins(unit,weapon,origin,slot).filter(muzzle=>this.clearAITerrainShot(muzzle,endpoint,target)):[];
     if(!isLaser(weapon)&&gunMuzzles.length===0)return;
     if(isLaser(weapon)&&this.mission.companions?.some(member=>member.personId===unit.personId)&&this.weaponOrigins(unit,weapon,origin).some(muzzle=>!this.clearAIShot(unit,muzzle,point,target)))return;
-    unit.cooldown=isLaser(weapon)?Math.max(profile.interval,this.mission.tuning[this.difficulty].interval):profile.interval;unit.slotCooldown[slot]=profile.interval;
-    if(isLaser(weapon)){unit.energy-=this.laserEnergyCost(unit,weapon);unit.laserCharge=0;this.laserRechargePending.add(unit);this.fireLaser(unit,weapon,origin,endpoint,range);}
-    else{unit.slotAmmo[slot]!--;if(weapon==='TCREAP'){this.fireReapTracer(unit,origin,endpoint,gunMuzzles);return;}const gun=this.weapons.guns[weapon as MachineGun];for(const muzzle of gunMuzzles)if(unit.iff!==this.iff||this.clearAIShot(unit,muzzle,point,target))this.fireAIBullet(unit,muzzle,endpoint,weapon as MachineGun,gun.damage,gun.infantryDamage??gun.damage);}
+    const interval=this.weaponInterval(unit,weapon);
+    if(rapidSlot<0)unit.cooldown=isLaser(weapon)?Math.max(interval,this.mission.tuning[this.difficulty].interval):interval;unit.slotCooldown[slot]=interval;
+    if(isLaser(weapon)){const damage=laserDamage(weapon,unit.laserCharge,this.weapons.lasers[weapon]);unit.energy-=this.laserEnergyCost(unit,weapon);unit.laserCharge=0;this.laserRechargePending.add(unit);this.aiLaserFired.add(unit);this.fireLaser(unit,weapon,origin,endpoint,range,damage);}
+    else{unit.slotAmmo[slot]!--;const gun=this.weapons.guns[weapon as MachineGun];if(gun.projectileSpeed!==undefined){this.fireMachineGunProjectile(unit,weapon as MachineGun,origin,endpoint,gunMuzzles);return;}for(const muzzle of gunMuzzles)if(unit.iff!==this.iff||this.clearAIShot(unit,muzzle,point,target))this.fireAIBullet(unit,muzzle,endpoint,weapon as MachineGun,gun.damage,gun.infantryDamage??gun.damage);}
   }
   // Hitscan AI machine guns stop at the nearest physical contact, regardless of IFF.
   private fireAIBullet(owner:CombatTarget,from:Point3,to:Point3,weapon:MachineGun|'PRIF44',damage:number,infantryDamage=damage){
@@ -619,7 +655,7 @@ export class Simulation {
     const range=assault.engageRange;if(range===undefined)return true;
     if(this.assaultsOpen.has(unit.id))return true;
     const near=(point:Vec)=>distance(this.player,point)<=range;
-    const begun=near(unit)||this.selectionTargets.some(target=>target.id===assault.targetId&&near(target))||!!assault.engageUnitIds?.some(id=>{const other=this.units.find(item=>item.id===id&&item.alive);return !!other&&near(other);})||this.combatTargets.some(target=>target!==unit&&target.alive&&target.iff!==unit.iff&&(!isVehicle(target)||target.pilot)&&distance(unit,target)<unit.spec.ai.detection&&this.attackVisible(unit,target));
+    const begun=near(unit)||this.selectionTargets.some(target=>target.id===assault.targetId&&near(target))||!!assault.engageUnitIds?.some(id=>{const other=this.units.find(item=>item.id===id&&item.alive);return !!other&&near(other);})||this.combatTargets.some(target=>target!==unit&&target.alive&&target.iff!==unit.iff&&(!isVehicle(target)||target.pilot)&&distance(unit,target)<Math.min(unit.spec.ai.detection,range)&&this.attackVisible(unit,target));
     if(begun)this.assaultsOpen.add(unit.id);
     return begun;
   }
@@ -689,6 +725,13 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     this.flight=launch?this.launchFrom(u.spec.height,u.yaw,u.x,u.z):null;
     this.humanYaw=u.yaw;this.pitch=0;this.tracking=false;this.mounted=null;this.throttle=0;this.speed=0;this.syncWarningLevel(null);this.emit({type:'eject',unit:u,launch});
   }
+  private applyGashrHit(unit:Unit,playerOwned:boolean){
+    if(playerOwned)this.notePlayerStrike(unit);
+    if(unit!==this.mounted){this.forceEject(unit);return;}
+    if(!this.playerGashrVulnerable)return;
+    if(unit.spec.category==='hovercraft')unit.hoverDisabled=true;
+    this.eject();
+  }
   private advanceFlight(body:Vec,flight:Flight,dt:number){
     const next={x:body.x+flight.vx*dt,z:body.z+flight.vz*dt};
     flight.vy-=9.8*dt;const altitude=flight.altitude+flight.vy*dt;
@@ -714,13 +757,18 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       this.emit({type:'soldier-death',soldier,faction:soldier?.faction??unit.spec.faction,position:{x:unit.x,y:unit.spec.height*.6,z:unit.z}});return null;
     }
 
-    if(!soldier){const faction=this.mission.companions?.find(member=>member.personId===unit.personId)?.faction??unit.spec.faction;soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,personId:unit.personId,faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};this.soldiers.push(soldier);}
+    if(!soldier){const faction=this.mission.companions?.find(member=>member.personId===unit.personId)?.faction??unit.spec.faction;soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,originVehicleId:unit.id,personId:unit.personId,faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:true,cooldown:1.5,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};this.soldiers.push(soldier);}
+    soldier.originVehicleId??=unit.id;
     soldier.order=undefined;soldier.driverOf=undefined;soldier.iff=unit.iff;soldier.yaw=unit.yaw;this.cancelBoarding(soldier);
     const disguise=this.mission.facilityIffDisguise;if(this.facilityIffAcquired&&disguise?.vehicleIds.includes(unit.id)&&this.mission.companions?.some(member=>member.personId===soldier.personId)){soldier.iff=disguise.footIff;soldier.faction=this.mission.playerFaction;}
     const launch=cause!=='boarding'&&unit.spec.ejectionSeat!==false&&unit.spec.category!=='tower';soldier.velocity=undefined;soldier.x=unit.x+(launch?0:Math.cos(unit.yaw)*9);soldier.z=unit.z-(launch?0:Math.sin(unit.yaw)*9);soldier.flight=launch?this.launchFrom(unit.spec.height,unit.yaw,unit.x,unit.z):null;
     // Gas and destruction leave a living soldier. Attack orders stay on that person, not the empty hull. Boarding is a transfer, not this handoff.
     if(cause!=='boarding'&&soldier.alive)this.retargetAttackOrders(unit.id,soldier.id);
-    if(cause!=='boarding')this.emit({type:'pilot-eject',unit,soldier,ejection:cause});return soldier;
+    if(cause!=='boarding'){
+      this.emit({type:'pilot-eject',unit,soldier,ejection:cause});
+      if(unit.id===this.mission.ionStrike?.retreatUnitId)this.retreatIonAlly();
+    }
+    return soldier;
   }
   private retargetAttackOrders(fromId:string,toId:string){
     for(const actor of [...this.units,...this.soldiers])if(actor.order?.kind==='attack'&&actor.order.targetId===fromId)actor.order={kind:'attack',targetId:toId};
@@ -730,7 +778,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     const crew=this.soldiers.filter(s=>s.alive&&(s.driverOf===unit.id||s.passengerOf===unit.id));
     if(unit.pilot&&!crew.some(s=>s.driverOf===unit.id)){
       const faction=this.mission.companions?.find(member=>member.personId===unit.personId)?.faction??unit.spec.faction;
-      const pilot:Soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,driverOf:unit.id,personId:unit.personId,faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:false,cooldown:0,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};
+      const pilot:Soldier={id:`pilot-${unit.id}-${this.soldiers.length}`,sourceVehicle:unit.id,originVehicleId:unit.id,driverOf:unit.id,personId:unit.personId,faction,iff:unit.iff,aggressorId:null,aggressorUntil:0,x:unit.x,z:unit.z,yaw:unit.yaw,health:35,alive:true,alert:false,cooldown:0,flight:null,gashrAmmo:INFANTRY_WEAPONS.GASHR.ammo};
       this.soldiers.push(pilot);crew.push(pilot);
     }
     for(const soldier of crew){soldier.health=0;soldier.alive=false;soldier.flight=null;soldier.velocity=undefined;soldier.driverOf=unit.id;soldier.passengerOf=undefined;this.cancelBoarding(soldier);this.emit({type:'soldier-death',soldier,faction:soldier.faction,position:{x:unit.x,y:unit.spec.height*.6,z:unit.z}});}
@@ -913,7 +961,9 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     }else this.aimBy(yaw);
     this.lookBy(-y*profile.mousePerPixel*sensitivity);
   }
-  lookBy(delta:number){if(this.passenger)return;const missile=this.guidedMissile;if(missile)steerMissile(missile,0,delta);else this.pitch=Math.max(-1.2,Math.min(.8,this.pitch+delta));}
+  private isMesonTower(unit:Unit){return unit.kind==='merc-meson-tower'||unit.kind==='scorp-meson-tower';}
+  private clampPlayerPitch(value:number){return Math.max(this.mounted&&this.isMesonTower(this.mounted)?MESON_TOWER_DOWN_PITCH_LIMIT:-1.2,Math.min(.8,value));}
+  lookBy(delta:number){if(this.passenger)return;const missile=this.guidedMissile;if(missile)steerMissile(missile,0,delta);else this.pitch=this.clampPlayerPitch(this.pitch+delta);}
   get eyeHeight(){if(this.insideFacility)return this.insideFacility.height*.65;if(this.passenger)return this.passenger.spec.height*.9;return this.mounted?this.mounted.hoverHeight+((this.mounted.kind==='union-sentry'||this.mounted.kind==='merc-assault')?this.mounted.spec.height*.6+VEHICLE_SHAPES[this.mounted.kind].cockpit.y+.15:this.mounted.spec.height*.81):(this.flight?.altitude??this.deckAt(this.human.x,this.human.z))+(this.prone?.7:1.7);}
   targetElevation(unit:SelectionTarget){return Math.atan2(targetHeight(unit)-this.eyeHeight,distance(unit,this.player));}
   get activeWaypoint(){return this.mission.waypoints.find(w=>w.id===this.selectedWaypoint)??null;}
@@ -1012,19 +1062,20 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     vehicle.speed=stopped?0:vehicle.speed*Math.min(1,distance(start,position)/length);if(vehicle===this.mounted)this.speed=vehicle.speed;
   }
 
-  damage(u:Unit|null,amount:number,part:BodyPart='hull',position?:Point3,attacker?:CombatTarget|null,weapon?:string){if(u){if(!u.alive)return;if(amount>0&&attacker===this.mounted)this.notePlayerStrike(u);if(amount>0&&u!==this.mounted&&u.pilot){u.alert=true;if(weapon!=='VISOM'){const threshold=this.mission.assaults?.find(assault=>assault.unitId===u.id)?.retaliateAfterHits;if(threshold){const hits=(this.assaultHitCounts.get(u.id)??0)+1;this.assaultHitCounts.set(u.id,hits);if(hits>=threshold)this.rememberAggressor(u,attacker??null);}else this.rememberAggressor(u,attacker??null);}}const absorbed=Math.min(u.shield,amount);u.shield-=absorbed;const penetrated=amount-absorbed;const previousHealth=u.parts[part];applyPartDamage(u.parts,part,penetrated,u.spec.armor);if(u===this.mounted&&previousHealth>PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]<=PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]>PART_DAMAGE_THRESHOLDS.critical)this.pendingDamageWarning=u;if(penetrated>0)u.armor=u.spec.armor*PARTS.reduce((total,key)=>total+u.parts[key],0)/PARTS.length;u.lastHit=this.time;this.emit({type:'hit',unit:u,part,position,weapon});if(u.parts[part]<=0){const playerWasMounted=this.mounted===u,respawns=this.mission.respawningUnits?.includes(u.id)&&!playerWasMounted;if(this.passenger===u)this.exitPassenger();for(const soldier of this.soldiers)if(soldier.passengerOf===u.id)this.exitPassenger(soldier);for(const soldier of this.soldiers)if(soldier.boardingTarget===u.id)this.cancelBoarding(soldier);if(u.pilot&&!playerWasMounted&&!respawns)this.forceEject(u,'destruction');u.armor=0;u.alive=false;u.pilot=false;u.order=null;u.speed=0;if(respawns)this.scheduleRespawn(u);else this.emit({type:'destroy',unit:u});if(playerWasMounted){this.releaseGuidance('destroyed');this.eject();}}}else{if(this.humanHealth<=0)return;const wasAlive=this.humanHealth>0;this.humanHealth=Math.max(0,this.humanHealth-amount);if(wasAlive&&this.humanHealth<=0){this.emit({type:'soldier-death',faction:this.mission.playerFaction,position:position??{x:this.human.x,y:(this.flight?.altitude??this.deckAt(this.human.x,this.human.z))+1,z:this.human.z}});this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}}}
+  damage(u:Unit|null,amount:number,part:BodyPart='hull',position?:Point3,attacker?:CombatTarget|null,weapon?:string){if(u){if(!u.alive)return;if(amount>0&&attacker===this.mounted)this.notePlayerStrike(u);if(amount>0&&u!==this.mounted&&u.pilot){u.alert=true;if(weapon!=='VISOM'){const threshold=this.mission.assaults?.find(assault=>assault.unitId===u.id)?.retaliateAfterHits;if(threshold){const hits=(this.assaultHitCounts.get(u.id)??0)+1;this.assaultHitCounts.set(u.id,hits);if(hits>=threshold)this.rememberAggressor(u,attacker??null);}else this.rememberAggressor(u,attacker??null);}}const absorbed=Math.min(u.shield,amount);u.shield-=absorbed;const penetrated=amount-absorbed;const previousHealth=u.parts[part];applyPartDamage(u.parts,part,penetrated,u.spec.armor,part==='cockpit'&&!!position&&mercAipUpperTurret(u,position));if(u===this.mounted&&previousHealth>PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]<=PART_DAMAGE_THRESHOLDS.yellow&&u.parts[part]>PART_DAMAGE_THRESHOLDS.critical)this.pendingDamageWarning=u;if(penetrated>0)u.armor=u.spec.armor*PARTS.reduce((total,key)=>total+u.parts[key],0)/PARTS.length;u.lastHit=this.time;this.emit({type:'hit',unit:u,part,position,weapon});if(u.parts[part]<=0&&(part!=='leftWeapon'&&part!=='rightWeapon'||u.kind==='merc-aip')){const playerWasMounted=this.mounted===u,respawns=this.mission.respawningUnits?.includes(u.id)&&!playerWasMounted;if(this.passenger===u)this.exitPassenger();for(const soldier of this.soldiers)if(soldier.passengerOf===u.id)this.exitPassenger(soldier);for(const soldier of this.soldiers)if(soldier.boardingTarget===u.id)this.cancelBoarding(soldier);if(u.pilot&&!playerWasMounted)this.forceEject(u,'destruction');u.armor=0;u.alive=false;u.pilot=false;u.order=null;u.speed=0;this.retreatDestroyedCompanion(u);if(respawns)this.scheduleRespawn(u);else this.emit({type:'destroy',unit:u});if(playerWasMounted){this.releaseGuidance('destroyed');this.eject();}}}else{if(this.humanHealth<=0)return;const wasAlive=this.humanHealth>0;this.humanHealth=Math.max(0,this.humanHealth-amount);if(wasAlive&&this.humanHealth<=0){this.emit({type:'soldier-death',faction:this.mission.playerFaction,position:position??{x:this.human.x,y:(this.flight?.altitude??this.deckAt(this.human.x,this.human.z))+1,z:this.human.z}});this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}}}
+  private weaponInterval(unit:Unit,weapon:VehicleWeapon){return unit.spec.weaponIntervals?.[weapon]??(isMissile(weapon)?this.weapons.missiles[weapon].interval:isLaser(weapon)?this.weapons.lasers[weapon].interval:this.weapons.guns[weapon as MachineGun].interval);}
   fire(slot:number){if(this.passenger||this.insideFacility||this.guidedMissile)return;const u=this.mounted;if(u&&!this.unitPowered(u))return;if(!u){this.fireFoot(slot);return;}
-    const index=slot-1,weapon=u.spec.weapons[index];if(!weapon||u.slotCooldown[index]>0)return;const profile=isLaser(weapon)?this.weapons.lasers[weapon]:null;
+    const index=slot-1,weapon=u.spec.weapons[index];if(!weapon||!this.weaponSlotIntact(u,weapon,index)||u.slotCooldown[index]>0)return;const profile=isLaser(weapon)?this.weapons.lasers[weapon]:null;
     if(profile?u.energy<this.laserEnergyCost(u,weapon as LaserWeapon):(u.slotAmmo[index]??0)<=0)return;
     // A slot waits on its own interval. Another number can fire during that wait, including on the same press.
     const arm=(interval:number)=>{u.cooldown=interval;u.slotCooldown[index]=interval;};
-    if(isMissile(weapon)){const volley=u.kind==='darken-sentry'?Math.min(2,u.slotAmmo[index]??0):1;u.slotAmmo[index]!-=volley;arm(this.weapons.missiles[weapon].interval);for(let i=0;i<volley;i++)this.fireMissile(u,weapon,volley===1?1:i===0?-1:1);return;}
+    if(isMissile(weapon)){const volley=u.kind==='darken-sentry'?Math.min(2,u.slotAmmo[index]??0):1;u.slotAmmo[index]!-=volley;arm(this.weaponInterval(u,weapon));for(let i=0;i<volley;i++)this.fireMissile(u,weapon,volley===1?1:i===0?-1:1);return;}
     const range=profile?laserRange(weapon as LaserWeapon,u.laserCharge,profile):this.weapons.guns[weapon as MachineGun].range;
     const sight={x:this.player.x,y:this.eyeHeight,z:this.player.z},from=this.sentryMuzzle(u,weapon,sight);
     const sightEnd={x:sight.x+Math.sin(this.aim)*Math.cos(this.pitch)*range,y:sight.y+Math.sin(this.pitch)*range,z:sight.z+Math.cos(this.aim)*Math.cos(this.pitch)*range};
     const end=this.sentryAimPoint(u,sight,sightEnd);
-    if(profile){arm(profile.interval);u.energy-=this.laserEnergyCost(u,weapon as LaserWeapon);u.laserCharge=0;this.fireLaser(u,weapon as LaserWeapon,from,end,range);return;}
-    u.slotAmmo[index]!--;arm(this.weapons.guns[weapon as MachineGun].interval);if(weapon==='TCREAP'){this.fireReapTracer(u,from,end);return;}
+    if(profile){arm(this.weaponInterval(u,weapon));const damage=laserDamage(weapon as LaserWeapon,u.laserCharge,profile);u.energy-=this.laserEnergyCost(u,weapon as LaserWeapon);u.laserCharge=0;this.fireLaser(u,weapon as LaserWeapon,from,end,range,damage);return;}
+    u.slotAmmo[index]!--;const gun=this.weapons.guns[weapon as MachineGun];arm(this.weaponInterval(u,weapon));if(gun.projectileSpeed!==undefined){this.fireMachineGunProjectile(u,weapon as MachineGun,from,end);return;}
     const damage=this.weapons.guns[weapon as MachineGun].damage;
     for(const muzzle of this.weaponOrigins(u,weapon,from,slot-1)){
       const structure=this.facilityShot(muzzle,end,.2);if(structure){this.damageFacility(structure.facility,damage,structure.point);this.acquireHitTarget(structure.facility);this.emit({type:'shot',unit:u,from:muzzle,to:structure.point,weapon,position:muzzle});continue;}
@@ -1060,34 +1111,35 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   private weaponOrigins(unit:Unit,weapon:string,fallback:Point3,slot?:number):Point3[]{
     if(unit.kind==='scorp-asv'&&weapon==='zWASP'&&slot!==undefined){
       const mount=VEHICLE_SHAPES[unit.kind].weapon,side=slot===0?-1:1,forward=mount.z+2.4;
+      if(!this.mountIntact(unit,side))return [];
       return [{x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*forward,y:unit.spec.height*.6+mount.y,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*forward}];
     }
     if(unit.kind==='scorp-tactical'&&weapon==='RAID'){
       const mount=SCORP_TACTICAL_RAID_MUZZLES;
-      return [-1,1].map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*mount.z,y:unit.spec.height*.6+mount.y,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*mount.z}));
+      return [-1,1].filter(side=>this.mountIntact(unit,side)).map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*mount.z,y:unit.spec.height*.6+mount.y,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*mount.z}));
     }
     const assault=unit.kind==='merc-assault'||unit.kind==='scorp-assault'||unit.kind==='union-assault',tactical=unit.kind==='union-tactical'&&(weapon==='P2MEC'||weapon==='TCREAP'),ceti=unit.kind==='scorp-sentry'&&weapon==='CETI';
     if(!tactical&&!ceti&&weaponMountCount(unit.kind,weapon)!==2)return [fallback];
     const mount=VEHICLE_SHAPES[unit.kind].weapon,forward=mount.z+mount.d/2+(ceti?1.05:.16);
     const unionMuzzle=unit.kind==='union-sentry',darkenMuzzle=unit.kind==='darken-sentry',stalker=unit.kind==='darken-tactical'?pitchDarkenTactical(mount.y,mount.z):null,muzzleForward=stalker?stalker.z+mount.d/2:assault||tactical||ceti||darkenMuzzle?forward:unionMuzzle?Math.sin(unit.aim)*(fallback.x-unit.x)+Math.cos(unit.aim)*(fallback.z-unit.z):mount.z+2.4,muzzleY=stalker?stalker.y:assault||tactical||ceti||darkenMuzzle?unit.spec.height*.6+mount.y-(ceti?.17:0):unionMuzzle?fallback.y:unit.spec.height*.6+mount.y;
-    return [-1,1].map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*muzzleForward,y:muzzleY,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*muzzleForward}));
+    return [-1,1].filter(side=>this.mountIntact(unit,side)).map(side=>({x:unit.x+Math.cos(unit.aim)*side*mount.x+Math.sin(unit.aim)*muzzleForward,y:muzzleY,z:unit.z-Math.sin(unit.aim)*side*mount.x+Math.cos(unit.aim)*muzzleForward}));
   }
-  private fireReapTracer(unit:Unit,from:Point3,to:Point3,origins=this.weaponOrigins(unit,'TCREAP',from)){
-    const profile=this.weapons.guns.TCREAP,speed=profile.projectileSpeed??60;
+  private fireMachineGunProjectile(unit:Unit,weapon:MachineGun,from:Point3,to:Point3,origins=this.weaponOrigins(unit,weapon,from)){
+    const profile=this.weapons.guns[weapon],speed=profile.projectileSpeed;if(speed===undefined)return;
     for(const origin of origins){
       const length=Math.hypot(to.x-origin.x,to.y-origin.y,to.z-origin.z)||1;
-      const p:Missile={...origin,id:this.nextMissileId++,owner:unit.id,playerOwned:unit===this.mounted,weapon:'TCREAP',vx:(to.x-origin.x)/length*speed,vy:(to.y-origin.y)/length*speed,vz:(to.z-origin.z)/length*speed,damage:profile.damage,radius:.12,life:profile.range/speed};
-      this.missiles.push(p);this.emit({type:'shot',unit,from:origin,to,weapon:'TCREAP',projectileId:p.id,position:origin});
+      const p:Missile={...origin,id:this.nextMissileId++,owner:unit.id,playerOwned:unit===this.mounted,weapon,vx:(to.x-origin.x)/length*speed,vy:(to.y-origin.y)/length*speed,vz:(to.z-origin.z)/length*speed,damage:profile.damage,infantryDamage:profile.infantryDamage,radius:.12,life:profile.range/speed};
+      this.missiles.push(p);this.emit({type:'shot',unit,from:origin,to,weapon,projectileId:p.id,position:origin});
     }
   }
-  private fireLaser(unit:Unit,weapon:LaserWeapon,from:Point3,to:Point3,range:number){
+  private fireLaser(unit:Unit,weapon:LaserWeapon,from:Point3,to:Point3,range:number,damage:number){
     from=this.sentryMuzzle(unit,weapon,from);
     if(unit.kind==='merc-tactical'&&weapon==='RAID'){const mount=MERC_TACTICAL_RAID_MUZZLE;from={x:unit.x+Math.sin(unit.aim)*mount.z,y:unit.spec.height*.6+mount.y,z:unit.z+Math.cos(unit.aim)*mount.z};}
     if(unit===this.mounted)this.laserRechargePending.add(unit);
     const profile=this.weapons.lasers[weapon];
     for(const origin of this.weaponOrigins(unit,weapon,from)){
       const length=Math.hypot(to.x-origin.x,to.y-origin.y,to.z-origin.z)||1;
-      const projectile:Missile={...origin,id:this.nextMissileId++,owner:unit.id,playerOwned:unit===this.mounted,weapon,vx:(to.x-origin.x)/length*profile.speed,vy:(to.y-origin.y)/length*profile.speed,vz:(to.z-origin.z)/length*profile.speed,damage:profile.damage,radius:.12,life:range/profile.speed};
+      const projectile:Missile={...origin,id:this.nextMissileId++,owner:unit.id,playerOwned:unit===this.mounted,weapon,vx:(to.x-origin.x)/length*profile.speed,vy:(to.y-origin.y)/length*profile.speed,vz:(to.z-origin.z)/length*profile.speed,damage,radius:.12,life:range/profile.speed};
       this.missiles.push(projectile);this.emit({type:'shot',unit,from:origin,to,weapon,projectileId:projectile.id,position:origin});
     }
   }
@@ -1110,7 +1162,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       this.emit({type:'destroy',facility,position});
       const strike=this.mission.ionStrike;if(strike?.facilityId===facility.id&&this.ionStartedAt===null){
         this.retreatIonAlly();this.ionStartedAt=this.time;this.ionTargetUnitId=this.mounted?.id??this.mission.assignedUnitId;
-        for(const id of strike.warningRadioIds)this.scriptedRadio(id);
+        for(const id of strike.warningRadioIds)this.scriptedRadio(id,true);
       }
     }
   }
@@ -1171,6 +1223,10 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   }
   private missileOrigin(unit:Unit,weapon:MissileWeapon,side:number):Point3{
     if(unit.kind==='union-assault'){const mount=VEHICLE_SHAPES['union-assault'].weapon,forward=mount.z+mount.d/2,offset=(weapon==='VISOM'?1:-1)*mount.x*.45;return {x:unit.x+Math.sin(unit.aim)*forward+Math.cos(unit.aim)*offset,y:unit.hoverHeight+unit.spec.height*.6+mount.y,z:unit.z+Math.cos(unit.aim)*forward-Math.sin(unit.aim)*offset};}
+    if(unit.kind==='scorp-rocket-tower'){
+      const port=SCORP_ROCKET_TOWER_PORTS[(this.rocketPortIndex.get(unit)??0)%SCORP_ROCKET_TOWER_PORTS.length]!;
+      return {x:unit.x+Math.cos(unit.aim)*port.x+Math.sin(unit.aim)*port.z,y:unit.hoverHeight+port.y,z:unit.z-Math.sin(unit.aim)*port.x+Math.cos(unit.aim)*port.z};
+    }
     const tactical=unit.kind==='union-tactical'&&(weapon==='TCROCK'||weapon==='SAG5T');
     const mount=tactical?VEHICLE_SHAPES['union-tactical'].weapon:unit.kind==='scorp-asv'&&(weapon==='SREM'||weapon==='UNKPA')?VEHICLE_SHAPES['scorp-asv'].weapon:unit.kind==='darken-sentry'?VEHICLE_SHAPES['darken-sentry'].weapon:null;
     if(mount&&(tactical||unit.kind==='scorp-asv'))side=tactical?(weapon==='TCROCK'?-1:1):(weapon==='SREM'?-1:1);
@@ -1180,6 +1236,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
   }
   fireMissile(unit:Unit,weapon:MissileWeapon,side=1,target?:Point3,attackTarget?:SelectionTarget|null){
     const profile=this.weapons.missiles[weapon],from=this.missileOrigin(unit,weapon,side),y=from.y;
+    if(unit.kind==='scorp-rocket-tower')this.rocketPortIndex.set(unit,(this.rocketPortIndex.get(unit)??0)+1);
     const targetY=target?.y??(this.mounted?this.mounted.spec.height*.6:(this.flight?.altitude??this.deckAt(this.human.x,this.human.z))+(this.prone?.5:1.1));
     const dx=unit===this.mounted?Math.sin(unit.aim)*Math.cos(this.pitch):(target?.x??this.player.x)-from.x,dy=unit===this.mounted?Math.sin(this.pitch):targetY-y,dz=unit===this.mounted?Math.cos(unit.aim)*Math.cos(this.pitch):(target?.z??this.player.z)-from.z,length=Math.hypot(dx,dy,dz)||1;
     const missile:Missile={...from,id:this.nextMissileId++,owner:unit.id,weapon,playerOwned:unit===this.mounted,homingScale:unit.spec.missileHomingScale?.[weapon],vx:dx/length*profile.speed,vy:dy/length*profile.speed,vz:dz/length*profile.speed,damage:profile.damage,radius:profile.radius,life:profile.lifetime};
@@ -1215,7 +1272,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
           const airborne=target?!isVehicle(target)&&!isFacility(target)&&!!target.flight:p.homingTargetId==='player'&&!!this.flight;
           const accuracy=airborne?AI_MISSILE_ACCURACY.airborne:AI_MISSILE_ACCURACY.ground,guidance=p.aiGuidance;
           if(this.time>=guidance.refreshAt){guidance.point={x:point.x+guidance.offset.x,y:point.y+guidance.offset.y,z:point.z+guidance.offset.z};guidance.refreshAt=this.time+accuracy.updateInterval;}
-          const towerStill=this.units.find(u=>u.id===p.owner)?.kind==='scorp-rocket-tower'&&this.targetIsStill(target??null,!target&&p.homingTargetId==='player');
+          const rocketKind=this.units.find(u=>u.id===p.owner)?.kind;
+          const towerStill=(rocketKind==='scorp-rocket-tower'||rocketKind==='union-rocket-tower')&&this.targetIsStill(target??null,!target&&p.homingTargetId==='player');
           aimPoint=towerStill?point:guidance.point;turnRate=accuracy.turnRate;
         }
         // A target behind a solid keeps the missile on its current line so guidance cannot steer around the cover.
@@ -1241,7 +1299,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
         Object.assign(p,{x:from.x+(to.x-from.x)*first,y:from.y+(to.y-from.y)*first,z:from.z+(to.z-from.z)*first});
         if(hit)this.lureImpact(hit,p);
         if(hitFacility){if(p.weapon==='EGGER'||p.weapon==='GASHR')this.facilityCrewHit(hitFacility,p.weapon==='EGGER');else this.damageFacility(hitFacility,p.weapon==='PRIF44'?p.facilityDamage??p.damage:p.damage,{x:p.x,y:p.y,z:p.z});}
-        else if(hitSoldier)this.damageSoldier(hitSoldier,p.weapon==='PRIF44'?p.infantryDamage??p.damage:p.weapon==='TCREAP'?this.weapons.guns.TCREAP.infantryDamage??p.damage:isLaser(p.weapon)?p.damage:hitSoldier.health,{x:p.x,y:p.y,z:p.z},ownerCombat??null);else if(p.weapon==='EGGER'){if(hit){if(p.playerOwned)this.notePlayerStrike(hit);this.killVehicleCrew(hit);}}else if(p.weapon==='GASHR'){if(hit){if(p.playerOwned)this.notePlayerStrike(hit);this.forceEject(hit);}}else if(hit!==undefined)this.damage(hit,hit===null?(p.weapon==='PRIF44'?p.infantryDamage??p.damage:p.weapon==='TCREAP'?this.weapons.guns.TCREAP.infantryDamage??p.damage:!isLaser(p.weapon)?this.humanHealth:p.damage):p.damage,part,{x:p.x,y:p.y,z:p.z},ownerCombat,p.weapon);
+        else if(hitSoldier)this.damageSoldier(hitSoldier,p.weapon==='PRIF44'||p.weapon in this.weapons.guns?p.infantryDamage??p.damage:isLaser(p.weapon)?p.damage:hitSoldier.health,{x:p.x,y:p.y,z:p.z},ownerCombat??null);else if(p.weapon==='EGGER'){if(hit){if(p.playerOwned)this.notePlayerStrike(hit);this.killVehicleCrew(hit);}}else if(p.weapon==='GASHR'){if(hit)this.applyGashrHit(hit,!!p.playerOwned);}else if(hit!==undefined)this.damage(hit,hit===null?(p.weapon==='PRIF44'||p.weapon in this.weapons.guns?p.infantryDamage??p.damage:!isLaser(p.weapon)?this.humanHealth:p.damage):p.damage,part,{x:p.x,y:p.y,z:p.z},ownerCombat,p.weapon);
         this.damageInfantryBlast(p,owner);
         if(p.playerOwned)this.acquireHitTarget(hitFacility??hitSoldier??hit);
         this.emit({type:'impact',projectileId:p.id,weapon:p.weapon,position:{x:p.x,y:p.y,z:p.z}});
@@ -1379,11 +1437,14 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     }
     for(const objective of this.objectiveStates)if(objective.type==='defend'&&objective.done)this.securedDefenses.add(objective.id);
     if(this.status==='running'&&this.mission.objectives.some(o=>o.type==='defend'&&!this.securedDefenses.has(o.id)&&o.targetIds.some(id=>!this.selectionTargets.some(t=>t.id===id&&t.alive))||o.type==='board-player'&&this.soldiers.some(s=>s.personId===o.personId&&!s.alive)||o.type==='escort-facility'&&!this.completedEscorts.has(o.id)&&(this.units.some(u=>u.personId===o.personId)||this.soldiers.some(s=>s.personId===o.personId))&&!this.units.some(u=>u.personId===o.personId&&u.alive&&u.pilot)&&!this.soldiers.some(s=>s.personId===o.personId&&s.alive))){this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}
+    if(this.status==='running'&&this.mission.noCompanionCasualties&&this.mission.companions?.some(member=>this.soldiers.some(soldier=>soldier.personId===member.personId&&!soldier.alive))){this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}
     if(this.ionImpactAt!==null&&this.status==='running'&&!this.ionImpactSurvived){this.status='lost';this.releaseGuidance('destroyed');this.emit({type:'lose'});}
     const complete=this.mission.completionEnabled!==false&&this.objectiveStates.length>0&&this.objectiveStates.every(o=>o.optional||o.done);
     if(this.status!=='running'||!complete){this.completionStartedAt=null;return;}
-    const sequence=this.mission.completionSequence;
+    const configuredSequence=this.mission.completionSequence;
+    const sequence=configuredSequence&&(!configuredSequence.whenFacilityDestroyedId||this.facilities.some(f=>f.id===configuredSequence.whenFacilityDestroyedId&&!f.alive))?configuredSequence:undefined;
     if(sequence&&this.completionStartedAt===null){this.completionStartedAt=this.time;this.emit({type:'mission-radio',radioId:sequence.radioId});}
+    if(sequence?.casualty&&this.time-this.completionStartedAt!>=sequence.casualty.after&&!this.scriptedCasualties.has(sequence.casualty.personId))this.killCompanion(sequence.casualty.personId);
     if(!sequence||this.time-this.completionStartedAt!>=sequence.delay){this.status='won';this.releaseGuidance('complete');this.emit({type:'win'});}
   }
   private deckAt(x:number,z:number){return deckAltitude(this.mission.terrain,x,z);}
@@ -1416,7 +1477,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       this.yawKeySign=yawSign;this.pitchKeySign=pitchSign;
       viewYawScale=keyboardAimScale(this.yawKeyHeld);const pitchScale=keyboardAimScale(this.pitchKeyHeld);
       if(yawSign)this.yawKeyHeld+=dt;if(pitchSign)this.pitchKeyHeld+=dt;
-      this.pitch=Math.max(-1.2,Math.min(.8,this.pitch+pitchAxis*dt*manualAim.pitch*pitchScale));
+      this.pitch=this.clampPlayerPitch(this.pitch+pitchAxis*dt*manualAim.pitch*pitchScale);
     if(centerPressed){this.pitch=0;this.tracking=false;this.emit({type:'center',unit:this.mounted??undefined});}}
     let u=this.mounted;const turn=yawAxis*dt*(u?(u.spec.category==='tower'?MANUAL_AIM.towerYaw:manualAim.vehicleYaw):MANUAL_AIM.infantryYaw)*viewYawScale;
     if(u){const fixed=u.spec.category==='tower'||u.spec.speed<=0;if(!guiding){u.aimPitch=this.pitch;if(u.spec.category!=='tower')u.yaw+=turn;u.aim+=turn;if(centerPressed||u.spec.torsoLimit===0)u.aim=u.yaw;
@@ -1428,7 +1489,8 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       if(fixed){this.throttle=0;this.speed=0;u.speed=0;}
       else{const desired=this.throttle*u.spec.speed*mobilityMultiplier(u.parts)/3.6;this.speed=accelerateSpeed(this.speed,desired,dt,u.kind);u.speed=this.speed;this.move(u,u.yaw,this.speed*dt);}
       if(!guiding){if(input.left||input.right||input.lookUp||input.lookDown)this.tracking=false;
-      if(this.tracking){const t=this.target;if(t){const delta=angle(Math.atan2(t.x-u.x,t.z-u.z)-u.aim);const rate=u.spec.category==='tower'?MANUAL_AIM.towerTracking:1.3;this.aimBy(Math.max(-dt*rate,Math.min(dt*rate,delta)));this.pitch+=Math.max(-dt,Math.min(dt,this.targetElevation(t)-this.pitch));}}
+      if(this.tracking){const t=this.target;if(t){const delta=angle(Math.atan2(t.x-u.x,t.z-u.z)-u.aim);const rate=u.spec.category==='tower'?MANUAL_AIM.towerTracking:1.3;this.aimBy(Math.max(-dt*rate,Math.min(dt*rate,delta)));this.pitch=this.clampPlayerPitch(this.pitch+Math.max(-dt,Math.min(dt,this.targetElevation(t)-this.pitch)));}}
+      u.aimPitch=this.pitch;
     }}else if(!this.passenger&&!this.insideFacility){this.humanYaw+=turn;if(this.flight){this.speed=Math.hypot(this.flight.vx,this.flight.vz);this.flight=this.advanceFlight(this.human,this.flight,dt);}else{if(input.stop){if(stopPressed&&this.throttle!==0)this.emit({type:'stop'});this.throttle=0;}
       else if(input.back||this.prone)this.throttle=0;
       else if(input.boost){if(this.throttle!==1)this.emit({type:'boost'});this.throttle=1;}
@@ -1443,7 +1505,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
     if(!guiding)for(let i=0;i<firePressed.length;i++){
       const weapon=u?.spec.weapons[i],rapidLaser=!!u&&!!weapon&&allowsLaserHoldFire(u.kind,weapon),charged=!weapon||!isLaser(weapon)||rapidLaser||u!.laserCharge>=1;
       if(!fireDown[i]||this.fireReleaseRequired[i]||!firePressed[i]&&(!charged||!rapidLaser&&this.time<this.fireRepeatAt[i]))continue;
-      const before=this.events.length;this.fire(i+1);if(this.events.length>before)this.fireRepeatAt[i]=this.time+(weapon&&isMissile(weapon)?this.weapons.missiles[weapon].interval:weapon&&!isLaser(weapon)?this.weapons.guns[weapon as MachineGun].interval:HELD_TRIGGER_INTERVAL);
+      const before=this.events.length;this.fire(i+1);if(this.events.length>before)this.fireRepeatAt[i]=this.time+(weapon&&!isLaser(weapon)&&u?this.weaponInterval(u,weapon):HELD_TRIGGER_INTERVAL);
     }
     for(const unit of this.units){if(!unit.alive)continue;decayCooldowns(unit,dt);const spec=unit.spec,shieldCap=this.time<(this.shieldDoublerUntil.get(unit.id)??0)?spec.shield*2:spec.shield;unit.shield=Math.min(shieldCap,unit.shield);if(this.time-unit.lastHit>7&&this.unitPowered(unit)){unit.shield=Math.min(shieldCap,unit.shield+dt*1.5);unit.energy=Math.min(spec.energy,unit.energy+dt*4);}
       if(unit===u||respawned.has(unit.id))continue;if(!unit.pilot){this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
@@ -1452,7 +1514,7 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const assault=this.mission.assaults?.find(a=>a.unitId===unit.id);
       if(assault?.stopWhenBridgeRaisedId&&this.raisedBridges.has(assault.stopWhenBridgeRaisedId)){unit.alert=false;unit.speed=0;this.aiFocus.delete(unit.id);continue;}
       if(assault?.afterEliminateUnitId&&!this.eliminated(assault.afterEliminateUnitId)){this.coastVehicle(unit,dt);continue;}
-      if(assault?.advanceTo&&!!assault.advanceAfterUnitIds?.length&&assault.advanceAfterUnitIds.every(id=>this.eliminated(id))){unit.alert=false;this.aiFocus.delete(unit.id);if(this.claimHolding(unit)){unit.speed=0;continue;}this.followAlly(unit,assault.advanceTo,`advance:${unit.id}`,assault.advanceTo,dt);continue;}
+      if(assault?.advanceTo&&!!assault.advanceAfterUnitIds?.length&&assault.advanceAfterUnitIds.every(id=>this.eliminated(id)&&(!assault.advanceAfterCrewsDefeated||!this.soldiers.some(soldier=>soldier.alive&&(soldier.originVehicleId??soldier.sourceVehicle)===id)))){unit.alert=false;this.aiFocus.delete(unit.id);if(this.claimHolding(unit)){unit.speed=0;continue;}this.followAlly(unit,assault.advanceTo,`advance:${unit.id}`,assault.advanceTo,dt);continue;}
       if(assault&&!this.assaultBegun(assault,unit)&&!this.activeAggressor(unit)){this.coastVehicle(unit,dt);continue;}
       const assaultTarget=assault?this.selectionTargets.find(t=>t.id===assault.targetId&&t.alive&&t.iff!==unit.iff&&(!isVehicle(t)||t.pilot)):undefined;
       if(assaultTarget)unit.alert=true;
@@ -1471,6 +1533,18 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const hostile=!!opponent||retaliatingToPlayer||!!assaultTarget||!!exposedCompanion||!!nearby||playerNearby||playerPursuit||!!nearestHostile||!!nearestPlayer;if(!hostile){unit.alert=false;this.aiFocus.delete(unit.id);this.coastVehicle(unit,dt);continue;}
       const ramPlayer=this.shouldRamPlayer(unit),nearest=nearby&&(!playerNearby||distance(unit,nearby)<=distance(unit,this.player))?nearby:undefined;
       const target=respawning?(nearestPlayer?null:nearestHostile??null):ramPlayer?null:assault?.retaliateAfterHits&&retaliatingToPlayer?this.mounted??this.passenger??null:opponent??(retaliatingToPlayer?this.mounted??this.passenger:assaultTarget)??nearest??(playerNearby||playerPursuit?this.mounted??this.passenger:exposedCompanion)??exposedCompanion??null;
+      if(assaultTarget&&assault?.retreatAt!==undefined&&assault.retreatToRange!==undefined&&this.time>=assault.retreatAt){
+        const dx=unit.x-assaultTarget.x,dz=unit.z-assaultTarget.z,range=Math.hypot(dx,dz)||1;
+        const destination={x:assaultTarget.x+dx/range*assault.retreatToRange,z:assaultTarget.z+dz/range*assault.retreatToRange};
+        if(range<assault.retreatToRange-5)this.followAlly(unit,destination,`retreat:${unit.id}`,destination,dt);
+        else this.coastVehicle(unit,dt);
+        const bearing=Math.atan2(assaultTarget.x-unit.x,assaultTarget.z-unit.z),limit=spec.torsoLimit;
+        const desiredAim=unit.yaw+Math.max(-limit,Math.min(limit,angle(bearing-unit.yaw)));
+        unit.aim+=aiAimTurnStep(unit.kind,angle(desiredAim-unit.aim),dt);
+        unit.aim=unit.yaw+Math.max(-limit,Math.min(limit,angle(unit.aim-unit.yaw)));
+        if(range<spec.ai.detection&&this.attackVisible(unit,assaultTarget)&&Math.abs(angle(unit.aim-bearing))<.12&&unit.cooldown<=0)this.fireAI(unit,assaultTarget);
+        continue;
+      }
       const position=target??this.human,dist=distance(unit,position),sight=this.attackVisible(unit,position);
       if((target||playerNearby)&&dist<spec.ai.detection&&sight){unit.alert=true;if(position===this.player&&this.isHostile(unit)&&!this.playerDetectionAnnounced.has(unit.id)){this.playerDetectionAnnounced.add(unit.id);this.emit({type:'enemy-detected',unit});}}
       if(!unit.alert){this.aiFocus.delete(unit.id);continue;}
@@ -1495,9 +1569,9 @@ this.footRechargePending.clear();this.centerVehicle(u,false);this.humanVelocity=
       const settled=sight&&this.trackAiFocus(unit,focusId,wasAlert&&!(spec.ai.waitForClearShot&&!this.aiFocus.has(unit.id)));
       // Hovercraft detection is wider than a laser. Fire only inside the longest weapon, then keep closing.
       const reach=spec.category==='tower'?spec.ai.detection:spec.category==='hovercraft'?Math.min(spec.ai.detection,this.aiWeaponRange(unit)):180;
-      if(!ramPlayer&&dist<reach&&sight&&unit.cooldown<=0&&Math.abs(angle(unit.aim-bearing))<.12&&settled){
-        this.fireAI(unit,target);
-
+      if(!ramPlayer&&dist<reach&&sight&&Math.abs(angle(unit.aim-bearing))<.12&&settled){
+        if(unit.cooldown<=0)this.fireAI(unit,target);
+        const rapidSlot=this.rapidAISlot(unit,target);if(rapidSlot>=0)this.fireAI(unit,target,rapidSlot);
       }
     }
     this.tickAllies(dt);this.tickMines(previousHuman,previousUnits);if(this.status!=='running')return;this.tickMinefieldWarnings();this.tickMissionRadio();this.tickIonStrike();

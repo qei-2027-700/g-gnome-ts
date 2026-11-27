@@ -140,7 +140,7 @@ export class GameAudio {
     });
   }
   private get musicVolume(){return this.settings.music*(this.musicOwner==='mission'?(this.missionMusic?.cues.volumeScale??1):1);}
-  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean}[],assaultReady=false,ionAnnouncementAt:number|null=null,bridgeCrossed=false,passengerHawk=false,waypointReached=false){
+  updateMissionMusic(time:number,paused:boolean,units?:readonly {id:string;alive:boolean;defeated?:boolean;crewDead?:boolean}[],assaultReady=false,ionAnnouncementAt:number|null=null,bridgeCrossed=false,passengerHawk=false,waypointReached=false){
     this.musicPaused=paused;if(this.music)this.music.volume=this.musicVolume;
     if(paused){this.pauseMusic();return;}
     const releasePassenger=!passengerHawk&&this.passengerHawk;
@@ -150,7 +150,7 @@ export class GameAudio {
     const state=this.missionMusic;
     if(state){
       const elimination=state.cues.afterEliminate;
-      if(!state.eliminated&&units&&elimination?.unitIds.length&&elimination.unitIds.every(id=>units.some(unit=>unit.id===id&&(!unit.alive||unit.defeated===true))))state.eliminated=true;
+      if(!state.eliminated&&units&&elimination?.unitIds.length&&elimination.unitIds.every(id=>units.some(unit=>unit.id===id&&(elimination.when==='crew-dead'?unit.crewDead===true:!unit.alive||unit.defeated===true))))state.eliminated=true;
       if(!state.assault&&assaultReady&&state.cues.afterAssault)state.assault=true;
       if(!state.bridged&&bridgeCrossed&&state.cues.afterBridge)state.bridged=true;
       if(!state.waypoint&&waypointReached&&state.cues.afterWaypoint)state.waypoint=true;

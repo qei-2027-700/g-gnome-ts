@@ -15,13 +15,14 @@ export function missionBriefing(mission:MissionDefinition,missions:readonly Miss
  ${missionPreviewPanel((presentation?.vehiclePreview?crop(presentation.vehiclePreview,locale):hologramSvg(assigned.kind))+'<div id="briefingDetail" hidden aria-live="polite"></div>','console-preview')}
  ${missionObjectiveList(labels.map((label,review)=>({label,review})),'console-orders')}
  <p class="console-hint">[ Click on bulletpoint to review ]</p>
- <label class="console-mission-select"><span>${locale==='ja'?'任務':'MISSION'}</span><select id="missionSelect" aria-label="${locale==='ja'?'任務を選択':'Select mission'}">${missions.map(m=>`<option value="${m.id}" ${m.id===mission.id?'selected':''}>${m.id} · ${escape(m.title)}</option>`).join('')}</select></label>
+ <div class="console-mission-select"><span>${locale==='ja'?'任務':'MISSION'}</span><button id="missionSelect" data-action="loadMissions" aria-haspopup="dialog" aria-controls="missionList">${escape(mission.id)} · ${escape(mission.title)}</button></div>
  <button class="console-button console-launch" data-action="start" aria-label="LAUNCH · ${locale==='ja'?'任務開始':'Start mission'}">LAUNCH</button>
  <button class="console-button console-new" data-action="newMission">NEW</button>
- <button class="console-button console-load" disabled title="Not implemented">LOAD</button>
+ <button class="console-button console-load" data-action="loadMissions">LOAD</button>
  <button class="console-button console-save" disabled title="Not implemented">SAVE</button>
  <button class="console-button console-credits" data-action="credits">CREDITS</button>
  <div class="console-tabs"><button data-action="briefing" aria-current="page">GAME</button><button disabled>NETWORK</button><button data-action="loadout">LAB</button><button data-action="settings">OPTIONS</button><button data-action="exitBriefing">EXIT</button></div>
+ <div id="missionList" class="console-mission-list" role="dialog" aria-modal="true" aria-label="${locale==='ja'?'任務を選択':'Select mission'}" hidden><div class="console-mission-list-header"><strong>${locale==='ja'?'任務を選択':'SELECT MISSION'}</strong><button data-action="closeMissions" aria-label="${locale==='ja'?'閉じる':'Close'}">×</button></div><div class="console-mission-options">${missions.map(m=>`<button data-action="selectMission:${escape(m.id)}" ${m.id===mission.id?'aria-current="true"':''}><span>${escape(m.id)}</span><span>${escape(m.title)}</span></button>`).join('')}</div></div>
  </section>`;
 }
 export function briefingDetail(mission:MissionDefinition,index:number,locale:'ja'|'en'){

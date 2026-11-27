@@ -1196,7 +1196,7 @@ test('4-4 labeled units and facilities follow the placement diagram',()=>{
  at('enemy-tactical',[218,258]);
  at('enemy-asv',[264,309]);
  at('enemy-aip',[379,296]);
- at('rocket-tower-1',[300,335]);
+ at('rocket-tower-1',[275,323]);
  at('rocket-tower-2',[533,316]);
  const unionRocket=new Simulation('Easy',MISSION_4_4).units.find(unit=>unit.id==='rocket-tower-1')!;
  assert.equal(unionRocket.kind,'union-rocket-tower');assert.deepEqual(unionRocket.spec.weapons,['TCROCK','TCROCK']);assert.deepEqual(unionRocket.slotAmmo,[60,60]);assert.equal(unionRocket.spec.missileHomingScale?.TCROCK,0);
@@ -1209,7 +1209,7 @@ test('4-4 labeled units and facilities follow the placement diagram',()=>{
  assert.equal(MISSION_4_4.units.filter(unit=>unit.kind==='union-tactical'&&unit.iff==='2622').length,4);
  assert.deepEqual(MISSION_4_4.assaults?.map(assault=>[assault.unitId,assault.startAt,assault.targetId]),[['enemy-sentry-opening',5,'player-td'],['enemy-tactical',10,'player-td']]);
  const building=(id:string)=>MISSION_4_4.base!.buildings.find(item=>item.id===id)!;
- assert.deepEqual({x:building('mine-control-building').x,z:building('mine-control-building').z},map44PixelToWorld(230,400));
+ assert.deepEqual({x:building('mine-control-building').x,z:building('mine-control-building').z},map44PixelToWorld(325,340));
  assert.deepEqual({x:building('delivery-bridge-control').x,z:building('delivery-bridge-control').z},map44PixelToWorld(450,414));
  assert.deepEqual({x:building('laboratory').x,z:building('laboratory').z},MAP_4_4_POINTS.labMarker);
  const opening=MISSION_4_4.units.find(unit=>unit.id==='enemy-sentry-opening')!,west=MISSION_4_4.units.find(unit=>unit.id==='enemy-tactical')!,bridgeGuard=MISSION_4_4.units.find(unit=>unit.id==='enemy-sentry-bridge')!,bridgeBuilding=building('delivery-bridge-control');
@@ -1218,17 +1218,19 @@ test('4-4 labeled units and facilities follow the placement diagram',()=>{
  const south=MISSION_4_4.units.filter(unit=>unit.id.startsWith('enemy-tactical-'));
  assert.ok(Math.hypot(south[0]!.x-south[2]!.x,south[0]!.z-south[2]!.z)<80,'the three southern tacticals stay in one cluster');
  const control=building('mine-control-building'),westRocket=MISSION_4_4.units.find(unit=>unit.id==='rocket-tower-1')!;
- assert.ok(control.z<westRocket.z,'the mine control is south of the west rocket, on the rocket side of the lava');
+ assert.ok(control.x>westRocket.x,'the control building is beyond the west rocket on the same bank');
  const field=MISSION_4_4.minefields![0]!;
- assert.deepEqual({x:field.x,z:field.z},map44PixelToWorld(248,390));
+ assert.deepEqual({x:field.x,z:field.z},map44PixelToWorld(365,345));
+ assert.ok(field.x>control.x&&south.every(td=>td.x>field.x),'the active mine belt precedes the three TD HAWCs');
  const onPeak=(point:{x:number;z:number})=>MISSION_4_4.terrain.peaks!.some(peak=>((point.x-peak.x)/(peak.width/2))**2+((point.z-peak.z)/(peak.depth/2))**2<1);
+ assert.equal(onPeak(westRocket),false);
  assert.equal(onPeak(control),false);
  assert.equal(onPeak(field),false);
- for(const mine of field.mines)assert.equal(onPeak(mine),false,mine.id);
- for(const td of south){
-  assert.ok(distance(control,td)>180,`${td.id} notices the mine control`);
-  assert.ok(distance(westRocket,td)<distance(control,td),`${td.id} is closer to the mine control than to the rocket`);
- }
+ for(const mine of field.mines){assert.equal(onPeak(mine),false,mine.id);assert.ok(riverDistance(MISSION_4_4.terrain.rivers![0]!,mine.x,mine.z)>23,mine.id);}
+ const sim=new Simulation('Easy',MISSION_4_4),facility=sim.facilities.find(item=>item.id===control.id)!;
+ assert.ok(sim.mines.every(mine=>!mine.spent));
+ sim.damageFacility(facility,facility.health,{x:facility.x,y:3,z:facility.z});
+ assert.ok(sim.mines.every(mine=>mine.spent),'destroying the linked control disables all mines');
 });
 test('4-4 Union AIP closes inside ARC-M range instead of firing across the ridge',()=>{
  const def={...MISSION_4_4,units:MISSION_4_4.units.filter(unit=>unit.id==='player-td'||unit.id==='enemy-aip'),assaults:[],minefields:[],rocks:[],objectives:[],completionEnabled:false,radioTriggers:[]};

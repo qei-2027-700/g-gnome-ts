@@ -291,6 +291,19 @@ test('infantry turns toward its opponent before firing and shots follow its faci
  step(s,1.5);const shot=s.events.find(e=>e.type==='shot'&&e.soldier===soldier)!;assert.ok(shot);step(s,.5);assert.ok(s.humanHealth<100);
  const dx=shot.to!.x-shot.from!.x,dz=shot.to!.z-shot.from!.z;assert.ok(Math.abs(Math.atan2(dx,dz)-soldier.yaw)<.025);
 });
+test('full prone avoids a standing infantry rifle shot while still allowing the player to hit back',()=>{
+ const duel=(difficulty:'Easy'|'Medium'|'Hard',prone:boolean)=>{
+  const s=new Simulation(difficulty);s.units=[];s.mission.base=undefined;s.mission.rocks=[];s.mission.terrain.cliffs=[];s.mission.terrain.peaks=[];s.human={x:0,z:0};s.iff='2620';
+  const soldier=s.forceEject(makeUnit('rifle-enemy','merc-sentry',0,55,true))!;soldier.flight=null;soldier.x=0;soldier.z=55;soldier.yaw=Math.PI;soldier.gashrAmmo=0;soldier.cooldown=0;
+  if(prone)s.toggleProne();s.tick(.05,idle);assert.ok(s.events.some(event=>event.type==='shot'&&event.soldier===soldier));step(s,.6);return {s,soldier};
+ };
+ assert.ok(duel('Easy',false).s.humanHealth<100);
+ const low=duel('Easy',true);assert.equal(low.s.humanHealth,100);assert.equal(low.soldier.prone,false);
+ low.s.fire(1);step(low.s,.6);assert.ok(low.soldier.health<35);
+ assert.equal(duel('Medium',true).soldier.prone,false);
+ const hardStanding=duel('Hard',false);assert.equal(hardStanding.soldier.prone,true);assert.ok(hardStanding.s.humanHealth<100);
+ const hard=duel('Hard',true);assert.equal(hard.soldier.prone,true);assert.equal(hard.s.humanHealth,100);
+});
 test('lethal rifle hits emit one death event, while further hits and player damage cannot repeat death',()=>{
  const s=new Simulation();s.units=[];const soldier=s.forceEject(makeUnit('pilot','merc-sentry',0,20,true))!;soldier.flight=null;soldier.x=0;soldier.z=20;soldier.health=1;soldier.iff=s.iff;soldier.order={kind:'follow',targetId:soldier.id};
  aimAt(s,0,1,20);s.fire(1);assert.equal(soldier.alive,true);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,0);step(s,.2);assert.equal(soldier.alive,false);assert.equal(s.events.filter(e=>e.type==='soldier-death').length,1);

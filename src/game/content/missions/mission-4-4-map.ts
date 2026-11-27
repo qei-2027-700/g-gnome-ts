@@ -32,17 +32,16 @@ export const MAP_4_4_POINTS={
  bridge:map44PixelToWorld(490,414),
  bridgeControl:map44PixelToWorld(450,414),
  labMarker:map44PixelToWorld(530,448),
- // South of the west rocket, in the dark valley past the pale ridge. The placement-diagram
- // label sat on the north bank of the lava, inside the three southern TD detection ranges.
- mineControl:map44PixelToWorld(230,400),
- minefield:map44PixelToWorld(248,390),
+ // West-bank approach: rocket, control building, mine belt, then three TD HAWCs.
+ mineControl:map44PixelToWorld(325,340),
+ minefield:map44PixelToWorld(365,345),
  waypoint1:map44PixelToWorld(530,420),
  sentryOpening:map44PixelToWorld(216,209),
  tacticalWest:map44PixelToWorld(218,258),
  asv:map44PixelToWorld(264,309),
  aip:map44PixelToWorld(379,296),
  rocketRight:map44PixelToWorld(533,316),
- rocketLeft:map44PixelToWorld(300,335),
+ rocketLeft:map44PixelToWorld(275,323),
  tacticalSouth1:map44PixelToWorld(407,345),
  tacticalSouth2:map44PixelToWorld(416,352),
  tacticalSouth3:map44PixelToWorld(420,358),

@@ -38,6 +38,14 @@ test('Ready speaks one complete Japanese word in the same female voice and respe
  }
 });
 
+test('ally boarding announcement speaks once in the selected language and respects voice mute',async()=>{
+ await radioAudioFixture(async({audio,settings,spoken})=>{
+  audio.sayAllyBoarded();assert.deepEqual(spoken.map(utterance=>utterance.text),['搭乗しました']);
+  settings.locale='en';audio.sayAllyBoarded();assert.equal(spoken.at(-1)?.text,'Ally boarded');
+  settings.voice=0;audio.sayAllyBoarded();assert.equal(spoken.length,2);
+ });
+});
+
 async function radioAudioFixture(check:(fixture:{audio:GameAudio;settings:ReturnType<typeof defaults>;sources:any[];gains:number[];spoken:SpeechSynthesisUtterance[];urls:string[];ctx:any})=>Promise<void>,fetchAudio: (url:string)=>Promise<{ok:boolean;arrayBuffer:()=>Promise<ArrayBuffer>}> = async()=>({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)})){
  const sources:any[]=[],gains:number[]=[],spoken:SpeechSynthesisUtterance[]=[],urls:string[]=[];
  const synth={getVoices:()=>[],cancel(){},speak(u:SpeechSynthesisUtterance){spoken.push(u);}};

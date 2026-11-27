@@ -262,6 +262,9 @@ test('3-4 elevator appears and mine control destruction hides the minefield and 
   world.update(.3);
   assert.equal(minefield?.isEnabled(),false);
   assert.ok(world.scene.getMeshByName('mine-control-smoke'));
+  const fire=world.scene.getTransformNodeByName(`mine-control-fire-${control.id}`);
+  assert.equal(fire?.getChildMeshes().filter(mesh=>mesh.name==='mine-control-flame').length,8);
+  world.update(1/60);assert.notEqual(fire?.getChildMeshes()[0]?.scaling.y,1);
   assert.equal(world.rigs.has('kylie-td'),false);
   const waypoint=MISSION_3_4.waypoints.find(w=>w.id===3)!;
   sim.mounted!.x=waypoint.x;sim.mounted!.z=waypoint.z;
@@ -269,6 +272,8 @@ test('3-4 elevator appears and mine control destruction hides the minefield and 
   world.update(1/60);
   assert.ok(world.rigs.has('kylie-td'));
   assert.ok(world.rigs.has('sheridan-asv'));
+  world.reset(new Simulation('Easy',MISSION_3_4));
+  assert.equal(world.scene.getTransformNodeByName(`mine-control-fire-${control.id}`),null);
   world.scene.dispose();
  }finally{engine.dispose();}
 });
@@ -978,7 +983,10 @@ test('infantry has articulated knees and runs only when its actual position chan
  const hero=world.soldierRigs.get('player')!,npc=world.soldierRigs.get(person.id)!;assert.equal(hero.knees.length,2);assert.equal(hero.ankles[0].parent,hero.knees[0]);assert.equal(hero.knees[0].parent,hero.legs[0]);
  sim.human.z+=.4;world.update(.1);assert.ok(hero.knees.some(k=>k.rotation.x>.5));assert.ok(hero.arms.some(a=>Math.abs(a.rotation.x)>.1));assert.ok(hero.upper.rotation.x>0);assert.ok(npc.knees.every(k=>k.rotation.x===0));
  const pose=hero.knees.map(k=>k.rotation.x);world.update(0);assert.deepEqual(hero.knees.map(k=>k.rotation.x),pose);world.update(.1);assert.ok(hero.knees.every(k=>k.rotation.x===0));assert.equal(hero.upper.rotation.x,0);
- person.z+=.35;world.update(.1);assert.ok(npc.knees.some(k=>k.rotation.x>.5));engine.dispose();
+ person.z+=.35;world.update(.1);assert.ok(npc.knees.some(k=>k.rotation.x>.5));
+ sim.toggleKneeling();world.update(.1);assert.equal(hero.upper.position.y,-.38);assert.ok(hero.knees[0].rotation.x>1.5);assert.equal(hero.root.rotation.x,0);
+ sim.toggleProne();person.prone=true;world.update(.1);assert.equal(hero.root.rotation.x,Math.PI/2);assert.equal(npc.root.rotation.x,Math.PI/2);assert.equal(hero.upper.position.y,0);
+ engine.dispose();
 });
 test('Union Tactical slender legs leave a narrower hit region with higher hips while other Tactical chassis retain their proportions',async()=>{
  const {intersectParts}=await import('../simulation/parts.ts'),{VEHICLE_SHAPES}=await import('../content/vehicle-shapes.ts');const u=makeUnit('slender','union-tactical',0,0,false),shape=VEHICLE_SHAPES['union-tactical'];

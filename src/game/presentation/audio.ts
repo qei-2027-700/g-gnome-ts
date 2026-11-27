@@ -299,6 +299,7 @@ export class GameAudio {
     if(priority){this.occupiedUtterance=null;this.afterOccupied=null;speechSynthesis.cancel();}this.lastSpeech=now;
     speechSynthesis.speak(this.utterance(this.settings.locale==='ja'?ja:en,profile));
   }
+  sayAllyBoarded(){this.say('搭乗しました','Ally boarded','young',true);}
   sayAlert(ja:string,en:string,profile:VoiceProfile='young'){
     if(!('speechSynthesis'in window)||!this.settings.voice)return;
     this.stopRadio();this.say(ja,en,profile,true);

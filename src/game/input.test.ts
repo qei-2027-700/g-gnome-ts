@@ -32,7 +32,7 @@ test('up/down arrows only pitch, left/right turn, PageUp/Down remain aliases and
 });
 test('old key settings migrate Q and pitch actions while preserving valid custom keys',()=>{
  const old=defaults();delete old.bindings.targetCursor;delete old.bindings.lookUp;delete old.bindings.lookDown;old.bindings.forward='KeyH';
- const settings=validateSettings(old);assert.equal(settings.bindings.forward,'KeyH');assert.equal(settings.bindings.targetCursor,'KeyQ');assert.equal(settings.bindings.lookUp,'PageUp');assert.equal(settings.bindings.lookDown,'PageDown');
+ const settings=validateSettings(old);assert.equal(settings.bindings.forward,'KeyH');assert.equal(settings.bindings.targetCursor,'KeyQ');assert.equal(settings.bindings.lookUp,'PageUp');assert.equal(settings.bindings.lookDown,'PageDown');assert.equal(settings.bindings.kneel,'KeyK');
 });
 test('player vehicle GASHR setting defaults to immunity and accepts only booleans',()=>{
  assert.equal(defaults().playerGashrVulnerable,false);

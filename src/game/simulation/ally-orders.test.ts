@@ -138,8 +138,11 @@ function footSquad(){const s=setup();s.mission.rocks=[];s.units.find(u=>u.id==='
  const people=s.units.slice(1,4).map((unit,i)=>{const soldier=s.forceEject(unit,'destruction')!;unit.alive=false;soldier.flight=null;soldier.x=15+i*2;soldier.z=0;return soldier;});s.selected=null;return {s,people};}
 test('F4 reserves three seats in recipient order, approaches on foot, and F6 restores the same people',()=>{
  const {s,people}=footSquad(),menu=new RadioMenu();menu.begin('all');s.selected='player-asv';assert.equal(key(s,menu,'F4')!.accepted.length,3);assert.ok(people.every(p=>p.boardingTarget===s.mounted!.id));assert.deepEqual(s.mounted!.passengers,[]);
+ assert.equal(s.events.filter(event=>event.type==='board'&&event.soldier).length,0);
  s.eject('ground');s.human={x:0,z:0};assert.equal(s.board(),true);assert.ok(s.mounted); // Empty vehicle still boards as pilot, reserved seats remain.
  run(s,4);assert.equal(s.mounted!.passengers.length,3);assert.ok(people.every(p=>p.passengerOf===s.mounted!.id));assert.ok(people.every(p=>!s.combatTargets.includes(p)));assert.ok(s.radioMembers.every(m=>m.available));
+ assert.deepEqual(s.events.filter(event=>event.type==='board'&&event.soldier&&event.unit===s.mounted).map(event=>event.soldier?.id).sort(),people.map(person=>person.id).sort());
+ run(s,.5);assert.equal(s.events.filter(event=>event.type==='board'&&event.soldier&&event.unit===s.mounted).length,3);
  const carrier=s.mounted!,count=s.soldiers.length;carrier.speed=5;carrier.yaw=.4;menu.begin('all');assert.equal(key(s,menu,'F6')!.accepted.length,3);assert.equal(s.soldiers.length,count);assert.ok(people.every(p=>!p.passengerOf&&p.flight&&p.alive));assert.deepEqual(carrier.passengers,[]);assert.equal(carrier.pilot,true);assert.equal(carrier.speed,5);assert.equal(carrier.yaw,.4);
 });
 test('seat competition rejects overflow and player boarding; F7, death, IFF and destruction release reservations',()=>{

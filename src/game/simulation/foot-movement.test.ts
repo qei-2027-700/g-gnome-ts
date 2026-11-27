@@ -22,6 +22,14 @@ test('reverse and prone cancel full power with inertia; ejection does not enable
  step(s,25,{...idle,boost:true});s.prone=true;step(s,25,{...idle,boost:true,forward:true});assert.ok(Math.abs(s.speed-INFANTRY_MOVEMENT.prone)<1e-8);assert.equal(s.throttle,0);
  const mounted=new Simulation();mounted.human={x:mounted.units[0].x,z:mounted.units[0].z};assert.ok(mounted.board());mounted.throttle=1;mounted.eject('ground');mounted.tick(.016,idle);assert.equal(mounted.speed,0);assert.equal(mounted.throttle,0);
 });
+test('J prone and K kneeling are exclusive, movement ends kneeling, and boarding clears both',()=>{
+ const s=foot();s.toggleKneeling();assert.equal(s.kneeling,true);assert.equal(s.prone,false);assert.equal(s.eyeHeight,1.15);
+ s.toggleProne();assert.equal(s.prone,true);assert.equal(s.kneeling,false);assert.equal(s.eyeHeight,.7);
+ s.toggleKneeling();assert.equal(s.kneeling,true);assert.equal(s.prone,false);
+ s.tick(.05,{...idle,forward:true});assert.equal(s.kneeling,false);
+ s.toggleProne();s.flight={altitude:5,vy:0,vx:0,vz:0};s.toggleKneeling();assert.equal(s.prone,true);assert.equal(s.kneeling,false);
+ s.flight=null;s.toggleProne();s.human={x:0,z:0};const unit=new Simulation().units[0];unit.x=0;unit.z=0;s.units=[unit];assert.ok(s.board());assert.equal(s.prone,false);assert.equal(s.kneeling,false);
+});
 test('full power cannot accelerate a player during an ejection flight',()=>{
  const s=foot();s.flight={altitude:20,vy:0,vx:0,vz:0};s.tick(.05,{...idle,boost:true});assert.equal(s.throttle,0);assert.equal(s.events.filter(e=>e.type==='boost').length,0);
 });

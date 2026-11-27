@@ -1,6 +1,6 @@
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type Locale = 'ja' | 'en';
-export const DEFAULT_BINDINGS: Record<string,string> = {forward:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',lookUp:'PageUp',lookDown:'PageDown',stop:'Enter',center:'Space',boost:'ShiftLeft',fire1:'Digit1',fire2:'Digit2',fire3:'Digit3',fire4:'Digit4',board:'KeyF',eject:'Backspace',camera:'KeyC',cameraDiagonal:'KeyZ',map:'KeyB',waypoint:'KeyR',target:'KeyE',targetCursor:'KeyQ',track:'KeyT',prone:'KeyJ',pause:'KeyP',comm:'KeyG'};
+export const DEFAULT_BINDINGS: Record<string,string> = {forward:'KeyW',back:'KeyS',left:'KeyA',right:'KeyD',lookUp:'PageUp',lookDown:'PageDown',stop:'Enter',center:'Space',boost:'ShiftLeft',fire1:'Digit1',fire2:'Digit2',fire3:'Digit3',fire4:'Digit4',board:'KeyF',eject:'Backspace',camera:'KeyC',cameraDiagonal:'KeyZ',map:'KeyB',waypoint:'KeyR',target:'KeyE',targetCursor:'KeyQ',track:'KeyT',prone:'KeyJ',kneel:'KeyK',pause:'KeyP',comm:'KeyG'};
 export type Settings = {difficulty:Difficulty;playerGashrVulnerable:boolean;locale:Locale;sfx:number;voice:number;music:number;sensitivity:number;bindings:Record<string,string>};
 export const defaults = (): Settings => ({difficulty:'Easy',playerGashrVulnerable:false,locale:'ja',sfx:.5,voice:.65,music:.4,sensitivity:1,bindings:{...DEFAULT_BINDINGS}});
 export function validateSettings(raw:unknown): Settings {

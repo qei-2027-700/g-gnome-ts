@@ -701,20 +701,31 @@ export class World {
   missileRigs=new Map<number,{root:TransformNode;smokeTimer:number;flame:Mesh}>();
   private fxMaterials=new Map<string,StandardMaterial>();
   private mineRigs=new Map<string,Mesh>();
-  private mineControlSmokeTimers=new Map<string,number>();
+  private mineControlFires=new Map<string,Destruction>();
+  private burnedMineControls=new Set<string>();
   private updateMineControlSmoke(dt:number){
     const liveMines=new Set(this.sim.mines.filter(mine=>!mine.spent).map(mine=>mine.id));
     for(const field of this.sim.mission.minefields??[]){
       this.scene.getTransformNodeByName(`minefield-${field.id}`)?.setEnabled(field.mines.some(mine=>liveMines.has(mine.id)));
-      const control=this.sim.facilities.find(facility=>facility.id===field.controlFacilityId);
-      if(!control||control.alive||dt<=0)continue;
-      const elapsed=(this.mineControlSmokeTimers.get(control.id)??0)+dt;
-      this.mineControlSmokeTimers.set(control.id,elapsed%.28);
-      if(elapsed<.28)continue;
-      const smoke=MeshBuilder.CreateSphere('mine-control-smoke',{diameter:3,segments:5},this.scene);
-      smoke.position.set(control.x,Math.max(1,control.height*.65),control.z);
-      smoke.material=this.fxMaterial('smoke','#6d6a60');
-      this.addEffect(smoke,2.8,'smoke',new Vector3(.5,2.8,.2));
+    }
+    for(const control of this.sim.facilities.filter(facility=>facility.facilityType==='mine-control'&&!facility.alive)){
+      if(this.burnedMineControls.has(control.id))continue;
+      let fire=this.mineControlFires.get(control.id);
+      if(!fire){
+        const root=new TransformNode(`mine-control-fire-${control.id}`,this.scene);root.position.set(control.x,0,control.z);
+        const flames:Mesh[]=[];
+        for(let i=0;i<8;i++){
+          const flame=MeshBuilder.CreateCylinder('mine-control-flame',{height:1,diameterTop:0,diameterBottom:1,tessellation:5},this.scene);
+          flame.parent=root;flame.rotation.y=i*1.7;flame.material=this.fxMaterial(i%2?'flame-orange':'flame-yellow',i%2?'#ff4810':'#ffc333',true);flame.isPickable=false;flames.push(flame);
+        }
+        fire={age:0,smokeTimer:0,root,flames};this.mineControlFires.set(control.id,fire);
+        this.burst({x:control.x,y:control.height*.5,z:control.z},true);
+      }
+      fire.age+=dt;
+      const fade=Math.max(0,1-Math.max(0,fire.age-VEHICLE_DESTRUCTION.burn)/(VEHICLE_DESTRUCTION.smokeEnd-VEHICLE_DESTRUCTION.burn));
+      fire.flames.forEach((flame,i)=>{const pulse=.85+.15*Math.sin(fire.age*17+i*2.4),height=control.height*(.45+.1*(i%3));flame.position.set(Math.sin(i*2.4)*control.width*.18,height*pulse*.5,Math.cos(i*2.4)*control.depth*.18);flame.scaling.set(1.8*pulse,height*pulse,1.8*pulse);flame.visibility=fade;});
+      if(dt>0&&fire.age<VEHICLE_DESTRUCTION.smokeEnd){fire.smokeTimer+=dt;if(fire.smokeTimer>=.22){fire.smokeTimer%=.22;const smoke=MeshBuilder.CreateSphere('mine-control-smoke',{diameter:3,segments:5},this.scene);smoke.position.set(control.x,control.height*.65,control.z);smoke.material=this.fxMaterial('smoke','#6d6a60');this.addEffect(smoke,2.8,'smoke',new Vector3(.5,2.8,.2));}}
+      if(fire.age>=VEHICLE_DESTRUCTION.clear){fire.root.dispose();this.mineControlFires.delete(control.id);this.burnedMineControls.add(control.id);}
     }
   }
   private terrainRoot!:TransformNode;
@@ -874,16 +885,25 @@ export class World {
       rig.arms[i].rotation.x=grounded?Math.sin(rig.phase+i*Math.PI)*run*(i===0?.55:.22):0;
     });
   }
+  private stanceSoldier(rig:SoldierRig,yaw:number,prone:boolean,kneeling=false){
+    rig.root.rotation.set(prone?Math.PI/2:0,yaw,0);
+    rig.upper.position.y=kneeling?-.38:0;
+    if(prone){rig.root.position.y+=.18;return;}
+    if(!kneeling)return;
+    rig.legs[0].rotation.x=-1.05;rig.knees[0].rotation.x=1.75;rig.ankles[0].rotation.x=-.7;
+    rig.legs[1].rotation.x=.5;rig.knees[1].rotation.x=.85;rig.ankles[1].rotation.x=-.55;
+    rig.arms[0].rotation.x=-.3;rig.arms[1].rotation.x=-.3;
+  }
   private updateSoldiers(dt:number){
     const sim=this.sim,hero=this.soldierRigs.get('player')??this.makeSoldier('player',true);
     const present=new Set(sim.soldiers.map(soldier=>soldier.id));
     for(const [id,rig] of this.soldierRigs)if(id!=='player'&&!present.has(id)){rig.root.dispose(false,true);this.soldierRigs.delete(id);}
     hero.root.setEnabled(!sim.mounted&&!sim.passenger&&!sim.insideFacility&&(this.mode!==0||this.completionTime!==null));
     this.poseSoldier(hero,sim.human.x,sim.human.z,sim.humanYaw,sim.flight?.altitude??deckAltitude(sim.mission.terrain,sim.human.x,sim.human.z)+(sim.humanHealth<=0?.25:0),!sim.flight&&!sim.prone&&sim.humanHealth>0,dt);
-    hero.root.rotation.set(sim.prone||sim.humanHealth<=0?Math.PI/2:0,sim.humanYaw,0);
+    this.stanceSoldier(hero,sim.humanYaw,sim.prone||sim.humanHealth<=0,sim.kneeling);
     for(const soldier of sim.soldiers){const rig=this.soldierRigs.get(soldier.id)??this.makeSoldier(soldier.id,false,soldier.faction);
-      rig.root.setEnabled(!isEmbarked(soldier));this.poseSoldier(rig,soldier.x,soldier.z,soldier.yaw,soldier.flight?.altitude??(soldier.ground??0)+(soldier.alive?0:.25),soldier.alive&&!soldier.flight&&!isEmbarked(soldier),dt);
-      rig.root.rotation.set(soldier.alive?0:Math.PI/2,soldier.yaw,0);
+      rig.root.setEnabled(!isEmbarked(soldier));this.poseSoldier(rig,soldier.x,soldier.z,soldier.yaw,soldier.flight?.altitude??(soldier.ground??0)+(soldier.alive?0:.25),soldier.alive&&!soldier.prone&&!soldier.flight&&!isEmbarked(soldier),dt);
+      this.stanceSoldier(rig,soldier.yaw,!!soldier.prone||!soldier.alive);
     }
   }
   private bloodBurst(position:Point3){
@@ -1106,5 +1126,5 @@ export class World {
     const view=Vector3.TransformCoordinates(point,this.camera.getViewMatrix());
     return {x:projected.x/width,y:projected.y/height,size:Math.max(.02,Math.abs(top.y-bottom.y)/height),visible:view.z>0&&projected.x>0&&projected.x<width&&projected.y>0&&projected.y<height,side:view.x<0?'left':'right'};
   }
-  reset(sim:Simulation){this.mineControlSmokeTimers.clear();this.completionTime=null;for(const root of this.wreckRigs.values())root.dispose();this.wreckRigs.clear();for(const fire of this.destructions.values())fire.root.dispose();this.destructions.clear();for(const rig of this.soldierRigs.values())rig.root.dispose();this.soldierRigs.clear();for(const rig of this.missileRigs.values())rig.root.dispose();this.missileRigs.clear();this.kick=0;for(const rig of this.rigs.values())rig.root.dispose(false,true);for(const shadow of this.aipShadows.values())shadow.dispose(false,true);this.aipShadows.clear();for(const e of this.effects)e.mesh.dispose();this.effects=[];this.rigs.clear();this.sim=sim;this.terrain();this.waypoint.position.set((sim.mission.waypoints[0]?.x??0),.25,(sim.mission.waypoints[0]?.z??0));for(const u of sim.units)this.makeMech(u);this.mode=initialCameraMode(sim.mission.initialView,!!(sim.mounted??sim.passenger));}
+  reset(sim:Simulation){for(const fire of this.mineControlFires.values())fire.root.dispose();this.mineControlFires.clear();this.burnedMineControls.clear();this.completionTime=null;for(const root of this.wreckRigs.values())root.dispose();this.wreckRigs.clear();for(const fire of this.destructions.values())fire.root.dispose();this.destructions.clear();for(const rig of this.soldierRigs.values())rig.root.dispose();this.soldierRigs.clear();for(const rig of this.missileRigs.values())rig.root.dispose();this.missileRigs.clear();this.kick=0;for(const rig of this.rigs.values())rig.root.dispose(false,true);for(const shadow of this.aipShadows.values())shadow.dispose(false,true);this.aipShadows.clear();for(const e of this.effects)e.mesh.dispose();this.effects=[];this.rigs.clear();this.sim=sim;this.terrain();this.waypoint.position.set((sim.mission.waypoints[0]?.x??0),.25,(sim.mission.waypoints[0]?.z??0));for(const u of sim.units)this.makeMech(u);this.mode=initialCameraMode(sim.mission.initialView,!!(sim.mounted??sim.passenger));}
 }

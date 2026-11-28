@@ -191,6 +191,7 @@ IFF `6707`をMercとして識別する処理は挙動確認用の仮設定。1-1
 | `src/game/simulation/` | 移動、乗降、武器の計算、敵AI、IFF、損傷・命中判定、勝敗 |
 | `src/game/presentation/` | Babylon.jsの描画、歩行演出、カメラ、Holo、損傷色、音 |
 | `src/game/settings.ts` / `src/game/input.ts` | 設定の型・初期値・検証と、入力の変換 |
+| `src/game/progress.ts` | クリアした任務と最後に選んだ任務の検証、localStorage への読み書き |
 | `src/game/session.ts` | モーダル別の時間進行 |
 | `src/main.ts` / `src/style.css` | 入力イベント、HUD、地図、各画面、設定保存 |
 

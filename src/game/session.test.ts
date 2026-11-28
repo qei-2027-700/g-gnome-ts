@@ -6,6 +6,7 @@ import {missionMap,missionMapObjectives} from './presentation/mission-map.ts';
 import {Simulation,type Input} from './simulation/simulation.ts';
 import {MISSION} from './content/mission-1-1.ts';
 import {MISSIONS} from './content/missions/index.ts';
+import {CAMPAIGN_STORAGE_KEY,emptyProgress,loadCampaignProgress,readCampaignProgress,recordMissionClear,rememberMission,writeCampaignProgress} from './progress.ts';
 const idle:Input={forward:false,back:false,left:false,right:false,boost:false,stop:false,fire1:false,fire2:false};
 test('B map keeps throttle, missiles, damage and recharge live; settings and P freeze them',()=>{
  const s=new Simulation();s.human={...MISSION.vehicle};s.board();s.throttle=.4;s.mounted!.laserCharge=0;
@@ -156,4 +157,53 @@ test('door impact occurs once at animated ending contact and resets on restart o
  completion.start();completion.step(COMPLETION_TIMING.completeView+COMPLETION_TIMING.closing+.01);completion.cancel();assert.equal(completion.takeDoorImpact(),false);
  completion.start();completion.step(COMPLETION_TIMING.completeView+COMPLETION_TIMING.closing+.01);assert.equal(completion.takeDoorImpact(),true);
  completion.cancel();completion.start('aborted');assert.equal(completion.active,true);assert.equal(completion.takeDoorImpact(),false);
+});
+
+test('cleared missions are marked on the briefing list and an empty record leaves the console unchanged',()=>{
+ const mission=MISSIONS[0],plain=missionBriefing(mission,MISSIONS,'ja');
+ assert.equal(plain,missionBriefing(mission,MISSIONS,'ja',emptyProgress()));
+ assert.ok(!plain.includes('data-cleared'));assert.ok(!plain.includes('mission-clear'));
+ const known=new Set(MISSIONS.map(item=>item.id)),at='2026-11-28T00:00:00.000Z';
+ let progress=recordMissionClear(emptyProgress(),{id:'1-1',difficulty:'Hard',timeSeconds:75,clearedAt:at},known);
+ progress=recordMissionClear(progress,{id:'3-3',difficulty:'Easy',timeSeconds:12,clearedAt:at},known);
+ const html=missionBriefing(mission,MISSIONS,'en',progress);
+ assert.ok(html.includes('SELECT MISSION · 2 CLEAR'));
+ assert.ok(html.includes('title="Hard · 1:15"'));assert.ok(html.includes('title="Easy · 0:12"'));
+ const select=html.slice(html.indexOf('id="missionSelect"'),html.indexOf('</button>',html.indexOf('id="missionSelect"')));
+ assert.ok(select.includes('CLEAR'));
+ const cleared=html.split('data-action="selectMission:').slice(1).filter(row=>row.includes('data-cleared="true"'));
+ assert.deepEqual(cleared.map(row=>row.slice(0,row.indexOf('"'))).sort(),['1-1','3-3']);
+ const other=missionBriefing(MISSIONS.find(item=>item.id==='3-3')!,MISSIONS,'ja',progress);
+ assert.ok(other.includes('任務を選択 · 2 クリア'));
+ assert.ok(other.slice(other.indexOf('id="missionSelect"'),other.indexOf('</button>',other.indexOf('id="missionSelect"'))).includes('クリア'));
+ const uncleared=missionBriefing(MISSIONS.find(item=>item.id==='4-5')!,MISSIONS,'ja',progress);
+ assert.ok(!uncleared.slice(uncleared.indexOf('id="missionSelect"'),uncleared.indexOf('</button>',uncleared.indexOf('id="missionSelect"'))).includes('クリア'));
+});
+
+test('campaign storage keeps the latest clear and the last selection, and drops corrupt or preview rows',()=>{
+ const known=new Set(['1-1','1-5']),at='2026-11-28T00:00:00.000Z';
+ const loaded=loadCampaignProgress({lastMissionId:'preview-union-asv',clears:{
+  '1-1':{difficulty:'Easy',timeSeconds:10,clearedAt:at},
+  '1-5':{difficulty:'Nope',timeSeconds:10,clearedAt:at},
+  'preview-union-asv':{difficulty:'Hard',timeSeconds:3,clearedAt:at},
+  '9-9':{difficulty:'Hard',timeSeconds:-1,clearedAt:at},
+  '2-2':{difficulty:'Medium',timeSeconds:4,clearedAt:'not-a-date'},
+ }},known);
+ assert.equal(loaded.lastMissionId,null);assert.deepEqual(Object.keys(loaded.clears),['1-1']);
+ assert.equal(loadCampaignProgress({lastMissionId:'1-5',clears:{}},known).lastMissionId,'1-5');
+ assert.equal(loadCampaignProgress({lastMissionId:'preview-union-asv',clears:{'preview-union-asv':{difficulty:'Easy',timeSeconds:1,clearedAt:at}}}).lastMissionId,null);
+ assert.equal(loadCampaignProgress({clears:[]}).lastMissionId,null);
+ const again=recordMissionClear(loaded,{id:'1-1',difficulty:'Hard',timeSeconds:20,clearedAt:at},known);
+ assert.equal(again.lastMissionId,'1-1');assert.equal(again.clears['1-1'].difficulty,'Hard');assert.equal(again.clears['1-1'].timeSeconds,20);
+ assert.equal(recordMissionClear(again,{id:'preview-union-asv',difficulty:'Easy',timeSeconds:1,clearedAt:at},known),again);
+ const remembered=rememberMission(again,'1-5',known);
+ assert.equal(remembered.lastMissionId,'1-5');assert.equal(remembered.clears['1-1'].difficulty,'Hard');
+ assert.equal(rememberMission(remembered,'1-5',known),remembered);assert.equal(rememberMission(remembered,'nope',known),remembered);
+ const box=new Map<string,string>();
+ const storage={getItem:(key:string)=>box.get(key)??null,setItem:(key:string,value:string)=>{box.set(key,value);}};
+ assert.equal(writeCampaignProgress(storage,remembered),true);
+ assert.deepEqual(readCampaignProgress(storage,known),remembered);
+ assert.equal(box.get(CAMPAIGN_STORAGE_KEY)?.includes('"lastMissionId":"1-5"'),true);
+ assert.deepEqual(readCampaignProgress({getItem:()=>'{',setItem(){throw new Error('closed');}},known),emptyProgress());
+ assert.equal(writeCampaignProgress({getItem:()=>null,setItem(){throw new Error('quota');}},remembered),false);
 });
